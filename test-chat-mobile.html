@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Test ChatWidget Mobile - DMS Hub</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0b1220 0%, #1a2332 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #e8fbff;
+    }
+    .device-frame {
+      width: 390px;
+      height: 844px;
+      background: #000;
+      border-radius: 40px;
+      padding: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    .device-notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 30px;
+      background: #000;
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 32px;
+      background: #0b1220;
+    }
+    .info {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #9bd6de;
+    }
+    .info strong {
+      color: #14b8a6;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="margin-bottom: 20px; color: #14b8a6;">📱 Test ChatWidget Mobile</h1>
+  
+  <div class="device-frame">
+    <div class="device-notch"></div>
+    <iframe src="https://3000-iot4ac202gehqh0qqxx5z-ce5d3831.manusvm.computer/"></iframe>
+  </div>
+  
+  <div class="info">
+    <p><strong>Device:</strong> iPhone 13 Pro (390x844px)</p>
+    <p><strong>Test:</strong> ChatWidget fullscreen responsive</p>
+    <p style="margin-top: 10px; font-size: 12px;">Clicca sul pulsante chat in basso a destra nell'iframe</p>
+  </div>
+</body>
+</html>

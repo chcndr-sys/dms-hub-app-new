@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) FROM mobility_data;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3JHjEVidcAySpCH.root --database hkVUJNrozhntVqLGt4TSzx --execute SELECT COUNT(*) FROM mobility_data;",
+  "rows": [
+    {
+      "COUNT(*)": "16"
+    }
+  ],
+  "messages": [],
+  "stdout": "COUNT(*)\n16\n",
+  "stderr": "",
+  "execution_time_ms": 225
+}

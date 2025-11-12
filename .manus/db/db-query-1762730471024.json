@@ -1,0 +1,52 @@
+{
+  "query": "SELECT id, name, city, address, \n(SELECT COUNT(*) FROM stalls WHERE market_id = markets.id) as stalls_count\nFROM markets\nORDER BY stalls_count DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3JHjEVidcAySpCH.root --database hkVUJNrozhntVqLGt4TSzx --execute SELECT id, name, city, address, \n(SELECT COUNT(*) FROM stalls WHERE market_id = markets.id) as stalls_count\nFROM markets\nORDER BY stalls_count DESC;",
+  "rows": [
+    {
+      "id": "30001",
+      "name": "Mercato Grosseto Esperanto",
+      "city": "Grosseto",
+      "address": "Piazza Esperanto, 1",
+      "stalls_count": "3"
+    },
+    {
+      "id": "1",
+      "name": "Mercato Coperto Grosseto",
+      "city": "Grosseto",
+      "address": "Via del Mercato, Grosseto",
+      "stalls_count": "0"
+    },
+    {
+      "id": "2",
+      "name": "Mercato Follonica",
+      "city": "Follonica",
+      "address": "Via del Mercato, Follonica",
+      "stalls_count": "0"
+    },
+    {
+      "id": "3",
+      "name": "Mercato Orbetello",
+      "city": "Orbetello",
+      "address": "Via del Mercato, Orbetello",
+      "stalls_count": "0"
+    },
+    {
+      "id": "4",
+      "name": "Mercato Castiglione",
+      "city": "Castiglione",
+      "address": "Via del Mercato, Castiglione",
+      "stalls_count": "0"
+    },
+    {
+      "id": "5",
+      "name": "Mercato Marina",
+      "city": "Grosseto",
+      "address": "Via del Mercato, Grosseto",
+      "stalls_count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tcity\taddress\tstalls_count\n30001\tMercato Grosseto Esperanto\tGrosseto\tPiazza Esperanto, 1\t3\n1\tMercato Coperto Grosseto\tGrosseto\tVia del Mercato, Grosseto\t0\n2\tMercato Follonica\tFollonica\tVia del Mercato, Follonica\t0\n3\tMercato Orbetello\tOrbetello\tVia del Mercato, Orbetello\t0\n4\tMercato Castiglione\tCastiglione\tVia del Mercato, Castiglione\t0\n5\tMercato Marina\tGrosseto\tVia del Mercato, Grosseto\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1060
+}
