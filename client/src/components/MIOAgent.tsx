@@ -20,7 +20,7 @@ const MIOAgent = () => {
           <pre>{log.filename}</pre>
           <pre>{log.content}</pre>
         </div>
-      )}
+      ))}
     </div>
   );
 };
