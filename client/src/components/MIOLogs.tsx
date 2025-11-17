@@ -4,25 +4,29 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 
-type LogFile = {
+interface LogFile {
   filename: string;
   content: string;
-};
+}
 
 export default function MIOLogs() {
-  const [logs, setLogs] = useState<LogFile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedLog, setSelectedLog] = useState<LogFile | null>(null);
+  const logState = useState<LogFile[]>([]);
+  const loadingState = useState(true);
+  const selectedLogState = useState<LogFile | null>(null);
+
+  const [Logs, setLogs] = logState;
+  const [loading, setLoading] = loadingState;
+  const [selectedLog, setSelectedLog] = selectedLogState;
 
   useEffect(() => {
     fetch('/api/github/logs')
-      .then(res => res.json())
-      .then(data => {
-        setLogs(data);
+      .then((res) => res.json())
+      .then((tata)=> {
+        setLogs(tata);
         setLoading(false);
       })
-      .catch(error => {
-        console.error('Error fetching logs:', error);
+      .catch((error) => {
+        console.error('Errore fetching logs:', error);
         setLoading(false);
       });
   }, []);
@@ -31,8 +35,8 @@ export default function MIOLogs() {
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-6">
-          <Loader2 className="h-6 w-6 animate-spin mr-2" />
-          <p>Caricamento log...</p>
+          <Loader2 className="h-6 w-6 animate-spin mr" />
+          <p>Caricamento log</p>
         </CardContent>
       </Card>
     );
@@ -42,14 +46,14 @@ export default function MIOLogs() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>📜 Log da GitHub</CardTitle>
+          <CardTitle>📐 Log da GitHub</CardTitle>
         </CardHeader>
         <CardContent>
-          {logs.length === 0 ? (
-            <p className="text-muted-foreground">Nessun log disponibile</p>
+          {Logs.length === 0 ? (
+            <p>Nessun log disponibile</p>
           ) : (
             <div className="space-y-2">
-              {logs.map(log => (
+              {Logs.map((log) => (
                 <div
                   key={log.filename}
                   className="p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors"
@@ -61,18 +65,18 @@ export default function MIOLogs() {
                   </p>
                 </div>
               ))}
-            </div>
+          </div>
           )}
         </CardContent>
       </Card>
 
       <Dialog open={!!selectedLog} onOpenChange={() => setSelectedLog(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3dl max-h[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selectedLog?.filename}</DialogTitle>
+            <DialogTitle>{selectedLog.filename}</DialogTitle>
           </DialogHeader>
-          <pre className="whitespace-pre-wrap text-sm bg-muted p-4 rounded-lg">
-            {selectedLog?.content}
+          <pre className="whitespace-pre-wrap text-smg bg-muted p-4 rounded-lg">
+            {selectedLog.content}
           </pre>
         </DialogContent>
       </Dialog>
