@@ -8,6 +8,17 @@ import * as db from "./db";
  * - Stato task e job
  */
 export const mioAgentRouter = router({
+  // Test connessione database e diagnostica
+  testDatabase: publicProcedure.query(async () => {
+    try {
+      const result = await db.testDatabaseConnection();
+      return result;
+    } catch (error) {
+      console.error("Error testing database:", error);
+      throw new Error("Failed to test database");
+    }
+  }),
+
   // Inizializza lo schema del database (crea tabella se non esiste)
   initSchema: publicProcedure.mutation(async () => {
     try {

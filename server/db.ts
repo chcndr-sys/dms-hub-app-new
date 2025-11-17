@@ -344,22 +344,36 @@ export async function createMioAgentLog(log: {
 }
 
 export async function getMioAgentLogs() {
+  console.log("[DEBUG] getMioAgentLogs called");
   const db = await getDb();
-  if (!db) return [];
+  if (!db) {
+    console.warn("[DEBUG] Database not available in getMioAgentLogs");
+    return [];
+  }
 
   try {
+    console.log("[DEBUG] Executing SELECT query on mio_agent_logs");
     const logs = await db
       .select()
       .from(schema.mioAgentLogs)
       .orderBy(desc(schema.mioAgentLogs.timestamp));
 
+    console.log(`[DEBUG] Query returned ${logs.length} logs`);
+    if (logs.length > 0) {
+      console.log("[DEBUG] First log:", JSON.stringify(logs[0]));
+    }
+
     // Parse JSON details field
-    return logs.map(log => ({
+    const parsedLogs = logs.map(log => ({
       ...log,
       details: log.details ? JSON.parse(log.details) : null,
     }));
+    
+    console.log(`[DEBUG] Returning ${parsedLogs.length} parsed logs`);
+    return parsedLogs;
   } catch (error) {
     console.error("[Database] Error fetching MIO Agent logs:", error);
+    console.error("[DEBUG] Error stack:", error instanceof Error ? error.stack : "No stack");
     return [];
   }
 }
@@ -390,8 +404,10 @@ export async function getMioAgentLogById(id: number) {
 
 
 export async function initMioAgentLogsTable() {
+  console.log("[DEBUG] initMioAgentLogsTable called");
   const db = await getDb();
   if (!db) {
+    console.warn("[DEBUG] Database not available in initMioAgentLogsTable");
     return {
       success: false,
       message: "Database not available",
@@ -399,6 +415,7 @@ export async function initMioAgentLogsTable() {
   }
 
   try {
+    console.log("[DEBUG] Checking if mio_agent_logs table exists");
     // Verifica se la tabella esiste
     const checkTableQuery = `
       SELECT COUNT(*) as count 
@@ -408,15 +425,20 @@ export async function initMioAgentLogsTable() {
     `;
     
     const result: any = await db.execute(checkTableQuery);
+    console.log("[DEBUG] Check table result:", JSON.stringify(result));
     const tableExists = result[0]?.count > 0;
+    console.log(`[DEBUG] Table exists: ${tableExists}`);
 
     if (tableExists) {
+      console.log("[DEBUG] Table already exists, skipping creation");
       return {
         success: true,
         message: "Table mio_agent_logs already exists",
         status: "existing",
       };
     }
+
+    console.log("[DEBUG] Table does not exist, creating...");
 
     // Crea la tabella
     const createTableQuery = `
@@ -435,9 +457,12 @@ export async function initMioAgentLogsTable() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Log degli agenti AI (MIO, Manus, etc.)'
     `;
 
+    console.log("[DEBUG] Executing CREATE TABLE query");
     await db.execute(createTableQuery);
+    console.log("[DEBUG] Table created successfully");
 
     // Inserisci log di inizializzazione
+    console.log("[DEBUG] Inserting initialization log");
     await db.insert(schema.mioAgentLogs).values({
       agent: "System",
       action: "init_schema",
@@ -450,6 +475,7 @@ export async function initMioAgentLogsTable() {
       timestamp: new Date(),
     });
 
+    console.log("[DEBUG] Initialization log inserted");
     return {
       success: true,
       message: "Table mio_agent_logs created successfully",
@@ -457,10 +483,104 @@ export async function initMioAgentLogsTable() {
     };
   } catch (error) {
     console.error("[Database] Error initializing mio_agent_logs table:", error);
+    console.error("[DEBUG] Error stack:", error instanceof Error ? error.stack : "No stack");
     return {
       success: false,
       message: error instanceof Error ? error.message : "Unknown error",
       status: "error",
+    };
+  }
+}
+
+
+// ============================================
+// Database Diagnostics
+// ============================================
+
+export async function testDatabaseConnection() {
+  console.log("[DIAGNOSTIC] Testing database connection...");
+  
+  // Check DATABASE_URL
+  const databaseUrl = process.env.DATABASE_URL;
+  console.log("[DIAGNOSTIC] DATABASE_URL exists:", !!databaseUrl);
+  if (databaseUrl) {
+    // Log only the protocol and host (hide credentials)
+    const urlMatch = databaseUrl.match(/^([^:]+):\/\/([^@]+@)?([^\/]+)/);
+    if (urlMatch) {
+      console.log(`[DIAGNOSTIC] Database protocol: ${urlMatch[1]}`);
+      console.log(`[DIAGNOSTIC] Database host: ${urlMatch[3]}`);
+    }
+  }
+  
+  const db = await getDb();
+  if (!db) {
+    console.error("[DIAGNOSTIC] Database connection failed: getDb() returned null");
+    return {
+      success: false,
+      message: "Database not available",
+      details: {
+        databaseUrlExists: !!databaseUrl,
+        error: "getDb() returned null",
+      },
+    };
+  }
+  
+  console.log("[DIAGNOSTIC] Database connection established");
+  
+  try {
+    // Test simple query
+    console.log("[DIAGNOSTIC] Executing SELECT 1 test query");
+    const result: any = await db.execute("SELECT 1 as test");
+    console.log("[DIAGNOSTIC] Test query result:", JSON.stringify(result));
+    
+    // Test database name
+    console.log("[DIAGNOSTIC] Getting current database name");
+    const dbNameResult: any = await db.execute("SELECT DATABASE() as db_name");
+    const dbName = dbNameResult[0]?.db_name;
+    console.log(`[DIAGNOSTIC] Current database: ${dbName}`);
+    
+    // Check if mio_agent_logs table exists
+    console.log("[DIAGNOSTIC] Checking if mio_agent_logs table exists");
+    const tableCheckResult: any = await db.execute(`
+      SELECT COUNT(*) as count 
+      FROM information_schema.tables 
+      WHERE table_schema = DATABASE() 
+      AND table_name = 'mio_agent_logs'
+    `);
+    const tableExists = tableCheckResult[0]?.count > 0;
+    console.log(`[DIAGNOSTIC] Table mio_agent_logs exists: ${tableExists}`);
+    
+    // If table exists, count rows
+    let rowCount = 0;
+    if (tableExists) {
+      console.log("[DIAGNOSTIC] Counting rows in mio_agent_logs");
+      const countResult: any = await db.execute("SELECT COUNT(*) as count FROM mio_agent_logs");
+      rowCount = countResult[0]?.count || 0;
+      console.log(`[DIAGNOSTIC] Row count: ${rowCount}`);
+    }
+    
+    return {
+      success: true,
+      message: "Database connection successful",
+      details: {
+        databaseUrlExists: !!databaseUrl,
+        connectionEstablished: true,
+        databaseName: dbName,
+        tableExists,
+        rowCount,
+      },
+    };
+  } catch (error) {
+    console.error("[DIAGNOSTIC] Database test failed:", error);
+    console.error("[DIAGNOSTIC] Error stack:", error instanceof Error ? error.stack : "No stack");
+    return {
+      success: false,
+      message: "Database test failed",
+      details: {
+        databaseUrlExists: !!databaseUrl,
+        error: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
+      },
     };
   }
 }
