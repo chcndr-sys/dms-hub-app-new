@@ -70,6 +70,69 @@ export const mioAgentRouter = router({
     }
   }),
 
+  // Crea un nuovo log
+  createLog: publicProcedure
+    .input((val: unknown) => {
+      if (
+        typeof val === "object" &&
+        val !== null &&
+        "agent" in val &&
+        "action" in val &&
+        "status" in val
+      ) {
+        return val as {
+          agent: string;
+          action: string;
+          status: "success" | "error" | "warning" | "info";
+          message?: string;
+          details?: Record<string, any>;
+        };
+      }
+      throw new Error("Invalid input: must include agent, action, and status");
+    })
+    .mutation(async ({ input }) => {
+      try {
+        const logsDir = path.join(process.cwd(), "server", "logs");
+
+        // Crea la directory se non esiste
+        try {
+          await fs.access(logsDir);
+        } catch {
+          await fs.mkdir(logsDir, { recursive: true });
+        }
+
+        // Genera filename univoco con timestamp
+        const timestamp = new Date().toISOString();
+        const sanitizedAgent = input.agent.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
+        const sanitizedAction = input.action.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
+        const filename = `${sanitizedAgent}-${sanitizedAction}-${Date.now()}.json`;
+        const filePath = path.join(logsDir, filename);
+
+        // Crea oggetto log completo
+        const logData = {
+          timestamp,
+          agent: input.agent,
+          action: input.action,
+          status: input.status,
+          message: input.message || "",
+          details: input.details || {},
+        };
+
+        // Scrivi il file JSON
+        await fs.writeFile(filePath, JSON.stringify(logData, null, 2), "utf-8");
+
+        return {
+          success: true,
+          filename,
+          timestamp,
+          message: "Log created successfully",
+        };
+      } catch (error) {
+        console.error("Error creating log:", error);
+        throw new Error("Failed to create log");
+      }
+    }),
+
   // Recupera un singolo log per filename
   getLogByFilename: publicProcedure
     .input((val: unknown) => {
