@@ -1,5 +1,6 @@
+// Pagina di simulazione per la dashboard MIO
 import React from 'react';
-import IMOLogs from '../components/MIOLogs';
+import MIOLogs from '../components/MIOLogs';
 
 export default function MIOPage() {
   return (
