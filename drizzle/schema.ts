@@ -599,3 +599,18 @@ export type ApiMetric = typeof apiMetrics.$inferSelect;
 export type Webhook = typeof webhooks.$inferSelect;
 export type WebhookLog = typeof webhookLogs.$inferSelect;
 export type ExternalConnection = typeof externalConnections.$inferSelect;
+
+// MIO Agent Logs - Sistema di logging per agenti AI
+export const mioAgentLogs = mysqlTable("mio_agent_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  agent: varchar("agent", { length: 100 }).notNull(), // Nome agente (MIO, Manus, etc.)
+  action: varchar("action", { length: 255 }).notNull(), // Azione eseguita
+  status: mysqlEnum("status", ["success", "error", "warning", "info"]).notNull(),
+  message: text("message"), // Messaggio descrittivo
+  details: text("details"), // JSON con dettagli aggiuntivi
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type MioAgentLog = typeof mioAgentLogs.$inferSelect;
+export type InsertMioAgentLog = typeof mioAgentLogs.$inferInsert;

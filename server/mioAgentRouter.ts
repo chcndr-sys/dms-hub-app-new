@@ -1,76 +1,40 @@
 import { publicProcedure, router } from "./_core/trpc";
-import { promises as fs } from "fs";
-import path from "path";
+import * as db from "./db";
 
 /**
  * Router per MIO Agent
- * - Gestione log degli agenti
+ * - Gestione log degli agenti (MySQL)
  * - Monitoraggio operazioni
  * - Stato task e job
  */
 export const mioAgentRouter = router({
-  // Recupera tutti i log dalla cartella server/logs/
+  // Recupera tutti i log dal database
   getLogs: publicProcedure.query(async () => {
     try {
-      const logsDir = path.join(process.cwd(), "server", "logs");
+      const logs = await db.getMioAgentLogs();
       
-      // Verifica se la directory esiste
-      try {
-        await fs.access(logsDir);
-      } catch {
-        // Se la directory non esiste, restituisci array vuoto
-        return [];
-      }
-
-      // Leggi tutti i file nella directory
-      const files = await fs.readdir(logsDir);
-      
-      // Filtra solo i file .json
-      const jsonFiles = files.filter(file => file.endsWith(".json"));
-
-      // Leggi e parsa ogni file JSON
-      const logs = await Promise.all(
-        jsonFiles.map(async (filename) => {
-          const filePath = path.join(logsDir, filename);
-          const stats = await fs.stat(filePath);
-          const content = await fs.readFile(filePath, "utf-8");
-          
-          try {
-            const parsedContent = JSON.parse(content);
-            
-            return {
-              filename,
-              timestamp: parsedContent.timestamp || stats.mtime.toISOString(),
-              content: parsedContent,
-              size: stats.size,
-              modified: stats.mtime.toISOString(),
-            };
-          } catch (parseError) {
-            // Se il JSON non è valido, restituisci il contenuto raw
-            return {
-              filename,
-              timestamp: stats.mtime.toISOString(),
-              content: { raw: content, parseError: "Invalid JSON" },
-              size: stats.size,
-              modified: stats.mtime.toISOString(),
-            };
-          }
-        })
-      );
-
-      // Ordina per timestamp decrescente (più recenti prima)
-      logs.sort((a, b) => 
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
-
-      return logs;
+      // Trasforma il formato per compatibilità con il frontend
+      return logs.map(log => ({
+        id: log.id,
+        filename: `log-${log.id}.json`,
+        timestamp: log.timestamp.toISOString(),
+        content: {
+          agent: log.agent,
+          action: log.action,
+          status: log.status,
+          message: log.message || "",
+          details: log.details || {},
+        },
+        size: JSON.stringify(log).length,
+        modified: log.createdAt.toISOString(),
+      }));
     } catch (error) {
-      console.error("Error reading logs:", error);
+      console.error("Error reading logs from database:", error);
       throw new Error("Failed to read logs");
     }
   }),
 
-  // Crea un nuovo log
+  // Crea un nuovo log nel database
   createLog: publicProcedure
     .input((val: unknown) => {
       if (
@@ -92,77 +56,61 @@ export const mioAgentRouter = router({
     })
     .mutation(async ({ input }) => {
       try {
-        const logsDir = path.join(process.cwd(), "server", "logs");
-
-        // Crea la directory se non esiste
-        try {
-          await fs.access(logsDir);
-        } catch {
-          await fs.mkdir(logsDir, { recursive: true });
-        }
-
-        // Genera filename univoco con timestamp
-        const timestamp = new Date().toISOString();
-        const sanitizedAgent = input.agent.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
-        const sanitizedAction = input.action.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
-        const filename = `${sanitizedAgent}-${sanitizedAction}-${Date.now()}.json`;
-        const filePath = path.join(logsDir, filename);
-
-        // Crea oggetto log completo
-        const logData = {
-          timestamp,
+        const result = await db.createMioAgentLog({
           agent: input.agent,
           action: input.action,
           status: input.status,
-          message: input.message || "",
-          details: input.details || {},
-        };
+          message: input.message,
+          details: input.details,
+        });
 
-        // Scrivi il file JSON
-        await fs.writeFile(filePath, JSON.stringify(logData, null, 2), "utf-8");
+        if (!result) {
+          throw new Error("Database not available");
+        }
 
         return {
           success: true,
-          filename,
-          timestamp,
-          message: "Log created successfully",
+          id: result.id,
+          timestamp: new Date().toISOString(),
+          message: "Log created successfully in database",
         };
       } catch (error) {
-        console.error("Error creating log:", error);
+        console.error("Error creating log in database:", error);
         throw new Error("Failed to create log");
       }
     }),
 
-  // Recupera un singolo log per filename
-  getLogByFilename: publicProcedure
+  // Recupera un singolo log per ID
+  getLogById: publicProcedure
     .input((val: unknown) => {
-      if (typeof val === "string") return val;
-      throw new Error("Input must be a string");
+      if (typeof val === "number") return val;
+      throw new Error("Input must be a number (log ID)");
     })
-    .query(async ({ input: filename }) => {
+    .query(async ({ input: id }) => {
       try {
-        const logsDir = path.join(process.cwd(), "server", "logs");
-        const filePath = path.join(logsDir, filename);
-
-        // Verifica che il file esista e sia nella directory logs
-        const stats = await fs.stat(filePath);
-        if (!stats.isFile()) {
-          throw new Error("Not a file");
+        const log = await db.getMioAgentLogById(id);
+        
+        if (!log) {
+          throw new Error("Log not found");
         }
 
-        const content = await fs.readFile(filePath, "utf-8");
-        const parsedContent = JSON.parse(content);
-
         return {
-          filename,
-          timestamp: parsedContent.timestamp || stats.mtime.toISOString(),
-          content: parsedContent,
-          size: stats.size,
-          modified: stats.mtime.toISOString(),
+          id: log.id,
+          filename: `log-${log.id}.json`,
+          timestamp: log.timestamp.toISOString(),
+          content: {
+            agent: log.agent,
+            action: log.action,
+            status: log.status,
+            message: log.message || "",
+            details: log.details || {},
+          },
+          size: JSON.stringify(log).length,
+          modified: log.createdAt.toISOString(),
         };
       } catch (error) {
-        console.error("Error reading log file:", error);
-        throw new Error("Failed to read log file");
+        console.error("Error reading log from database:", error);
+        throw new Error("Failed to read log");
       }
     }),
 });

@@ -303,3 +303,87 @@ export async function getMobilityData() {
   if (!db) return [];
   return await db.select().from(schema.mobilityData).orderBy(desc(schema.mobilityData.updatedAt));
 }
+
+
+// ============================================
+// MIO Agent Logs
+// ============================================
+
+export async function createMioAgentLog(log: {
+  agent: string;
+  action: string;
+  status: "success" | "error" | "warning" | "info";
+  message?: string;
+  details?: Record<string, any>;
+}) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot create MIO Agent log: database not available");
+    return null;
+  }
+
+  try {
+    const result = await db.insert(schema.mioAgentLogs).values({
+      agent: log.agent,
+      action: log.action,
+      status: log.status,
+      message: log.message || null,
+      details: log.details ? JSON.stringify(log.details) : null,
+      timestamp: new Date(),
+    });
+
+    return {
+      success: true,
+      id: result[0].insertId,
+      message: "Log created successfully",
+    };
+  } catch (error) {
+    console.error("[Database] Error creating MIO Agent log:", error);
+    throw new Error("Failed to create log");
+  }
+}
+
+export async function getMioAgentLogs() {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const logs = await db
+      .select()
+      .from(schema.mioAgentLogs)
+      .orderBy(desc(schema.mioAgentLogs.timestamp));
+
+    // Parse JSON details field
+    return logs.map(log => ({
+      ...log,
+      details: log.details ? JSON.parse(log.details) : null,
+    }));
+  } catch (error) {
+    console.error("[Database] Error fetching MIO Agent logs:", error);
+    return [];
+  }
+}
+
+export async function getMioAgentLogById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const logs = await db
+      .select()
+      .from(schema.mioAgentLogs)
+      .where(eq(schema.mioAgentLogs.id, id))
+      .limit(1);
+
+    if (logs.length === 0) return null;
+
+    const log = logs[0];
+    return {
+      ...log,
+      details: log.details ? JSON.parse(log.details) : null,
+    };
+  } catch (error) {
+    console.error("[Database] Error fetching MIO Agent log by ID:", error);
+    return null;
+  }
+}
