@@ -15,7 +15,7 @@ const MIOAgent = () => {
   return (
     <div>
       <h1>MIO Agent /Logs</h1>
-      {logs.length === ? (<p>No logs trovati</p:) logs.map((log) => (
+      {logs.length === 0 ? (<p>No logs trovati</p>) : logs.map((log) => (
         <div style={{ marginBottom: '20px' }}>
           <pre>{log.filename}</pre>
           <pre>{log.content}</pre>
