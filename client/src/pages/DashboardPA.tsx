@@ -19,6 +19,7 @@ import MobilityMap from '@/components/MobilityMap';
 import GestioneMercati from '@/components/GestioneMercati';
 import Integrazioni from '@/components/Integrazioni';
 import { GISMap } from '@/components/GISMap';
+import MIOAgent from '@/components/MIOAgent';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Hook per dati reali da backend
@@ -856,6 +857,17 @@ export default function DashboardPA() {
             >
               <FileText className="h-6 w-6" />
               <span className="text-xs font-medium">Documentazione</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('mio')}
+              className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
+                activeTab === 'mio'
+                  ? 'bg-[#8b5cf6] border-[#8b5cf6] text-white shadow-lg'
+                  : 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/20 text-[#8b5cf6]'
+              }`}
+            >
+              <Bot className="h-6 w-6" />
+              <span className="text-xs font-medium">MIO Agent</span>
             </button>
           </div>
         </div>
@@ -3165,6 +3177,21 @@ export default function DashboardPA() {
                     </CardContent>
                   </Card>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* TAB 24: MIO AGENT */}
+          <TabsContent value="mio" className="space-y-6">
+            <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-[#8b5cf6]" />
+                  MIO Agent - Monitoraggio e Orchestrazione
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MIOAgent />
               </CardContent>
             </Card>
           </TabsContent>
