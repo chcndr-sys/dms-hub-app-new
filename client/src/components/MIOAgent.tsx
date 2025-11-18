@@ -47,7 +47,7 @@ const MIOAgent = () => {
             ))}
           </tbody>
         </table>
-      )
+      )}
     </div>
   );
 };
