@@ -355,6 +355,9 @@ const mockData = {
 };
 
 export default function DashboardPA() {
+  // Dati reali dal backend MIHUB
+  const realData = useDashboardData();
+  
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [realtimeData, setRealtimeData] = useState(mockData.realtime);
    const [activeTab, setActiveTab] = useState('overview');
@@ -578,28 +581,35 @@ export default function DashboardPA() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
             title="Utenti Totali"
-            value={mockData.overview.totalUsers}
-            growth={mockData.overview.userGrowth}
+            value={realData.overview?.totalUsers || 0}
+            growth={realData.overview?.userGrowth || 0}
             icon={Users}
           />
           <KPICard
             title="Mercati Attivi"
-            value={mockData.overview.activeMarkets}
+            value={realData.overview?.activeMarkets || 0}
             icon={Store}
           />
           <KPICard
             title="Transazioni"
-            value={mockData.overview.totalTransactions}
-            growth={mockData.overview.transactionGrowth}
+            value={realData.overview?.totalTransactions || 0}
+            growth={realData.overview?.transactionGrowth || 0}
             icon={ShoppingCart}
           />
           <KPICard
             title="Rating Sostenibilità"
-            value={mockData.overview.sustainabilityRating}
+            value={realData.overview?.sustainabilityRating || 0}
             icon={Leaf}
             suffix="/10"
           />
         </div>
+
+        {/* Loading State */}
+        {realData.isLoading && (
+          <div className="flex items-center justify-center p-8">
+            <div className="text-[#14b8a6] animate-pulse">Caricamento dati dal backend MIHUB...</div>
+          </div>
+        )}
 
         {/* Tabs Navigation - Stile Card */}
         <div className="bg-[#1a2332] border border-[#14b8a6]/30 p-4 rounded-lg">
