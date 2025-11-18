@@ -14,6 +14,7 @@ import VetrinePage from "./pages/VetrinePage";
 import HubOperatore from "./pages/HubOperatore";
 import DashboardPA from "./pages/DashboardPA";
 import MioPage from "./pages/mio";
+import MIHUBPage from "./pages/MIHUBPage";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/hub-operatore" component={HubOperatore} />
       <Route path="/dashboard-pa" component={DashboardPA} />
       <Route path="/mio" component={MioPage} />
+      <Route path="/mihub" component={MIHUBPage} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
