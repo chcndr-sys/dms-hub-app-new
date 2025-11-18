@@ -2195,6 +2195,11 @@ export default function DashboardPA() {
                   <div className="text-[#14b8a6]">✓ Redis: {mockData.debug.healthChecks.redis}</div>
                   <div className="text-[#14b8a6]">✓ Storage: {mockData.debug.healthChecks.storage}</div>
                   <div className="text-[#e8fbff]/50 mt-4">$ Monitoring active...</div>
+                  <div className="text-[#8b5cf6] mt-4">$ MIO Agent API Status...</div>
+                  <div className="text-[#14b8a6]">✓ POST /api/logs/initSchema - Ready</div>
+                  <div className="text-[#14b8a6]">✓ POST /api/logs/createLog - Ready</div>
+                  <div className="text-[#14b8a6]">✓ GET /api/logs/getLogs - Ready</div>
+                  <div className="text-[#e8fbff]/50 mt-2">→ Test via tab Integrazioni</div>
                 </div>
               </CardContent>
             </Card>
