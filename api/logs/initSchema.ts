@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { drizzle } from 'drizzle-orm/mysql2';
+import mysql from 'mysql2/promise';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow POST method
@@ -22,25 +23,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     console.log('[initSchema] DATABASE_URL found, connecting...');
     
-    // Create database connection
-    const db = drizzle(databaseUrl);
+    // Create MySQL connection
+    const connection = await mysql.createConnection(databaseUrl);
+    const db = drizzle(connection);
     
     console.log('[initSchema] Checking if table exists...');
     
     // Check if table exists
-    const checkTableQuery = `
+    const [rows] = await connection.query(`
       SELECT COUNT(*) as count 
       FROM information_schema.tables 
       WHERE table_schema = DATABASE() 
       AND table_name = 'mio_agent_logs'
-    `;
+    `);
     
-    const result: any = await db.execute(checkTableQuery);
-    const tableExists = result[0]?.count > 0;
+    const tableExists = (rows as any)[0]?.count > 0;
     
     console.log(`[initSchema] Table exists: ${tableExists}`);
     
     if (tableExists) {
+      await connection.end();
       return res.status(200).json({
         success: true,
         message: 'Table mio_agent_logs already exists',
@@ -51,7 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('[initSchema] Creating table...');
     
     // Create table
-    const createTableQuery = `
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS mio_agent_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         agent VARCHAR(100) NOT NULL COMMENT 'Nome agente (MIO, Manus, etc.)',
@@ -65,11 +67,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         INDEX idx_status (status),
         INDEX idx_timestamp (timestamp DESC)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Log degli agenti AI (MIO, Manus, etc.)'
-    `;
-    
-    await db.execute(createTableQuery);
+    `);
     
     console.log('[initSchema] Table created successfully');
+    
+    await connection.end();
     
     return res.status(200).json({
       success: true,

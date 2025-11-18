@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { drizzle } from 'drizzle-orm/mysql2';
+import mysql from 'mysql2/promise';
 import { mioAgentLogs } from '../../drizzle/schema';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -39,8 +40,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Create database connection
-    const db = drizzle(databaseUrl);
+    // Create MySQL connection
+    const connection = await mysql.createConnection(databaseUrl);
+    const db = drizzle(connection);
 
     // Insert log
     const result = await db.insert(mioAgentLogs).values({
@@ -53,6 +55,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     console.log('[createLog] Log created:', result);
+
+    await connection.end();
 
     return res.status(200).json({
       success: true,
