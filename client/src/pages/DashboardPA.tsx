@@ -437,6 +437,7 @@ export default function DashboardPA() {
   // Multi-Agent Chat state
   const [showMultiAgentChat, setShowMultiAgentChat] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<'mio' | 'manus' | 'abacus' | 'zapier'>('mio');
+  const [viewMode, setViewMode] = useState<'single' | 'quad'>('single');
   
   // Format timestamp for Guardian logs
   const formatTimestamp = (timestamp: string) => {
@@ -3234,33 +3235,38 @@ export default function DashboardPA() {
                   <p className="text-[#e8fbff]/70 text-sm">
                     Control Center con 4 agenti che comunicano in real-time per coordinamento e auto-controllo.
                   </p>
-                  <div className="flex gap-4">
-                    <Button 
-                      onClick={() => setShowMultiAgentChat(!showMultiAgentChat)}
-                      className="flex-1 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white"
+
+                  {/* Barra toggle Vista singola / Vista 4 agenti */}
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => setViewMode('single')}
+                      className={viewMode === 'single' 
+                        ? 'flex-1 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white' 
+                        : 'flex-1 bg-[#8b5cf6]/20 hover:bg-[#8b5cf6]/30 text-[#8b5cf6]'}
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
-                      {showMultiAgentChat ? 'Nascondi Chat' : 'Apri Chat Multi-Agente'}
+                      Vista singola
                     </Button>
-                    <a 
-                      href="/mihub" 
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Button
+                      onClick={() => setViewMode('quad')}
+                      className={viewMode === 'quad' 
+                        ? 'flex-1 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white' 
+                        : 'flex-1 bg-[#8b5cf6]/20 hover:bg-[#8b5cf6]/30 text-[#8b5cf6]'}
                     >
-                      <Button variant="outline" className="border-[#8b5cf6]/30 text-[#8b5cf6] hover:bg-[#8b5cf6]/10">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Vista 4 Quadranti
-                      </Button>
-                    </a>
+                      <Users className="h-4 w-4 mr-2" />
+                      Vista 4 agenti
+                    </Button>
                   </div>
-                  
-                  {/* Agent Tabs - Solo visibili quando chat aperta */}
-                  {showMultiAgentChat && (
-                    <div className="grid grid-cols-4 gap-2 pt-2">
-                      <button
-                        onClick={() => setSelectedAgent('mio')}
+
+                  {/* Bottoni agenti - Disabilitati in vista quadrants */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <button
+                      onClick={() => setSelectedAgent('mio')}
+                      disabled={viewMode === 'quad'}
                       className={`text-center p-3 rounded-lg border transition-all ${
-                        selectedAgent === 'mio'
+                        viewMode === 'quad' 
+                          ? 'opacity-50 cursor-not-allowed bg-[#8b5cf6]/5 border-[#8b5cf6]/20'
+                          : selectedAgent === 'mio'
                           ? 'bg-[#8b5cf6]/20 border-[#8b5cf6]'
                           : 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/15'
                       }`}
@@ -3271,8 +3277,11 @@ export default function DashboardPA() {
                     </button>
                     <button
                       onClick={() => setSelectedAgent('manus')}
+                      disabled={viewMode === 'quad'}
                       className={`text-center p-3 rounded-lg border transition-all ${
-                        selectedAgent === 'manus'
+                        viewMode === 'quad' 
+                          ? 'opacity-50 cursor-not-allowed bg-[#3b82f6]/5 border-[#3b82f6]/20'
+                          : selectedAgent === 'manus'
                           ? 'bg-[#3b82f6]/20 border-[#3b82f6]'
                           : 'bg-[#3b82f6]/10 border-[#3b82f6]/30 hover:bg-[#3b82f6]/15'
                       }`}
@@ -3283,8 +3292,11 @@ export default function DashboardPA() {
                     </button>
                     <button
                       onClick={() => setSelectedAgent('abacus')}
+                      disabled={viewMode === 'quad'}
                       className={`text-center p-3 rounded-lg border transition-all ${
-                        selectedAgent === 'abacus'
+                        viewMode === 'quad' 
+                          ? 'opacity-50 cursor-not-allowed bg-[#10b981]/5 border-[#10b981]/20'
+                          : selectedAgent === 'abacus'
                           ? 'bg-[#10b981]/20 border-[#10b981]'
                           : 'bg-[#10b981]/10 border-[#10b981]/30 hover:bg-[#10b981]/15'
                       }`}
@@ -3295,8 +3307,11 @@ export default function DashboardPA() {
                     </button>
                     <button
                       onClick={() => setSelectedAgent('zapier')}
+                      disabled={viewMode === 'quad'}
                       className={`text-center p-3 rounded-lg border transition-all ${
-                        selectedAgent === 'zapier'
+                        viewMode === 'quad' 
+                          ? 'opacity-50 cursor-not-allowed bg-[#f59e0b]/5 border-[#f59e0b]/20'
+                          : selectedAgent === 'zapier'
                           ? 'bg-[#f59e0b]/20 border-[#f59e0b]'
                           : 'bg-[#f59e0b]/10 border-[#f59e0b]/30 hover:bg-[#f59e0b]/15'
                       }`}
@@ -3304,48 +3319,176 @@ export default function DashboardPA() {
                       <Zap className="h-5 w-5 text-orange-400 mx-auto mb-1" />
                       <div className="text-xs text-[#e8fbff]/70">Zapier</div>
                       <div className="text-xs text-[#e8fbff]/50">Automazioni</div>
-                      </button>
-                    </div>
-                  )}
+                    </button>
+                  </div>
 
-                  {/* Embedded Chat */}
-                  {showMultiAgentChat && (
-                    <div className="mt-4 p-4 bg-[#0b1220] border border-[#8b5cf6]/30 rounded-lg">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          {selectedAgent === 'mio' && <Brain className="h-5 w-5 text-purple-400" />}
-                          {selectedAgent === 'manus' && <Wrench className="h-5 w-5 text-blue-400" />}
-                          {selectedAgent === 'abacus' && <Calculator className="h-5 w-5 text-green-400" />}
-                          {selectedAgent === 'zapier' && <Zap className="h-5 w-5 text-orange-400" />}
-                          <span className="text-[#e8fbff] font-medium capitalize">{selectedAgent}</span>
-                          <span className="text-xs text-[#e8fbff]/50">
-                            {selectedAgent === 'mio' && 'GPT-5 Coordinatore'}
-                            {selectedAgent === 'manus' && 'Operatore Esecutivo'}
-                            {selectedAgent === 'abacus' && 'Analisi Dati'}
-                            {selectedAgent === 'zapier' && 'Automazioni'}
-                          </span>
+                  {/* AREA CHAT - UN SOLO WRAPPER CON CONDITIONAL RENDERING */}
+                  <div className="bg-[#0b1220] border border-[#8b5cf6]/30 rounded-lg p-4 min-h-[24rem]">
+                    {viewMode === 'single' && (
+                      <div className="space-y-4">
+                        {/* Header chat singola */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {selectedAgent === 'mio' && <Brain className="h-5 w-5 text-purple-400" />}
+                            {selectedAgent === 'manus' && <Wrench className="h-5 w-5 text-blue-400" />}
+                            {selectedAgent === 'abacus' && <Calculator className="h-5 w-5 text-green-400" />}
+                            {selectedAgent === 'zapier' && <Zap className="h-5 w-5 text-orange-400" />}
+                            <span className="text-[#e8fbff] font-medium capitalize">{selectedAgent}</span>
+                            <span className="text-xs text-[#e8fbff]/50">
+                              {selectedAgent === 'mio' && 'GPT-5 Coordinatore'}
+                              {selectedAgent === 'manus' && 'Operatore Esecutivo'}
+                              {selectedAgent === 'abacus' && 'Analisi Dati'}
+                              {selectedAgent === 'zapier' && 'Automazioni'}
+                            </span>
+                          </div>
+                          <span className="text-xs text-[#e8fbff]/50">0 messaggi</span>
                         </div>
-                        <span className="text-xs text-[#e8fbff]/50">0 messaggi</span>
+                        {/* Area messaggi */}
+                        <div className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-auto">
+                          <p className="text-[#e8fbff]/50 text-center text-sm">Nessun messaggio</p>
+                        </div>
+                        {/* Input */}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder={`Messaggio da ${selectedAgent}...`}
+                            className="flex-1 bg-[#0a0f1a] border border-[#8b5cf6]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#8b5cf6]"
+                            disabled
+                          />
+                          <Button className="bg-[#10b981] hover:bg-[#059669]" disabled>
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-[#e8fbff]/30 text-center">
+                          Chat in fase di sviluppo
+                        </p>
                       </div>
-                      <div className="h-96 bg-[#0a0f1a] rounded-lg p-4 mb-3 overflow-y-auto">
-                        <p className="text-[#e8fbff]/50 text-center text-sm">Nessun messaggio</p>
+                    )}
+
+                    {viewMode === 'quad' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+                        {/* MIO */}
+                        <Card className="bg-[#0a0f1a] border-[#8b5cf6]/30">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Brain className="h-4 w-4 text-purple-400" />
+                                <span className="text-purple-400">MIO</span>
+                              </div>
+                              <span className="text-xs text-[#e8fbff]/50">GPT-5 Coordinatore</span>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
+                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="Messaggio da MIO..."
+                                className="flex-1 bg-[#0b1220] border border-[#8b5cf6]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#8b5cf6]"
+                                disabled
+                              />
+                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
+                                <Send className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Manus */}
+                        <Card className="bg-[#0a0f1a] border-[#3b82f6]/30">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Wrench className="h-4 w-4 text-blue-400" />
+                                <span className="text-blue-400">Manus</span>
+                              </div>
+                              <span className="text-xs text-[#e8fbff]/50">Operatore Esecutivo</span>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
+                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="Messaggio da Manus..."
+                                className="flex-1 bg-[#0b1220] border border-[#3b82f6]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#3b82f6]"
+                                disabled
+                              />
+                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
+                                <Send className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Abacus */}
+                        <Card className="bg-[#0a0f1a] border-[#10b981]/30">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Calculator className="h-4 w-4 text-green-400" />
+                                <span className="text-green-400">Abacus</span>
+                              </div>
+                              <span className="text-xs text-[#e8fbff]/50">Analisi Dati</span>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
+                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="Messaggio da Abacus..."
+                                className="flex-1 bg-[#0b1220] border border-[#10b981]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#10b981]"
+                                disabled
+                              />
+                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
+                                <Send className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Zapier */}
+                        <Card className="bg-[#0a0f1a] border-[#f59e0b]/30">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Zap className="h-4 w-4 text-orange-400" />
+                                <span className="text-orange-400">Zapier</span>
+                              </div>
+                              <span className="text-xs text-[#e8fbff]/50">Automazioni</span>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
+                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="Messaggio da Zapier..."
+                                className="flex-1 bg-[#0b1220] border border-[#f59e0b]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#f59e0b]"
+                                disabled
+                              />
+                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
+                                <Send className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <p className="col-span-2 text-xs text-[#e8fbff]/30 text-center mt-2">
+                          Vista 4 Quadranti - Chat in fase di sviluppo
+                        </p>
                       </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder={`Messaggio da ${selectedAgent}...`}
-                          className="flex-1 bg-[#0a0f1a] border border-[#8b5cf6]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#8b5cf6]"
-                          disabled
-                        />
-                        <Button className="bg-[#10b981] hover:bg-[#059669]" disabled>
-                          <Send className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-[#e8fbff]/30 mt-2 text-center">
-                        Chat in fase di sviluppo - Per ora usa la Vista 4 Quadranti
-                      </p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
