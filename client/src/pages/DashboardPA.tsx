@@ -9,7 +9,8 @@ import {
   Coins, DollarSign, Wallet, Settings, Sliders, TrendingDown,
   Building2, GraduationCap, Target, TrendingUpDown, Briefcase,
   Radio, CloudRain, Wind, UserCog, ClipboardCheck, Scale, Bell, BellRing,
-  Navigation, Train, ParkingCircle, TrafficCone, FileBarChart, Plug, SettingsIcon, Euro, Newspaper, Rocket
+  Navigation, Train, ParkingCircle, TrafficCone, FileBarChart, Plug, SettingsIcon, Euro, Newspaper, Rocket,
+  XCircle, Lightbulb
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
