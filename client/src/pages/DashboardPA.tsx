@@ -431,6 +431,40 @@ export default function DashboardPA() {
   const [chatInput, setChatInput] = useState('');
   const [appliedTccValue, setAppliedTccValue] = useState(1.50);
   
+  // Guardian Logs for MIO Agent tab
+  const [guardianLogs, setGuardianLogs] = useState<any[]>([]);
+  
+  // Fetch Guardian logs
+  useEffect(() => {
+    const fetchGuardianLogs = async () => {
+      try {
+        const response = await fetch('https://raw.githubusercontent.com/Chcndr/MIO-hub/master/logs/api-guardian.log');
+        const text = await response.text();
+        const logs = text
+          .trim()
+          .split('\n')
+          .filter(line => line.trim())
+          .map(line => {
+            try {
+              return JSON.parse(line);
+            } catch {
+              return null;
+            }
+          })
+          .filter(log => log !== null)
+          .reverse(); // Most recent first
+        setGuardianLogs(logs);
+      } catch (error) {
+        console.error('Failed to fetch Guardian logs:', error);
+        setGuardianLogs([]);
+      }
+    };
+    fetchGuardianLogs();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchGuardianLogs, 30000);
+    return () => clearInterval(interval);
+  }, []);
+  
   // Simula aggiornamento real-time
   useEffect(() => {
     const interval = setInterval(() => {
