@@ -437,7 +437,6 @@ export default function DashboardPA() {
   // Multi-Agent Chat state
   const [showMultiAgentChat, setShowMultiAgentChat] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<'mio' | 'manus' | 'abacus' | 'zapier'>('mio');
-  const [viewMode, setViewMode] = useState<'single' | 'quad'>('single'); // Vista singola o 4 quadranti
   
   // Format timestamp for Guardian logs
   const formatTimestamp = (timestamp: string) => {
@@ -3243,22 +3242,21 @@ export default function DashboardPA() {
                       <MessageSquare className="h-4 w-4 mr-2" />
                       {showMultiAgentChat ? 'Nascondi Chat' : 'Apri Chat Multi-Agente'}
                     </Button>
-                    <Button 
-                      onClick={() => {
-                        setViewMode(viewMode === 'single' ? 'quad' : 'single');
-                        if (!showMultiAgentChat) setShowMultiAgentChat(true);
-                      }}
-                      variant="outline" 
-                      className="border-[#8b5cf6]/30 text-[#8b5cf6] hover:bg-[#8b5cf6]/10"
+                    <a 
+                      href="/mihub" 
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                      <Users className="h-4 w-4 mr-2" />
-                      {viewMode === 'single' ? 'Vista 4 Quadranti' : 'Vista Singola'}
-                    </Button>
+                      <Button variant="outline" className="border-[#8b5cf6]/30 text-[#8b5cf6] hover:bg-[#8b5cf6]/10">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Vista 4 Quadranti
+                      </Button>
+                    </a>
                   </div>
-                                {/* Agent Tabs e Chat - Solo visibili quando chat aperta */}
-                  {showMultiAgentChat && viewMode === 'single' && (
-                    <div className="mt-4">
-                      <div className="grid grid-cols-4 gap-2 pt-2">
+                  
+                  {/* Agent Tabs - Solo visibili quando chat aperta */}
+                  {showMultiAgentChat && (
+                    <div className="grid grid-cols-4 gap-2 pt-2">
                       <button
                         onClick={() => setSelectedAgent('mio')}
                       className={`text-center p-3 rounded-lg border transition-all ${
@@ -3344,133 +3342,7 @@ export default function DashboardPA() {
                         </Button>
                       </div>
                       <p className="text-xs text-[#e8fbff]/30 mt-2 text-center">
-                        Chat in fase di sviluppo
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Vista 4 Quadranti Embedded */}
-                  {showMultiAgentChat && viewMode === 'quad' && (
-                    <div className="mt-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        {/* MIO */}
-                        <Card className="bg-[#0a0f1a] border-[#8b5cf6]/30">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Brain className="h-4 w-4 text-purple-400" />
-                                <span className="text-purple-400">MIO</span>
-                              </div>
-                              <span className="text-xs text-[#e8fbff]/50">GPT-5 Coordinatore</span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
-                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="Messaggio da MIO..."
-                                className="flex-1 bg-[#0b1220] border border-[#8b5cf6]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#8b5cf6]"
-                                disabled
-                              />
-                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
-                                <Send className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Manus */}
-                        <Card className="bg-[#0a0f1a] border-[#3b82f6]/30">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Wrench className="h-4 w-4 text-blue-400" />
-                                <span className="text-blue-400">Manus</span>
-                              </div>
-                              <span className="text-xs text-[#e8fbff]/50">Operatore Esecutivo</span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
-                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="Messaggio da Manus..."
-                                className="flex-1 bg-[#0b1220] border border-[#3b82f6]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#3b82f6]"
-                                disabled
-                              />
-                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
-                                <Send className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Abacus */}
-                        <Card className="bg-[#0a0f1a] border-[#10b981]/30">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Calculator className="h-4 w-4 text-green-400" />
-                                <span className="text-green-400">Abacus</span>
-                              </div>
-                              <span className="text-xs text-[#e8fbff]/50">Analisi Dati</span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
-                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="Messaggio da Abacus..."
-                                className="flex-1 bg-[#0b1220] border border-[#10b981]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#10b981]"
-                                disabled
-                              />
-                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
-                                <Send className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Zapier */}
-                        <Card className="bg-[#0a0f1a] border-[#f97316]/30">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Zap className="h-4 w-4 text-orange-400" />
-                                <span className="text-orange-400">Zapier</span>
-                              </div>
-                              <span className="text-xs text-[#e8fbff]/50">Automazioni</span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
-                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="Messaggio da Zapier..."
-                                className="flex-1 bg-[#0b1220] border border-[#f97316]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#f97316]"
-                                disabled
-                              />
-                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
-                                <Send className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                      <p className="text-xs text-[#e8fbff]/30 mt-3 text-center">
-                        Vista 4 Quadranti - Chat in fase di sviluppo
+                        Chat in fase di sviluppo - Per ora usa la Vista 4 Quadranti
                       </p>
                     </div>
                   )}
