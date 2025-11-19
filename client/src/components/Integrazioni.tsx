@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,9 +105,34 @@ function APIDashboard() {
   const [testResult, setTestResult] = useState<any>(null);
   const [requestBody, setRequestBody] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [guardianEndpoints, setGuardianEndpoints] = useState<any[]>([]);
+  const [guardianLoading, setGuardianLoading] = useState(true);
   
   const utils = trpc.useUtils();
   const { data: apiStats } = trpc.integrations.apiStats.today.useQuery();
+
+  // Fetch Guardian endpoints from MIO-hub
+  useEffect(() => {
+    fetch('https://raw.githubusercontent.com/Chcndr/MIO-hub/master/api/index.json')
+      .then(r => r.json())
+      .then(data => {
+        // Extract all endpoints from all services
+        const allEndpoints = data.services?.flatMap((service: any) => 
+          service.endpoints?.map((ep: any) => ({
+            method: ep.method,
+            path: ep.path,
+            description: ep.description,
+            risk_level: ep.risk_level
+          })) || []
+        ) || [];
+        setGuardianEndpoints(allEndpoints);
+        setGuardianLoading(false);
+      })
+      .catch(err => {
+        console.error('Error loading Guardian endpoints:', err);
+        setGuardianLoading(false);
+      });
+  }, []);
 
   const apiEndpoints = [
     {
@@ -175,6 +200,18 @@ function APIDashboard() {
       ]
     },
   ];
+
+  // Combine local endpoints with Guardian endpoints
+  const allEndpoints = [
+    ...apiEndpoints,
+    ...(guardianEndpoints.length > 0 ? [{
+      category: 'Guardian API',
+      endpoints: guardianEndpoints
+    }] : [])
+  ];
+
+  // Update total count
+  const totalEndpointsCount = apiEndpoints.reduce((sum, cat) => sum + cat.endpoints.length, 0) + guardianEndpoints.length;
 
   const getMethodColor = (method: string) => {
     switch (method) {
@@ -377,11 +414,16 @@ function APIDashboard() {
           <CardHeader>
             <CardTitle className="text-[#e8fbff] flex items-center gap-2">
               <Code className="h-5 w-5 text-[#14b8a6]" />
-              Endpoint Disponibili (28+)
+              Endpoint Disponibili ({totalEndpointsCount})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {apiEndpoints.map((category, idx) => (
+            {guardianLoading && (
+              <div className="text-center py-4 text-[#e8fbff]/60 text-sm">
+                Caricamento Guardian API...
+              </div>
+            )}
+            {allEndpoints.map((category, idx) => (
               <div key={idx} className="space-y-2">
                 <h3 className="text-sm font-semibold text-[#14b8a6]">{category.category}</h3>
                 {category.endpoints.map((endpoint, eidx) => (

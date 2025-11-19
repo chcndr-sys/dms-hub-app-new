@@ -568,34 +568,6 @@ export default function DashboardPA() {
               <span className="text-sm font-medium">Gestionale DMS</span>
             </button>
           </div>
-
-          {/* API Guardian Section */}
-          <div className="mt-6">
-            <h3 className="text-sm font-semibold text-[#e8fbff]/70 mb-3">API Guardian</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <button
-                onClick={() => setLocation('/guardian/endpoints')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/20 text-[#8b5cf6]"
-              >
-                <Shield className="h-5 w-5" />
-                <span className="text-sm font-medium">Endpoint & Test</span>
-              </button>
-              <button
-                onClick={() => setLocation('/guardian/logs')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all bg-[#06b6d4]/10 border-[#06b6d4]/30 hover:bg-[#06b6d4]/20 text-[#06b6d4]"
-              >
-                <FileText className="h-5 w-5" />
-                <span className="text-sm font-medium">Log</span>
-              </button>
-              <button
-                onClick={() => setLocation('/guardian/debug')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all bg-[#f59e0b]/10 border-[#f59e0b]/30 hover:bg-[#f59e0b]/20 text-[#f59e0b]"
-              >
-                <Bug className="h-5 w-5" />
-                <span className="text-sm font-medium">Debug</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -1937,44 +1909,7 @@ export default function DashboardPA() {
 
           {/* TAB 8: LOGS */}
           <TabsContent value="logs" className="space-y-6">
-            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-[#14b8a6]" />
-                  Logs Real-time
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {mockData.logs.map((log) => (
-                    <div key={log.id} className={`p-3 rounded-lg border ${
-                      log.level === 'error' ? 'bg-[#ef4444]/10 border-[#ef4444]/30' :
-                      log.level === 'warning' ? 'bg-[#f59e0b]/10 border-[#f59e0b]/30' :
-                      'bg-[#0b1220] border-[#14b8a6]/20'
-                    }`}>
-                      <div className="flex items-start justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
-                            log.level === 'error' ? 'bg-[#ef4444]/20 text-[#ef4444]' :
-                            log.level === 'warning' ? 'bg-[#f59e0b]/20 text-[#f59e0b]' :
-                            'bg-[#14b8a6]/20 text-[#14b8a6]'
-                          }`}>{log.level.toUpperCase()}</span>
-                          <span className="text-xs text-[#e8fbff]/70">{log.app}</span>
-                          <span className="text-xs text-[#e8fbff]/50">•</span>
-                          <span className="text-xs text-[#e8fbff]/50">{log.type}</span>
-                        </div>
-                        <span className="text-xs text-[#e8fbff]/50">{log.timestamp}</span>
-                      </div>
-                      <p className="text-sm text-[#e8fbff] mb-1">{log.message}</p>
-                      <div className="flex items-center gap-3 text-xs text-[#e8fbff]/50">
-                        <span>👤 {log.user}</span>
-                        <span>📍 {log.ip}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <GuardianLogsSection />
           </TabsContent>
 
           {/* TAB 9: AGENTE AI */}
@@ -2138,6 +2073,9 @@ export default function DashboardPA() {
 
           {/* TAB 11: DEBUG & DEV */}
           <TabsContent value="debug" className="space-y-6">
+            {/* Guardian Debug Stats */}
+            <GuardianDebugStats />
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="bg-[#1a2332] border-[#14b8a6]/30">
                 <CardHeader>
@@ -3237,6 +3175,271 @@ export default function DashboardPA() {
           </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// GUARDIAN LOGS SECTION
+// ============================================================================
+function GuardianLogsSection() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Load logs from MIO-hub GitHub repository
+    fetch('https://raw.githubusercontent.com/Chcndr/MIO-hub/master/logs/api-guardian.log')
+      .then(r => r.text())
+      .then(text => {
+        const logLines = text.trim().split('\n').filter(line => line.trim());
+        const parsedLogs = logLines.map(line => JSON.parse(line));
+        setLogs(parsedLogs);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error loading Guardian logs:', err);
+        setLoading(false);
+      });
+  }, []);
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'allowed':
+        return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'denied':
+        return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'error':
+        return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      default:
+        return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
+
+  return (
+    <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+      <CardHeader>
+        <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+          <FileText className="h-5 w-5 text-[#14b8a6]" />
+          Guardian API Logs
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="text-center py-8 text-[#e8fbff]/60">
+            Caricamento log Guardian...
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {logs.map((log, idx) => (
+              <div
+                key={idx}
+                className={`p-3 rounded-lg border ${
+                  log.status === 'denied' || log.status === 'error'
+                    ? 'bg-[#ef4444]/10 border-[#ef4444]/30'
+                    : 'bg-[#0b1220] border-[#14b8a6]/20'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${getStatusBadge(log.status)}`}>
+                      {log.status.toUpperCase()}
+                    </span>
+                    <span className="text-xs text-[#e8fbff]/70">{log.agent}</span>
+                    <span className="text-xs text-[#e8fbff]/50">•</span>
+                    <span className="text-xs text-[#e8fbff]/50">{log.method}</span>
+                  </div>
+                  <span className="text-xs text-[#e8fbff]/50">{formatTimestamp(log.timestamp)}</span>
+                </div>
+                <p className="text-sm text-[#e8fbff] mb-1 font-mono">{log.path}</p>
+                {log.reason && (
+                  <div className="flex items-center gap-2 text-xs text-[#e8fbff]/50">
+                    <span>📝 {log.reason}</span>
+                  </div>
+                )}
+                {log.risk_level && (
+                  <div className="flex items-center gap-2 text-xs text-[#e8fbff]/50 mt-1">
+                    <span>Risk: {log.risk_level}</span>
+                    {log.require_confirmation && <span>• Require Confirmation</span>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================================================
+// GUARDIAN DEBUG STATS
+// ============================================================================
+function GuardianDebugStats() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Load logs from MIO-hub GitHub repository
+    fetch('https://raw.githubusercontent.com/Chcndr/MIO-hub/master/logs/api-guardian.log')
+      .then(r => r.text())
+      .then(text => {
+        const logLines = text.trim().split('\n').filter(line => line.trim());
+        const parsedLogs = logLines.map(line => JSON.parse(line));
+        setLogs(parsedLogs);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error loading Guardian debug logs:', err);
+        setLoading(false);
+      });
+  }, []);
+
+  const deniedLogs = logs.filter(log => log.status === 'denied');
+  const errorLogs = logs.filter(log => log.status === 'error');
+  const unknownAgents = logs.filter(log => log.reason?.includes('Unknown agent'));
+  const unknownEndpoints = logs.filter(log => log.reason?.includes('Unknown endpoint'));
+  const noPermissions = logs.filter(log => log.reason?.includes('No permission'));
+
+  const getSuggestion = (log: any): string => {
+    if (log.reason?.includes('Unknown agent')) {
+      return 'Aggiungi questo agente in agents/permissions.json';
+    }
+    if (log.reason?.includes('Unknown endpoint')) {
+      return 'Aggiungi endpoint in api/index.json';
+    }
+    if (log.reason?.includes('No permission')) {
+      return `Aggiungi regola permesso per ${log.agent}`;
+    }
+    return 'Verifica configurazione Guardian';
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-4 text-[#e8fbff]/60">
+        Caricamento Guardian Debug...
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Guardian Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-[#1a2332] border-[#ef4444]/30">
+          <CardHeader>
+            <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-sm">
+              <XCircle className="h-4 w-4 text-[#ef4444]" />
+              Guardian Denied
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-[#ef4444]">{deniedLogs.length}</div>
+            <p className="text-xs text-[#e8fbff]/50 mt-1">Richieste bloccate</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#1a2332] border-[#f59e0b]/30">
+          <CardHeader>
+            <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-sm">
+              <AlertTriangle className="h-4 w-4 text-[#f59e0b]" />
+              Guardian Errors
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-[#f59e0b]">{errorLogs.length}</div>
+            <p className="text-xs text-[#e8fbff]/50 mt-1">Errori configurazione</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+          <CardHeader>
+            <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-sm">
+              <UserCheck className="h-4 w-4 text-[#8b5cf6]" />
+              Unknown Agents
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-[#8b5cf6]">{unknownAgents.length}</div>
+            <p className="text-xs text-[#e8fbff]/50 mt-1">Agenti non configurati</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[#1a2332] border-[#06b6d4]/30">
+          <CardHeader>
+            <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-sm">
+              <Shield className="h-4 w-4 text-[#06b6d4]" />
+              No Permissions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-[#06b6d4]">{noPermissions.length}</div>
+            <p className="text-xs text-[#e8fbff]/50 mt-1">Permessi mancanti</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Guardian Issues List */}
+      {(deniedLogs.length > 0 || errorLogs.length > 0) && (
+        <Card className="bg-[#1a2332] border-[#ef4444]/30">
+          <CardHeader>
+            <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+              <Bug className="h-5 w-5 text-[#ef4444]" />
+              Guardian Issues & Suggerimenti
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {[...deniedLogs, ...errorLogs].slice(0, 10).map((log, idx) => (
+                <div key={idx} className="p-3 bg-[#0b1220] border border-[#ef4444]/20 rounded-lg">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                        log.status === 'denied' 
+                          ? 'bg-[#ef4444]/20 text-[#ef4444]' 
+                          : 'bg-[#f59e0b]/20 text-[#f59e0b]'
+                      }`}>
+                        {log.status.toUpperCase()}
+                      </span>
+                      <span className="text-xs text-[#e8fbff]/70">{log.agent}</span>
+                    </div>
+                    <span className="text-xs text-[#e8fbff]/50">{formatTimestamp(log.timestamp)}</span>
+                  </div>
+                  <p className="text-sm text-[#e8fbff] font-mono mb-2">{log.method} {log.path}</p>
+                  {log.reason && (
+                    <p className="text-xs text-[#ef4444] mb-2">⚠️ {log.reason}</p>
+                  )}
+                  <div className="flex items-start gap-2 bg-[#14b8a6]/10 border border-[#14b8a6]/30 rounded p-2">
+                    <Lightbulb className="h-4 w-4 text-[#14b8a6] flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-[#14b8a6]">{getSuggestion(log)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
