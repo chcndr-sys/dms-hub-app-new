@@ -3222,7 +3222,58 @@ export default function DashboardPA() {
 
           {/* TAB 24: MIO AGENT */}
           <TabsContent value="mio" className="space-y-6">
-            {/* Chat Multi-Agente Card */}
+            {/* SEZIONE A: Chat Principale MIO (sempre visibile) */}
+            <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-[#8b5cf6]" />
+                  MIO Agent - Chat Principale (GPT-5 Coordinatore)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-[#e8fbff]/70 text-sm">
+                    Chat principale con il "cervello" che coordina tutti gli agenti. QG strategico per ragionare sui progetti.
+                  </p>
+
+                  {/* Area chat principale MIO */}
+                  <div className="bg-[#0b1220] border border-[#8b5cf6]/30 rounded-lg p-4">
+                    <div className="space-y-4">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Brain className="h-5 w-5 text-purple-400" />
+                          <span className="text-[#e8fbff] font-medium">MIO</span>
+                          <span className="text-xs text-[#e8fbff]/50">GPT-5 Coordinatore</span>
+                        </div>
+                        <span className="text-xs text-[#e8fbff]/50">0 messaggi</span>
+                      </div>
+                      {/* Area messaggi */}
+                      <div className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-auto">
+                        <p className="text-[#e8fbff]/50 text-center text-sm">Nessun messaggio</p>
+                      </div>
+                      {/* Input */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Messaggio da MIO..."
+                          className="flex-1 bg-[#0a0f1a] border border-[#8b5cf6]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#8b5cf6]"
+                          disabled
+                        />
+                        <Button className="bg-[#10b981] hover:bg-[#059669]" disabled>
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-[#e8fbff]/30 text-center">
+                        Chat in fase di sviluppo
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SEZIONE B: Pannello Multi-Agente (sotto la chat principale) */}
             <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
@@ -3233,7 +3284,7 @@ export default function DashboardPA() {
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-[#e8fbff]/70 text-sm">
-                    Control Center con 4 agenti che comunicano in real-time per coordinamento e auto-controllo.
+                    Sala controllo con 4 agenti specializzati. Visualizza singolarmente o tutti insieme.
                   </p>
 
                   {/* Barra toggle Vista singola / Vista 4 agenti */}
