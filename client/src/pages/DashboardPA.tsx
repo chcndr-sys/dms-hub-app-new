@@ -568,6 +568,34 @@ export default function DashboardPA() {
               <span className="text-sm font-medium">Gestionale DMS</span>
             </button>
           </div>
+
+          {/* API Guardian Section */}
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-[#e8fbff]/70 mb-3">API Guardian</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <button
+                onClick={() => setLocation('/guardian/endpoints')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/20 text-[#8b5cf6]"
+              >
+                <Shield className="h-5 w-5" />
+                <span className="text-sm font-medium">Endpoint & Test</span>
+              </button>
+              <button
+                onClick={() => setLocation('/guardian/logs')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all bg-[#06b6d4]/10 border-[#06b6d4]/30 hover:bg-[#06b6d4]/20 text-[#06b6d4]"
+              >
+                <FileText className="h-5 w-5" />
+                <span className="text-sm font-medium">Log</span>
+              </button>
+              <button
+                onClick={() => setLocation('/guardian/debug')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all bg-[#f59e0b]/10 border-[#f59e0b]/30 hover:bg-[#f59e0b]/20 text-[#f59e0b]"
+              >
+                <Bug className="h-5 w-5" />
+                <span className="text-sm font-medium">Debug</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

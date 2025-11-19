@@ -15,6 +15,9 @@ import HubOperatore from "./pages/HubOperatore";
 import DashboardPA from "./pages/DashboardPA";
 import MioPage from "./pages/mio";
 import MIHUBPage from "./pages/MIHUBPage";
+import GuardianEndpoints from "./pages/GuardianEndpoints";
+import GuardianLogs from "./pages/GuardianLogs";
+import GuardianDebug from "./pages/GuardianDebug";
 
 function Router() {
   return (
@@ -29,6 +32,9 @@ function Router() {
       <Route path="/dashboard-pa" component={DashboardPA} />
       <Route path="/mio" component={MioPage} />
       <Route path="/mihub" component={MIHUBPage} />
+      <Route path="/guardian/endpoints" component={GuardianEndpoints} />
+      <Route path="/guardian/logs" component={GuardianLogs} />
+      <Route path="/guardian/debug" component={GuardianDebug} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
