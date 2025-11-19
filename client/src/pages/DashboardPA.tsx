@@ -10,7 +10,7 @@ import {
   Building2, GraduationCap, Target, TrendingUpDown, Briefcase,
   Radio, CloudRain, Wind, UserCog, ClipboardCheck, Scale, Bell, BellRing,
   Navigation, Train, ParkingCircle, TrafficCone, FileBarChart, Plug, SettingsIcon, Euro, Newspaper, Rocket,
-  XCircle, Lightbulb
+  XCircle, Lightbulb, MessageSquare, Brain, Calculator
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -3162,15 +3162,121 @@ export default function DashboardPA() {
 
           {/* TAB 24: MIO AGENT */}
           <TabsContent value="mio" className="space-y-6">
+            {/* Chat Multi-Agente Card */}
+            <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-[#8b5cf6]" />
+                  Chat Multi-Agente (MIO / Manus / Abacus / Zapier)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-[#e8fbff]/70 text-sm">
+                    Control Center con 4 agenti che comunicano in real-time per coordinamento e auto-controllo.
+                  </p>
+                  <div className="flex gap-4">
+                    <a 
+                      href="/mihub" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1"
+                    >
+                      <Button className="w-full bg-[#8b5cf6] hover:bg-[#7c3aed] text-white">
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Apri Chat Multi-Agente
+                      </Button>
+                    </a>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 pt-2">
+                    <div className="text-center p-3 bg-[#8b5cf6]/10 rounded-lg border border-[#8b5cf6]/30">
+                      <Brain className="h-5 w-5 text-purple-400 mx-auto mb-1" />
+                      <div className="text-xs text-[#e8fbff]/70">MIO</div>
+                      <div className="text-xs text-[#e8fbff]/50">Coordinatore</div>
+                    </div>
+                    <div className="text-center p-3 bg-[#3b82f6]/10 rounded-lg border border-[#3b82f6]/30">
+                      <Wrench className="h-5 w-5 text-blue-400 mx-auto mb-1" />
+                      <div className="text-xs text-[#e8fbff]/70">Manus</div>
+                      <div className="text-xs text-[#e8fbff]/50">Esecutivo</div>
+                    </div>
+                    <div className="text-center p-3 bg-[#10b981]/10 rounded-lg border border-[#10b981]/30">
+                      <Calculator className="h-5 w-5 text-green-400 mx-auto mb-1" />
+                      <div className="text-xs text-[#e8fbff]/70">Abacus</div>
+                      <div className="text-xs text-[#e8fbff]/50">Analisi</div>
+                    </div>
+                    <div className="text-center p-3 bg-[#f59e0b]/10 rounded-lg border border-[#f59e0b]/30">
+                      <Zap className="h-5 w-5 text-orange-400 mx-auto mb-1" />
+                      <div className="text-xs text-[#e8fbff]/70">Zapier</div>
+                      <div className="text-xs text-[#e8fbff]/50">Automazioni</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Task Tracker Card */}
             <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                   <Bot className="h-5 w-5 text-[#8b5cf6]" />
-                  MIO Agent - Monitoraggio e Orchestrazione
+                  MIO Agent - Task Tracker
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <MIOAgent />
+              </CardContent>
+            </Card>
+
+            {/* Attività Agenti Recente Card */}
+            <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-[#8b5cf6]" />
+                  Attività Agenti Recente (Guardian)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {guardianLogs.slice(0, 10).map((log, idx) => {
+                    const statusColor = log.status === 'allowed' ? 'text-[#10b981]' : 'text-[#ef4444]';
+                    const statusBg = log.status === 'allowed' ? 'bg-[#10b981]/10 border-[#10b981]/30' : 'bg-[#ef4444]/10 border-[#ef4444]/30';
+                    const agentColor = 
+                      log.agent === 'mio' ? 'text-purple-400' :
+                      log.agent === 'manus' ? 'text-blue-400' :
+                      log.agent === 'abacus' ? 'text-green-400' :
+                      log.agent === 'zapier' ? 'text-orange-400' : 'text-gray-400';
+                    
+                    return (
+                      <div key={idx} className="p-3 bg-[#0b1220] border border-[#8b5cf6]/20 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded text-xs font-medium border ${statusBg} ${statusColor}`}>
+                              {log.status.toUpperCase()}
+                            </span>
+                            <span className={`text-sm font-medium ${agentColor}`}>
+                              {log.agent}
+                            </span>
+                            <span className="text-xs text-[#e8fbff]/50">•</span>
+                            <span className="text-xs text-[#e8fbff]/50">{log.method}</span>
+                          </div>
+                          <span className="text-xs text-[#e8fbff]/50">{formatTimestamp(log.timestamp)}</span>
+                        </div>
+                        <p className="text-sm text-[#e8fbff] font-mono mb-1">{log.path}</p>
+                        {log.reason && (
+                          <p className="text-xs text-[#ef4444] mt-2">⚠️ {log.reason}</p>
+                        )}
+                        {log.status === 'allowed' && log.response_time_ms !== undefined && (
+                          <p className="text-xs text-[#10b981] mt-2">✓ Response time: {log.response_time_ms}ms</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 pt-4 border-t border-[#8b5cf6]/20">
+                  <p className="text-xs text-[#e8fbff]/50 text-center">
+                    Ultimi 10 eventi • Vista completa in tab "Logs" → "Guardian Logs"
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -3227,6 +3333,7 @@ function LogsSection() {
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleString('it-IT', {
+      timeZone: 'Europe/Rome',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -3431,6 +3538,7 @@ function GuardianLogsSection() {
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleString('it-IT', {
+      timeZone: 'Europe/Rome',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -3541,11 +3649,12 @@ function GuardianDebugStats() {
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleString('it-IT', {
+      timeZone: 'Europe/Rome',
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-    });
+    }) + ' (ora locale)';
   };
 
   if (loading) {
