@@ -11,6 +11,11 @@ const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(
 
 export default defineConfig({
   plugins,
+  define: {
+    'import.meta.env.VITE_TRPC_URL': JSON.stringify(
+      process.env.VITE_TRPC_URL || 'https://agree-ladder-vinyl-concerts.trycloudflare.com'
+    ),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
