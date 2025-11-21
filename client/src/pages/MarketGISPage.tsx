@@ -231,7 +231,8 @@ export default function MarketGISPage() {
               
               if (feature.geometry.type === 'Polygon') {
                 // Polygon: array di array di coordinate [[lng, lat], ...]
-                positions = feature.geometry.coordinates[0].map(
+                const coords = feature.geometry.coordinates as [number, number][][];
+                positions = coords[0].map(
                   ([lng, lat]: [number, number]) => [lat, lng]
                 );
               } else if (feature.geometry.type === 'Point') {
