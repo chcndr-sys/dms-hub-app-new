@@ -596,9 +596,9 @@ export const dmsHubRouter = router({
         const [result] = await db.insert(schema.vendors).values({
           ...input,
           status: "active",
-        });
+        }).returning();
 
-        const vendorId = Number(result.insertId);
+        const vendorId = Number(result.id);
 
         // Log operazione
         await logAction(
@@ -746,14 +746,14 @@ export const dmsHubRouter = router({
           bookingDate: now,
           expiresAt,
           notes: input.notes || null,
-        });
+        }).returning();
 
         // Aggiorna stato posteggio
         await db.update(schema.stalls)
           .set({ status: "booked" })
           .where(eq(schema.stalls.id, input.stallId));
 
-        const bookingId = Number(result.insertId);
+        const bookingId = Number(result.id);
 
         // Log operazione
         await logAction(
@@ -991,9 +991,9 @@ export const dmsHubRouter = router({
           gpsLng: input.gpsLng || null,
           result: input.result,
           notes: input.notes || null,
-        });
+        }).returning();
 
-        const inspectionId = Number(result.insertId);
+        const inspectionId = Number(result.id);
 
         // Log operazione
         await logAction(
@@ -1045,9 +1045,9 @@ export const dmsHubRouter = router({
           fineAmount: input.fineAmount || null,
           status: "issued",
           dueDate: input.dueDate || null,
-        });
+        }).returning();
 
-        const violationId = Number(result.insertId);
+        const violationId = Number(result.id);
 
         // Log operazione
         await logAction(

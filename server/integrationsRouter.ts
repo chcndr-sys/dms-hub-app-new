@@ -52,9 +52,9 @@ export const integrationsRouter = router({
           permissions: input.permissions ? JSON.stringify(input.permissions) : null,
           rateLimit: input.rateLimit,
           createdBy: "admin", // TODO: prendere da ctx.user
-        });
+        }).returning();
         
-        return { id: result.insertId, key };
+        return { id: result.id, key };
       }),
     
     // Rigenera API key
@@ -199,9 +199,9 @@ export const integrationsRouter = router({
           headers: input.headers ? JSON.stringify(input.headers) : null,
           status: "active",
           createdBy: "admin", // TODO: prendere da ctx.user
-        });
+        }).returning();
         
-        return { id: result.insertId };
+        return { id: result.id };
       }),
     
     // Elimina webhook

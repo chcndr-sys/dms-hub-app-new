@@ -335,11 +335,11 @@ export async function createMioAgentLog(log: {
       message: log.message || null,
       details: log.details ? JSON.stringify(log.details) : null,
       timestamp: new Date(),
-    });
+    }).returning();
 
     return {
       success: true,
-      id: result[0].insertId,
+      id: result[0].id,
       message: "Log created successfully",
     };
   } catch (error) {

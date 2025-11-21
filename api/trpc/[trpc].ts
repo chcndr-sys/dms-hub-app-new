@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { appRouter } from '../../server/routers';
+import type { TrpcContext } from '../../server/_core/context';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Convert Vercel Request to Fetch API Request
@@ -17,7 +18,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     endpoint: '/api/trpc',
     req: fetchRequest,
     router: appRouter,
-    createContext: () => ({}),
+    createContext: (): TrpcContext => ({
+      req: fetchRequest as any,
+      res: res as any,
+      user: null,
+    }),
   });
 
   // Convert Fetch Response to Vercel Response

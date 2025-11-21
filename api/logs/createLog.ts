@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       message: message || null,
       details: details ? JSON.stringify(details) : null,
       timestamp: new Date(),
-    });
+    }).returning();
 
     console.log('[createLog] Log created:', result);
 

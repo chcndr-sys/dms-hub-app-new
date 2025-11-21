@@ -364,20 +364,16 @@ export const mihubRouter = router({
       const db = await getDb();
       if (!db) return [];
 
-      let query = db.select().from(agentBrain).where(eq(agentBrain.agent, input.agent));
+      const conditions = [eq(agentBrain.agent, input.agent)];
 
       if (input.memoryType) {
-        query = query.where(and(
-          eq(agentBrain.agent, input.agent),
-          eq(agentBrain.memoryType, input.memoryType)
-        )) as any;
+        conditions.push(eq(agentBrain.memoryType, input.memoryType));
       }
       if (input.key) {
-        query = query.where(and(
-          eq(agentBrain.agent, input.agent),
-          eq(agentBrain.key, input.key)
-        )) as any;
+        conditions.push(eq(agentBrain.key, input.key));
       }
+
+      const query = db.select().from(agentBrain).where(and(...conditions));
 
       const memories = await query.orderBy(desc(agentBrain.createdAt));
 
