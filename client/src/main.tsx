@@ -7,6 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
+// Force CDN cache invalidation - timestamp: 1763685966
 
 const queryClient = new QueryClient();
 
