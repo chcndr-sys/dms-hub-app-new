@@ -161,8 +161,8 @@ export default function MarketGISPage() {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {/* Contorno mercato */}
-            {containerPolygon.length > 0 && (
+            {/* Contorno mercato - RIMOSSO come da richiesta utente */}
+            {/* {containerPolygon.length > 0 && (
               <Polygon
                 positions={containerPolygon}
                 pathOptions={{
@@ -172,7 +172,7 @@ export default function MarketGISPage() {
                   weight: 2,
                 }}
               />
-            )}
+            )} */}
 
             {/* Piazzole (stalls) */}
             {mapData.stalls_geojson.features.map((feature, idx) => {
