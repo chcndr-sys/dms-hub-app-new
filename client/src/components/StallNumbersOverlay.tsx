@@ -23,6 +23,8 @@ export function StallNumbersOverlay({ features, minZoom = 16 }: StallNumbersOver
   const map = useMap();
 
   useEffect(() => {
+    console.log('🔍 StallNumbersOverlay mounted', { featuresCount: features.length, minZoom });
+    
     // Crea elemento SVG usando DOM API
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'stall-numbers-overlay');
@@ -43,6 +45,7 @@ export function StallNumbersOverlay({ features, minZoom = 16 }: StallNumbersOver
     // Funzione di rendering
     const render = () => {
       const zoom = map.getZoom();
+      console.log('🎨 Rendering numbers', { zoom, minZoom, shouldShow: zoom >= minZoom });
       
       // Nascondi numeri sotto la soglia minima di zoom
       if (zoom < minZoom) {
