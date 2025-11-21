@@ -287,7 +287,7 @@ export default function MarketGISPage() {
                     pathOptions={{
                       color: props.status === 'occupied' ? '#ef4444' : '#10b981',
                       fillColor: props.status === 'occupied' ? '#ef4444' : '#10b981',
-                      fillOpacity: 0.4,
+                      fillOpacity: 0.7,
                       weight: 2,
                     }}
                     eventHandlers={{
