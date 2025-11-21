@@ -106,7 +106,7 @@ export default function MarketGISPage() {
           box-shadow: none !important;
           padding: 0 !important;
           color: white !important;
-          font-size: 6px !important;
+          font-size: 11px !important;
           font-weight: bold !important;
           text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;
         }
@@ -179,7 +179,7 @@ export default function MarketGISPage() {
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  maxZoom={20}
+                  maxZoom={21}
                 />
               </LayersControl.BaseLayer>
               
@@ -187,7 +187,7 @@ export default function MarketGISPage() {
                 <TileLayer
                   attribution='&copy; <a href="https://www.esri.com">Esri</a>'
                   url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                  maxZoom={20}
+                  maxZoom={21}
                 />
               </LayersControl.BaseLayer>
               
@@ -203,7 +203,7 @@ export default function MarketGISPage() {
                 <TileLayer
                   attribution='&copy; <a href="https://carto.com">CARTO</a>'
                   url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                  maxZoom={20}
+                  maxZoom={21}
                 />
               </LayersControl.BaseLayer>
             </LayersControl>
