@@ -176,18 +176,58 @@ export default function MarketGISPage() {
 
             {/* Piazzole (stalls) */}
             {mapData.stalls_geojson.features.map((feature, idx) => {
-              const [lng, lat] = feature.geometry.coordinates;
               const props = feature.properties;
               
+              // Converti coordinate Polygon in formato Leaflet [lat, lng][]
+              let positions: [number, number][] = [];
+              
+              if (feature.geometry.type === 'Polygon') {
+                // Polygon: array di array di coordinate [[lng, lat], ...]
+                positions = feature.geometry.coordinates[0].map(
+                  ([lng, lat]: [number, number]) => [lat, lng]
+                );
+              } else if (feature.geometry.type === 'Point') {
+                // Fallback per Point: crea un piccolo cerchio
+                const [lng, lat] = feature.geometry.coordinates;
+                return (
+                  <Circle
+                    key={`stall-${idx}`}
+                    center={[lat, lng]}
+                    radius={3}
+                    pathOptions={{
+                      color: props.status === 'occupied' ? '#ef4444' : '#10b981',
+                      fillColor: props.status === 'occupied' ? '#ef4444' : '#10b981',
+                      fillOpacity: 0.6,
+                      weight: 2,
+                    }}
+                  >
+                    <Popup>
+                      <div className="text-sm">
+                        <div className="font-semibold text-base mb-1">
+                          Piazzola #{props.number}
+                        </div>
+                        {props.dimensions && (
+                          <div className="text-gray-600">📏 {props.dimensions}</div>
+                        )}
+                        {props.status && (
+                          <div className="text-gray-600">
+                            🏷️ {props.status === 'free' ? 'Libera' : 'Occupata'}
+                          </div>
+                        )}
+                      </div>
+                    </Popup>
+                  </Circle>
+                );
+              }
+              
               return (
-                <Circle
+                <Polygon
                   key={`stall-${idx}`}
-                  center={[lat, lng]}
-                  radius={3}
+                  positions={positions}
                   pathOptions={{
                     color: props.status === 'occupied' ? '#ef4444' : '#10b981',
                     fillColor: props.status === 'occupied' ? '#ef4444' : '#10b981',
-                    fillOpacity: 0.6,
+                    fillOpacity: 0.4,
                     weight: 2,
                   }}
                   eventHandlers={{
@@ -216,7 +256,7 @@ export default function MarketGISPage() {
                       )}
                     </div>
                   </Popup>
-                </Circle>
+                </Polygon>
               );
             })}
           </MapContainer>
