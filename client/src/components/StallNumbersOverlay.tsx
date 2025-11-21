@@ -17,13 +17,17 @@ interface StallFeature {
 interface StallNumbersOverlayProps {
   features: StallFeature[];
   minZoom?: number;
+  onDebug?: (info: string[]) => void;
 }
 
-export function StallNumbersOverlay({ features, minZoom = 16 }: StallNumbersOverlayProps) {
+export function StallNumbersOverlay({ features, minZoom = 16, onDebug }: StallNumbersOverlayProps) {
   const map = useMap();
 
   useEffect(() => {
-    console.log('🔍 StallNumbersOverlay mounted', { featuresCount: features.length, minZoom });
+    const debugLog: string[] = [];
+    debugLog.push(`✅ Componente montato`);
+    debugLog.push(`📄 Features: ${features.length}`);
+    debugLog.push(`🔍 MinZoom: ${minZoom}`);
     
     // Crea elemento SVG usando DOM API
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -45,13 +49,21 @@ export function StallNumbersOverlay({ features, minZoom = 16 }: StallNumbersOver
     // Funzione di rendering
     const render = () => {
       const zoom = map.getZoom();
-      console.log('🎨 Rendering numbers', { zoom, minZoom, shouldShow: zoom >= minZoom });
+      const shouldShow = zoom >= minZoom;
+      
+      const renderLog: string[] = [...debugLog];
+      renderLog.push(`📍 Zoom corrente: ${zoom.toFixed(1)}`);
+      renderLog.push(`👁️ Visibili: ${shouldShow ? 'Sì' : 'No (zoom < ' + minZoom + ')'}`);
       
       // Nascondi numeri sotto la soglia minima di zoom
       if (zoom < minZoom) {
         svg.innerHTML = '';
+        if (onDebug) onDebug(renderLog);
         return;
       }
+      
+      renderLog.push(`🎨 Rendering ${features.length} numeri...`);
+      if (onDebug) onDebug(renderLog);
       
       // Pulisci SVG
       svg.innerHTML = '';

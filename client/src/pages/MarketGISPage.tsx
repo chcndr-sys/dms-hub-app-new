@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, LayersControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, LayersControl, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import { Button } from '@/components/ui/button';
 import { MapPin, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
-import { StallNumbersOverlay } from '@/components/StallNumbersOverlay';
 
 // Fix per icone marker Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -55,10 +54,10 @@ interface ApiResponse {
 }
 
 export default function MarketGISPage() {
-  const [mapData, setMapData] = useState<MarketMapData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedStall, setSelectedStall] = useState<any>(null);
+  const [mapData, setMapData] = useState<MarketMapData | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
   const loadMarketMap = async () => {
     setLoading(true);
@@ -98,7 +97,25 @@ export default function MarketGISPage() {
   const containerPolygon = mapData?.container.map(([lat, lng]) => [lat, lng] as [number, number]) || [];
 
   return (
-    <div className="h-screen flex flex-col">
+    <>
+      <style>{`
+        /* Rimuovi background dai tooltip dei numeri */
+        .stall-number-tooltip.leaflet-tooltip {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+          color: white !important;
+          font-size: 6px !important;
+          font-weight: bold !important;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;
+        }
+        .stall-number-tooltip.leaflet-tooltip-left:before,
+        .stall-number-tooltip.leaflet-tooltip-right:before {
+          display: none !important;
+        }
+      `}</style>
+      <div className="h-screen flex flex-col">
       {/* Header */}
       <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -287,6 +304,14 @@ export default function MarketGISPage() {
                       click: () => setSelectedStall(props),
                     }}
                   >
+                    <Tooltip 
+                      permanent 
+                      direction="center" 
+                      className="stall-number-tooltip"
+                      opacity={1}
+                    >
+                      {props.number}
+                    </Tooltip>
                     <Popup>
                       <div className="text-sm">
                         <div className="font-semibold text-base mb-1">
@@ -314,12 +339,22 @@ export default function MarketGISPage() {
               );
             })}
 
-            {/* SVG Overlay per numeri scalabili */}
-            <StallNumbersOverlay 
-              features={mapData.stalls_geojson.features.filter(f => f.geometry.type === 'Polygon')} 
-              minZoom={16}
-            />
+
           </MapContainer>
+        )}
+        
+        {/* Pannello Debug */}
+        {mapData && debugInfo.length > 0 && (
+          <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm border-2 border-blue-500 rounded-lg shadow-lg p-3 max-w-xs z-[1000]">
+            <div className="text-xs font-bold text-blue-700 mb-2 flex items-center gap-1">
+              🔍 Debug Info - Numeri Posteggi
+            </div>
+            <div className="space-y-1 text-xs font-mono">
+              {debugInfo.map((info, idx) => (
+                <div key={idx} className="text-gray-700">{info}</div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
@@ -336,6 +371,7 @@ export default function MarketGISPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
