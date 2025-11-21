@@ -210,7 +210,7 @@ export default function MarketGISPage() {
             </LayersControl>
             
             {/* Componente per aggiornare font size dinamicamente con zoom */}
-            <ZoomFontUpdater minZoom={18} baseFontSize={8} scaleFactor={1.3} />
+            <ZoomFontUpdater minZoom={18} baseFontSize={8} scaleFactor={1.15} />
 
             {/* Contorno mercato - RIMOSSO come da richiesta utente */}
             {/* {containerPolygon.length > 0 && (
