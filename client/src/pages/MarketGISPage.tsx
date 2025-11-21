@@ -174,6 +174,44 @@ export default function MarketGISPage() {
               />
             )} */}
 
+            {/* Marker rosso "M" al centro del mercato */}
+            <Marker
+              position={[mapData.center.lat, mapData.center.lng]}
+              icon={L.divIcon({
+                className: 'market-center-marker',
+                html: `<div style="
+                  background: #ef4444;
+                  color: white;
+                  width: 32px;
+                  height: 32px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 18px;
+                  font-weight: bold;
+                  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                  border: 3px solid white;
+                ">M</div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+              })}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <div className="font-semibold text-base mb-1">
+                    📍 Centro Mercato
+                  </div>
+                  <div className="text-gray-600">
+                    Lat: {mapData.center.lat.toFixed(6)}
+                  </div>
+                  <div className="text-gray-600">
+                    Lng: {mapData.center.lng.toFixed(6)}
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+
             {/* Piazzole (stalls) */}
             {mapData.stalls_geojson.features.map((feature, idx) => {
               const props = feature.properties;
