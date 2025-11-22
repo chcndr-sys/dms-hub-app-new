@@ -1079,12 +1079,22 @@ export const dmsHubRouter = router({
   hub: router({
     // Lista HUB locations
     locations: router({
-      list: publicProcedure.query(async () => {
-        const db = await getDb();
-        if (!db) return [];
-        return await db.select().from(schema.hubLocations)
-          .orderBy(desc(schema.hubLocations.createdAt));
-      }),
+      list: publicProcedure
+        .input(z.object({ includeInactive: z.boolean().optional() }).optional())
+        .query(async ({ input }) => {
+          const db = await getDb();
+          if (!db) return [];
+          
+          // Filtra solo attivi di default, a meno che non sia richiesto esplicitamente
+          if (input?.includeInactive) {
+            return await db.select().from(schema.hubLocations)
+              .orderBy(desc(schema.hubLocations.createdAt));
+          }
+          
+          return await db.select().from(schema.hubLocations)
+            .where(eq(schema.hubLocations.active, 1))
+            .orderBy(desc(schema.hubLocations.createdAt));
+        }),
       
       getById: publicProcedure
         .input(z.object({ id: z.number() }))
@@ -1128,6 +1138,76 @@ export const dmsHubRouter = router({
           
           await logAction("CREATE_HUB", "hub_location", hub.id, null, null, hub);
           return { success: true, hubId: hub.id };
+        }),
+      
+      update: publicProcedure
+        .input(z.object({
+          id: z.number(),
+          marketId: z.number().optional(),
+          name: z.string().optional(),
+          address: z.string().optional(),
+          city: z.string().optional(),
+          lat: z.string().optional(),
+          lng: z.string().optional(),
+          areaGeojson: z.string().optional(),
+          openingHours: z.string().optional(),
+          description: z.string().optional(),
+          photoUrl: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+          
+          // Ottieni valore vecchio per log
+          const [oldHub] = await db.select().from(schema.hubLocations)
+            .where(eq(schema.hubLocations.id, input.id));
+          
+          if (!oldHub) throw new Error("HUB location not found");
+          
+          // Prepara dati per update (solo campi forniti)
+          const updateData: any = { updatedAt: new Date() };
+          if (input.marketId !== undefined) updateData.marketId = input.marketId;
+          if (input.name !== undefined) updateData.name = input.name;
+          if (input.address !== undefined) updateData.address = input.address;
+          if (input.city !== undefined) updateData.city = input.city;
+          if (input.lat !== undefined) updateData.lat = input.lat;
+          if (input.lng !== undefined) updateData.lng = input.lng;
+          if (input.areaGeojson !== undefined) updateData.areaGeojson = input.areaGeojson;
+          if (input.openingHours !== undefined) updateData.openingHours = input.openingHours;
+          if (input.description !== undefined) updateData.description = input.description;
+          if (input.photoUrl !== undefined) updateData.photoUrl = input.photoUrl;
+          
+          await db.update(schema.hubLocations)
+            .set(updateData)
+            .where(eq(schema.hubLocations.id, input.id));
+          
+          // Log operazione
+          await logAction("UPDATE_HUB", "hub_location", input.id, null, oldHub, updateData);
+          
+          return { success: true };
+        }),
+      
+      delete: publicProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+          
+          // Ottieni valore vecchio per log
+          const [oldHub] = await db.select().from(schema.hubLocations)
+            .where(eq(schema.hubLocations.id, input.id));
+          
+          if (!oldHub) throw new Error("HUB location not found");
+          
+          // Soft delete: imposta active = 0
+          await db.update(schema.hubLocations)
+            .set({ active: 0, updatedAt: new Date() })
+            .where(eq(schema.hubLocations.id, input.id));
+          
+          // Log operazione
+          await logAction("DELETE_HUB", "hub_location", input.id, null, oldHub, { active: 0 });
+          
+          return { success: true };
         }),
     }),
     
