@@ -19,6 +19,7 @@ import { trpc } from '@/lib/trpc';
 import { useOrchestrator, useAgentConversation, useAllConversations, mapAgentIdToBackend, formatTimestamp as formatOrchestratorTimestamp, type Message } from '@/hooks/useOrchestrator';
 import MobilityMap from '@/components/MobilityMap';
 import GestioneMercati from '@/components/GestioneMercati';
+import GestioneHubNegozi from '@/components/GestioneHubNegozi';
 import Integrazioni from '@/components/Integrazioni';
 import { GISMap } from '@/components/GISMap';
 import MIOAgent from '@/components/MIOAgent';
@@ -970,6 +971,17 @@ export default function DashboardPA() {
             >
               <Building2 className="h-6 w-6" />
               <span className="text-xs font-medium">Gestione Mercati</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('hub-negozi')}
+              className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
+                activeTab === 'hub-negozi'
+                  ? 'bg-[#14b8a6] border-[#14b8a6] text-white shadow-lg'
+                  : 'bg-[#14b8a6]/10 border-[#14b8a6]/30 hover:bg-[#14b8a6]/20 text-[#14b8a6]'
+              }`}
+            >
+              <Store className="h-6 w-6" />
+              <span className="text-xs font-medium">Gestione HUB</span>
             </button>
             <button
               onClick={() => setActiveTab('docs')}
@@ -3146,7 +3158,12 @@ export default function DashboardPA() {
             <GestioneMercati />
           </TabsContent>
 
-          {/* TAB 23: DOCUMENTAZIONE */}
+          {/* TAB 23: GESTIONE HUB / NEGOZI & SERVIZI */}
+          <TabsContent value="hub-negozi" className="space-y-6">
+            <GestioneHubNegozi />
+          </TabsContent>
+
+          {/* TAB 24: DOCUMENTAZIONE */}
           <TabsContent value="docs" className="space-y-6">
             <Card className="bg-[#1a2332] border-[#06b6d4]/30">
               <CardHeader>
