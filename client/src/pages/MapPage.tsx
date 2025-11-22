@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { Button } from '@/components/ui/button';
 import { Store, Filter, Search, X } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
-import ShopModal from '@/components/ShopModal';
+import { MarketMapComponent } from '@/components/MarketMapComponent';
+import 'leaflet/dist/leaflet.css';
 
 // Fix per icone marker Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -19,76 +19,54 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-interface Shop {
-  id: string;
-  name: string;
-  lat: number;
-  lng: number;
-  category?: string;
-}
+const API_BASE_URL = 'https://orchestratore.mio-hub.me';
 
 export default function MapPage() {
-  const [position, setPosition] = useState<[number, number] | null>(null);
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [marketData, setMarketData] = useState<any>(null);
-  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+  const [mapData, setMapData] = useState<any>(null);
+  const [stallsData, setStallsData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedStallNumber, setSelectedStallNumber] = useState<string | null>(null);
 
   useEffect(() => {
-    // Imposta posizione predefinita: centro Grosseto
-    setPosition([42.7635, 11.1128]);
-    
-    // Prova geolocalizzazione utente (opzionale)
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setPosition([pos.coords.latitude, pos.coords.longitude]);
-      },
-      () => {
-        // Mantieni fallback Grosseto
-        console.log('Geolocalizzazione non disponibile, uso posizione Grosseto');
-      },
-      { timeout: 5000 }
-    );
-
-    // Carica dati mercato Grosseto
-    fetch('/data/grosseto_complete.json')
-      .then((r) => r.json())
-      .then((data) => {
-        setMarketData(data);
-        // Genera shop demo diversificati per categoria
-        const categories = [
-          { cat: 'Alimentari', shops: ['Frutta e Verdura Bio', 'Salumeria Artigianale', 'Panificio Tradizionale'] },
-          { cat: 'Abbigliamento', shops: ['Boutique Vintage', 'Abbigliamento Sostenibile', 'Calzature Artigianali'] },
-          { cat: 'Artigianato', shops: ['Ceramiche Toscane', 'Gioielli Fatti a Mano', 'Oggetti in Legno'] },
-          { cat: 'Libri', shops: ['Libreria Indipendente', 'Libri Usati e Rari'] },
-          { cat: 'Elettronica', shops: ['Riparazioni Tech', 'Accessori Ricondizionati'] },
-        ];
+    // Carica dati mappa mercato da API reali
+    const loadMapData = async () => {
+      try {
+        const [mapRes, stallsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/gis/market-map`),
+          fetch(`${API_BASE_URL}/api/markets/1/stalls`)
+        ]);
         
-        const demoShops: Shop[] = [];
-        let idx = 0;
-        categories.forEach(({ cat, shops: shopNames }) => {
-          shopNames.forEach((name) => {
-            demoShops.push({
-              id: `shop-${idx}`,
-              name,
-              lat: 42.7635 + (Math.random() - 0.5) * 0.015,
-              lng: 11.1128 + (Math.random() - 0.5) * 0.015,
-              category: cat,
-            });
-            idx++;
-          });
-        });
-        setShops(demoShops);
-      })
-      .catch((err) => console.error('Errore caricamento dati:', err));
+        const mapJson = await mapRes.json();
+        const stallsJson = await stallsRes.json();
+        
+        if (mapJson.success) {
+          setMapData(mapJson.data);
+        }
+        if (stallsJson.success) {
+          setStallsData(stallsJson.data.map((s: any) => ({
+            number: s.number,
+            status: s.status,
+            type: s.type,
+            vendor_name: s.vendor_business_name || undefined
+          })));
+        }
+      } catch (error) {
+        console.error('Error loading map data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadMapData();
   }, []);
 
-  if (!position) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Caricamento mappa...</p>
+          <p className="text-muted-foreground">Caricamento mappa mercato...</p>
         </div>
       </div>
     );
@@ -101,52 +79,35 @@ export default function MapPage() {
         <div className="container max-w-2xl flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Store className="h-6 w-6" />
-            <h1 className="text-lg font-bold">DMS Hub</h1>
+            <h1 className="text-lg font-bold">DMS Hub - Mappa Mercato</h1>
           </div>
-          <p className="text-xs opacity-90">Commercio Sostenibile</p>
+          <p className="text-xs opacity-90">Mercato Grosseto</p>
         </div>
       </header>
 
       {/* Mappa */}
       <div className="relative" style={{ height: 'calc(100vh - 110px)' }}>
-        <MapContainer
-          center={position}
-          zoom={15}
-          style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-          className="z-0"
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        {mapData && stallsData.length > 0 ? (
+          <MarketMapComponent
+            mapData={mapData}
+            center={[42.7669, 11.2588]}
+            zoom={17}
+            height="100%"
+            stallsData={stallsData}
+            onStallClick={(stallNumber) => {
+              setSelectedStallNumber(stallNumber);
+              console.log('Clicked stall:', stallNumber);
+            }}
+            selectedStallNumber={selectedStallNumber}
           />
-          
-          {/* Marker posizione utente */}
-          <Marker position={position}>
-            <Popup>La tua posizione</Popup>
-          </Marker>
-
-          {/* Marker negozi/mercati */}
-          {shops.map((shop) => (
-            <Marker key={shop.id} position={[shop.lat, shop.lng]}>
-              <Popup>
-                <div className="p-2">
-                  <h3 className="font-semibold">{shop.name}</h3>
-                  <p className="text-sm text-muted-foreground">{shop.category}</p>
-                  <Button 
-                    size="sm" 
-                    className="mt-2 w-full"
-                    onClick={() => setSelectedShop(shop)}
-                  >
-                    Vedi dettagli
-                  </Button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            Nessun dato disponibile
+          </div>
+        )}
 
         {/* Pulsante toggle filtri laterale */}
-        <div className="absolute top-32 right-4 z-20 flex flex-col gap-2">
+        <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
           <Button
             size="icon"
             variant="default"
@@ -159,14 +120,14 @@ export default function MapPage() {
 
         {/* Pannello filtri slide-in */}
         <div
-          className={`absolute top-0 right-0 h-full w-80 bg-card shadow-2xl z-30 transform transition-transform duration-300 ${
+          className={`absolute top-0 right-0 h-full w-80 bg-card shadow-2xl z-[1001] transform transition-transform duration-300 ${
             showFilters ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
           <div className="p-4 h-full flex flex-col">
             {/* Header pannello */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
-              <h3 className="font-semibold text-lg text-foreground">Filtri e Ricerca</h3>
+              <h3 className="font-semibold text-lg text-foreground">Info Mercato</h3>
               <Button
                 size="icon"
                 variant="ghost"
@@ -176,40 +137,57 @@ export default function MapPage() {
               </Button>
             </div>
 
-            {/* Ricerca */}
+            {/* Statistiche */}
+            <div className="mb-4 space-y-3">
+              <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <div className="text-sm text-foreground/70 mb-1">Posteggi Liberi</div>
+                <div className="text-2xl font-bold text-green-500">
+                  {stallsData.filter(s => s.status === 'free').length}
+                </div>
+              </div>
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <div className="text-sm text-foreground/70 mb-1">Posteggi Occupati</div>
+                <div className="text-2xl font-bold text-red-500">
+                  {stallsData.filter(s => s.status === 'occupied').length}
+                </div>
+              </div>
+              <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                <div className="text-sm text-foreground/70 mb-1">Posteggi Riservati</div>
+                <div className="text-2xl font-bold text-orange-500">
+                  {stallsData.filter(s => s.status === 'reserved').length}
+                </div>
+              </div>
+            </div>
+
+            {/* Ricerca posteggio */}
             <div className="mb-4">
               <label className="text-sm font-medium text-foreground mb-2 block">
                 <Search className="w-4 h-4 inline mr-2" />
-                Cerca
+                Cerca Posteggio
               </label>
               <input
                 type="text"
-                placeholder="Cerca negozio, categoria..."
+                placeholder="Es: 42, 105..."
                 className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground"
+                onChange={(e) => {
+                  const num = e.target.value.trim();
+                  if (num && stallsData.some(s => s.number === num)) {
+                    setSelectedStallNumber(num);
+                  } else {
+                    setSelectedStallNumber(null);
+                  }
+                }}
               />
-            </div>
-
-            {/* Filtri categoria */}
-            <div className="mb-4">
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                <Filter className="w-4 h-4 inline mr-2" />
-                Categoria
-              </label>
-              <div className="space-y-2">
-                {['Tutti', 'Alimentari', 'Abbigliamento', 'Artigianato', 'Libri', 'Elettronica'].map((cat) => (
-                  <label key={cat} className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" className="rounded" />
-                    <span className="text-sm text-foreground">{cat}</span>
-                  </label>
-                ))}
-              </div>
             </div>
 
             {/* Info */}
             <div className="mt-auto bg-primary/10 p-3 rounded-lg">
-              <h4 className="font-semibold text-sm text-foreground mb-1">Mercati e Hub Sostenibili</h4>
+              <h4 className="font-semibold text-sm text-foreground mb-1">Mercato Grosseto</h4>
               <p className="text-xs text-muted-foreground">
-                {shops.length} punti vendita nelle vicinanze
+                {stallsData.length} posteggi totali
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Dati aggiornati in tempo reale
               </p>
             </div>
           </div>
@@ -218,14 +196,6 @@ export default function MapPage() {
 
       {/* Bottom Navigation */}
       <BottomNav />
-
-      {/* Shop Modal */}
-      {selectedShop && (
-        <ShopModal 
-          shop={selectedShop} 
-          onClose={() => setSelectedShop(null)} 
-        />
-      )}
     </div>
   );
 }
