@@ -1123,7 +1123,7 @@ export default function DashboardPA() {
                   <MarketMapComponent
                     mapData={mapData}
                     center={[42.7669, 11.2588]}
-                    zoom={17}
+                    zoom={19}
                     height="400px"
                     stallsData={stallsData}
                     onStallClick={(stallNumber) => console.log('Clicked stall:', stallNumber)}
@@ -1244,7 +1244,7 @@ export default function DashboardPA() {
                   <MarketMapComponent
                     mapData={mapData}
                     center={[42.7669, 11.2588]}
-                    zoom={17}
+                    zoom={19}
                     height="calc(100vh - 400px)"
                     stallsData={stallsData}
                     onStallClick={(stallNumber) => console.log('Clicked stall:', stallNumber)}
@@ -2764,7 +2764,7 @@ export default function DashboardPA() {
                   <MarketMapComponent
                     mapData={mapData}
                     center={[42.7669, 11.2588]}
-                    zoom={17}
+                    zoom={19}
                     height="calc(100vh - 400px)"
                     stallsData={stallsData}
                     onStallClick={(stallNumber) => console.log('Clicked stall:', stallNumber)}
@@ -2948,7 +2948,7 @@ export default function DashboardPA() {
                   <MarketMapComponent
                     mapData={mapData}
                     center={[42.7669, 11.2588]}
-                    zoom={17}
+                    zoom={19}
                     height="calc(100vh - 400px)"
                     stallsData={stallsData}
                     onStallClick={(stallNumber) => console.log('Clicked stall:', stallNumber)}
