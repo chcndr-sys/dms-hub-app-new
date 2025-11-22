@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef } from "react";
-import React from 'react';
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,31 +12,14 @@ import {
   Edit,
   Save,
   X,
-  Maximize2,
-  Minimize2
+  ArrowUpRight,
+  ArrowDownRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapContainer, TileLayer, Marker, Popup, Polygon, LayersControl, Tooltip, useMap } from 'react-leaflet';
-import { ZoomFontUpdater } from '../components/ZoomFontUpdater';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
-
-// Fix per icone marker Leaflet
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
 
 interface Market {
   id: number;
@@ -93,45 +75,6 @@ interface Concession {
   stall_number: string;
   vendor_business_name: string;
   vendor_code: string;
-}
-
-interface MarketMapData {
-  container: [number, number][];
-  center: { lat: number; lng: number };
-  stalls_geojson: {
-    type: string;
-    features: Array<{
-      type: string;
-      geometry: {
-        type: 'Point' | 'Polygon';
-        coordinates: [number, number] | [number, number][][];
-      };
-      properties: {
-        number: string;
-        orientation?: number;
-        kind?: string;
-        status?: string;
-        dimensions?: string;
-      };
-    }>;
-  };
-}
-
-/**
- * Componente per centrare la mappa su un posteggio
- */
-function MapCenterController({ center, zoom }: { center: [number, number] | null; zoom?: number }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (center) {
-      map.flyTo(center, zoom || 19, {
-        duration: 1.0
-      });
-    }
-  }, [center, zoom, map]);
-  
-  return null;
 }
 
 /**
@@ -291,7 +234,7 @@ function MarketDetail({ market }: { market: Market }) {
           </TabsContent>
 
           <TabsContent value="posteggi" className="space-y-4">
-            <PosteggiTab marketId={market.id} marketCenter={[parseFloat(market.latitude), parseFloat(market.longitude)]} />
+            <PosteggiTab marketId={market.id} />
           </TabsContent>
 
           <TabsContent value="concessioni" className="space-y-4">
@@ -359,41 +302,28 @@ function AnagraficaTab({ market }: { market: Market }) {
 }
 
 /**
- * Tab Posteggi con tabella modificabile E MAPPA GIS
+ * Tab Posteggi con tabella modificabile
  */
-function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCenter: [number, number] }) {
+function PosteggiTab({ marketId }: { marketId: number }) {
   const [stalls, setStalls] = useState<Stall[]>([]);
-  const [mapData, setMapData] = useState<MarketMapData | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Stall>>({});
-  const [selectedStallId, setSelectedStallId] = useState<number | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
-  const [isMapExpanded, setIsMapExpanded] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    fetchStalls();
   }, [marketId]);
 
-  const fetchData = async () => {
+  const fetchStalls = async () => {
     try {
-      const [stallsRes, mapRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/markets/${marketId}/stalls`),
-        fetch(`${API_BASE_URL}/api/gis/market-map`)
-      ]);
-
-      const stallsData = await stallsRes.json();
-      const mapDataRes = await mapRes.json();
-
-      if (stallsData.success) {
-        setStalls(stallsData.data);
-      }
-      if (mapDataRes.success) {
-        setMapData(mapDataRes.data);
+      const response = await fetch(`${API_BASE_URL}/api/markets/${marketId}/stalls`);
+      const data = await response.json();
+      if (data.success) {
+        setStalls(data.data);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Errore nel caricamento dei dati');
+      console.error('Error fetching stalls:', error);
+      toast.error('Errore nel caricamento dei posteggi');
     } finally {
       setLoading(false);
     }
@@ -421,7 +351,7 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
       const data = await response.json();
       if (data.success) {
         toast.success('Posteggio aggiornato con successo');
-        fetchData(); // Ricarica dati
+        fetchStalls();
         setEditingId(null);
         setEditData({});
       } else {
@@ -438,27 +368,6 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
     setEditData({});
   };
 
-  const handleRowClick = (stall: Stall) => {
-    setSelectedStallId(stall.id);
-    
-    // Trova il posteggio nella mappa tramite gis_slot_id
-    const mapFeature = mapData?.stalls_geojson.features.find(
-      f => f.properties.number === stall.number
-    );
-    
-    if (mapFeature && mapFeature.geometry.type === 'Polygon') {
-      // Calcola il centro del poligono
-      const coords = mapFeature.geometry.coordinates as [number, number][][];
-      const lats = coords[0].map(c => c[1]);
-      const lngs = coords[0].map(c => c[0]);
-      const centerLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-      const centerLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
-      
-      setMapCenter([centerLat, centerLng]);
-      toast.success(`Centrato su posteggio ${stall.number}`);
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'occupato':
@@ -469,19 +378,6 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
         return 'bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/30';
       default:
         return 'bg-[#14b8a6]/20 text-[#14b8a6] border-[#14b8a6]/30';
-    }
-  };
-
-  const getMapFillColor = (status: string) => {
-    switch (status) {
-      case 'occupato':
-        return '#ef4444';
-      case 'libero':
-        return '#10b981';
-      case 'riservato':
-        return '#f59e0b';
-      default:
-        return '#14b8a6';
     }
   };
 
@@ -496,9 +392,6 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
   const occupiedCount = stalls.filter(s => s.status === 'occupato').length;
   const freeCount = stalls.filter(s => s.status === 'libero').length;
   const reservedCount = stalls.filter(s => s.status === 'riservato').length;
-
-  // Crea una mappa per lookup veloce stall by number
-  const stallsByNumber = new Map(stalls.map(s => [s.number, s]));
 
   return (
     <div className="space-y-4">
@@ -518,294 +411,121 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
         </div>
       </div>
 
-      {/* Layout Tabella + Mappa */}
-      <div className={`grid ${isMapExpanded ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
-        {/* Tabella Posteggi */}
-        {!isMapExpanded && (
-          <div className="border border-[#14b8a6]/20 rounded-lg overflow-hidden">
-            <div className="max-h-[600px] overflow-y-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-[#0b1220]/95 z-10">
-                  <TableRow className="border-[#14b8a6]/20 hover:bg-[#0b1220]/50">
-                    <TableHead className="text-[#e8fbff]/70">N°</TableHead>
-                    <TableHead className="text-[#e8fbff]/70">Tipo</TableHead>
-                    <TableHead className="text-[#e8fbff]/70">Stato</TableHead>
-                    <TableHead className="text-[#e8fbff]/70">Intestatario</TableHead>
-                    <TableHead className="text-right text-[#e8fbff]/70">Azioni</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stalls.map((stall) => (
-                    <TableRow 
-                      key={stall.id}
-                      className={`cursor-pointer hover:bg-[#14b8a6]/10 border-[#14b8a6]/10 ${
-                        selectedStallId === stall.id ? 'bg-[#14b8a6]/20' : ''
-                      }`}
-                      onClick={() => handleRowClick(stall)}
-                    >
-                      <TableCell className="font-medium text-[#e8fbff]">{stall.number}</TableCell>
-                      <TableCell>
-                        {editingId === stall.id ? (
-                          <Select
-                            value={editData.type}
-                            onValueChange={(value) => setEditData({ ...editData, type: value })}
-                          >
-                            <SelectTrigger className="w-[100px] bg-[#0b1220] border-[#14b8a6]/30">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="fisso">Fisso</SelectItem>
-                              <SelectItem value="spunta">Spunta</SelectItem>
-                              <SelectItem value="libero">Libero</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge variant="outline" className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30 text-xs">
-                            {stall.type}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {editingId === stall.id ? (
-                          <Select
-                            value={editData.status}
-                            onValueChange={(value) => setEditData({ ...editData, status: value })}
-                          >
-                            <SelectTrigger className="w-[100px] bg-[#0b1220] border-[#14b8a6]/30">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="libero">Libero</SelectItem>
-                              <SelectItem value="occupato">Occupato</SelectItem>
-                              <SelectItem value="riservato">Riservato</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge variant="default" className={`${getStatusColor(stall.status)} text-xs`}>
-                            {stall.status}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {stall.vendor_business_name ? (
-                          <div>
-                            <p className="font-medium text-[#e8fbff] text-xs">{stall.vendor_business_name}</p>
-                          </div>
-                        ) : (
-                          <span className="text-[#e8fbff]/50 text-xs">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {editingId === stall.id ? (
-                          <div className="flex justify-end gap-1">
-                            <Button 
-                              size="sm" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSave(stall.id);
-                              }}
-                              className="bg-[#10b981]/20 hover:bg-[#10b981]/30 text-[#10b981] border-[#10b981]/30 h-7 w-7 p-0"
-                            >
-                              <Save className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCancel();
-                              }}
-                              className="bg-[#ef4444]/20 hover:bg-[#ef4444]/30 text-[#ef4444] border-[#ef4444]/30 h-7 w-7 p-0"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(stall);
-                            }}
-                            className="hover:bg-[#14b8a6]/20 text-[#14b8a6] h-7 w-7 p-0"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        )}
-
-        {/* Mappa GIS */}
-        <div className={`relative border border-[#14b8a6]/20 rounded-lg overflow-hidden ${isMapExpanded ? 'h-[800px]' : 'h-[600px]'}`}>
-          <Button
-            size="sm"
-            variant="outline"
-            className="absolute top-2 right-2 z-[1000] bg-[#0b1220]/90 border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/20"
-            onClick={() => setIsMapExpanded(!isMapExpanded)}
-          >
-            {isMapExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
-
-          {mapData && (
-            <MapContainer
-              center={marketCenter}
-              zoom={17}
-              className="h-full w-full"
-            >
-              <LayersControl position="topright">
-                <LayersControl.BaseLayer checked name="🗺️ Stradale">
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    maxZoom={21}
-                  />
-                </LayersControl.BaseLayer>
-                
-                <LayersControl.BaseLayer name="🛰️ Satellite">
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.esri.com">Esri</a>'
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                    maxZoom={21}
-                  />
-                </LayersControl.BaseLayer>
-                
-                <LayersControl.BaseLayer name="🌙 Dark Mode">
-                  <TileLayer
-                    attribution='&copy; <a href="https://carto.com">CARTO</a>'
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    maxZoom={21}
-                  />
-                </LayersControl.BaseLayer>
-              </LayersControl>
-              
-              <ZoomFontUpdater minZoom={18} baseFontSize={8} scaleFactor={1.5} />
-              
-              {/* Controller per centrare mappa */}
-              <MapCenterController center={mapCenter} zoom={19} />
-
-              {/* Marker centro mercato */}
-              <Marker
-                position={marketCenter}
-                icon={L.divIcon({
-                  className: 'market-center-marker',
-                  html: `<div style="
-                    background: #ef4444;
-                    color: white;
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 18px;
-                    font-weight: bold;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                    border: 3px solid white;
-                  ">M</div>`,
-                  iconSize: [32, 32],
-                  iconAnchor: [16, 16],
-                })}
+      <div className="border border-[#14b8a6]/20 rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-[#0b1220]/50 border-[#14b8a6]/20 hover:bg-[#0b1220]/50">
+              <TableHead className="text-[#e8fbff]/70">Numero</TableHead>
+              <TableHead className="text-[#e8fbff]/70">GIS Slot ID</TableHead>
+              <TableHead className="text-[#e8fbff]/70">Dimensioni</TableHead>
+              <TableHead className="text-[#e8fbff]/70">Tipo</TableHead>
+              <TableHead className="text-[#e8fbff]/70">Stato</TableHead>
+              <TableHead className="text-[#e8fbff]/70">Intestatario</TableHead>
+              <TableHead className="text-right text-[#e8fbff]/70">Azioni</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {stalls.map((stall) => (
+              <TableRow 
+                key={stall.id}
+                className="cursor-pointer hover:bg-[#14b8a6]/5 border-[#14b8a6]/10"
               >
-                <Popup>
-                  <div className="text-sm">
-                    <div className="font-semibold text-base mb-1">
-                      📍 Centro Mercato
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-
-              {/* Posteggi */}
-              {mapData.stalls_geojson.features.map((feature, idx) => {
-                const props = feature.properties;
-                const dbStall = stallsByNumber.get(props.number);
-                
-                if (feature.geometry.type !== 'Polygon') return null;
-                
-                const coords = feature.geometry.coordinates as [number, number][][];
-                const positions: [number, number][] = coords[0].map(
-                  ([lng, lat]: [number, number]) => [lat, lng]
-                );
-                
-                const fillColor = dbStall ? getMapFillColor(dbStall.status) : '#14b8a6';
-                
-                return (
-                  <React.Fragment key={`stall-${idx}`}>
-                    <Polygon
-                      positions={positions}
-                      pathOptions={{
-                        color: fillColor,
-                        fillColor: fillColor,
-                        fillOpacity: 0.7,
-                        weight: 2,
-                      }}
-                      eventHandlers={{
-                        click: () => {
-                          if (dbStall) {
-                            setSelectedStallId(dbStall.id);
-                            // Scroll alla riga nella tabella
-                            const row = document.querySelector(`[data-stall-id="${dbStall.id}"]`);
-                            row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          }
-                        },
-                      }}
+                <TableCell className="font-medium text-[#e8fbff]">{stall.number}</TableCell>
+                <TableCell className="text-xs text-[#e8fbff]/70">{stall.gis_slot_id}</TableCell>
+                <TableCell className="text-sm text-[#e8fbff]">{stall.width}m × {stall.depth}m</TableCell>
+                <TableCell>
+                  {editingId === stall.id ? (
+                    <Select
+                      value={editData.type}
+                      onValueChange={(value) => setEditData({ ...editData, type: value })}
                     >
-                      <Tooltip 
-                        permanent 
-                        direction="center" 
-                        className="stall-number-tooltip"
-                        opacity={1}
+                      <SelectTrigger className="w-[120px] bg-[#0b1220] border-[#14b8a6]/30">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fisso">Fisso</SelectItem>
+                        <SelectItem value="spunta">Spunta</SelectItem>
+                        <SelectItem value="libero">Libero</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge variant="outline" className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
+                      {stall.type}
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === stall.id ? (
+                    <Select
+                      value={editData.status}
+                      onValueChange={(value) => setEditData({ ...editData, status: value })}
+                    >
+                      <SelectTrigger className="w-[120px] bg-[#0b1220] border-[#14b8a6]/30">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="libero">Libero</SelectItem>
+                        <SelectItem value="occupato">Occupato</SelectItem>
+                        <SelectItem value="riservato">Riservato</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge variant="default" className={getStatusColor(stall.status)}>
+                      {stall.status}
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {stall.vendor_business_name ? (
+                    <div>
+                      <p className="font-medium text-[#e8fbff]">{stall.vendor_business_name}</p>
+                      <p className="text-xs text-[#e8fbff]/70">{stall.vendor_contact_name}</p>
+                    </div>
+                  ) : (
+                    <span className="text-[#e8fbff]/50">-</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  {editingId === stall.id ? (
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleSave(stall.id)}
+                        className="bg-[#10b981]/20 hover:bg-[#10b981]/30 text-[#10b981] border-[#10b981]/30"
                       >
-                        {props.number}
-                      </Tooltip>
-                      <Popup>
-                        <div className="text-sm">
-                          <div className="font-semibold text-base mb-2">
-                            Piazzola #{props.number}
-                          </div>
-                          {dbStall && (
-                            <>
-                              <div className="text-gray-600 mb-1">
-                                📏 {dbStall.width}m × {dbStall.depth}m
-                              </div>
-                              <div className="text-gray-600 mb-1">
-                                🏷️ Tipo: <strong>{dbStall.type}</strong>
-                              </div>
-                              <div className="text-gray-600 mb-1">
-                                🚦 Stato: <strong>{dbStall.status}</strong>
-                              </div>
-                              {dbStall.vendor_business_name && (
-                                <div className="text-gray-600 mt-2 pt-2 border-t">
-                                  <div className="font-semibold">Intestatario:</div>
-                                  <div>{dbStall.vendor_business_name}</div>
-                                  <div className="text-xs">{dbStall.vendor_contact_name}</div>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </Popup>
-                    </Polygon>
-                  </React.Fragment>
-                );
-              })}
-            </MapContainer>
-          )}
-        </div>
+                        <Save className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={handleCancel}
+                        className="bg-[#ef4444]/20 hover:bg-[#ef4444]/30 text-[#ef4444] border-[#ef4444]/30"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => handleEdit(stall)}
+                      className="hover:bg-[#14b8a6]/20 text-[#14b8a6]"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
 }
 
 /**
- * Tab Concessioni (identico a prima)
+ * Tab Concessioni (solo lettura per ora)
  */
 function ConcessioniTab({ marketId }: { marketId: number }) {
   const [concessions, setConcessions] = useState<Concession[]>([]);
