@@ -19,6 +19,7 @@ import GuardianEndpoints from "./pages/GuardianEndpoints";
 import GuardianLogs from "./pages/GuardianLogs";
 import GuardianDebug from "./pages/GuardianDebug";
 import MarketGISPage from "./pages/MarketGISPage";
+import LogDebugPage from "./pages/LogDebugPage";
 
 function Router() {
   return (
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/guardian/logs" component={GuardianLogs} />
       <Route path="/guardian/debug" component={GuardianDebug} />
       <Route path="/market-gis" component={MarketGISPage} />
+      <Route path="/log-debug" component={LogDebugPage} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
