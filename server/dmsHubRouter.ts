@@ -1071,6 +1071,180 @@ export const dmsHubRouter = router({
         .orderBy(desc(schema.violations.createdAt));
     }),
   }),
+
+  // ============================================
+  // HUB - Gestione HUB, Negozi e Servizi
+  // ============================================
+  
+  hub: router({
+    // Lista HUB locations
+    locations: router({
+      list: publicProcedure.query(async () => {
+        const db = await getDb();
+        if (!db) return [];
+        return await db.select().from(schema.hubLocations)
+          .orderBy(desc(schema.hubLocations.createdAt));
+      }),
+      
+      getById: publicProcedure
+        .input(z.object({ id: z.number() }))
+        .query(async ({ input }) => {
+          const db = await getDb();
+          if (!db) return null;
+          const [hub] = await db.select().from(schema.hubLocations)
+            .where(eq(schema.hubLocations.id, input.id));
+          return hub || null;
+        }),
+      
+      create: publicProcedure
+        .input(z.object({
+          marketId: z.number(),
+          name: z.string(),
+          address: z.string(),
+          city: z.string(),
+          lat: z.string(),
+          lng: z.string(),
+          areaGeojson: z.string().optional(),
+          openingHours: z.string().optional(),
+          description: z.string().optional(),
+          photoUrl: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+          
+          const [hub] = await db.insert(schema.hubLocations).values({
+            marketId: input.marketId,
+            name: input.name,
+            address: input.address,
+            city: input.city,
+            lat: input.lat,
+            lng: input.lng,
+            areaGeojson: input.areaGeojson || null,
+            openingHours: input.openingHours || null,
+            description: input.description || null,
+            photoUrl: input.photoUrl || null,
+          }).returning();
+          
+          await logAction("CREATE_HUB", "hub_location", hub.id, null, null, hub);
+          return { success: true, hubId: hub.id };
+        }),
+    }),
+    
+    // Gestione negozi HUB
+    shops: router({
+      list: publicProcedure
+        .input(z.object({ hubId: z.number().optional() }))
+        .query(async ({ input }) => {
+          const db = await getDb();
+          if (!db) return [];
+          
+          if (input.hubId) {
+            return await db.select().from(schema.hubShops)
+              .where(eq(schema.hubShops.hubId, input.hubId))
+              .orderBy(desc(schema.hubShops.createdAt));
+          }
+          
+          return await db.select().from(schema.hubShops)
+            .orderBy(desc(schema.hubShops.createdAt));
+        }),
+      
+      create: publicProcedure
+        .input(z.object({
+          hubId: z.number(),
+          name: z.string(),
+          category: z.string().optional(),
+          certifications: z.string().optional(),
+          ownerId: z.number().optional(),
+          businessName: z.string().optional(),
+          vatNumber: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().optional(),
+          lat: z.string().optional(),
+          lng: z.string().optional(),
+          areaMq: z.number().optional(),
+          description: z.string().optional(),
+          photoUrl: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+          
+          const [shop] = await db.insert(schema.hubShops).values({
+            hubId: input.hubId,
+            name: input.name,
+            category: input.category || null,
+            certifications: input.certifications || null,
+            ownerId: input.ownerId || null,
+            businessName: input.businessName || null,
+            vatNumber: input.vatNumber || null,
+            phone: input.phone || null,
+            email: input.email || null,
+            lat: input.lat || null,
+            lng: input.lng || null,
+            areaMq: input.areaMq || null,
+            description: input.description || null,
+            photoUrl: input.photoUrl || null,
+          }).returning();
+          
+          await logAction("CREATE_HUB_SHOP", "hub_shop", shop.id, null, null, shop);
+          return { success: true, shopId: shop.id };
+        }),
+    }),
+    
+    // Gestione servizi HUB
+    services: router({
+      list: publicProcedure
+        .input(z.object({ hubId: z.number().optional() }))
+        .query(async ({ input }) => {
+          const db = await getDb();
+          if (!db) return [];
+          
+          if (input.hubId) {
+            return await db.select().from(schema.hubServices)
+              .where(eq(schema.hubServices.hubId, input.hubId))
+              .orderBy(desc(schema.hubServices.createdAt));
+          }
+          
+          return await db.select().from(schema.hubServices)
+            .orderBy(desc(schema.hubServices.createdAt));
+        }),
+      
+      create: publicProcedure
+        .input(z.object({
+          hubId: z.number(),
+          name: z.string(),
+          type: z.string(),
+          description: z.string().optional(),
+          capacity: z.number().optional(),
+          available: z.number().optional(),
+          price: z.number().optional(),
+          lat: z.string().optional(),
+          lng: z.string().optional(),
+          metadata: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+          
+          const [service] = await db.insert(schema.hubServices).values({
+            hubId: input.hubId,
+            name: input.name,
+            type: input.type,
+            description: input.description || null,
+            capacity: input.capacity || null,
+            available: input.available || null,
+            price: input.price || null,
+            lat: input.lat || null,
+            lng: input.lng || null,
+            metadata: input.metadata || null,
+          }).returning();
+          
+          await logAction("CREATE_HUB_SERVICE", "hub_service", service.id, null, null, service);
+          return { success: true, serviceId: service.id };
+        }),
+    }),
+  }),
 });
 
 export type DmsHubRouter = typeof dmsHubRouter;

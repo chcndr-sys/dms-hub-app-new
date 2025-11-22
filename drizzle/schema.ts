@@ -50,6 +50,8 @@ export const markets = pgTable("markets", {
   lng: varchar("lng", { length: 20 }).notNull(),
   openingHours: text("opening_hours"), // JSON string
   active: integer("active").default(1).notNull(), // 1=true, 0=false
+  mobilityProvider: varchar("mobility_provider", { length: 100 }), // e.g., 'tper-toscana', 'atm-milano'
+  mobilityConfig: text("mobility_config"), // JSON config for mobility provider
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -261,6 +263,7 @@ export const businessAnalytics = pgTable("business_analytics", {
 
 export const mobilityData = pgTable("mobility_data", {
   id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  marketId: integer("market_id").references(() => markets.id), // Link to market
   type: varchar("type", { length: 50 }).notNull(), // bus, tram, parking
   lineNumber: varchar("line_number", { length: 20 }),
   lineName: varchar("line_name", { length: 255 }),
@@ -618,6 +621,78 @@ export const mioAgentLogs = pgTable("mio_agent_logs", {
 
 export type MioAgentLog = typeof mioAgentLogs.$inferSelect;
 export type InsertMioAgentLog = typeof mioAgentLogs.$inferInsert;
+
+// ============================================================================
+// HUB - Gestione HUB Mercati, Negozi e Servizi
+// ============================================================================
+
+// HUB Locations - Punti fisici HUB collegati ai mercati
+export const hubLocations = pgTable("hub_locations", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  marketId: integer("market_id").references(() => markets.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  address: text("address").notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  lat: varchar("lat", { length: 20 }).notNull(),
+  lng: varchar("lng", { length: 20 }).notNull(),
+  areaGeojson: text("area_geojson"), // Area HUB in GeoJSON
+  openingHours: text("opening_hours"), // JSON string
+  active: integer("active").default(1).notNull(), // 1=true, 0=false
+  description: text("description"),
+  photoUrl: text("photo_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// HUB Shops - Negozi all'interno degli HUB
+export const hubShops = pgTable("hub_shops", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  hubId: integer("hub_id").references(() => hubLocations.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }), // alimentari, artigianato, abbigliamento, etc.
+  certifications: text("certifications"), // JSON array ["BIO", "KM0", "DOP"]
+  ownerId: integer("owner_id").references(() => vendors.id), // Link a operatore se registrato
+  businessName: varchar("business_name", { length: 255 }),
+  vatNumber: varchar("vat_number", { length: 20 }),
+  phone: varchar("phone", { length: 50 }),
+  email: varchar("email", { length: 320 }),
+  lat: varchar("lat", { length: 20 }),
+  lng: varchar("lng", { length: 20 }),
+  areaMq: integer("area_mq"), // Area in metri quadrati
+  status: varchar("status", { length: 50 }).default("active").notNull(), // active, suspended, inactive
+  description: text("description"),
+  photoUrl: text("photo_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// HUB Services - Servizi offerti negli HUB
+export const hubServices = pgTable("hub_services", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  hubId: integer("hub_id").references(() => hubLocations.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: varchar("type", { length: 100 }).notNull(), // parking, bike_sharing, charging_station, locker, etc.
+  description: text("description"),
+  capacity: integer("capacity"), // Capacità (posti auto, bici, etc.)
+  available: integer("available"), // Disponibilità attuale
+  price: integer("price"), // Cents (se a pagamento)
+  lat: varchar("lat", { length: 20 }),
+  lng: varchar("lng", { length: 20 }),
+  status: varchar("status", { length: 50 }).default("active").notNull(), // active, maintenance, inactive
+  metadata: text("metadata"), // JSON con metadati specifici del servizio
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Export types for HUB tables
+export type HubLocation = typeof hubLocations.$inferSelect;
+export type InsertHubLocation = typeof hubLocations.$inferInsert;
+
+export type HubShop = typeof hubShops.$inferSelect;
+export type InsertHubShop = typeof hubShops.$inferInsert;
+
+export type HubService = typeof hubServices.$inferSelect;
+export type InsertHubService = typeof hubServices.$inferInsert;
 
 // ============================================================================
 // MIHUB MULTI-AGENT SYSTEM TABLES
