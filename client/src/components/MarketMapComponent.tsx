@@ -149,6 +149,8 @@ export function MarketMapComponent({
         <MapContainer
           center={mapCenter}
           zoom={zoom}
+          scrollWheelZoom={false}
+          doubleClickZoom={false}
           className="h-full w-full"
           style={{ height: '100%', width: '100%' }}
         >
