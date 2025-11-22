@@ -223,8 +223,20 @@ export function MarketMapComponent({
           </Marker>
 
           {/* Piazzole (stalls) */}
+          {(() => {
+            console.log('[VERCEL DEBUG] MarketMapComponent - Rendering', mapData.stalls_geojson.features.length, 'stalls');
+            return null;
+          })()}
           {mapData.stalls_geojson.features.map((feature, idx) => {
             const props = feature.properties;
+            
+            if (idx === 0) {
+              console.log('[VERCEL DEBUG] First feature:', {
+                type: feature.geometry.type,
+                properties: props,
+                coordsLength: feature.geometry.coordinates?.[0]?.length
+              });
+            }
             
             // Converti coordinate Polygon in formato Leaflet [lat, lng][]
             let positions: [number, number][] = [];
@@ -246,6 +258,11 @@ export function MarketMapComponent({
             const dbStall = stallsByNumber.get(props.number);
             const displayStatus = dbStall?.status || props.status || 'free';
             const displayVendor = dbStall?.vendor_name || props.vendor_name || '-';
+            
+            if (idx === 0) {
+              console.log('[VERCEL DEBUG] First polygon positions:', positions.length, 'points');
+              console.log('[VERCEL DEBUG] First polygon color:', fillColor);
+            }
             
             return (
               <React.Fragment key={`stall-${idx}`}>
