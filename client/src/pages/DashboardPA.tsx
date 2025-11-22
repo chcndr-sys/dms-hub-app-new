@@ -424,27 +424,58 @@ export default function DashboardPA() {
   useEffect(() => {
     const loadMapData = async () => {
       try {
+        console.log('[VERCEL DEBUG] Starting map data fetch...');
+        console.log('[VERCEL DEBUG] GIS URL:', 'https://orchestratore.mio-hub.me/api/gis/market-map');
+        console.log('[VERCEL DEBUG] Stalls URL:', `https://orchestratore.mio-hub.me/api/markets/${selectedMarketId}/stalls`);
+        
         const [mapRes, stallsRes] = await Promise.all([
           fetch('https://orchestratore.mio-hub.me/api/gis/market-map'),
           fetch(`https://orchestratore.mio-hub.me/api/markets/${selectedMarketId}/stalls`)
         ]);
         
+        console.log('[VERCEL DEBUG] GIS Response Status:', mapRes.status, mapRes.ok);
+        console.log('[VERCEL DEBUG] Stalls Response Status:', stallsRes.status, stallsRes.ok);
+        
         const mapJson = await mapRes.json();
         const stallsJson = await stallsRes.json();
         
+        console.log('[VERCEL DEBUG] GIS JSON:', {
+          success: mapJson.success,
+          hasData: !!mapJson.data,
+          featureCount: mapJson.data?.stalls_geojson?.features?.length || 0
+        });
+        console.log('[VERCEL DEBUG] Stalls JSON:', {
+          success: stallsJson.success,
+          count: stallsJson.data?.length || stallsJson.count || 0
+        });
+        
         if (mapJson.success) {
+          console.log('[VERCEL DEBUG] Setting mapData with', mapJson.data.stalls_geojson?.features?.length || 0, 'features');
           setMapData(mapJson.data);
+        } else {
+          console.warn('[VERCEL DEBUG] GIS fetch failed - success=false');
         }
+        
         if (stallsJson.success) {
-          setStallsData(stallsJson.data.map((s: any) => ({
+          const stallsArray = stallsJson.data.map((s: any) => ({
             number: s.number,
             status: s.status,
             type: s.type,
             vendor_name: s.vendor_business_name || undefined
-          })));
+          }));
+          console.log('[VERCEL DEBUG] Setting stallsData with', stallsArray.length, 'stalls');
+          setStallsData(stallsArray);
+        } else {
+          console.warn('[VERCEL DEBUG] Stalls fetch failed - success=false');
         }
+        
+        console.log('[VERCEL DEBUG] Map data loading complete!');
       } catch (error) {
-        console.error('Error loading map data:', error);
+        console.error('[VERCEL DEBUG] Error loading map data:', error);
+        console.error('[VERCEL DEBUG] Error details:', {
+          message: (error as Error).message,
+          stack: (error as Error).stack
+        });
       }
     };
     
@@ -1081,6 +1112,13 @@ export default function DashboardPA() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {(() => {
+                  console.log('[VERCEL DEBUG] Rendering map - mapData:', !!mapData, 'stallsData.length:', stallsData.length);
+                  if (mapData) {
+                    console.log('[VERCEL DEBUG] mapData.stalls_geojson.features.length:', mapData.stalls_geojson?.features?.length || 0);
+                  }
+                  return null;
+                })()}
                 {mapData && stallsData.length > 0 ? (
                   <MarketMapComponent
                     mapData={mapData}
@@ -1195,6 +1233,13 @@ export default function DashboardPA() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {(() => {
+                  console.log('[VERCEL DEBUG] Rendering map - mapData:', !!mapData, 'stallsData.length:', stallsData.length);
+                  if (mapData) {
+                    console.log('[VERCEL DEBUG] mapData.stalls_geojson.features.length:', mapData.stalls_geojson?.features?.length || 0);
+                  }
+                  return null;
+                })()}
                 {mapData && stallsData.length > 0 ? (
                   <MarketMapComponent
                     mapData={mapData}
@@ -2708,6 +2753,13 @@ export default function DashboardPA() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {(() => {
+                  console.log('[VERCEL DEBUG] Rendering map - mapData:', !!mapData, 'stallsData.length:', stallsData.length);
+                  if (mapData) {
+                    console.log('[VERCEL DEBUG] mapData.stalls_geojson.features.length:', mapData.stalls_geojson?.features?.length || 0);
+                  }
+                  return null;
+                })()}
                 {mapData && stallsData.length > 0 ? (
                   <MarketMapComponent
                     mapData={mapData}
@@ -2885,6 +2937,13 @@ export default function DashboardPA() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {(() => {
+                  console.log('[VERCEL DEBUG] Rendering map - mapData:', !!mapData, 'stallsData.length:', stallsData.length);
+                  if (mapData) {
+                    console.log('[VERCEL DEBUG] mapData.stalls_geojson.features.length:', mapData.stalls_geojson?.features?.length || 0);
+                  }
+                  return null;
+                })()}
                 {mapData && stallsData.length > 0 ? (
                   <MarketMapComponent
                     mapData={mapData}
