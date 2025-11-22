@@ -127,13 +127,14 @@ export function MarketMapComponent({
   return (
     <>
       {/* Style CSS per rimuovere sfondo bianco dai numeri */}
-      <style>{`
+      <style id="dynamic-tooltip-style">{`
         .stall-number-tooltip.leaflet-tooltip {
           background: transparent !important;
           border: none !important;
           box-shadow: none !important;
           padding: 0 !important;
           color: white !important;
+          font-size: 8px !important;
           font-weight: bold !important;
           text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;
           pointer-events: none !important;
