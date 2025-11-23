@@ -109,6 +109,10 @@ export function MarketMapComponent({
   // Mappa stallsData per accesso rapido
   const stallsByNumber = new Map(stallsData.map(s => [s.number, s]));
   
+  // DEBUG: Log stallsData
+  console.log('[DEBUG] stallsData length:', stallsData.length);
+  console.log('[DEBUG] stallsData sample:', stallsData.slice(0, 5));
+  
   // Funzione per determinare il colore in base allo stato
   const getStallColor = (stallNumber: number, defaultStatus?: string): string => {
     const dbStall = stallsByNumber.get(stallNumber);
@@ -250,7 +254,17 @@ export function MarketMapComponent({
             
             // Recupera dati aggiornati dal database
             const dbStall = stallsByNumber.get(props.number);
-            const displayStatus = dbStall?.status || props.status || 'free';
+            const displayStatus = dbStall?.status || props.status || 'libero';
+            
+            // DEBUG: Log primi 3 posteggi
+            if (idx < 3) {
+              console.log(`[DEBUG] Stall ${props.number}:`, {
+                dbStatus: dbStall?.status,
+                propsStatus: props.status,
+                finalStatus: dbStall?.status || props.status || 'libero',
+                fillColor
+              });
+            }
             const displayVendor = dbStall?.vendor_name || props.vendor_name || '-';
             
             if (idx === 0) {
