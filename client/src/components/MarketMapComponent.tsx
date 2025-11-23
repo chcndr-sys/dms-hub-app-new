@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, LayersControl, Tooltip, useMap } from 'react-leaflet';
 import { ZoomFontUpdater } from './ZoomFontUpdater';
+import { getStallMapFillColor, getStallStatusLabel } from '@/lib/stallStatus';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -111,17 +112,8 @@ export function MarketMapComponent({
   // Funzione per determinare il colore in base allo stato
   const getStallColor = (stallNumber: number, defaultStatus?: string): string => {
     const dbStall = stallsByNumber.get(stallNumber);
-    const status = dbStall?.status || defaultStatus || 'free';
-    
-    switch (status) {
-      case 'occupied':
-        return '#ef4444'; // rosso
-      case 'reserved':
-        return '#f59e0b'; // arancione
-      case 'free':
-      default:
-        return '#10b981'; // verde
-    }
+    const status = dbStall?.status || defaultStatus || 'libero';
+    return getStallMapFillColor(status);
   };
   
   return (

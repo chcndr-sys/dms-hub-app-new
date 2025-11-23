@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarketMapComponent } from './MarketMapComponent';
+import { getStallStatusLabel, getStallStatusClasses, getStallMapFillColor, STALL_STATUS_OPTIONS } from '@/lib/stallStatus';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -509,31 +510,7 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'occupato':
-        return 'bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/30';
-      case 'libero':
-        return 'bg-[#10b981]/20 text-[#10b981] border-[#10b981]/30';
-      case 'riservato':
-        return 'bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/30';
-      default:
-        return 'bg-[#14b8a6]/20 text-[#14b8a6] border-[#14b8a6]/30';
-    }
-  };
-
-  const getMapFillColor = (status: string) => {
-    switch (status) {
-      case 'occupato':
-        return '#ef4444';
-      case 'libero':
-        return '#10b981';
-      case 'riservato':
-        return '#f59e0b';
-      default:
-        return '#14b8a6';
-    }
-  };
+  // Funzioni di mappatura stati spostate in @/lib/stallStatus
 
   if (loading) {
     return (
@@ -625,14 +602,16 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="libero">Libero</SelectItem>
-                              <SelectItem value="occupato">Occupato</SelectItem>
-                              <SelectItem value="riservato">Riservato</SelectItem>
+                              {STALL_STATUS_OPTIONS.map(option => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         ) : (
-                          <Badge variant="default" className={`${getStatusColor(stall.status)} text-xs`}>
-                            {stall.status}
+                          <Badge variant="default" className={`${getStallStatusClasses(stall.status)} text-xs`}>
+                            {getStallStatusLabel(stall.status)}
                           </Badge>
                         )}
                       </TableCell>
