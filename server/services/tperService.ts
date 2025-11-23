@@ -69,7 +69,7 @@ export async function getTPERStops(): Promise<TPERStop[]> {
 
     return stops;
   } catch (error: any) {
-	    console.error('[TPER Service] Errore nel recupero delle fermate:', error.message);
+	    console.error('[TPER Service] Errore nel recupero delle fermate:', error.message, error.stack);
 	    throw new Error('Impossibile recuperare le fermate TPER');
 	  }
 }
