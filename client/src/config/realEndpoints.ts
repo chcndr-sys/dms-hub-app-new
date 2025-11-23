@@ -313,6 +313,84 @@ export const gisEndpoints: EndpointConfig[] = [
 ];
 
 /**
+ * CATEGORIA: MOBILITÀ / TPER
+ * Dati trasporto pubblico e mobilità urbana
+ */
+export const mobilityEndpoints: EndpointConfig[] = [
+  {
+    id: 'mobility-list',
+    method: 'GET',
+    path: '/api/trpc/mobility.list',
+    name: 'Lista Dati Mobilità',
+    description: 'Ottieni tutti i dati di mobilità salvati nel database (bus, tram, parcheggi)',
+    category: 'Mobilità',
+    exampleResponse: {
+      result: {
+        data: [
+          {
+            id: 1,
+            type: 'bus',
+            stopName: 'Stazione Centrale',
+            lineNumber: '27',
+            lineName: 'Stazione - Ospedale',
+            lat: '44.4949',
+            lng: '11.3426',
+            nextArrival: 5,
+            status: 'active'
+          }
+        ]
+      }
+    },
+    notes: 'Usato da MobilityMap per visualizzare fermate su mappa. Legge da tabella mobility_data.'
+  },
+  {
+    id: 'mobility-tper-stops',
+    method: 'GET',
+    path: '/api/trpc/mobility.tper.stops',
+    name: 'Fermate TPER Bologna',
+    description: 'Recupera le fermate bus TPER da API esterna Bologna Open Data (21,175 fermate)',
+    category: 'Mobilità',
+    exampleResponse: {
+      result: {
+        data: {
+          total_count: 21175,
+          results: [
+            {
+              codice_fermata: '1001',
+              denominazione: 'Stazione Centrale',
+              coordinate: {
+                lat: 44.4949,
+                lon: 11.3426
+              }
+            }
+          ]
+        }
+      }
+    },
+    notes: 'Chiama API esterna Bologna Open Data. NON salva nel database, solo visualizzazione.'
+  },
+  {
+    id: 'mobility-tper-sync',
+    method: 'POST',
+    path: '/api/trpc/mobility.tper.sync',
+    name: '🔄 Sincronizza TPER',
+    description: 'SINCRONIZZA i dati TPER nel database. Recupera fermate da API esterna e le salva in mobility_data.',
+    category: 'Mobilità',
+    exampleBody: {},
+    exampleResponse: {
+      result: {
+        data: {
+          success: true,
+          count: 21175,
+          message: 'Dati TPER sincronizzati con successo'
+        }
+      }
+    },
+    notes: '⚠️ ENDPOINT CRITICO! Popola la tabella mobility_data. Chiamare PRIMA di visualizzare la mappa Centro Mobilità.'
+  }
+];
+
+/**
  * TUTTI GLI ENDPOINT ORGANIZZATI
  */
 export const allRealEndpoints: EndpointConfig[] = [
@@ -320,7 +398,8 @@ export const allRealEndpoints: EndpointConfig[] = [
   ...stallsEndpoints,
   ...vendorsEndpoints,
   ...concessionsEndpoints,
-  ...gisEndpoints
+  ...gisEndpoints,
+  ...mobilityEndpoints
 ];
 
 /**
