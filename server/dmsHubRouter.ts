@@ -220,7 +220,7 @@ export const dmsHubRouter = router({
           },
         }).returning();
 
-        const marketId = (market as { id: number }[])[0].id;
+        const marketId = (market as { id: number; }[])[0].id;
 
         // 2. Salva geometria mercato
         await db.insert(schema.marketGeometry).values({
@@ -337,7 +337,7 @@ export const dmsHubRouter = router({
           active: 1,
         });
 
-        const marketId = (market as { id: number }[])[0].id;
+        const marketId = (market as { id: number; }[])[0].id;
 
         // 2. Salva geometria
         await db.insert(schema.marketGeometry).values({

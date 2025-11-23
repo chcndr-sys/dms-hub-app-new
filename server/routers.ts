@@ -6,6 +6,7 @@ import { dmsHubRouter } from "./dmsHubRouter";
 import { integrationsRouter } from "./integrationsRouter";
 import { mioAgentRouter } from "./mioAgentRouter";
 import { mihubRouter } from "./mihubRouter";
+import { sql } from "drizzle-orm/sql";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with 
@@ -164,6 +165,11 @@ export const appRouter = router({
 	          if (data.length > 0) {
 		            console.log(`Tentativo di inserimento di ${data.length} record.`);
 	            const db = await getDb();
+	            
+	            if (!db) {
+	              console.error("[TPER Router] Errore: Connessione al database non disponibile.");
+	              throw new Error("Errore durante la sincronizzazione TPER: Connessione al database non disponibile.");
+	            }
 	            
 	            // 1. Costruisci la query di inserimento di massa
 	            const values = data.map(d => 
