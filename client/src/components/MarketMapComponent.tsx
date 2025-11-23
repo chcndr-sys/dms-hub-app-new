@@ -107,11 +107,19 @@ export function MarketMapComponent({
   const mapCenter: [number, number] = center || [mapData.center.lat, mapData.center.lng];
   
   // Mappa stallsData per accesso rapido
-  const stallsByNumber = new Map(stallsData.map(s => [s.number, s]));
+  // Crea due chiavi: sia numero che stringa per gestire entrambi i casi
+  const stallsByNumber = new Map<number | string, typeof stallsData[0]>();
+  stallsData.forEach(s => {
+    // Aggiungi sia come numero che come stringa
+    const num = typeof s.number === 'string' ? parseInt(s.number, 10) : s.number;
+    stallsByNumber.set(num, s);
+    stallsByNumber.set(s.number, s);
+  });
   
   // DEBUG: Log stallsData
   console.log('[DEBUG] stallsData length:', stallsData.length);
   console.log('[DEBUG] stallsData sample:', stallsData.slice(0, 5));
+  console.log('[DEBUG] stallsByNumber keys sample:', Array.from(stallsByNumber.keys()).slice(0, 10));
   
   // Funzione per determinare il colore in base allo stato
   const getStallColor = (stallNumber: number, defaultStatus?: string): string => {
