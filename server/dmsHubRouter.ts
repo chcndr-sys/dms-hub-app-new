@@ -335,7 +335,7 @@ export const dmsHubRouter = router({
           lat: convertedData.center.lat.toString(),
           lng: convertedData.center.lng.toString(),
           active: 1,
-        });
+        }).returning();
 
         const marketId = market.id;
 

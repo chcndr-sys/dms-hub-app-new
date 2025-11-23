@@ -140,10 +140,10 @@ export const appRouter = router({
   dmsHub: dmsHubRouter,
   
   // Integrazioni - API Keys, Webhook, Monitoring
-  integrations: router({
-    ...integrationsRouter,
-    // TPER Integration Endpoints
-    tper: router({
+  integrations: integrationsRouter,
+  
+  // TPER Integration Endpoints
+  tper: router({
       // GET /api/integrations/tper/stops - Lista fermate Bologna
       stops: publicProcedure.query(async () => {
         const { getTPERStops } = await import("./services/tperService");
@@ -202,7 +202,6 @@ export const appRouter = router({
 	          throw new Error("Errore durante la sincronizzazione TPER: " + error.message);
 	        }
 	      }),
-    }),
   }),
 
   // MIO Agent - Log e Monitoraggio Agenti

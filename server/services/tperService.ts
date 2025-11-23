@@ -6,8 +6,8 @@
  */
 
 import axios from 'axios';
-import { getDb } from '@/db';
-import { mobilityData } from '@/db/schema';
+import { getDb } from '../db';
+import { mobilityData } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { parseStringPromise } from 'xml2js';
 
