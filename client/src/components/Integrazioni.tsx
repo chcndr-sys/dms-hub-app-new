@@ -72,7 +72,7 @@ export default function Integrazioni() {
 
         {/* TAB 1: API DASHBOARD */}
         <TabsContent value="api-dashboard" className="space-y-6">
-          <GuardianIntegrations />
+          <APIDashboard />
         </TabsContent>
 
         {/* TAB 2: CONNESSIONI ESTERNE */}
@@ -196,7 +196,7 @@ function APIDashboard() {
       }
       
       // Mappa endpoint → chiamata TRPC
-      switch (endpoint) {
+      switch (endpointPath) {
         // MERCATI
         case '/api/dmsHub/markets/importAuto':
           data = await utils.client.dmsHub.markets.importAuto.mutate(parsedBody);
@@ -318,6 +318,22 @@ function APIDashboard() {
         time,
         data
       });
+      
+      // Log del test su Guardian
+      try {
+        await fetch('/api/trpc/guardian.testEndpoint', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endpoint: endpointPath,
+            method: endpointInfo?.method || 'GET',
+            params: parsedBody,
+          }),
+        });
+      } catch (e) {
+        console.error('[Guardian] Errore logging test:', e);
+      }
+      
       toast.success('✅ Test API completato con successo!');
     } catch (error: any) {
       const endTime = Date.now();
@@ -328,6 +344,22 @@ function APIDashboard() {
         time,
         data: { success: false, error: error.message || 'Errore sconosciuto' }
       });
+      
+      // Log dell'errore su Guardian
+      try {
+        await fetch('/api/trpc/guardian.testEndpoint', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endpoint: endpointPath,
+            method: endpointInfo?.method || 'GET',
+            params: parsedBody,
+          }),
+        });
+      } catch (e) {
+        console.error('[Guardian] Errore logging test:', e);
+      }
+      
       toast.error('❌ Test API fallito: ' + error.message);
     } finally {
       setIsLoading(false);
