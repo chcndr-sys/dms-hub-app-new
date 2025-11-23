@@ -53,6 +53,7 @@ interface MarketMapComponentProps {
   onStallClick?: (stallNumber: number) => void;
   selectedStallNumber?: number;
   stallsData?: Array<{
+    id: number;
     number: number;
     status: string;
     type?: string;

@@ -608,6 +608,61 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
         </div>
       </div>
 
+      {/* Pulsante Conferma Assegnazione Globale (solo in modalità Spunta) */}
+      {isSpuntaMode && reservedCount > 0 && (
+        <div className="mb-4">
+          <Button
+            className="w-full bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white font-semibold py-3 border-2 border-[#f59e0b]/50"
+            onClick={async () => {
+              const reservedStalls = stalls.filter(s => s.status === 'riservato');
+              if (reservedStalls.length === 0) {
+                toast.info('Nessun posteggio riservato da confermare');
+                return;
+              }
+              
+              const confirmed = window.confirm(
+                `Confermare l'assegnazione di ${reservedStalls.length} posteggi riservati?\n\n` +
+                `Tutti i posteggi riservati diventeranno occupati.`
+              );
+              
+              if (!confirmed) return;
+              
+              try {
+                let successCount = 0;
+                let errorCount = 0;
+                
+                for (const stall of reservedStalls) {
+                  try {
+                    await handleConfirmAssignment(stall.id);
+                    successCount++;
+                  } catch (error) {
+                    console.error(`Errore conferma posteggio ${stall.number}:`, error);
+                    errorCount++;
+                  }
+                }
+                
+                if (successCount > 0) {
+                  toast.success(`${successCount} posteggi confermati con successo!`);
+                }
+                if (errorCount > 0) {
+                  toast.error(`${errorCount} posteggi non confermati`);
+                }
+                
+                // Ricarica dati
+                await fetchData();
+                setMapRefreshKey(prev => prev + 1);
+                setIsSpuntaMode(false);
+              } catch (error) {
+                console.error('Errore conferma assegnazioni:', error);
+                toast.error('Errore durante la conferma delle assegnazioni');
+              }
+            }}
+          >
+            ✓ Conferma Assegnazione ({reservedCount} posteggi)
+          </Button>
+        </div>
+      )}
+
       {/* Layout Tabella + Mappa */}
       <div className={`grid ${isMapExpanded ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
         {/* Tabella Posteggi */}
@@ -747,6 +802,7 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
 
           {mapData && (() => {
             const stallsDataForMap = stalls.map(s => ({
+              id: s.id,
               number: s.number,
               status: s.status,
               type: s.type,
