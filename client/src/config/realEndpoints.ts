@@ -346,7 +346,7 @@ export const mobilityEndpoints: EndpointConfig[] = [
   {
     id: 'mobility-tper-stops',
     method: 'GET',
-    path: '/api/trpc/mobility.tper.stops',
+    path: '/api/trpc/integrations.tper.stops',
     name: 'Fermate TPER Bologna',
     description: 'Recupera le fermate bus TPER da API esterna Bologna Open Data (21,175 fermate)',
     category: 'Mobilità',
@@ -372,7 +372,7 @@ export const mobilityEndpoints: EndpointConfig[] = [
   {
     id: 'mobility-tper-sync',
     method: 'POST',
-    path: '/api/trpc/mobility.tper.sync',
+    path: '/api/trpc/integrations.tper.sync',
     name: '🔄 Sincronizza TPER',
     description: 'SINCRONIZZA i dati TPER nel database. Recupera fermate da API esterna e le salva in mobility_data.',
     category: 'Mobilità',
@@ -399,7 +399,7 @@ export const allRealEndpoints: EndpointConfig[] = [
   ...vendorsEndpoints,
   ...concessionsEndpoints,
   ...gisEndpoints,
-  ...mobilityEndpoints
+  // ...mobilityEndpoints
 ];
 
 /**

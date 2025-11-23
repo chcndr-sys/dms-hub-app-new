@@ -6,11 +6,15 @@
  */
 
 import axios from 'axios';
+import { getDb } from '@/db';
+import { mobilityData } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { parseStringPromise } from 'xml2js';
 
 // Endpoint API TPER
+const TPER_REALTIME_BASE = 'https://hellobuswsweb.tper.it/web-services/hello-bus.asmx';
 const TPER_OPENDATA_BASE = 'https://opendata.comune.bologna.it/api/explore/v2.1/catalog/datasets';
-const TPER_HELLOBUS_WSDL = 'https://hellobuswsweb.tper.it/web-services/hello-bus.asmx';
+// const TPER_HELLOBUS_WSDL = 'https://hellobuswsweb.tper.it/web-services/hello-bus.asmx';
 
 /**
  * Interfaccia per una fermata bus TPER
@@ -85,7 +89,7 @@ export async function getTPERBusTimes(stopCode: number, lineNumber: string): Pro
   </soap:Body>
 </soap:Envelope>`;
 
-    const response = await axios.post(TPER_HELLOBUS_WSDL, soapEnvelope, {
+    const response = await axios.post(TPER_REALTIME_BASE, soapEnvelope, {
       headers: {
         'Content-Type': 'text/xml; charset=utf-8',
         'SOAPAction': 'https://hellobuswsweb.tper.it/web-services/hello-bus.asmx/QueryHellobus'
@@ -145,6 +149,40 @@ export async function syncTPERData() {
     return mobilityData;
   } catch (error) {
     console.error('[TPER Service] Errore durante la sincronizzazione:', error);
+    throw error;
+  }
+}
+
+
+/**
+ * Aggiorna i dati real-time per tutte le fermate nel database
+ */
+export async function updateTPERRealtimeData() {
+  console.log('[TPER Service] Inizio aggiornamento dati real-time...');
+  
+  try {
+    // 1. Recupero tutte le fermate dal database
+    const db = await getDb();
+    const stops = await db.select().from(mobilityData).where(eq(mobilityData.type, 'bus'));
+    console.log(`[TPER Service] Recuperate ${stops.length} fermate dal database`);
+
+    // 2. Per ogni fermata, recupero i dati real-time
+    for (const stop of stops) {
+      if (stop.lineNumber) {
+        const busTime = await getTPERBusTimes(stop.id, stop.lineNumber);
+        if (busTime) {
+          await db.update(mobilityData).set({
+            nextArrival: busTime.nextArrival,
+            status: busTime.status,
+            updatedAt: new Date()
+          }).where(eq(mobilityData.id, stop.id));
+        }
+      }
+    }
+
+    console.log('[TPER Service] Aggiornamento dati real-time completato');
+  } catch (error) {
+    console.error('[TPER Service] Errore durante l'aggiornamento real-time:', error);
     throw error;
   }
 }

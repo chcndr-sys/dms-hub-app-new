@@ -8,7 +8,9 @@ import { mioAgentRouter } from "./mioAgentRouter";
 import { mihubRouter } from "./mihubRouter";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
+    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with 
+'/api/
+' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -131,18 +133,25 @@ export const appRouter = router({
       const { getMobilityData } = await import("./db");
       return await getMobilityData();
     }),
-    
+  }),
+
+  // DMS HUB - Sistema Gestione Mercati Completo
+  dmsHub: dmsHubRouter,
+  
+  // Integrazioni - API Keys, Webhook, Monitoring
+  integrations: router({
+    ...integrationsRouter,
     // TPER Integration Endpoints
     tper: router({
-      // GET /api/mobility/tper/stops - Lista fermate Bologna
+      // GET /api/integrations/tper/stops - Lista fermate Bologna
       stops: publicProcedure.query(async () => {
         const { getTPERStops } = await import("./services/tperService");
         return await getTPERStops();
       }),
       
-      // GET /api/mobility/tper/sync - Sincronizza dati TPER
+      // GET /api/integrations/tper/sync - Sincronizza dati TPER
       sync: publicProcedure.mutation(async () => {
-        const { syncTPERData } = await import("./services/tperService");
+        const { syncTPERData, updateTPERRealtimeData } = await import("./services/tperService");
         const { getDb } = await import("./db");
         const { mobilityData } = await import("../drizzle/schema");
         
@@ -160,6 +169,9 @@ export const appRouter = router({
           }
         }
         
+        // Aggiorna i dati real-time
+        await updateTPERRealtimeData();
+        
         return {
           success: true,
           count: data.length,
@@ -168,12 +180,6 @@ export const appRouter = router({
       }),
     }),
   }),
-
-  // DMS HUB - Sistema Gestione Mercati Completo
-  dmsHub: dmsHubRouter,
-  
-  // Integrazioni - API Keys, Webhook, Monitoring
-  integrations: integrationsRouter,
 
   // MIO Agent - Log e Monitoraggio Agenti
   mioAgent: mioAgentRouter,
