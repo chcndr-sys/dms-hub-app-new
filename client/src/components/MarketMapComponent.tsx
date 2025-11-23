@@ -131,9 +131,11 @@ export function MarketMapComponent({
   console.log('[DEBUG MarketMapComponent] stallsByNumber keys sample:', Array.from(stallsByNumber.keys()).slice(0, 10));
   
   // Funzione per determinare il colore in base allo stato
-  const getStallColor = (stallNumber: number, defaultStatus?: string): string => {
+  // USA SOLO stallsData, IGNORA il GeoJSON statico!
+  const getStallColor = (stallNumber: number): string => {
     const dbStall = stallsByNumber.get(stallNumber);
-    const status = dbStall?.status || defaultStatus || 'libero';
+    const status = dbStall?.status || 'libero';
+    console.log(`[DEBUG getStallColor] Posteggio ${stallNumber}: dbStall=${!!dbStall}, status=${status}`);
     return getStallMapFillColor(status);
   };
   
@@ -267,12 +269,12 @@ export function MarketMapComponent({
               return null;
             }
             
-            const fillColor = getStallColor(props.number, props.status);
+            const fillColor = getStallColor(props.number); // USA SOLO stallsData!
             const isSelected = selectedStallNumber === props.number;
             
             // Recupera dati aggiornati dal database
             const dbStall = stallsByNumber.get(props.number);
-            const displayStatus = dbStall?.status || props.status || 'libero';
+            const displayStatus = dbStall?.status || 'libero'; // USA SOLO stallsData!
             
             // DEBUG: Log primi 3 posteggi
             if (idx < 3) {
