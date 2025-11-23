@@ -501,6 +501,40 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
     }
   };
 
+  // Conferma assegnazione posteggio (da riservato a occupato)
+  const handleConfirmAssignment = async (stallId: number) => {
+    try {
+      console.log('[DEBUG handleConfirmAssignment] Confermando assegnazione posteggio:', stallId);
+      
+      const response = await fetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'occupato' }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        console.log('[DEBUG handleConfirmAssignment] Posteggio assegnato:', stallId);
+        toast.success('Posteggio assegnato con successo!');
+        
+        // Disattiva modalità spunta
+        setIsSpuntaMode(false);
+        
+        // Ricarica dati e aggiorna mappa
+        await fetchData();
+        setMapRefreshKey(prev => prev + 1);
+      } else {
+        toast.error('Errore nell\'assegnazione del posteggio');
+      }
+    } catch (error) {
+      console.error('[ERROR handleConfirmAssignment]:', error);
+      toast.error('Errore durante l\'assegnazione del posteggio');
+      throw error; // Rilancia l'errore per gestirlo nel popup
+    }
+  };
+
   const handleCancel = () => {
     setEditingId(null);
     setEditData({});
@@ -732,6 +766,7 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
                 zoom={19}
                 height="100%"
                 isSpuntaMode={isSpuntaMode}
+                onConfirmAssignment={handleConfirmAssignment}
                 onStallClick={(stallNumber) => {
                   const dbStall = stallsByNumber.get(stallNumber);
                   if (dbStall) {

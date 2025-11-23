@@ -60,6 +60,7 @@ interface MarketMapComponentProps {
   }>;
   refreshKey?: number; // Key per forzare re-mount completo della mappa
   isSpuntaMode?: boolean; // Modalità spunta per test dimensioni
+  onConfirmAssignment?: (stallId: number) => Promise<void>; // Callback per confermare assegnazione
 }
 
 // Controller per centrare la mappa programmaticamente
@@ -105,7 +106,8 @@ export function MarketMapComponent({
   selectedStallNumber,
   stallsData = [],
   refreshKey = 0,
-  isSpuntaMode = false
+  isSpuntaMode = false,
+  onConfirmAssignment
 }: MarketMapComponentProps) {
   
   const mapCenter: [number, number] = center || [mapData.center.lat, mapData.center.lng];
@@ -385,10 +387,26 @@ export function MarketMapComponent({
                         
                         {/* Pulsante Conferma Assegnazione */}
                         <button
-                          className="w-full bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white font-semibold py-2 px-4 rounded transition-colors"
-                          onClick={() => {
-                            alert('Funzione "Conferma Assegnazione" in sviluppo!');
+                          className="w-full bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white font-semibold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={async () => {
+                            if (!onConfirmAssignment) {
+                              alert('Funzione "Conferma Assegnazione" non configurata!');
+                              return;
+                            }
+                            
+                            if (!dbStall?.id) {
+                              alert('Impossibile trovare l\'ID del posteggio!');
+                              return;
+                            }
+                            
+                            try {
+                              await onConfirmAssignment(dbStall.id);
+                            } catch (error) {
+                              console.error('[ERROR] Conferma assegnazione:', error);
+                              alert('Errore durante la conferma assegnazione!');
+                            }
                           }}
+                          disabled={!onConfirmAssignment || !dbStall?.id}
                         >
                           ✓ Conferma Assegnazione
                         </button>
