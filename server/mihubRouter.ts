@@ -302,9 +302,9 @@ export const mihubRouter = router({
           // Keep as string if parse fails
         }
       } else if (item.valueType === "number") {
-        value = parseFloat(item.value);
+        value = parseFloat(item.value) as any;
       } else if (item.valueType === "boolean") {
-        value = item.value === "true";
+        value = (item.value === "true") as any;
       }
 
       return {
