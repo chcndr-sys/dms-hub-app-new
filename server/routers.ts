@@ -6,6 +6,7 @@ import { dmsHubRouter } from "./dmsHubRouter";
 import { integrationsRouter } from "./integrationsRouter";
 import { mioAgentRouter } from "./mioAgentRouter";
 import { mihubRouter } from "./mihubRouter";
+import { guardianRouter } from "./guardianRouter";
 import { sql } from "drizzle-orm/sql";
 
 export const appRouter = router({
@@ -209,6 +210,9 @@ export const appRouter = router({
 
   // MIHUB - Multi-Agent System (MIO, Manus, Abacus, Zapier)
   mihub: mihubRouter,
+
+  // GUARDIAN - API Monitoring & Debug
+  guardian: guardianRouter,
 });
 
 export type AppRouter = typeof appRouter;

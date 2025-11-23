@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import APIDashboardV2 from './APIDashboardV2';
+import GuardianIntegrations from './GuardianIntegrations';
 import ConnessioniV2 from './ConnessioniV2';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,7 +72,7 @@ export default function Integrazioni() {
 
         {/* TAB 1: API DASHBOARD */}
         <TabsContent value="api-dashboard" className="space-y-6">
-          <APIDashboardV2 />
+          <GuardianIntegrations />
         </TabsContent>
 
         {/* TAB 2: CONNESSIONI ESTERNE */}

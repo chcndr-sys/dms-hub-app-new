@@ -22,6 +22,8 @@ import GestioneMercati from '@/components/GestioneMercati';
 import GestioneHubNegozi from '@/components/GestioneHubNegozi';
 import Integrazioni from '@/components/Integrazioni';
 import { GISMap } from '@/components/GISMap';
+import GuardianLogsSection from '@/components/GuardianLogsSection';
+import GuardianDebugSection from '@/components/GuardianDebugSection';
 import { MarketMapComponent } from '@/components/MarketMapComponent';
 import MIOAgent from '@/components/MIOAgent';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -2124,7 +2126,7 @@ export default function DashboardPA() {
 
           {/* TAB 8: LOGS */}
           <TabsContent value="logs" className="space-y-6">
-            <LogsSection />
+            <GuardianLogsSection />
           </TabsContent>
 
           {/* TAB 9: AGENTE AI */}
@@ -2390,7 +2392,7 @@ export default function DashboardPA() {
             </Card>
 
             {/* Guardian Debug Stats */}
-            <GuardianDebugStats />
+            <GuardianDebugSection />
           </TabsContent>
 
           {/* TAB 13: QUALIFICAZIONE IMPRESE */}
