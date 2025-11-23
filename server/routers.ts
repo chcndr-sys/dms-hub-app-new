@@ -131,6 +131,36 @@ export const appRouter = router({
       const { getMobilityData } = await import("./db");
       return await getMobilityData();
     }),
+    
+    // TPER Integration Endpoints
+    tper: router({
+      // GET /api/mobility/tper/stops - Lista fermate Bologna
+      stops: publicProcedure.query(async () => {
+        const { getTPERStops } = await import("./services/tperService");
+        return await getTPERStops();
+      }),
+      
+      // GET /api/mobility/tper/sync - Sincronizza dati TPER
+      sync: publicProcedure.mutation(async () => {
+        const { syncTPERData } = await import("./services/tperService");
+        const { db } = await import("./db");
+        const { mobilityData } = await import("../drizzle/schema");
+        
+        // Sincronizza i dati
+        const data = await syncTPERData();
+        
+        // Salva nel database
+        if (data.length > 0) {
+          await db.insert(mobilityData).values(data).onConflictDoNothing();
+        }
+        
+        return {
+          success: true,
+          count: data.length,
+          message: `Sincronizzati ${data.length} dati mobilità TPER`
+        };
+      }),
+    }),
   }),
 
   // DMS HUB - Sistema Gestione Mercati Completo
