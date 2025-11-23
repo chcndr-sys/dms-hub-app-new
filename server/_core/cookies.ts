@@ -21,7 +21,7 @@ function isSecureRequest(req: any) {
   return protoList.some((proto: string) => proto.trim().toLowerCase() === "https");
 }
 
-export function getSessionCookieOptions(req: any): Pick<CookieOptions, "domain" | "httpOnly" | "path" | "sameSite" | "secure"> {
+export function getSessionCookieOptions(req: any): Partial<CookieOptions> {
   // const hostname = req.hostname;
   // const shouldSetDomain =
   //   hostname &&

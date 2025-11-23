@@ -166,6 +166,10 @@ export async function updateTPERRealtimeData() {
   try {
     // 1. Recupero tutte le fermate dal database
     const db = await getDb();
+    if (!db) {
+      console.error('[TPER Service] Database connection not available');
+      return;
+    }
     const stops = await db.select().from(mobilityData).where(eq(mobilityData.type, 'bus'));
     console.log(`[TPER Service] Recuperate ${stops.length} fermate dal database`);
 
