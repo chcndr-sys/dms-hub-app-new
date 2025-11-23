@@ -173,7 +173,7 @@ export const appRouter = router({
 	            
 	            // 1. Costruisci la query di inserimento di massa
 	            const values = data.map(d => 
-	              `(${d.marketId}, '${d.type}', '${d.lineNumber}', '${d.lineName}', '${d.stopName}', '${d.lat}', '${d.lng}', '${d.status}', ${d.occupancy ?? 'NULL'}, ${d.nextArrival ?? 'NULL'}, NOW(), NOW())`
+	              `(${d.marketId}, '${d.type}', '${d.lineNumber}', '${d.lineName}', '${d.stopName}', ${d.lat}, ${d.lng}, '${d.status}', ${d.occupancy ?? 'NULL'}, ${d.nextArrival ?? 'NULL'}, NOW(), NOW())`
 	            ).join(', ');
 	            
 	            console.log("Inizio inserimento di massa nel DB...");
