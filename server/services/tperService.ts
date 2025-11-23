@@ -43,7 +43,7 @@ export async function getTPERStops(): Promise<TPERStop[]> {
   try {
     const response = await axios.get(`${TPER_OPENDATA_BASE}/tper-fermate-autobus/records`, {
       params: {
-        limit: 100, // Limitiamo a 100 per non sovraccaricare
+        limit: 5000, // Carichiamo tutte le fermate (max 5000 richieste/giorno)
         where: 'comune="BOLOGNA"',
         select: 'codice,codice_linea,denominazione,ubicazione,comune,geopoint,quartiere'
       }
@@ -115,38 +115,29 @@ export async function getTPERBusTimes(stopCode: number, lineNumber: string): Pro
 
 /**
  * Sincronizza i dati TPER con il database locale
+ * Carica tutte le fermate da Open Data Bologna (senza Hello Bus per velocità)
  */
 export async function syncTPERData() {
   console.log('[TPER Service] Inizio sincronizzazione dati TPER...');
   
   try {
-    // 1. Recupero le fermate
+    // 1. Recupero TUTTE le fermate da Open Data Bologna
     const stops = await getTPERStops();
     console.log(`[TPER Service] Recuperate ${stops.length} fermate`);
 
-    // 2. Per ogni fermata, recupero gli orari (solo per le prime 10 per non sovraccaricare)
-    const mobilityData = [];
-    for (const stop of stops.slice(0, 10)) {
-      const busTime = await getTPERBusTimes(stop.code, stop.lineCode);
-      
-      if (busTime) {
-        mobilityData.push({
-          type: 'bus',
-          lineNumber: stop.lineCode,
-          lineName: `Linea ${stop.lineCode}`,
-          stopName: stop.name,
-          lat: stop.lat.toString(),
-          lng: stop.lng.toString(),
-          status: busTime.status,
-          nextArrival: busTime.nextArrival,
-          occupancy: null, // TPER non fornisce dati di occupazione
-          updatedAt: new Date()
-        });
-      }
-
-      // Pausa di 500ms tra le richieste per non sovraccaricare il server
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
+    // 2. Converto in formato mobility_data (SENZA chiamare Hello Bus)
+    const mobilityData = stops.map(stop => ({
+      type: 'bus',
+      lineNumber: stop.lineCode,
+      lineName: `Linea ${stop.lineCode}`,
+      stopName: stop.name,
+      lat: stop.lat.toString(),
+      lng: stop.lng.toString(),
+      status: 'active', // Assumiamo tutte attive
+      nextArrival: null, // Non abbiamo dati real-time
+      occupancy: null, // TPER non fornisce dati di occupazione
+      updatedAt: new Date()
+    }));
 
     console.log(`[TPER Service] Sincronizzati ${mobilityData.length} dati mobilità`);
     return mobilityData;
