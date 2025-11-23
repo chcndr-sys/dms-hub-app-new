@@ -143,7 +143,7 @@ export const appRouter = router({
       // GET /api/mobility/tper/sync - Sincronizza dati TPER
       sync: publicProcedure.mutation(async () => {
         const { syncTPERData } = await import("./services/tperService");
-        const { db } = await import("./db");
+        const { getDb } = await import("./db");
         const { mobilityData } = await import("../drizzle/schema");
         
         // Sincronizza i dati
@@ -151,6 +151,7 @@ export const appRouter = router({
         
         // Salva nel database
         if (data.length > 0) {
+          const db = await getDb();
           await db.insert(mobilityData).values(data).onConflictDoNothing();
         }
         
