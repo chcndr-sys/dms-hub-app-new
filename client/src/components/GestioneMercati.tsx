@@ -437,11 +437,19 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
       const stallsData = await stallsRes.json();
       const mapDataRes = await mapRes.json();
 
+      console.log('[DEBUG fetchData] Dati ricevuti:', {
+        stallsCount: stallsData.data?.length,
+        firstStall: stallsData.data?.[0],
+        mapDataExists: !!mapDataRes.data
+      });
+
       if (stallsData.success) {
         setStalls(stallsData.data);
+        console.log('[DEBUG fetchData] stalls aggiornato, length:', stallsData.data.length);
       }
       if (mapDataRes.success) {
         setMapData(mapDataRes.data);
+        console.log('[DEBUG fetchData] mapData aggiornato');
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -472,9 +480,15 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
 
       const data = await response.json();
       if (data.success) {
+        console.log('[DEBUG handleSave] Posteggio aggiornato:', stallId, editData);
         toast.success('Posteggio aggiornato con successo');
         await fetchData(); // Ricarica dati
-        setMapRefreshKey(prev => prev + 1); // Forza re-render mappa
+        console.log('[DEBUG handleSave] PRIMA refreshKey:', mapRefreshKey);
+        setMapRefreshKey(prev => {
+          const newKey = prev + 1;
+          console.log('[DEBUG handleSave] DOPO refreshKey:', newKey);
+          return newKey;
+        });
         setEditingId(null);
         setEditData({});
       } else {
@@ -684,31 +698,40 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
             {isMapExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
 
-          {mapData && (
-            <MarketMapComponent
-              refreshKey={mapRefreshKey}
-              mapData={mapData}
-              center={mapCenter}
-              zoom={19}
-              height="100%"
-              onStallClick={(stallNumber) => {
-                const dbStall = stallsByNumber.get(stallNumber);
-                if (dbStall) {
-                  setSelectedStallId(dbStall.id);
-                  // Scroll alla riga nella tabella
-                  const row = document.querySelector(`[data-stall-id="${dbStall.id}"]`);
-                  row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }}
-              selectedStallNumber={stalls.find(s => s.id === selectedStallId)?.number}
-              stallsData={stalls.map(s => ({
-                number: s.number,
-                status: s.status,
-                type: s.type,
-                vendor_name: s.vendor_business_name || undefined
-              }))}
-            />
-          )}
+          {mapData && (() => {
+            const stallsDataForMap = stalls.map(s => ({
+              number: s.number,
+              status: s.status,
+              type: s.type,
+              vendor_name: s.vendor_business_name || undefined
+            }));
+            console.log('[DEBUG render] Passando a MarketMapComponent:', {
+              refreshKey: mapRefreshKey,
+              stallsDataLength: stallsDataForMap.length,
+              firstStall: stallsDataForMap[0],
+              mapDataExists: !!mapData
+            });
+            return (
+              <MarketMapComponent
+                refreshKey={mapRefreshKey}
+                mapData={mapData}
+                center={mapCenter}
+                zoom={19}
+                height="100%"
+                onStallClick={(stallNumber) => {
+                  const dbStall = stallsByNumber.get(stallNumber);
+                  if (dbStall) {
+                    setSelectedStallId(dbStall.id);
+                    // Scroll alla riga nella tabella
+                    const row = document.querySelector(`[data-stall-id="${dbStall.id}"]`);
+                    row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }}
+                selectedStallNumber={stalls.find(s => s.id === selectedStallId)?.number}
+                stallsData={stallsDataForMap}
+              />
+            );
+          })()}
         </div>
       </div>
     </div>

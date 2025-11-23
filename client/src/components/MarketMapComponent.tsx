@@ -108,6 +108,13 @@ export function MarketMapComponent({
   
   const mapCenter: [number, number] = center || [mapData.center.lat, mapData.center.lng];
   
+  console.log('[DEBUG MarketMapComponent] RICEVUTO:', {
+    refreshKey,
+    stallsDataLength: stallsData.length,
+    firstStall: stallsData[0],
+    mapDataFeaturesCount: mapData.stalls_geojson.features.length
+  });
+  
   // Mappa stallsData per accesso rapido
   // Crea due chiavi: sia numero che stringa per gestire entrambi i casi
   const stallsByNumber = new Map<number | string, typeof stallsData[0]>();
@@ -119,9 +126,9 @@ export function MarketMapComponent({
   });
   
   // DEBUG: Log stallsData
-  console.log('[DEBUG] stallsData length:', stallsData.length);
-  console.log('[DEBUG] stallsData sample:', stallsData.slice(0, 5));
-  console.log('[DEBUG] stallsByNumber keys sample:', Array.from(stallsByNumber.keys()).slice(0, 10));
+  console.log('[DEBUG MarketMapComponent] stallsData length:', stallsData.length);
+  console.log('[DEBUG MarketMapComponent] stallsData sample:', stallsData.slice(0, 5));
+  console.log('[DEBUG MarketMapComponent] stallsByNumber keys sample:', Array.from(stallsByNumber.keys()).slice(0, 10));
   
   // Funzione per determinare il colore in base allo stato
   const getStallColor = (stallNumber: number, defaultStatus?: string): string => {
