@@ -684,6 +684,7 @@ function PosteggiTab({ marketId, marketCenter }: { marketId: number; marketCente
 
           {mapData && (
             <MarketMapComponent
+              key={`map-${stalls.map(s => `${s.number}-${s.status}`).join('-')}`}
               mapData={mapData}
               center={mapCenter}
               zoom={19}
