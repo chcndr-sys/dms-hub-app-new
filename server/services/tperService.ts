@@ -135,8 +135,8 @@ export async function syncTPERData() {
           lineNumber: stop.lineCode,
           lineName: `Linea ${stop.lineCode}`,
           stopName: stop.name,
-          lat: stop.lat,
-          lng: stop.lng,
+          lat: stop.lat.toString(),
+          lng: stop.lng.toString(),
           status: busTime.status,
           nextArrival: busTime.nextArrival,
           occupancy: null, // TPER non fornisce dati di occupazione
