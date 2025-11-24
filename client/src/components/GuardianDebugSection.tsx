@@ -3,6 +3,7 @@
  * 
  * Componente per visualizzare solo gli errori e i warning del sistema Guardian.
  * Utilizzato nella sezione Debug della Dashboard PA per il monitoraggio degli errori.
+ * Si collega al backend REST su Hetzner per ottenere i log reali dal database.
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,55 +17,56 @@ import {
   Activity,
   RefreshCw 
 } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { logsAPI } from '@/utils/mihubAPI';
 import { toast } from 'sonner';
 
 export default function GuardianDebugSection() {
-  // Query Guardian logs filtrati per errori e warning
-  const { data: logsData, isLoading: loading, error, refetch } = trpc.guardian.logs.useQuery({
-    level: 'error', // Filtra solo errori
-  }, {
+  // Query Guardian logs filtrati per errori (success=false)
+  const { data: errorLogsData, isLoading: loading, error, refetch } = useQuery({
+    queryKey: ['guardian-errors'],
+    queryFn: () => logsAPI.getLogs({ success: false, limit: 50 }),
     retry: 1,
-    onError: (err) => {
-      console.error('[GuardianDebugSection] Errore caricamento log:', err);
-    },
-    onSuccess: (data) => {
-      console.log('[GuardianDebugSection] Log errori caricati:', data);
-    },
+    refetchInterval: 10000, // Refresh ogni 10 secondi
+  });
+
+  // Query per tutti i log per calcolare le statistiche
+  const { data: allLogsData } = useQuery({
+    queryKey: ['guardian-logs-all'],
+    queryFn: () => logsAPI.getLogs({ limit: 100 }),
+    retry: 1,
+    refetchInterval: 10000,
   });
   
-  const errorLogs = logsData?.logs || [];
-  const logsStats = logsData?.stats || null;
-
-  // Query per tutti i log per calcolare anche i warning
-  const { data: allLogsData } = trpc.guardian.logs.useQuery();
+  const errorLogs = errorLogsData?.logs || [];
   const allLogs = allLogsData?.logs || [];
-  
-  const warnLogs = allLogs.filter((log: any) => log.level === 'warn');
-  const debugLogs = allLogs.filter((log: any) => log.level === 'debug');
 
+  // Calcola statistiche
   const stats = {
     errors: errorLogs.length,
-    warnings: warnLogs.length,
-    debug: debugLogs.length,
+    warnings: 0, // TODO: aggiungere campo warning nel backend
+    debug: 0,
     total: allLogs.length,
   };
 
   const getSuggestion = (log: any): string => {
-    if (log.message?.includes('Unknown agent')) {
+    if (log.message?.includes('Unknown agent') || log.message?.includes('not authorized')) {
       return 'Aggiungi questo agente in agents/permissions.json con i permessi appropriati';
     }
-    if (log.message?.includes('Unknown endpoint')) {
+    if (log.message?.includes('Unknown endpoint') || log.message?.includes('not found')) {
       return 'Verifica che l\'endpoint sia registrato nell\'inventario API';
     }
-    if (log.message?.includes('Permission denied')) {
-      return `Aggiungi una regola permesso per ${log.userEmail} per l'endpoint ${log.endpoint}`;
+    if (log.message?.includes('Permission denied') || log.message?.includes('denied')) {
+      return `Aggiungi una regola permesso per ${log.agent} per l'endpoint ${log.endpoint}`;
     }
     if (log.message?.includes('timeout')) {
       return 'Verifica la connessione al database o aumenta il timeout';
     }
-    if (log.message?.includes('Database')) {
+    if (log.message?.includes('Database') || log.message?.includes('database')) {
       return 'Controlla lo stato del database e le query SQL';
+    }
+    if (log.message?.includes('Failed to')) {
+      return 'Verifica i log del server e la configurazione del servizio';
     }
     return 'Verifica la configurazione Guardian e i log di sistema';
   };
@@ -93,7 +95,12 @@ export default function GuardianDebugSection() {
         <div className="text-center">
           <XCircle className="h-8 w-8 text-red-400 mx-auto mb-4" />
           <p className="text-red-400 font-semibold mb-2">Errore nel caricamento dei log di debug</p>
-          <p className="text-[#e8fbff]/60 text-sm">{error.message}</p>
+          <p className="text-[#e8fbff]/60 text-sm">
+            {error instanceof Error ? error.message : 'Errore sconosciuto'}
+          </p>
+          <p className="text-xs text-[#e8fbff]/40 mt-2">
+            Verifica che il backend REST sia attivo su Hetzner
+          </p>
         </div>
       </div>
     );
@@ -104,7 +111,7 @@ export default function GuardianDebugSection() {
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <Activity className="h-8 w-8 animate-spin text-[#14b8a6] mx-auto mb-4" />
-          <p className="text-[#e8fbff]/60">Caricamento debug info...</p>
+          <p className="text-[#e8fbff]/60">Caricamento debug info dal database...</p>
         </div>
       </div>
     );
@@ -186,7 +193,7 @@ export default function GuardianDebugSection() {
       </div>
 
       {/* Guardian Issues List */}
-      {errorLogs.length === 0 && warnLogs.length === 0 ? (
+      {errorLogs.length === 0 ? (
         <Card className="bg-green-500/10 border-green-500/30">
           <CardContent className="py-12 text-center">
             <div className="flex justify-center mb-4">
@@ -196,117 +203,77 @@ export default function GuardianDebugSection() {
             </div>
             <h3 className="text-xl font-bold text-green-400 mb-2">Tutto OK! 🎉</h3>
             <p className="text-[#e8fbff]/60">
-              Nessun errore o warning rilevato. Il sistema funziona correttamente.
+              Nessun errore rilevato. Il sistema funziona correttamente.
             </p>
           </CardContent>
         </Card>
       ) : (
         <>
           {/* Errori */}
-          {errorLogs.length > 0 && (
-            <Card className="bg-[#1a2332] border-[#ef4444]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <XCircle className="h-5 w-5 text-[#ef4444]" />
-                  Errori Critici ({errorLogs.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                  {errorLogs.map((log: any, idx: number) => (
-                    <div key={idx} className="p-4 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <XCircle className="h-5 w-5 text-[#ef4444]" />
-                          <span className="text-[#ef4444] font-semibold">{log.app}</span>
-                          <span className="text-[#e8fbff]/50 text-sm">•</span>
-                          <span className="text-[#e8fbff]/50 text-sm">{log.type}</span>
-                        </div>
-                        <span className="text-[#e8fbff]/50 text-xs">{formatTimestamp(log.timestamp)}</span>
+          <Card className="bg-[#1a2332] border-[#ef4444]/30">
+            <CardHeader>
+              <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-[#ef4444]" />
+                Errori Critici ({errorLogs.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {errorLogs.map((log: any, idx: number) => (
+                  <div key={idx} className="p-4 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-5 w-5 text-[#ef4444]" />
+                        <span className="text-[#ef4444] font-semibold">{log.agent}</span>
+                        {log.serviceId && (
+                          <>
+                            <span className="text-[#e8fbff]/50 text-sm">•</span>
+                            <span className="text-[#e8fbff]/50 text-sm">{log.serviceId}</span>
+                          </>
+                        )}
+                        {log.risk && (
+                          <>
+                            <span className="text-[#e8fbff]/50 text-sm">•</span>
+                            <span className={`text-sm ${
+                              log.risk === 'high' ? 'text-red-400' :
+                              log.risk === 'medium' ? 'text-yellow-400' :
+                              'text-green-400'
+                            }`}>
+                              {log.risk.toUpperCase()}
+                            </span>
+                          </>
+                        )}
                       </div>
-                      
-                      <p className="text-[#e8fbff] text-sm mb-2 font-mono">{log.message}</p>
-                      
-                      {log.endpoint && (
-                        <div className="text-[#e8fbff]/60 text-xs mb-2">
-                          <span className="font-semibold">Endpoint:</span> {log.method} {log.endpoint}
-                          {log.statusCode && ` - ${log.statusCode}`}
-                        </div>
-                      )}
-                      
-                      {log.userEmail && (
-                        <div className="text-[#e8fbff]/60 text-xs mb-2">
-                          <span className="font-semibold">User:</span> {log.userEmail}
-                        </div>
-                      )}
-                      
-                      <div className="mt-3 p-3 bg-[#0a1628] rounded-lg border border-[#14b8a6]/20">
-                        <div className="flex items-start gap-2">
-                          <Lightbulb className="h-4 w-4 text-[#14b8a6] mt-0.5" />
-                          <div>
-                            <p className="text-[#14b8a6] font-semibold text-xs mb-1">Suggerimento:</p>
-                            <p className="text-[#e8fbff]/80 text-xs">{getSuggestion(log)}</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {log.details && (
-                        <details className="mt-2">
-                          <summary className="text-[#e8fbff]/60 text-xs cursor-pointer hover:text-[#e8fbff]">
-                            Dettagli tecnici
-                          </summary>
-                          <pre className="mt-2 bg-[#0a1628] p-2 rounded text-[#e8fbff]/70 text-xs overflow-x-auto">
-                            {JSON.stringify(log.details, null, 2)}
-                          </pre>
-                        </details>
-                      )}
+                      <span className="text-[#e8fbff]/50 text-xs">{formatTimestamp(log.timestamp)}</span>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Warning */}
-          {warnLogs.length > 0 && (
-            <Card className="bg-[#1a2332] border-[#f59e0b]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-[#f59e0b]" />
-                  Warning ({warnLogs.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                  {warnLogs.map((log: any, idx: number) => (
-                    <div key={idx} className="p-4 bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <AlertTriangle className="h-5 w-5 text-[#f59e0b]" />
-                          <span className="text-[#f59e0b] font-semibold">{log.app}</span>
-                          <span className="text-[#e8fbff]/50 text-sm">•</span>
-                          <span className="text-[#e8fbff]/50 text-sm">{log.type}</span>
-                        </div>
-                        <span className="text-[#e8fbff]/50 text-xs">{formatTimestamp(log.timestamp)}</span>
+                    
+                    <p className="text-[#e8fbff] text-sm mb-2 font-mono">{log.message}</p>
+                    
+                    {log.endpoint && (
+                      <div className="text-[#e8fbff]/60 text-xs mb-2">
+                        <span className="font-semibold">Endpoint:</span> {log.method} {log.endpoint}
+                        {log.statusCode && ` - ${log.statusCode}`}
                       </div>
-                      
-                      <p className="text-[#e8fbff] text-sm mb-2 font-mono">{log.message}</p>
-                      
-                      {log.endpoint && (
-                        <div className="text-[#e8fbff]/60 text-xs">
-                          <span className="font-semibold">Endpoint:</span> {log.method} {log.endpoint}
+                    )}
+                    
+                    <div className="mt-3 p-3 bg-[#0a1628] rounded-lg border border-[#14b8a6]/20">
+                      <div className="flex items-start gap-2">
+                        <Lightbulb className="h-4 w-4 text-[#14b8a6] mt-0.5" />
+                        <div>
+                          <p className="text-[#14b8a6] font-semibold text-xs mb-1">Suggerimento:</p>
+                          <p className="text-[#e8fbff]/80 text-xs">{getSuggestion(log)}</p>
                         </div>
-                      )}
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </>
       )}
 
-      {/* Console Logs Live (come prima) */}
+      {/* Console Logs Live (simulato) */}
       <Card className="bg-[#1a2332] border-[#14b8a6]/30">
         <CardHeader>
           <CardTitle className="text-[#e8fbff] flex items-center gap-2">
@@ -315,13 +282,21 @@ export default function GuardianDebugSection() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="bg-[#0a1628] p-4 rounded-lg font-mono text-sm">
-            <div className="text-[#10b981]">$ Guardian API Status...</div>
-            <div className="text-[#8b5cf6] mt-4">$ MIO Agent API Status...</div>
-            <div className="text-[#14b8a6]">✓ POST /api/guardian/integrations - Ready</div>
-            <div className="text-[#14b8a6]">✓ POST /api/guardian/logs - Ready</div>
-            <div className="text-[#14b8a6]">✓ POST /api/guardian/debug/testEndpoint - Ready</div>
-            <div className="text-[#e8fbff]/50 mt-2">→ Test via tab Integrazioni</div>
+          <div className="bg-[#0a1628] rounded-lg p-4 font-mono text-xs text-[#e8fbff]/80 max-h-[300px] overflow-y-auto">
+            {allLogs.length === 0 ? (
+              <p className="text-[#e8fbff]/40">Nessun log disponibile...</p>
+            ) : (
+              allLogs.slice(0, 10).map((log: any, idx: number) => (
+                <div key={idx} className="mb-1">
+                  <span className="text-[#e8fbff]/40">[{formatTimestamp(log.timestamp)}]</span>{' '}
+                  <span className={log.success ? 'text-green-400' : 'text-red-400'}>
+                    {log.success ? '✓' : '✗'}
+                  </span>{' '}
+                  <span className="text-[#14b8a6]">{log.agent}</span>:{' '}
+                  {log.message}
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

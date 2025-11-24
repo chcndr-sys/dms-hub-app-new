@@ -2,35 +2,40 @@
  * Guardian Logs Section Component
  * 
  * Componente per visualizzare i log centralizzati del sistema Guardian.
- * Si collega all'endpoint Guardian per ottenere i log in tempo reale.
+ * Si collega al backend REST su Hetzner per ottenere i log reali dal database.
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Terminal, Shield, Activity } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { logsAPI } from '@/utils/mihubAPI';
 
 export default function GuardianLogsSection() {
-  // Query Guardian logs dal backend MIHUB
-  const { data: logsData, isLoading: loading, error } = trpc.guardian.logs.useQuery(undefined, {
+  // Query logs dal backend REST Hetzner
+  const { data: logsData, isLoading: loading, error } = useQuery({
+    queryKey: ['guardian-logs'],
+    queryFn: () => logsAPI.getLogs({ limit: 100 }),
     retry: 1,
-    onError: (err) => {
-      console.error('[GuardianLogsSection] Errore caricamento log:', err);
-    },
-    onSuccess: (data) => {
-      console.log('[GuardianLogsSection] Log caricati:', data);
-    },
+    refetchInterval: 10000, // Refresh ogni 10 secondi
   });
-  
-  const guardianLogs = logsData?.logs || [];
-  const logsStats = logsData?.stats || null;
 
-  // Calculate stats from Guardian logs
-  const stats = logsStats ? {
-    total: logsStats.total,
-    info: logsStats.byLevel.info,
-    warn: logsStats.byLevel.warn,
-    error: logsStats.byLevel.error,
+  const guardianLogs = logsData?.logs || [];
+
+  // Query stats
+  const { data: statsData } = useQuery({
+    queryKey: ['guardian-logs-stats'],
+    queryFn: () => logsAPI.stats(),
+    retry: 1,
+    refetchInterval: 10000,
+  });
+
+  // Calculate stats
+  const stats = statsData?.stats ? {
+    total: statsData.stats.total,
+    info: statsData.stats.successful,
+    warn: 0, // TODO: aggiungere conteggio warning nel backend
+    error: statsData.stats.failed,
   } : {
     total: 0,
     info: 0,
@@ -38,19 +43,10 @@ export default function GuardianLogsSection() {
     error: 0,
   };
 
-  const getLevelBadge = (level: string) => {
-    switch (level) {
-      case 'info':
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'warn':
-        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'error':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'debug':
-        return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      default:
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-    }
+  const getLevelBadge = (success: boolean) => {
+    return success
+      ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+      : 'bg-red-500/20 text-red-400 border-red-500/30';
   };
 
   const formatTimestamp = (timestamp: string | Date) => {
@@ -66,10 +62,10 @@ export default function GuardianLogsSection() {
     });
   };
 
-  // Filtra log per tipo (System = DMS_HUB, Guardian = GUARDIAN/MIHUB/MIO_AGENT)
-  const systemLogs = guardianLogs.filter((log: any) => log.app === 'DMS_HUB');
+  // Filtra log per agente
+  const systemLogs = guardianLogs.filter((log: any) => log.agent === 'system' || log.agent === 'anonymous');
   const guardianOnlyLogs = guardianLogs.filter((log: any) => 
-    log.app === 'GUARDIAN' || log.app === 'MIHUB' || log.app === 'MIO_AGENT'
+    log.agent === 'guardian' || log.agent === 'mio' || log.agent === 'dev' || log.agent === 'manus'
   );
 
   return (
@@ -86,7 +82,7 @@ export default function GuardianLogsSection() {
         </Card>
         <Card className="bg-gradient-to-br from-[#10b981]/20 to-[#10b981]/5 border-[#10b981]/30">
           <CardHeader className="pb-3">
-            <CardTitle className="text-[#e8fbff] text-sm">Info</CardTitle>
+            <CardTitle className="text-[#e8fbff] text-sm">Successi</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-bold text-[#10b981]">{stats.info}</div>
@@ -102,7 +98,7 @@ export default function GuardianLogsSection() {
         </Card>
         <Card className="bg-gradient-to-br from-[#ef4444]/20 to-[#ef4444]/5 border-[#ef4444]/30">
           <CardHeader className="pb-3">
-            <CardTitle className="text-[#e8fbff] text-sm">Error</CardTitle>
+            <CardTitle className="text-[#e8fbff] text-sm">Errori</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-bold text-[#ef4444]">{stats.error}</div>
@@ -137,16 +133,24 @@ export default function GuardianLogsSection() {
               {error ? (
                 <div className="text-center py-8 text-red-400">
                   <p className="font-semibold mb-2">Errore nel caricamento dei log</p>
-                  <p className="text-sm text-[#e8fbff]/60">{error.message}</p>
+                  <p className="text-sm text-[#e8fbff]/60">
+                    {error instanceof Error ? error.message : 'Errore sconosciuto'}
+                  </p>
+                  <p className="text-xs text-[#e8fbff]/40 mt-2">
+                    Verifica che il backend REST sia attivo su Hetzner
+                  </p>
                 </div>
               ) : loading ? (
                 <div className="text-center py-8 text-[#e8fbff]/60">
                   <Activity className="h-8 w-8 animate-spin text-[#14b8a6] mx-auto mb-4" />
-                  Caricamento log...
+                  Caricamento log dal database...
                 </div>
               ) : guardianLogs.length === 0 ? (
                 <div className="text-center py-8 text-[#e8fbff]/60">
-                  Nessun log disponibile. Inizializza i log di demo dalla sezione Integrazioni.
+                  <p className="mb-2">Nessun log disponibile nel database.</p>
+                  <p className="text-sm text-[#e8fbff]/40">
+                    I log verranno creati automaticamente quando si usano le API.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[600px] overflow-y-auto">
@@ -154,21 +158,35 @@ export default function GuardianLogsSection() {
                     <div
                       key={idx}
                       className={`p-3 rounded-lg border ${
-                        log.level === 'error'
+                        !log.success
                           ? 'bg-[#ef4444]/10 border-[#ef4444]/30'
-                          : log.level === 'warn'
-                          ? 'bg-[#f59e0b]/10 border-[#f59e0b]/30'
                           : 'bg-[#0b1220] border-[#14b8a6]/20'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${getLevelBadge(log.level)}`}>
-                            {log.level.toUpperCase()}
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${getLevelBadge(log.success)}`}>
+                            {log.success ? 'SUCCESS' : 'ERROR'}
                           </span>
-                          <span className="text-xs text-[#e8fbff]/70">{log.app}</span>
-                          <span className="text-xs text-[#e8fbff]/50">•</span>
-                          <span className="text-xs text-[#e8fbff]/50">{log.type}</span>
+                          <span className="text-xs text-[#e8fbff]/70">{log.agent}</span>
+                          {log.serviceId && (
+                            <>
+                              <span className="text-xs text-[#e8fbff]/50">•</span>
+                              <span className="text-xs text-[#e8fbff]/50">{log.serviceId}</span>
+                            </>
+                          )}
+                          {log.risk && (
+                            <>
+                              <span className="text-xs text-[#e8fbff]/50">•</span>
+                              <span className={`text-xs ${
+                                log.risk === 'high' ? 'text-red-400' :
+                                log.risk === 'medium' ? 'text-yellow-400' :
+                                'text-green-400'
+                              }`}>
+                                {log.risk.toUpperCase()}
+                              </span>
+                            </>
+                          )}
                         </div>
                         <span className="text-xs text-[#e8fbff]/50">{formatTimestamp(log.timestamp)}</span>
                       </div>
@@ -177,12 +195,6 @@ export default function GuardianLogsSection() {
                         <div className="text-xs text-[#e8fbff]/50 mt-1">
                           {log.method} {log.endpoint} {log.statusCode && `- ${log.statusCode}`}
                         </div>
-                      )}
-                      {log.userEmail && (
-                        <div className="text-xs text-[#e8fbff]/50 mt-1">User: {log.userEmail}</div>
-                      )}
-                      {log.responseTime && (
-                        <div className="text-xs text-[#e8fbff]/50 mt-1">Response Time: {log.responseTime}ms</div>
                       )}
                     </div>
                   ))}
@@ -215,19 +227,14 @@ export default function GuardianLogsSection() {
                     >
                       <div className="flex items-start justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${getLevelBadge(log.level)}`}>
-                            {log.level.toUpperCase()}
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${getLevelBadge(log.success)}`}>
+                            {log.success ? 'SUCCESS' : 'ERROR'}
                           </span>
-                          <span className="text-xs text-[#e8fbff]/70">{log.app}</span>
-                          <span className="text-xs text-[#e8fbff]/50">•</span>
-                          <span className="text-xs text-[#e8fbff]/50">{log.type}</span>
+                          <span className="text-xs text-[#e8fbff]/70">{log.agent}</span>
                         </div>
                         <span className="text-xs text-[#e8fbff]/50">{formatTimestamp(log.timestamp)}</span>
                       </div>
                       <p className="text-sm text-[#e8fbff] font-mono">{log.message}</p>
-                      {log.userEmail && (
-                        <div className="text-xs text-[#e8fbff]/50 mt-1">User: {log.userEmail}</div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -256,19 +263,23 @@ export default function GuardianLogsSection() {
                     <div
                       key={idx}
                       className={`p-3 rounded-lg border ${
-                        log.level === 'error'
+                        !log.success
                           ? 'bg-[#ef4444]/10 border-[#ef4444]/30'
                           : 'bg-[#0b1220] border-[#14b8a6]/20'
                       }`}
                     >
                       <div className="flex items-start justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${getLevelBadge(log.level)}`}>
-                            {log.level.toUpperCase()}
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${getLevelBadge(log.success)}`}>
+                            {log.success ? 'SUCCESS' : 'ERROR'}
                           </span>
-                          <span className="text-xs text-[#e8fbff]/70">{log.app}</span>
-                          <span className="text-xs text-[#e8fbff]/50">•</span>
-                          <span className="text-xs text-[#e8fbff]/50">{log.type}</span>
+                          <span className="text-xs text-[#e8fbff]/70">{log.agent}</span>
+                          {log.serviceId && (
+                            <>
+                              <span className="text-xs text-[#e8fbff]/50">•</span>
+                              <span className="text-xs text-[#e8fbff]/50">{log.serviceId}</span>
+                            </>
+                          )}
                         </div>
                         <span className="text-xs text-[#e8fbff]/50">{formatTimestamp(log.timestamp)}</span>
                       </div>
