@@ -26,7 +26,7 @@ import GuardianLogsSection from '@/components/GuardianLogsSection';
 import GuardianDebugSection from '@/components/GuardianDebugSection';
 import { MarketMapComponent } from '@/components/MarketMapComponent';
 import MIOAgent from '@/components/MIOAgent';
-// import MIOAgentChat from '@/components/MIOAgentChat';
+import MIOAgentChat from '@/components/MIOAgentChat';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Hook per dati reali da backend
@@ -3475,10 +3475,7 @@ export default function DashboardPA() {
           <TabsContent value="mio" className="space-y-6">
             {/* SEZIONE NUOVA: MIO Agent Chat Orchestratore */}
             <div className="h-[800px]">
-              {/* <MIOAgentChat /> */}
-              <div className="p-8 text-center text-gray-400">
-                <p>MIO Agent Chat - In sviluppo</p>
-              </div>
+              <MIOAgentChat />
             </div>
             
             {/* SEZIONE A: Chat Principale MIO (sempre visibile) - DEPRECATA */}
