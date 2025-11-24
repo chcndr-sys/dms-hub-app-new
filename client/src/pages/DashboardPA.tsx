@@ -21,6 +21,7 @@ import GestioneMercati from '@/components/GestioneMercati';
 import Integrazioni from '@/components/Integrazioni';
 import { GISMap } from '@/components/GISMap';
 import MIOAgent from '@/components/MIOAgent';
+import { callOrchestrator } from '@/api/orchestratorClient';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Hook per dati reali da backend
@@ -439,6 +440,13 @@ export default function DashboardPA() {
   const [selectedAgent, setSelectedAgent] = useState<'mio' | 'manus' | 'abacus' | 'zapier'>('mio');
   const [viewMode, setViewMode] = useState<'single' | 'quad'>('single');
   
+  // MIO Agent Chat state (Fase 1)
+  const [mioMessages, setMioMessages] = useState<Array<{ role: 'user' | 'assistant' | 'system'; text: string; agent?: string }>>([]);
+  const [mioInputValue, setMioInputValue] = useState('');
+  const [mioLoading, setMioLoading] = useState(false);
+  const [mioError, setMioError] = useState<string | null>(null);
+  const [mioConversationId, setMioConversationId] = useState<string | null>(null);
+  
   // Format timestamp for Guardian logs
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -449,6 +457,59 @@ export default function DashboardPA() {
       hour: '2-digit',
       minute: '2-digit',
     }) + ' (ora locale)';
+  };
+  
+  // Handler per invio messaggio MIO (Fase 1)
+  const handleSendMio = async () => {
+    if (!mioInputValue.trim() || mioLoading) return;
+    
+    const text = mioInputValue.trim();
+    
+    // Aggiungi messaggio utente
+    setMioMessages(prev => [...prev, { role: 'user', text }]);
+    setMioInputValue('');
+    setMioLoading(true);
+    setMioError(null);
+    
+    try {
+      const response = await callOrchestrator({
+        mode: 'auto',
+        conversationId: mioConversationId,
+        message: text,
+        meta: { source: 'dashboard_main' },
+      });
+      
+      // Salva conversationId
+      if (response.conversationId) {
+        setMioConversationId(response.conversationId);
+      }
+      
+      if (response.success && response.message) {
+        // Aggiungi risposta agente
+        setMioMessages(prev => [
+          ...prev,
+          { role: 'assistant', agent: response.agent, text: response.message! },
+        ]);
+      } else if (response.error) {
+        // Mostra errore leggibile
+        const errorMsg = response.error.message || 'Errore orchestratore. Riprova più tardi.';
+        setMioMessages(prev => [
+          ...prev,
+          { role: 'system', text: `[Errore] ${errorMsg}` },
+        ]);
+        setMioError(errorMsg);
+      }
+    } catch (error) {
+      console.error('[MIO Agent] Error:', error);
+      const errorMsg = 'Errore di connessione al server';
+      setMioMessages(prev => [
+        ...prev,
+        { role: 'system', text: `[Errore] ${errorMsg}` },
+      ]);
+      setMioError(errorMsg);
+    } finally {
+      setMioLoading(false);
+    }
   };
   
   // Fetch Guardian logs
@@ -3245,28 +3306,85 @@ export default function DashboardPA() {
                           <Brain className="h-5 w-5 text-purple-400" />
                           <span className="text-[#e8fbff] font-medium">MIO</span>
                           <span className="text-xs text-[#e8fbff]/50">GPT-5 Coordinatore</span>
+                          {mioConversationId && (
+                            <span className="text-xs text-[#e8fbff]/30">ID: {mioConversationId.slice(0, 8)}...</span>
+                          )}
                         </div>
-                        <span className="text-xs text-[#e8fbff]/50">0 messaggi</span>
+                        <span className="text-xs text-[#e8fbff]/50">{mioMessages.length} messaggi</span>
                       </div>
                       {/* Area messaggi */}
-                      <div className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-auto">
-                        <p className="text-[#e8fbff]/50 text-center text-sm">Nessun messaggio</p>
+                      <div className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-auto space-y-3">
+                        {mioMessages.length === 0 ? (
+                          <p className="text-[#e8fbff]/50 text-center text-sm">Nessun messaggio</p>
+                        ) : (
+                          mioMessages.map((msg, idx) => (
+                            <div
+                              key={idx}
+                              className={`p-3 rounded-lg ${
+                                msg.role === 'user'
+                                  ? 'bg-[#8b5cf6]/20 border border-[#8b5cf6]/30 ml-8'
+                                  : msg.role === 'assistant'
+                                  ? 'bg-[#10b981]/20 border border-[#10b981]/30 mr-8'
+                                  : 'bg-[#ef4444]/20 border border-[#ef4444]/30'
+                              }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                {msg.role === 'assistant' && (
+                                  <Brain className="h-4 w-4 text-purple-400 mt-0.5" />
+                                )}
+                                <div className="flex-1">
+                                  {msg.role === 'assistant' && msg.agent && (
+                                    <div className="text-xs text-[#e8fbff]/50 mb-1">
+                                      Agent: {msg.agent}
+                                    </div>
+                                  )}
+                                  <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.text}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                        {mioLoading && (
+                          <div className="p-3 rounded-lg bg-[#10b981]/10 border border-[#10b981]/20 mr-8">
+                            <div className="flex items-center gap-2">
+                              <RefreshCw className="h-4 w-4 text-[#10b981] animate-spin" />
+                              <p className="text-[#e8fbff]/70 text-sm">MIO sta pensando...</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       {/* Input */}
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          placeholder="Messaggio da MIO..."
+                          value={mioInputValue}
+                          onChange={(e) => setMioInputValue(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !mioLoading) {
+                              handleSendMio();
+                            }
+                          }}
+                          placeholder="Messaggio a MIO..."
                           className="flex-1 bg-[#0a0f1a] border border-[#8b5cf6]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#8b5cf6]"
-                          disabled
+                          disabled={mioLoading}
                         />
-                        <Button className="bg-[#10b981] hover:bg-[#059669]" disabled>
-                          <Send className="h-4 w-4" />
+                        <Button 
+                          onClick={handleSendMio}
+                          className="bg-[#10b981] hover:bg-[#059669]" 
+                          disabled={mioLoading || !mioInputValue.trim()}
+                        >
+                          {mioLoading ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
-                      <p className="text-xs text-[#e8fbff]/30 text-center">
-                        Chat in fase di sviluppo
-                      </p>
+                      {mioError && (
+                        <p className="text-xs text-[#ef4444] text-center">
+                          {mioError}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
