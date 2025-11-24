@@ -2,7 +2,7 @@
  * Orchestrator Client - REST API verso backend Hetzner
  * 
  * L'orchestratore vive SOLO su Hetzner (mihub-backend-rest).
- * Questo client chiama direttamente https://orchestratore.mio-hub.me/api/mihub/orchestrator
+ * Questo client chiama direttamente https://orchestratore.mio-hub.me/mihub/orchestrator
  * 
  * NON usa tRPC, NON passa per Vercel serverless functions.
  */
@@ -22,19 +22,17 @@ export interface OrchestratorRequest {
   meta?: Record<string, any>;
 }
 
-export interface OrchestratorResponseError {
-  type: string;
-  provider?: string | null;
-  statusCode?: number;
-  message?: string;
-}
-
 export interface OrchestratorResponse {
   success: boolean;
   agent: AgentId;
   conversationId: string | null;
   message: string | null;
-  error: OrchestratorResponseError | null;
+  error?: {
+    type: string;
+    provider?: string | null;
+    statusCode?: number;
+    message?: string;
+  } | null;
 }
 
 // ============================================================================
@@ -54,31 +52,30 @@ const baseUrl =
  * 
  * @param payload - Richiesta orchestratore
  * @returns Risposta orchestratore
- * @throws Error se la richiesta HTTP fallisce o il JSON non e valido
+ * @throws Error se la richiesta HTTP fallisce
  */
 export async function callOrchestrator(
   payload: OrchestratorRequest
 ): Promise<OrchestratorResponse> {
-  const res = await fetch(`${baseUrl}/api/mihub/orchestrator`, {
+  const url = `${baseUrl}/api/mihub/orchestrator`;
+
+  console.log("[OrchestratorClient] Chiamata a:", url);
+  console.log("[OrchestratorClient] Payload:", payload);
+
+  const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
 
-  const text = await res.text();
-  console.log("[MIO_ORCH_CLIENT] raw response text", text);
+  console.log("[OrchestratorClient] Status:", res.status);
 
-  let json: any;
-  try {
-    json = JSON.parse(text);
-  } catch (e) {
-    console.error("[MIO_ORCH_CLIENT] invalid JSON", e);
-    throw new Error("INVALID_JSON");
-  }
+  // Prova sempre a parsare il JSON, anche per errori HTTP
+  // Il backend può rispondere con 4xx/5xx ma con body JSON valido
+  const data = (await res.json()) as OrchestratorResponse;
+  console.log("[OrchestratorClient] Risposta:", data);
 
-  if (!res.ok) {
-    console.warn("[MIO_ORCH_CLIENT] HTTP error", res.status, json);
-  }
-
-  return json as OrchestratorResponse;
+  return data;
 }
