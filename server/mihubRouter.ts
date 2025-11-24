@@ -382,4 +382,138 @@ export const mihubRouter = router({
         value: JSON.parse(m.value),
       }));
     }),
+
+  // ============================================================================
+  // ORCHESTRATOR - Multi-Agent Coordinator
+  // ============================================================================
+
+  orchestrator: publicProcedure
+    .input(z.object({
+      mode: z.enum(["auto", "manual"]),
+      targetAgent: z.enum(["mio", "dev", "manus_worker", "gemini_arch"]).optional(),
+      conversationId: z.string().nullable(),
+      message: z.string(),
+      meta: z.object({
+        source: z.string(),
+        agentBox: z.string().optional(),
+      }).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // Validazione input
+        if (!input.message || input.message.trim().length === 0) {
+          return {
+            success: false,
+            agent: "mio",
+            conversationId: input.conversationId,
+            message: null,
+            error: {
+              type: "validation_error" as const,
+              provider: null,
+              statusCode: 400,
+              detail: "Il messaggio non può essere vuoto",
+            },
+          };
+        }
+
+        // Genera conversationId se non esiste
+        const conversationId = input.conversationId || `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Determina l'agente target
+        const targetAgent = input.mode === "manual" && input.targetAgent 
+          ? input.targetAgent 
+          : "mio";
+
+        // Log richiesta
+        const db = await getDb();
+        if (db) {
+          try {
+            const { mioAgentLogs } = await import("../drizzle/schema");
+            await db.insert(mioAgentLogs).values({
+              agent: targetAgent,
+              action: "orchestrator_request",
+              status: "info",
+              message: `Richiesta orchestratore: ${input.message.substring(0, 100)}`,
+              details: JSON.stringify({
+                mode: input.mode,
+                targetAgent,
+                conversationId,
+                meta: input.meta,
+              }),
+            });
+          } catch (logError) {
+            console.error("[Orchestrator] Errore logging:", logError);
+          }
+        }
+
+        // TODO: Implementare chiamata LLM reale
+        // Per ora, risposta mock per testare il contratto
+        const mockResponse = `Risposta da ${targetAgent}: Ho ricevuto il tuo messaggio "${input.message}". Questa è una risposta di test.`;
+
+        // Log risposta
+        if (db) {
+          try {
+            const { mioAgentLogs } = await import("../drizzle/schema");
+            await db.insert(mioAgentLogs).values({
+              agent: targetAgent,
+              action: "orchestrator_response",
+              status: "success",
+              message: `Risposta orchestratore: ${mockResponse.substring(0, 100)}`,
+              details: JSON.stringify({
+                conversationId,
+                responseLength: mockResponse.length,
+              }),
+            });
+          } catch (logError) {
+            console.error("[Orchestrator] Errore logging:", logError);
+          }
+        }
+
+        return {
+          success: true,
+          agent: targetAgent,
+          conversationId,
+          message: mockResponse,
+          meta: {
+            timestamp: new Date().toISOString(),
+            mode: input.mode,
+          },
+        };
+      } catch (error: any) {
+        console.error("[Orchestrator] Errore:", error);
+
+        // Log errore
+        const db = await getDb();
+        if (db) {
+          try {
+            const { mioAgentLogs } = await import("../drizzle/schema");
+            await db.insert(mioAgentLogs).values({
+              agent: "mio",
+              action: "orchestrator_error",
+              status: "error",
+              message: `Errore orchestratore: ${error.message}`,
+              details: JSON.stringify({
+                error: error.message,
+                stack: error.stack,
+              }),
+            });
+          } catch (logError) {
+            console.error("[Orchestrator] Errore logging:", logError);
+          }
+        }
+
+        return {
+          success: false,
+          agent: "mio",
+          conversationId: input.conversationId,
+          message: null,
+          error: {
+            type: "unknown_error" as const,
+            provider: null,
+            statusCode: 500,
+            detail: error.message || "Errore sconosciuto durante l'elaborazione",
+          },
+        };
+      }
+    }),
 });

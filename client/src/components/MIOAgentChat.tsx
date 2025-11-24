@@ -174,7 +174,7 @@ export default function MIOAgentChat() {
         meta: { source: 'dashboard_main' },
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/mihub/orchestrator`, {
+      const response = await fetch(`${API_BASE_URL}/mihub/orchestrator`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -271,7 +271,7 @@ export default function MIOAgentChat() {
         meta: { source: 'dashboard_quad', agentBox: agentId },
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/mihub/orchestrator`, {
+      const response = await fetch(`${API_BASE_URL}/mihub/orchestrator`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,42 @@
 # TODO List - DMS HUB App
 
-## 🔴 Priorità Alta
+**Ultimo aggiornamento:** 24 Novembre 2025
+
+---
+
+## 🔴 PRIORITÀ MASSIMA - MIO Agent + Debug + Log
+
+### Backend - Endpoint Orchestratore
+- [ ] **Creare endpoint `/mihub/orchestrator`**
+  - POST `/api/mihub/orchestrator` con formato richiesta uniforme
+  - Risposta sempre JSON con struttura `{ success, agent, conversationId, message, error }`
+  - Gestione errori LLM (rate limit, provider error, validation error)
+  - Logging su tabella `mio_agent_logs`
+  - File: `server/mihubRouter.ts`
+
+### Frontend - MIO Agent Chat
+- [ ] **Fix URL endpoint orchestratore**
+  - Cambiare da `/api/mihub/orchestrator` a `/mihub/orchestrator`
+  - Verificare gestione errori con nuovo contratto
+  - File: `client/src/components/MIOAgentChat.tsx`
+
+### Pagina Debug
+- [ ] **Rimuovere dati mock**
+  - Eliminare array hardcoded con date 18/11
+  - Implementare chiamata a endpoint reale `/api/guardian/debug/testEndpoint`
+  - Mostrare richiesta/risposta reale di ogni test
+  - File: `client/src/components/Debug.tsx` (o simile)
+
+### Pagina Log
+- [ ] **Usare solo dati reali**
+  - Chiamare `GET /api/logs/getLogs?serviceId=&agent=&limit=...`
+  - Rimuovere dati mock con date 18/11
+  - Aggiornare conteggi su dati reali
+  - File: `client/src/components/LogDebug.tsx`
+
+---
+
+## 🟠 Priorità Alta
 
 ### Backend - HUB Shops e Services
 - [ ] **Implementare UPDATE e DELETE per HUB Shops**
@@ -35,7 +71,9 @@
   - Job di sincronizzazione dati mobility
   - Riferimento: `ARCHITETTURA_CENTRO_MOBILITA_SCALABILE.md`
 
-## 🟠 Priorità Media
+---
+
+## 🟢 Priorità Media
 
 ### Pagina Integrazioni
 - [ ] **Completare Tab 3, 4, 5 con sezioni "Previsti"**
@@ -44,15 +82,9 @@
   - Tab 5 (Sync Status): Aggiungere job di sincronizzazione previsti
   - File: `client/src/components/Integrazioni.tsx`
 
-### Log & Debug
-- [ ] **Implementare backend per Log & Debug**
-  - Creare endpoint per API Logs
-  - Creare endpoint per Integration Logs
-  - Creare endpoint per System Status
-  - Popolare dati reali invece di mock
-  - File: `client/src/components/LogDebug.tsx`
+---
 
-## 🟢 Priorità Bassa
+## 🔵 Priorità Bassa
 
 ### Documentazione
 - [ ] **Aggiornare README principale**
@@ -74,22 +106,25 @@
   - Test CRUD services (quando implementato)
   - Test filtro `includeInactive`
 
+---
+
 ## ✅ Completato
 
-### Fase 1 - Backend HUB Locations
-- [x] **API UPDATE per HUB Locations** (commit 988953c)
-  - Partial update (solo campi forniti)
-  - Log automatico con valore vecchio/nuovo
-  - Aggiornamento `updatedAt`
+### 24 Novembre 2025
+- [x] **Analisi problema deploy preview mappa GIS**
+  - Identificato problema CORS backend Hetzner
+  - Variabile `VITE_API_URL` configurata su Vercel
+  - Deploy preview funzionante (eccetto mappa per CORS)
 
-- [x] **API DELETE (soft) per HUB Locations** (commit 988953c)
-  - Soft delete con `active=0`
-  - Log automatico operazione
-  - Nessuna cancellazione fisica dal database
+### 22 Novembre 2025
+- [x] **Sincronizzazione TPER in Centro Mobilità**
+  - Fix conversione lat/lng in stringhe
+  - Caricamento 4,174 fermate TPER
+  - Pulsante "Sincronizza Dati TPER"
 
-- [x] **Filtro automatico lista HUB** (commit 988953c)
-  - Default: solo `active=1`
-  - Parametro `includeInactive: true` per vedere tutti
+- [x] **Pulsante Conferma Assegnazione in Gestione Mercati**
+  - Aggiunto `id` ai dati posteggi
+  - Conferma multipla posteggi riservati
 
 ### Fase 2 - Frontend HUB Locations
 - [x] **Allineamento schema backend** (commit 12a2e6f)
@@ -109,6 +144,21 @@
   - Badge ATTIVO/DISATTIVATO
   - Modal conferma delete con warning esplicito
 
+### Fase 1 - Backend HUB Locations
+- [x] **API UPDATE per HUB Locations** (commit 988953c)
+  - Partial update (solo campi forniti)
+  - Log automatico con valore vecchio/nuovo
+  - Aggiornamento `updatedAt`
+
+- [x] **API DELETE (soft) per HUB Locations** (commit 988953c)
+  - Soft delete con `active=0`
+  - Log automatico operazione
+  - Nessuna cancellazione fisica dal database
+
+- [x] **Filtro automatico lista HUB** (commit 988953c)
+  - Default: solo `active=1`
+  - Parametro `includeInactive: true` per vedere tutti
+
 ### Fasi Precedenti
 - [x] Standardizzazione mappe (6 mappe sostituite con MarketMapComponent)
 - [x] Fix problema Vercel (zoom e centro mappa)
@@ -123,6 +173,50 @@
 ---
 
 ## 📝 Note Tecniche
+
+### Contratto Endpoint Orchestratore
+
+**Request:**
+```typescript
+POST /mihub/orchestrator
+{
+  mode: "auto" | "manual",
+  targetAgent?: "mio" | "dev" | "manus_worker" | "gemini_arch",
+  conversationId: string | null,
+  message: string,
+  meta?: {
+    source: string,
+    agentBox?: string
+  }
+}
+```
+
+**Response (Success):**
+```typescript
+{
+  success: true,
+  agent: "mio",
+  conversationId: "uuid",
+  message: "testo risposta",
+  meta?: { ... }
+}
+```
+
+**Response (Error):**
+```typescript
+{
+  success: false,
+  agent: "mio",
+  conversationId: "uuid_o_null",
+  message: null,
+  error: {
+    type: "llm_rate_limit" | "llm_provider_error" | "validation_error",
+    provider: "openai" | "gemini" | null,
+    statusCode: 429,
+    detail: "messaggio leggibile"
+  }
+}
+```
 
 ### Schema HUB Locations (backend)
 ```typescript
@@ -166,5 +260,20 @@ dmsHub.hub.locations.delete({ id }) // Soft delete: active=0
 
 ---
 
-**Ultimo aggiornamento:** 22 Novembre 2024 - Fase 3 completata
-**Prossima milestone:** Implementare UPDATE/DELETE per Shops e Services
+## ⚠️ VINCOLI
+
+### NON TOCCARE
+- Modulo GIS (mappe mercati)
+- Pagina `/mappa`
+- Componente `GISMap`
+- Pagina API Tokens (già funzionante)
+- Sistema pagamenti e spunta
+
+### FOCUS ATTUALE
+1. MIO Agent (vista singola + 4 agenti)
+2. Pagina Debug (richieste/risposte reali)
+3. Pagina Log (solo log reali, niente 18/11)
+
+---
+
+**Prossima milestone:** Endpoint orchestratore + Fix MIO Agent + Debug/Log reali
