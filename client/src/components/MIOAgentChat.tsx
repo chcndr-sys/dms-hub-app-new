@@ -8,8 +8,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, AlertCircle, Maximize2, Minimize2 } from 'lucide-react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
+import { trpc } from '../lib/trpc';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -141,6 +140,9 @@ export default function MIOAgentChat() {
 
   const singleChatEndRef = useRef<HTMLDivElement>(null);
 
+  // tRPC mutation for orchestrator
+  const orchestratorMutation = trpc.mihub.orchestrator.useMutation();
+
   // Auto-scroll to bottom
   useEffect(() => {
     singleChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -167,22 +169,12 @@ export default function MIOAgentChat() {
     setSingleError(null);
 
     try {
-      const requestBody: OrchestratorRequest = {
+      const data = await orchestratorMutation.mutateAsync({
         mode: 'auto',
         conversationId: singleConversationId,
         message: singleInput,
         meta: { source: 'dashboard_main' },
-      };
-
-      const response = await fetch(`${API_BASE_URL}/mihub/orchestrator`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
       });
-
-      const data: OrchestratorResponse = await response.json();
 
       if (data.success && data.message) {
         const assistantMessage: Message = {
@@ -263,23 +255,13 @@ export default function MIOAgentChat() {
     setQuadErrors((prev) => ({ ...prev, [agentId]: null }));
 
     try {
-      const requestBody: OrchestratorRequest = {
+      const data = await orchestratorMutation.mutateAsync({
         mode: 'manual',
         targetAgent: agentId,
         conversationId: quadConversationIds[agentId],
         message: input,
         meta: { source: 'dashboard_quad', agentBox: agentId },
-      };
-
-      const response = await fetch(`${API_BASE_URL}/mihub/orchestrator`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
       });
-
-      const data: OrchestratorResponse = await response.json();
 
       if (data.success && data.message) {
         const assistantMessage: Message = {
