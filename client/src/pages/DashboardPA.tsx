@@ -427,13 +427,15 @@ export default function DashboardPA() {
   useEffect(() => {
     const loadMapData = async () => {
       try {
+        const API_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
         console.log('[VERCEL DEBUG] Starting map data fetch...');
-        console.log('[VERCEL DEBUG] GIS URL:', 'https://orchestratore.mio-hub.me/api/gis/market-map');
-        console.log('[VERCEL DEBUG] Stalls URL:', `https://orchestratore.mio-hub.me/api/markets/${selectedMarketId}/stalls`);
+        console.log('[VERCEL DEBUG] API_URL:', API_URL);
+        console.log('[VERCEL DEBUG] GIS URL:', `${API_URL}/api/gis/market-map`);
+        console.log('[VERCEL DEBUG] Stalls URL:', `${API_URL}/api/markets/${selectedMarketId}/stalls`);
         
         const [mapRes, stallsRes] = await Promise.all([
-          fetch('https://orchestratore.mio-hub.me/api/gis/market-map'),
-          fetch(`https://orchestratore.mio-hub.me/api/markets/${selectedMarketId}/stalls`)
+          fetch(`${API_URL}/api/gis/market-map`),
+          fetch(`${API_URL}/api/markets/${selectedMarketId}/stalls`)
         ]);
         
         console.log('[VERCEL DEBUG] GIS Response Status:', mapRes.status, mapRes.ok);
