@@ -1136,8 +1136,8 @@ export default function DashboardPA() {
                     Caricamento mappa...
                   </div>
                 )}
-              </CardContent>            </Card>
-            </div>{/* Fine hidden - vecchia implementazione */}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* TAB 25: CLIENTI */}
@@ -3899,6 +3899,7 @@ export default function DashboardPA() {
                 </div>
               </CardContent>
             </Card>
+            </div>{/* Fine hidden - vecchia implementazione */}
 
             {/* Attività Agenti Recente Card */}
             <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
