@@ -72,12 +72,8 @@ export async function callOrchestrator(
 
   console.log("[OrchestratorClient] Status:", res.status);
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("[OrchestratorClient] Errore HTTP:", res.status, errorText);
-    throw new Error(`HTTP ${res.status}: ${errorText}`);
-  }
-
+  // Prova sempre a parsare il JSON, anche per errori HTTP
+  // Il backend può rispondere con 4xx/5xx ma con body JSON valido
   const data = (await res.json()) as OrchestratorResponse;
   console.log("[OrchestratorClient] Risposta:", data);
 
