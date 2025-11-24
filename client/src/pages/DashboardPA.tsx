@@ -21,7 +21,15 @@ import GestioneMercati from '@/components/GestioneMercati';
 import Integrazioni from '@/components/Integrazioni';
 import { GISMap } from '@/components/GISMap';
 import MIOAgent from '@/components/MIOAgent';
-import { callOrchestrator } from '@/api/orchestratorClient';
+import { callOrchestrator, type AgentId } from '@/api/orchestratorClient';
+
+// Tipo per messaggi chat MIO
+type ChatMessage = {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  agent?: AgentId;
+  text: string;
+};
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Hook per dati reali da backend
@@ -441,7 +449,7 @@ export default function DashboardPA() {
   const [viewMode, setViewMode] = useState<'single' | 'quad'>('single');
   
   // MIO Agent Chat state (Fase 1)
-  const [mioMessages, setMioMessages] = useState<Array<{ role: 'user' | 'assistant' | 'system'; text: string; agent?: string }>>([]);
+  const [mioMessages, setMioMessages] = useState<ChatMessage[]>([]);
   const [mioInputValue, setMioInputValue] = useState('');
   const [mioLoading, setMioLoading] = useState(false);
   const [mioError, setMioError] = useState<string | null>(null);
@@ -461,52 +469,56 @@ export default function DashboardPA() {
   
   // Handler per invio messaggio MIO (Fase 1)
   const handleSendMio = async () => {
-    if (!mioInputValue.trim() || mioLoading) return;
-    
     const text = mioInputValue.trim();
-    
-    // Aggiungi messaggio utente
-    setMioMessages(prev => [...prev, { role: 'user', text }]);
+    if (!text) return;
+
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      text,
+    };
+
+    setMioMessages(prev => [...prev, userMessage]);
     setMioInputValue('');
     setMioLoading(true);
     setMioError(null);
-    
+
     try {
-      const response = await callOrchestrator({
+      const res = await callOrchestrator({
         mode: 'auto',
         conversationId: mioConversationId,
         message: text,
         meta: { source: 'dashboard_main' },
       });
-      
-      // Salva conversationId
-      if (response.conversationId) {
-        setMioConversationId(response.conversationId);
+
+      setMioConversationId(res.conversationId);
+
+      if (res.success && res.message) {
+        const assistantMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          agent: res.agent,
+          text: res.message,
+        };
+        setMioMessages(prev => [...prev, assistantMessage]);
+      } else {
+        const msg =
+          res.error?.message ?? 'Errore orchestratore. Riprova più tardi.';
+        const errorMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'system',
+          text: `[Errore] ${msg}`,
+        };
+        setMioMessages(prev => [...prev, errorMessage]);
       }
-      
-      if (response.success && response.message) {
-        // Aggiungi risposta agente
-        setMioMessages(prev => [
-          ...prev,
-          { role: 'assistant', agent: response.agent, text: response.message! },
-        ]);
-      } else if (response.error) {
-        // Mostra errore leggibile
-        const errorMsg = response.error.message || 'Errore orchestratore. Riprova più tardi.';
-        setMioMessages(prev => [
-          ...prev,
-          { role: 'system', text: `[Errore] ${errorMsg}` },
-        ]);
-        setMioError(errorMsg);
-      }
-    } catch (error) {
-      console.error('[MIO Agent] Error:', error);
-      const errorMsg = 'Errore di connessione al server';
-      setMioMessages(prev => [
-        ...prev,
-        { role: 'system', text: `[Errore] ${errorMsg}` },
-      ]);
-      setMioError(errorMsg);
+    } catch (err) {
+      setMioError('Errore di connessione al server');
+      const errorMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'system',
+        text: '[Errore] Errore di connessione al server',
+      };
+      setMioMessages(prev => [...prev, errorMessage]);
     } finally {
       setMioLoading(false);
     }
