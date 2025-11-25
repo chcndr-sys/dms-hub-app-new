@@ -1037,18 +1037,12 @@ export default function DashboardPA() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <GISMap
-                  center={[42.5, 12.5]}
-                  zoom={6}
-                  height="400px"
-                  markers={mockData.topMarkets.map((m, i) => ({
-                    id: i,
-                    position: [42.5 + (Math.random() - 0.5) * 10, 12.5 + (Math.random() - 0.5) * 10],
-                    type: 'market' as const,
-                    title: m.name,
-                    description: `Visite: ${m.visits.toLocaleString()} | Utenti: ${m.users.toLocaleString()}`,
-                  }))}
-                />
+                {/* Mappa mock rimossa temporaneamente. Da sostituire con dati reali GIS. */}
+                <div className="flex items-center justify-center h-[400px] text-[#94a3b8]">
+                  <p className="text-center">
+                    La mappa panoramica sarà disponibile quando il modulo GIS sarà collegato a tutti i mercati.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

@@ -120,7 +120,7 @@ export default function ChatWidget({ userRole = 'cliente', userId, context }: Ch
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#14b8a6] hover:bg-[#0d9488] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110"
+        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 bg-[#14b8a6] hover:bg-[#0d9488] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110"
         aria-label="Apri chat AI"
       >
         <MessageCircle className="w-6 h-6" />
@@ -129,7 +129,7 @@ export default function ChatWidget({ userRole = 'cliente', userId, context }: Ch
   }
 
   return (
-    <Card className="fixed z-50 bg-[#0b1220] border-[#14b8a6] flex flex-col md:bottom-6 md:right-6 md:w-96 md:h-[600px] md:rounded-lg md:shadow-2xl max-md:top-0 max-md:left-0 max-md:right-0 max-md:bottom-0 max-md:w-full max-md:h-[100dvh] max-md:rounded-none max-md:border-0" style={{ maxHeight: 'calc(100dvh - env(safe-area-inset-bottom))' }}>
+    <Card className="fixed z-[9999] bg-[#0b1220] border-[#14b8a6] flex flex-col md:bottom-6 md:right-6 md:w-96 md:h-[600px] md:rounded-lg md:shadow-2xl max-md:top-0 max-md:left-0 max-md:right-0 max-md:bottom-0 max-md:w-full max-md:h-[100dvh] max-md:rounded-none max-md:border-0" style={{ maxHeight: 'calc(100dvh - env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="bg-[#14b8a6] p-4 flex items-center justify-between md:rounded-t-lg">
         <div className="flex items-center gap-2">
