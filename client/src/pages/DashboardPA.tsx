@@ -22,7 +22,9 @@ import Integrazioni from '@/components/Integrazioni';
 import { GISMap } from '@/components/GISMap';
 import { MarketMapComponent } from '@/components/MarketMapComponent';
 import MIOAgent from '@/components/MIOAgent';
+import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
 import { callOrchestrator } from '@/api/orchestratorClient';
+import { getLogs, getLogsStats, getGuardianHealth } from '@/api/logsClient';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Hook per dati reali da backend
@@ -2100,7 +2102,7 @@ export default function DashboardPA() {
 
           {/* TAB 8: LOGS */}
           <TabsContent value="logs" className="space-y-6">
-            <LogsSection />
+            <LogsSectionReal />
           </TabsContent>
 
           {/* TAB 9: AGENTE AI */}
@@ -2264,109 +2266,7 @@ export default function DashboardPA() {
 
           {/* TAB 11: DEBUG & DEV */}
           <TabsContent value="debug" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-                <CardHeader>
-                  <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                    <Bug className="h-5 w-5 text-[#ef4444]" />
-                    Errori
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-[#e8fbff]/70">Totali</span>
-                      <span className="font-semibold text-[#e8fbff]">{mockData.debug.errors.total}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#e8fbff]/70">Risolti</span>
-                      <span className="font-semibold text-[#10b981]">{mockData.debug.errors.resolved}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#e8fbff]/70">Pending</span>
-                      <span className="font-semibold text-[#ef4444]">{mockData.debug.errors.pending}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-                <CardHeader>
-                  <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-[#14b8a6]" />
-                    Performance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-[#e8fbff]/70">Avg Response</span>
-                      <span className="font-semibold text-[#14b8a6]">{mockData.debug.performance.avgResponseTime}ms</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#e8fbff]/70">P95</span>
-                      <span className="font-semibold text-[#f59e0b]">{mockData.debug.performance.p95}ms</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#e8fbff]/70">P99</span>
-                      <span className="font-semibold text-[#ef4444]">{mockData.debug.performance.p99}ms</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-                <CardHeader>
-                  <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                    <Code className="h-5 w-5 text-[#8b5cf6]" />
-                    Deployment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-[#e8fbff]/70">Version</span>
-                      <span className="font-semibold text-[#8b5cf6]">{mockData.debug.deployments.version}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#e8fbff]/70">Status</span>
-                      <span className="font-semibold text-[#10b981]">{mockData.debug.deployments.status}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#e8fbff]/70 text-xs">Last Deploy</span>
-                      <span className="font-semibold text-[#e8fbff] text-xs">{mockData.debug.deployments.lastDeploy}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <Terminal className="h-5 w-5 text-[#14b8a6]" />
-                  Console Logs Live
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-[#0b1220] rounded-lg p-4 font-mono text-sm h-64 overflow-y-auto">
-                  <div className="text-[#10b981]">$ System health check...</div>
-                  <div className="text-[#14b8a6]">✓ API: {mockData.debug.healthChecks.api}</div>
-                  <div className="text-[#14b8a6]">✓ Database: {mockData.debug.healthChecks.database}</div>
-                  <div className="text-[#14b8a6]">✓ Redis: {mockData.debug.healthChecks.redis}</div>
-                  <div className="text-[#14b8a6]">✓ Storage: {mockData.debug.healthChecks.storage}</div>
-                  <div className="text-[#e8fbff]/50 mt-4">$ Monitoring active...</div>
-                  <div className="text-[#8b5cf6] mt-4">$ MIO Agent API Status...</div>
-                  <div className="text-[#14b8a6]">✓ POST /api/logs/initSchema - Ready</div>
-                  <div className="text-[#14b8a6]">✓ POST /api/logs/createLog - Ready</div>
-                  <div className="text-[#14b8a6]">✓ GET /api/logs/getLogs - Ready</div>
-                  <div className="text-[#e8fbff]/50 mt-2">→ Test via tab Integrazioni</div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Guardian Debug Stats */}
-            <GuardianDebugStats />
+            <DebugSectionReal />
           </TabsContent>
 
           {/* TAB 13: QUALIFICAZIONE IMPRESE */}
@@ -3859,27 +3759,29 @@ function LogsSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load Guardian logs from MIO-hub GitHub repository
-    fetch('https://raw.githubusercontent.com/Chcndr/MIO-hub/master/logs/api-guardian.log')
-      .then(r => r.text())
-      .then(text => {
-        const logLines = text.trim().split('\n').filter(line => line.trim());
-        const parsedLogs = logLines.map(line => JSON.parse(line));
-        setGuardianLogs(parsedLogs);
+    // Load Guardian logs from backend API
+    const fetchLogs = async () => {
+      try {
+        const response = await getLogs({ limit: 100 });
+        setGuardianLogs(response.logs);
         setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error('Error loading Guardian logs:', err);
         setLoading(false);
-      });
+      }
+    };
+    fetchLogs();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchLogs, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Calculate stats from Guardian logs
   const stats = {
     total: guardianLogs.length,
-    allowed: guardianLogs.filter(log => log.status === 'allowed').length,
-    denied: guardianLogs.filter(log => log.status === 'denied').length,
-    error: guardianLogs.filter(log => log.status === 'error').length,
+    allowed: guardianLogs.filter(log => log.success === true).length,
+    denied: guardianLogs.filter(log => log.success === false && log.statusCode !== null).length,
+    error: guardianLogs.filter(log => log.success === false && log.statusCode === null).length,
   };
 
   const getStatusBadge = (status: string) => {
