@@ -294,6 +294,28 @@ function APIDashboard() {
           });
           data = await getResponse.json();
           break;
+        case '/api/logs/stats':
+          const statsResponse = await fetch('/api/logs/stats', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          data = await statsResponse.json();
+          break;
+        case '/api/guardian/health':
+          const healthResponse = await fetch('/api/guardian/health', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          data = await healthResponse.json();
+          break;
+        case '/api/guardian/debug/testEndpoint':
+          const testEndpointResponse = await fetch('/api/guardian/debug/testEndpoint', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(parsedBody),
+          });
+          data = await testEndpointResponse.json();
+          break;
           
         default:
           // Check if endpoint is defined in api/index.json but not implemented
