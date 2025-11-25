@@ -3236,10 +3236,41 @@ export default function DashboardPA() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <SettingsIcon className="h-16 w-16 text-[#64748b] mx-auto mb-4" />
-                  <p className="text-[#e8fbff]/70 text-lg">Sezione Impostazioni in sviluppo</p>
-                  <p className="text-[#e8fbff]/50 text-sm mt-2">Configurazione dashboard, permessi utenti, preferenze visualizzazione</p>
+                <div className="space-y-4">
+                  {/* API & Agent Tokens */}
+                  <div 
+                    onClick={() => window.location.href = '/settings/api-tokens'}
+                    className="p-4 bg-[#0f1729] border border-[#64748b]/30 rounded-lg hover:border-[#64748b]/50 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <Lock className="h-5 w-5 text-[#64748b]" />
+                      <h3 className="text-[#e8fbff] font-semibold">API & Agent Tokens</h3>
+                    </div>
+                    <p className="text-[#e8fbff]/60 text-sm">
+                      Gestione sicura dei token API per servizi esterni (OpenAI, Gemini, ecc.)
+                    </p>
+                  </div>
+
+                  {/* Altre impostazioni (placeholder) */}
+                  <div className="p-4 bg-[#0f1729] border border-[#64748b]/30 rounded-lg opacity-50">
+                    <div className="flex items-center gap-3 mb-2">
+                      <UserCog className="h-5 w-5 text-[#64748b]" />
+                      <h3 className="text-[#e8fbff] font-semibold">Permessi Utenti</h3>
+                    </div>
+                    <p className="text-[#e8fbff]/60 text-sm">
+                      Configurazione permessi e ruoli utenti (in sviluppo)
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-[#0f1729] border border-[#64748b]/30 rounded-lg opacity-50">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Sliders className="h-5 w-5 text-[#64748b]" />
+                      <h3 className="text-[#e8fbff] font-semibold">Preferenze Dashboard</h3>
+                    </div>
+                    <p className="text-[#e8fbff]/60 text-sm">
+                      Personalizzazione visualizzazione e layout (in sviluppo)
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
