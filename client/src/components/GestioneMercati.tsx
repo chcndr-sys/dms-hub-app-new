@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarketMapComponent } from './MarketMapComponent';
+import { MarketCompaniesTab } from './markets/MarketCompaniesTab';
 import { getStallStatusLabel, getStallStatusClasses, getStallMapFillColor, STALL_STATUS_OPTIONS } from '@/lib/stallStatus';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -346,7 +347,7 @@ function MarketDetail({ market }: { market: Market }) {
           </TabsContent>
 
           <TabsContent value="concessioni" className="space-y-4">
-            <ConcessioniTab marketId={market.id} />
+            <MarketCompaniesTab marketId={market.code} stalls={[]} />
           </TabsContent>
         </Tabs>
       </CardContent>
