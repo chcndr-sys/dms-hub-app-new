@@ -227,3 +227,16 @@
   -webkit-overflow-scrolling: touch; /* abilita lo scroll nativo su iOS */
   overscroll-behavior-y: contain;
 }
+
+/* Fix Safari iPad - abilita scroll touch globale */
+html, body {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100vh;
+}
+
+/* Fix Safari iPad - abilita scroll touch su tutti i container scrollabili */
+* {
+  -webkit-overflow-scrolling: touch;
+}

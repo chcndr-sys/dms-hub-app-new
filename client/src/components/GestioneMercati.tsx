@@ -688,7 +688,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter }: { marketId: number;
       <div className={`grid ${isMapExpanded ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
         {/* Tabella Posteggi */}
         {!isMapExpanded && (
-          <div className="border border-[#14b8a6]/20 rounded-lg overflow-hidden">
+          <div className="border border-[#14b8a6]/20 rounded-lg">
             <div className="posteggi-scroll-y-touch overflow-x-auto">
               <Table>
                 <TableHeader className="sticky top-0 bg-[#0b1220]/95 z-10">
