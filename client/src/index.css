@@ -222,8 +222,11 @@
 }
 /* Fix scroll verticale su iPad per la tabella Posteggi */
 .posteggi-scroll-y-touch {
-  max-height: 60vh;
-  overflow-y: auto;
+  display: block;
+  position: relative;
+  height: 540px; /* altezza fissa per Safari iPad */
+  overflow-y: scroll !important; /* forza scroll verticale */
+  overflow-x: auto;
   -webkit-overflow-scrolling: touch; /* abilita lo scroll nativo su iOS */
   overscroll-behavior-y: contain;
 }
@@ -236,7 +239,4 @@ html, body {
   min-height: 100vh;
 }
 
-/* Fix Safari iPad - abilita scroll touch su tutti i container scrollabili */
-* {
-  -webkit-overflow-scrolling: touch;
-}
+
