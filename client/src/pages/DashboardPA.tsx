@@ -525,7 +525,7 @@ export default function DashboardPA() {
   
   // Fetch GIS Map Data (blocco ufficiale da GestioneMercati)
   useEffect(() => {
-    const API_BASE_URL = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io/api';
+    const API_BASE_URL = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io';
     
     const fetchGisData = async () => {
       try {
