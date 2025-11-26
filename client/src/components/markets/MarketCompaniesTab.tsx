@@ -102,6 +102,8 @@ const STATO_COMPANY_OPTIONS = [
 
 export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
   const { marketId, stalls } = props;
+  
+  console.log('[MarketCompaniesTab] props', { marketId, stallsLength: stalls?.length });
 
   // State
   const [companies, setCompanies] = useState<CompanyRow[]>([]);
@@ -117,9 +119,13 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
 
   // Fetch data
   useEffect(() => {
-    if (marketId) {
-      fetchData();
+    console.log('[MarketCompaniesTab] useEffect marketId =', marketId);
+    if (!marketId) {
+      console.warn('[MarketCompaniesTab] no marketId, skip fetch');
+      return;
     }
+    
+    fetchData();
   }, [marketId]);
 
   const fetchData = async () => {
