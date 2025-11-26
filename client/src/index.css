@@ -220,3 +220,10 @@
     }
   }
 }
+/* Fix scroll verticale su iPad per la tabella Posteggi */
+.posteggi-scroll-y-touch {
+  max-height: 60vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* abilita lo scroll nativo su iOS */
+  overscroll-behavior-y: contain;
+}
