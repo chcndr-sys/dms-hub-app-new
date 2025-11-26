@@ -16,7 +16,7 @@
  * - Admin endpoints (/admin/...)
  * - Guardian logs (/admin/guardian/...)
  */
-export const MIHUB_API_BASE_URL = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io/api';
+export const MIHUB_API_BASE_URL = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io';
 
 /**
  * Legacy: Orchestratore MIO Hub
