@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -308,6 +308,24 @@ export default function GestioneMercati() {
 function MarketDetail({ market }: { market: Market }) {
   const [activeTab, setActiveTab] = useState("anagrafica");
   const [stalls, setStalls] = useState<Stall[]>([]);
+
+  // Carica i posteggi al mount del componente
+  useEffect(() => {
+    const fetchStalls = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/markets/${market.id}/stalls`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const json = await response.json();
+        if (json.success && Array.isArray(json.data)) {
+          setStalls(json.data);
+        }
+      } catch (error) {
+        console.error('[MarketDetail] Errore caricamento posteggi:', error);
+      }
+    };
+    
+    fetchStalls();
+  }, [market.id]);
 
   return (
     <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
