@@ -476,8 +476,10 @@ export default function DashboardPA() {
   useEffect(() => {
     const loadChatHistory = async () => {
       try {
+        const apiBaseUrl = 'https://mihub.157-90-29-66.nip.io';
+        
         // Carica cronologia MIO (room: mio_main)
-        const mioResponse = await fetch('https://mihub.157-90-29-66.nip.io/api/mihub/chats/mio_main');
+        const mioResponse = await fetch(`${apiBaseUrl}/api/mihub/chats/mio_main`);
         const mioData = await mioResponse.json();
         if (mioData.success && mioData.messages.length > 0) {
           const mioHistory = mioData.messages.map((msg: any) => ({
@@ -489,7 +491,7 @@ export default function DashboardPA() {
         }
 
         // Carica cronologia Abacus (room: abacus_single)
-        const abacusResponse = await fetch('https://mihub.157-90-29-66.nip.io/api/mihub/chats/abacus_single');
+        const abacusResponse = await fetch(`${apiBaseUrl}/api/mihub/chats/abacus_single`);
         const abacusData = await abacusResponse.json();
         if (abacusData.success && abacusData.messages.length > 0) {
           const abacusHistory = abacusData.messages.map((msg: any) => ({
@@ -501,7 +503,7 @@ export default function DashboardPA() {
         }
 
         // Carica cronologia Manus (room: manus_single)
-        const manusResponse = await fetch('https://mihub.157-90-29-66.nip.io/api/mihub/chats/manus_single');
+        const manusResponse = await fetch(`${apiBaseUrl}/api/mihub/chats/manus_single`);
         const manusData = await manusResponse.json();
         if (manusData.success && manusData.messages.length > 0) {
           const manusHistory = manusData.messages.map((msg: any) => ({
@@ -513,7 +515,7 @@ export default function DashboardPA() {
         }
 
         // Carica cronologia Zapier (room: zapier_single)
-        const zapierResponse = await fetch('https://mihub.157-90-29-66.nip.io/api/mihub/chats/zapier_single');
+        const zapierResponse = await fetch(`${apiBaseUrl}/api/mihub/chats/zapier_single`);
         const zapierData = await zapierResponse.json();
         if (zapierData.success && zapierData.messages.length > 0) {
           const zapierHistory = zapierData.messages.map((msg: any) => ({
@@ -535,8 +537,11 @@ export default function DashboardPA() {
       }
     };
 
-    loadChatHistory();
-  }, []); // Esegui solo al mount del componente
+    // Carica cronologia solo quando la chat è aperta
+    if (showMultiAgentChat) {
+      loadChatHistory();
+    }
+  }, [showMultiAgentChat]); // Esegui quando si apre la chat
 
   // GIS Map state (blocco ufficiale da GestioneMercati)
   const [gisStalls, setGisStalls] = useState<any[]>([]);
