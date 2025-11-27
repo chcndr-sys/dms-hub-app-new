@@ -307,6 +307,7 @@ export default function GestioneMercati() {
  */
 function MarketDetail({ market }: { market: Market }) {
   const [activeTab, setActiveTab] = useState("anagrafica");
+  const [stalls, setStalls] = useState<Stall[]>([]);
 
   return (
     <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
@@ -345,11 +346,11 @@ function MarketDetail({ market }: { market: Market }) {
           </TabsContent>
 
           <TabsContent value="posteggi" className="space-y-4">
-            <PosteggiTab marketId={market.id} marketCode={market.code} marketCenter={[parseFloat(market.latitude), parseFloat(market.longitude)]} />
+            <PosteggiTab marketId={market.id} marketCode={market.code} marketCenter={[parseFloat(market.latitude), parseFloat(market.longitude)]} stalls={stalls} setStalls={setStalls} />
           </TabsContent>
 
           <TabsContent value="concessioni" className="space-y-4">
-            <MarketCompaniesTab marketId={market.id.toString()} stalls={[]} />
+            <MarketCompaniesTab marketId={market.id.toString()} stalls={stalls.map(s => ({ id: s.id.toString(), code: s.code }))} />
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -415,8 +416,7 @@ function AnagraficaTab({ market }: { market: Market }) {
 /**
  * Tab Posteggi con tabella modificabile E MAPPA GIS
  */
-function PosteggiTab({ marketId, marketCode, marketCenter }: { marketId: number; marketCode: string; marketCenter: [number, number] }) {
-  const [stalls, setStalls] = useState<Stall[]>([]);
+function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: { marketId: number; marketCode: string; marketCenter: [number, number]; stalls: Stall[]; setStalls: React.Dispatch<React.SetStateAction<Stall[]>> }) {
   const [mapData, setMapData] = useState<MarketMapData | null>(null);
   const [concessionsByStallId, setConcessionsByStallId] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
