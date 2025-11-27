@@ -147,7 +147,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/markets/${marketId}/companies`);
+      const response = await fetch(`${API_BASE_URL}/api/vendors`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const json = await response.json();
       
@@ -156,8 +156,19 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
         throw new Error('Formato risposta non valido');
       }
       
-      console.log('[MarketCompaniesTab] fetchCompanies: caricati', json.data.length, 'imprese');
-      setCompanies(json.data);
+      // Map English fields to Italian frontend schema
+      const mappedData = json.data.map((v: any) => ({
+        id: v.id,
+        code: v.code,
+        denominazione: v.business_name,
+        partita_iva: v.vat_number,
+        referente: v.contact_name,
+        telefono: v.phone,
+        stato: v.status,
+      }));
+      
+      console.log('[MarketCompaniesTab] fetchCompanies: caricati', mappedData.length, 'imprese');
+      setCompanies(mappedData);
     } catch (err) {
       console.error('[MarketCompaniesTab] fetchCompanies error:', err);
       setError('Impossibile caricare le imprese');
@@ -550,16 +561,27 @@ function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps
     setError(null);
 
     try {
-      const url = company
-        ? `${API_BASE_URL}/api/markets/companies/${company.id}`
-        : `${API_BASE_URL}/api/markets/${marketId}/companies`;
+      // Map Italian fields to English backend schema
+      const payload = {
+        code: formData.codice_fiscale,
+        business_name: formData.denominazione,
+        vat_number: formData.partita_iva,
+        contact_name: formData.referente,
+        phone: formData.telefono,
+        email: formData.referente, // Use referente as email if no separate email field
+        status: formData.stato,
+      };
 
-      const method = company ? 'PUT' : 'POST';
+      const url = company
+        ? `${API_BASE_URL}/api/vendors/${company.id}`
+        : `${API_BASE_URL}/api/vendors`;
+
+      const method = company ? 'PATCH' : 'POST';
 
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
