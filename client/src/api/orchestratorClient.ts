@@ -12,7 +12,7 @@
 // ============================================================================
 
 export type OrchestratorMode = "auto" | "manual";
-export type AgentId = "mio" | "dev" | "manus_worker" | "gemini_arch";
+export type AgentId = "mio" | "dev" | "manus_worker" | "gemini_arch" | "abacus_sql";
 
 export interface OrchestratorRequest {
   mode: OrchestratorMode;
@@ -20,6 +20,9 @@ export interface OrchestratorRequest {
   conversationId?: string | null;
   message: string;
   meta?: Record<string, any>;
+  // Campi per Abacus SQL (task strutturati)
+  task?: string;
+  params?: Record<string, any>;
 }
 
 export interface OrchestratorResponse {

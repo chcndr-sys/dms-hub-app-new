@@ -609,13 +609,42 @@ export default function DashboardPA() {
     setAbacusError(null);
     
     try {
-      // Abacus usa targetAgent: 'abacus' per chiamare l'agente dedicato
+      // Riconoscimento query SQL strutturate
+      const lowerText = text.toLowerCase();
+      let targetAgent: 'abacus' | 'abacus_sql' = 'abacus';
+      let task: string | undefined;
+      let params: Record<string, any> | undefined;
+      
+      // Pattern 1: "quanti posteggi attivi" o "conta posteggi"
+      if (lowerText.includes('quanti posteggi') || lowerText.includes('conta posteggi')) {
+        targetAgent = 'abacus_sql';
+        task = 'count_active_stalls';
+        // Cerca market_code nel testo (es. "GR001", "Grosseto")
+        const marketCodeMatch = text.match(/\b([A-Z]{2}\d{3})\b/);
+        const marketCode = marketCodeMatch ? marketCodeMatch[1] : 'GR001'; // Default Grosseto
+        params = { market_code: marketCode };
+      }
+      // Pattern 2: "lista tabelle" o "list tables"
+      else if (lowerText.includes('lista tabelle') || lowerText.includes('list tables')) {
+        targetAgent = 'abacus_sql';
+        task = 'list_tables';
+      }
+      // Pattern 3: Query SQL diretta (inizia con SELECT)
+      else if (lowerText.startsWith('select ')) {
+        targetAgent = 'abacus_sql';
+        task = 'query_table';
+        params = { query: text, queryParams: [] };
+      }
+      
+      // Chiamata orchestrator
       const response = await callOrchestrator({
-        mode: 'auto',
-        targetAgent: 'abacus',
+        mode: 'manual',
+        targetAgent,
         conversationId: abacusConversationId,
         message: text,
-        meta: { source: 'dashboard_abacus', agent: 'abacus' },
+        meta: { source: 'dashboard_abacus', agent: targetAgent },
+        task,
+        params,
       });
       
       if (response.conversationId) {
