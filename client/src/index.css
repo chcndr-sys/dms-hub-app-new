@@ -162,7 +162,6 @@
   
   /* Fix scroll bloccato su iPad/touch devices */
   html, body {
-    overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
   }
   button:not(:disabled),
