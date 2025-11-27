@@ -3194,7 +3194,27 @@ export default function DashboardPA() {
               <CardContent>
                 <div className="space-y-6">
                   {/* Indice Documenti */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card className="bg-[#0b1220] border-[#06b6d4]/30">
+                      <CardHeader>
+                        <CardTitle className="text-[#e8fbff] text-lg">📘 Blueprint DMS Sistema</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-[#e8fbff]/70 text-sm mb-4">
+                          Documentazione ufficiale completa del sistema DMS/MIO-HUB: architettura, backend, GIS, guide operative e procedure di deploy.
+                        </p>
+                        <div className="text-xs text-[#e8fbff]/50 mb-4">
+                          📍 Repository GitHub ufficiale
+                        </div>
+                        <Button 
+                          className="w-full bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
+                          onClick={() => window.open('https://github.com/Chcndr/dms-system-blueprint', '_blank')}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Apri Blueprint DMS
+                        </Button>
+                      </CardContent>
+                    </Card>
                     <Card className="bg-[#0b1220] border-[#06b6d4]/30">
                       <CardHeader>
                         <CardTitle className="text-[#e8fbff] text-lg">📋 Stato Progetto Aggiornato</CardTitle>
