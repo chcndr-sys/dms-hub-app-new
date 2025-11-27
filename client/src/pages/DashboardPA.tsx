@@ -472,6 +472,72 @@ export default function DashboardPA() {
   const [zapierError, setZapierError] = useState<string | null>(null);
   const [zapierConversationId, setZapierConversationId] = useState<string | null>(null);
   
+  // Carica cronologia chat all'apertura
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      try {
+        // Carica cronologia MIO (room: mio_main)
+        const mioResponse = await fetch('https://mihub.157-90-29-66.nip.io/api/mihub/chats/mio_main');
+        const mioData = await mioResponse.json();
+        if (mioData.success && mioData.messages.length > 0) {
+          const mioHistory = mioData.messages.map((msg: any) => ({
+            role: msg.agent === 'user' ? 'user' : 'assistant',
+            text: msg.content,
+            agent: msg.agent
+          }));
+          setMioMessages(mioHistory);
+        }
+
+        // Carica cronologia Abacus (room: abacus_single)
+        const abacusResponse = await fetch('https://mihub.157-90-29-66.nip.io/api/mihub/chats/abacus_single');
+        const abacusData = await abacusResponse.json();
+        if (abacusData.success && abacusData.messages.length > 0) {
+          const abacusHistory = abacusData.messages.map((msg: any) => ({
+            role: msg.agent === 'user' ? 'user' : 'assistant',
+            text: msg.content,
+            agent: msg.agent
+          }));
+          setAbacusMessages(abacusHistory);
+        }
+
+        // Carica cronologia Manus (room: manus_single)
+        const manusResponse = await fetch('https://mihub.157-90-29-66.nip.io/api/mihub/chats/manus_single');
+        const manusData = await manusResponse.json();
+        if (manusData.success && manusData.messages.length > 0) {
+          const manusHistory = manusData.messages.map((msg: any) => ({
+            role: msg.agent === 'user' ? 'user' : 'assistant',
+            text: msg.content,
+            agent: msg.agent
+          }));
+          setManusMessages(manusHistory);
+        }
+
+        // Carica cronologia Zapier (room: zapier_single)
+        const zapierResponse = await fetch('https://mihub.157-90-29-66.nip.io/api/mihub/chats/zapier_single');
+        const zapierData = await zapierResponse.json();
+        if (zapierData.success && zapierData.messages.length > 0) {
+          const zapierHistory = zapierData.messages.map((msg: any) => ({
+            role: msg.agent === 'user' ? 'user' : 'assistant',
+            text: msg.content,
+            agent: msg.agent
+          }));
+          setZapierMessages(zapierHistory);
+        }
+
+        console.log('[Chat] Cronologia caricata:', {
+          mio: mioData.messages.length,
+          abacus: abacusData.messages.length,
+          manus: manusData.messages.length,
+          zapier: zapierData.messages.length
+        });
+      } catch (error) {
+        console.error('[Chat] Errore caricamento cronologia:', error);
+      }
+    };
+
+    loadChatHistory();
+  }, []); // Esegui solo al mount del componente
+
   // GIS Map state (blocco ufficiale da GestioneMercati)
   const [gisStalls, setGisStalls] = useState<any[]>([]);
   const [gisMapData, setGisMapData] = useState<any | null>(null);
