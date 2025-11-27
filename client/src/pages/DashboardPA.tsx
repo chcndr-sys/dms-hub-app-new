@@ -916,8 +916,8 @@ export default function DashboardPA() {
       }
     };
     fetchGuardianLogs();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchGuardianLogs, 30000);
+    // Refresh every 10 seconds
+    const interval = setInterval(fetchGuardianLogs, 10000);
     return () => clearInterval(interval);
   }, []);
   
@@ -4265,7 +4265,21 @@ export default function DashboardPA() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {guardianLogs.slice(0, 10).map((log, idx) => {
+                  {guardianLogs
+                    .filter(log => {
+                      // Vista 4 agenti: mostra tutti gli agenti (mio, manus, abacus, zapier)
+                      if (viewMode === 'quad') {
+                        return ['mio', 'manus', 'abacus', 'zapier'].includes(log.agent);
+                      }
+                      // Vista singola: mostra solo l'agente selezionato
+                      if (viewMode === 'single' && selectedAgent) {
+                        return log.agent === selectedAgent;
+                      }
+                      // Default: mostra tutti
+                      return true;
+                    })
+                    .slice(0, 50)
+                    .map((log, idx) => {
                     const statusColor = log.status === 'allowed' ? 'text-[#10b981]' : 'text-[#ef4444]';
                     const statusBg = log.status === 'allowed' ? 'bg-[#10b981]/10 border-[#10b981]/30' : 'bg-[#ef4444]/10 border-[#ef4444]/30';
                     const agentColor = 
@@ -4302,7 +4316,7 @@ export default function DashboardPA() {
                 </div>
                 <div className="mt-4 pt-4 border-t border-[#8b5cf6]/20">
                   <p className="text-xs text-[#e8fbff]/50 text-center">
-                    Ultimi 10 eventi • Vista completa in tab "Logs" → "Guardian Logs"
+                    Ultimi 50 eventi • Aggiornamento automatico ogni 10s
                   </p>
                 </div>
               </CardContent>
