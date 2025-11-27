@@ -467,6 +467,9 @@ export default function DashboardPA() {
   
   // Zapier Agent Chat state
   const [zapierMessages, setZapierMessages] = useState<Array<{ role: 'user' | 'assistant' | 'system'; text: string; agent?: string }>>([]);
+  
+  // Internal traces per Vista 4 agenti (dialoghi MIO ↔ Agenti)
+  const [internalTracesMessages, setInternalTracesMessages] = useState<Array<{ from: string; to: string; message: string; timestamp: string; meta?: any }>>([]);
   const [zapierInputValue, setZapierInputValue] = useState('');
   const [zapierLoading, setZapierLoading] = useState(false);
   const [zapierError, setZapierError] = useState<string | null>(null);
@@ -588,11 +591,16 @@ export default function DashboardPA() {
       }
       
       if (response.success && response.message) {
-        // Aggiungi risposta agente
+        // Aggiungi risposta agente (solo risposta finale MIO)
         setMioMessages(prev => [
           ...prev,
           { role: 'assistant', agent: response.agent, text: response.message! },
         ]);
+        
+        // Processa internalTraces per Vista 4 agenti
+        if (response.internalTraces && response.internalTraces.length > 0) {
+          setInternalTracesMessages(prev => [...prev, ...response.internalTraces]);
+        }
       } else if (response.error) {
         // Mostra errore leggibile con provider
         const provider = response.error.provider ? ` (${response.error.provider.toUpperCase()})` : '';
