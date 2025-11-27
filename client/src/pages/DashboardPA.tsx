@@ -606,10 +606,10 @@ export default function DashboardPA() {
     setAbacusError(null);
     
     try {
-      // Per ora Abacus usa mode 'auto' perché non è ancora nell'orchestratore
-      // TODO: Aggiungere 'abacus' come targetAgent quando sarà implementato
+      // Abacus usa targetAgent: 'abacus' per chiamare l'agente dedicato
       const response = await callOrchestrator({
         mode: 'auto',
+        targetAgent: 'abacus',
         conversationId: abacusConversationId,
         message: text,
         meta: { source: 'dashboard_abacus', agent: 'abacus' },
