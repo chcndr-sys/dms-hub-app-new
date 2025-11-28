@@ -97,7 +97,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, traces, showInput, onSendM
         {/* Area messaggi */}
         <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto space-y-2">
           {traces.length === 0 ? (
-            <p className="text-[#e8fbff]/50 text-center text-xs">Nessun dialogo interno</p>
+            <p className="text-[#e8fbff]/50 text-center text-xs">Dialogo interno non ancora collegato agli agenti reali.</p>
           ) : (
             traces.map((trace, idx) => (
               <div key={idx} className={`p-2 rounded ${config.bgColor} border ${config.borderColor}`}>
