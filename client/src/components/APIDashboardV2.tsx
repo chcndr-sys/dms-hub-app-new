@@ -91,33 +91,45 @@ export default function APIDashboardV2() {
       
       // Esegui richiesta
       const response = await fetch(url, options);
-      const data = await response.json();
       const endTime = Date.now();
       
+      // Leggi body come testo per gestire JSON e non-JSON
+      const bodyText = await response.text();
+      let bodyData;
+      try {
+        bodyData = JSON.parse(bodyText);
+      } catch {
+        bodyData = bodyText; // Se non è JSON, mostra testo grezzo
+      }
+      
+      // Mostra response REALE dal backend, senza wrapper
       setTestResult({
-        success: response.ok,
         status: response.status,
         statusText: response.statusText,
-        data,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: bodyData, // JSON grezzo o testo
         responseTime: endTime - startTime,
         url
       });
       
+      // Toast con status reale
       if (response.ok) {
-        toast.success(`Richiesta completata in ${endTime - startTime}ms`);
+        toast.success(`${response.status} ${response.statusText} (${endTime - startTime}ms)`);
       } else {
-        toast.error(`Errore ${response.status}: ${response.statusText}`);
+        toast.error(`${response.status} ${response.statusText}`);
       }
     } catch (error: any) {
       const endTime = Date.now();
+      // Errore di rete (non dal backend)
       setTestResult({
-        success: false,
         status: 0,
         statusText: 'Network Error',
-        error: error.message,
-        responseTime: endTime - startTime
+        headers: {},
+        body: { error: error.message },
+        responseTime: endTime - startTime,
+        url: url || ''
       });
-      toast.error('Errore di rete: ' + error.message);
+      toast.error('Network Error: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -351,12 +363,20 @@ export default function APIDashboardV2() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
-                        {testResult.success ? (
+                        {testResult.status >= 200 && testResult.status < 300 ? (
                           <CheckCircle2 className="h-5 w-5 text-green-400" />
-                        ) : (
+                        ) : testResult.status >= 400 ? (
                           <XCircle className="h-5 w-5 text-red-400" />
+                        ) : (
+                          <Activity className="h-5 w-5 text-yellow-400" />
                         )}
-                        <Badge className={testResult.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
+                        <Badge className={
+                          testResult.status >= 200 && testResult.status < 300
+                            ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                            : testResult.status >= 400
+                            ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                            : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                        }>
                           {testResult.status} {testResult.statusText}
                         </Badge>
                       </div>
@@ -376,9 +396,11 @@ export default function APIDashboardV2() {
                     )}
                     
                     <div>
-                      <Label className="text-[#e8fbff]/70">Response</Label>
+                      <Label className="text-[#e8fbff]/70">Response Body (JSON Grezzo)</Label>
                       <pre className="bg-[#0a1628] border border-[#14b8a6]/30 rounded-md p-3 text-[#e8fbff] font-mono text-xs overflow-auto max-h-96">
-                        {JSON.stringify(testResult.data || testResult.error, null, 2)}
+                        {typeof testResult.body === 'string'
+                          ? testResult.body
+                          : JSON.stringify(testResult.body, null, 2)}
                       </pre>
                     </div>
                   </div>
