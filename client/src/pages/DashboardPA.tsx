@@ -24,6 +24,7 @@ import { MarketMapComponent } from '@/components/MarketMapComponent';
 import MIOAgent from '@/components/MIOAgent';
 import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
 import GuardianLogsSection from '@/components/GuardianLogsSection';
+import { MultiAgentChatView } from '@/components/multi-agent/MultiAgentChatView';
 import { callOrchestrator } from '@/api/orchestratorClient';
 import { getLogs, getLogsStats, getGuardianHealth } from '@/api/logsClient';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -479,18 +480,50 @@ export default function DashboardPA() {
   useEffect(() => {
     const loadChatHistory = async () => {
       try {
+        // 1. Prova a caricare da localStorage (fallback immediato)
+        const localMioChat = localStorage.getItem('mihub_main_mio_chat');
+        const localInternalTraces = localStorage.getItem('mihub_internal_traces');
+        
+        if (localMioChat) {
+          try {
+            const parsedMioChat = JSON.parse(localMioChat);
+            if (Array.isArray(parsedMioChat) && parsedMioChat.length > 0) {
+              setMioMessages(parsedMioChat);
+            }
+          } catch (e) {
+            console.error('[Chat] Errore parsing localStorage MIO:', e);
+          }
+        }
+        
+        if (localInternalTraces) {
+          try {
+            const parsedTraces = JSON.parse(localInternalTraces);
+            if (Array.isArray(parsedTraces) && parsedTraces.length > 0) {
+              setInternalTracesMessages(parsedTraces);
+            }
+          } catch (e) {
+            console.error('[Chat] Errore parsing localStorage traces:', e);
+          }
+        }
+        
+        // 2. Prova a caricare da backend (opzionale, può fallire)
         const apiBaseUrl = 'https://mihub.157-90-29-66.nip.io';
         
-        // Carica cronologia MIO (room: mio_main)
-        const mioResponse = await fetch(`${apiBaseUrl}/api/mihub/chats/mio_main`);
-        const mioData = await mioResponse.json();
-        if (mioData.success && mioData.messages.length > 0) {
-          const mioHistory = mioData.messages.map((msg: any) => ({
-            role: msg.agent === 'user' ? 'user' : 'assistant',
-            text: msg.content,
-            agent: msg.agent
-          }));
-          setMioMessages(mioHistory);
+        try {
+          const mioResponse = await fetch(`${apiBaseUrl}/api/mihub/chats/mio_main`);
+          const mioData = await mioResponse.json();
+          if (mioData.success && mioData.messages.length > 0) {
+            const mioHistory = mioData.messages.map((msg: any) => ({
+              role: msg.agent === 'user' ? 'user' : 'assistant',
+              text: msg.content,
+              agent: msg.agent
+            }));
+            setMioMessages(mioHistory);
+            // Salva in localStorage per prossima volta
+            localStorage.setItem('mihub_main_mio_chat', JSON.stringify(mioHistory));
+          }
+        } catch (backendError) {
+          console.warn('[Chat] Backend non disponibile, uso localStorage:', backendError);
         }
 
         // Carica cronologia Abacus (room: abacus_single)
@@ -545,6 +578,20 @@ export default function DashboardPA() {
       loadChatHistory();
     }
   }, [showMultiAgentChat]); // Esegui quando si apre la chat
+  
+  // Salva cronologia MIO in localStorage ogni volta che cambia
+  useEffect(() => {
+    if (mioMessages.length > 0) {
+      localStorage.setItem('mihub_main_mio_chat', JSON.stringify(mioMessages));
+    }
+  }, [mioMessages]);
+  
+  // Salva internalTraces in localStorage ogni volta che cambiano
+  useEffect(() => {
+    if (internalTracesMessages.length > 0) {
+      localStorage.setItem('mihub_internal_traces', JSON.stringify(internalTracesMessages));
+    }
+  }, [internalTracesMessages]);
 
   // GIS Map state (blocco ufficiale da GestioneMercati)
   const [gisStalls, setGisStalls] = useState<any[]>([]);
@@ -4121,127 +4168,12 @@ export default function DashboardPA() {
                     )}
 
                     {viewMode === 'quad' && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-                        {/* MIO */}
-                        <Card className="bg-[#0a0f1a] border-[#8b5cf6]/30">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Brain className="h-4 w-4 text-purple-400" />
-                                <span className="text-purple-400">MIO</span>
-                              </div>
-                              <span className="text-xs text-[#e8fbff]/50">GPT-5 Coordinatore</span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
-                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="Messaggio da MIO..."
-                                className="flex-1 bg-[#0b1220] border border-[#8b5cf6]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#8b5cf6]"
-                                disabled
-                              />
-                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
-                                <Send className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Manus */}
-                        <Card className="bg-[#0a0f1a] border-[#3b82f6]/30">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Wrench className="h-4 w-4 text-blue-400" />
-                                <span className="text-blue-400">Manus</span>
-                              </div>
-                              <span className="text-xs text-[#e8fbff]/50">Operatore Esecutivo</span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
-                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="Messaggio da Manus..."
-                                className="flex-1 bg-[#0b1220] border border-[#3b82f6]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#3b82f6]"
-                                disabled
-                              />
-                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
-                                <Send className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Abacus */}
-                        <Card className="bg-[#0a0f1a] border-[#10b981]/30">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Calculator className="h-4 w-4 text-green-400" />
-                                <span className="text-green-400">Abacus</span>
-                              </div>
-                              <span className="text-xs text-[#e8fbff]/50">Analisi Dati</span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
-                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="Messaggio da Abacus..."
-                                className="flex-1 bg-[#0b1220] border border-[#10b981]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#10b981]"
-                                disabled
-                              />
-                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
-                                <Send className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Zapier */}
-                        <Card className="bg-[#0a0f1a] border-[#f59e0b]/30">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-sm flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Zap className="h-4 w-4 text-orange-400" />
-                                <span className="text-orange-400">Zapier</span>
-                              </div>
-                              <span className="text-xs text-[#e8fbff]/50">Automazioni</span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto">
-                              <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio</p>
-                            </div>
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="Messaggio da Zapier..."
-                                className="flex-1 bg-[#0b1220] border border-[#f59e0b]/30 rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#f59e0b]"
-                                disabled
-                              />
-                              <Button size="sm" className="bg-[#10b981] hover:bg-[#059669]" disabled>
-                                <Send className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        <p className="col-span-2 text-xs text-[#e8fbff]/30 text-center mt-2">
-                          Vista 4 Quadranti - Chat in fase di sviluppo
-                        </p>
-                      </div>
+                      <MultiAgentChatView
+                        mode="multi"
+                        selectedAgent={selectedAgent as 'mio' | 'manus' | 'abacus' | 'zapier'}
+                        internalTraces={internalTracesMessages}
+                        onSendMessage={undefined}
+                      />
                     )}
                   </div>
                 </div>
