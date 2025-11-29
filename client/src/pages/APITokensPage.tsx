@@ -67,6 +67,13 @@ const TOKEN_CONFIGS: TokenConfig[] = [
     description: 'Usata per integrazioni trasporto pubblico',
     placeholder: 'tper_...',
   },
+  {
+    name: 'HETZNER_SSH_KEY',
+    scope: 'infra',
+    label: 'Hetzner SSH – Backend Mercati/GIS',
+    description: 'Chiave SSH per accesso server Hetzner (157.90.29.66) - root@157.90.29.66 - Path: /home/ubuntu/.ssh/hetzner_deploy_key - Fingerprint: SHA256:Gsnr7z2Zy+ehoj0dvlTFHiFntLRbeP267ZlZJs2nNDk',
+    placeholder: '-----BEGIN OPENSSH PRIVATE KEY-----',
+  },
 ];
 
 export default function APITokensPage() {
