@@ -3,13 +3,25 @@
  * 
  * Pagina per la gestione sicura di API key e token per gli agenti multi-agent.
  * Solo accessibile agli amministratori.
+ * 
+ * SICUREZZA:
+ * - I token sono cifrati con AES-256-GCM sul backend
+ * - Nessun token è mai salvato in localStorage/sessionStorage
+ * - Nessun token è mai loggato in console
+ * - I form input vengono svuotati immediatamente dopo il salvataggio
  */
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2, XCircle, AlertTriangle, RefreshCw, Key, Database, Github, Cloud, Zap, Building2, Server } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { CheckCircle2, XCircle, AlertTriangle, RefreshCw, Key, Database, Github, Cloud, Zap, Building2, Server, Save, Eye, EyeOff } from 'lucide-react';
+
+const API_BASE_URL = 'https://mihub.157-90-29-66.nip.io';
 
 interface SecretMeta {
   id: string;
@@ -55,6 +67,10 @@ export default function APITokensPage() {
   const [secrets, setSecrets] = useState<SecretMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingSecret, setEditingSecret] = useState<string | null>(null);
+  const [secretValue, setSecretValue] = useState('');
+  const [showValue, setShowValue] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadSecretsMetadata();
@@ -65,7 +81,7 @@ export default function APITokensPage() {
     setError(null);
     
     try {
-      const response = await fetch('https://mihub.157-90-29-66.nip.io/api/admin/secrets/meta');
+      const response = await fetch(`${API_BASE_URL}/api/admin/secrets/meta`);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -84,6 +100,59 @@ export default function APITokensPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveSecret = async (envVar: string) => {
+    if (!secretValue.trim()) {
+      alert('Il valore del secret non può essere vuoto');
+      return;
+    }
+
+    setSaving(true);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/secrets/${envVar}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          value: secretValue,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Svuota immediatamente il campo input
+        setSecretValue('');
+        setEditingSecret(null);
+        setShowValue(false);
+        
+        // Ricarica i metadata per aggiornare lo stato
+        await loadSecretsMetadata();
+        
+        alert(`✅ Secret ${envVar} salvato con successo!`);
+      } else {
+        throw new Error(data.error || 'Failed to save secret');
+      }
+    } catch (err) {
+      console.error(`Error saving secret ${envVar}:`, err);
+      alert(`❌ Errore nel salvataggio: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    // Svuota il campo e chiudi il form
+    setSecretValue('');
+    setEditingSecret(null);
+    setShowValue(false);
   };
 
   const groupedSecrets = secrets.reduce((acc, secret) => {
@@ -211,11 +280,30 @@ export default function APITokensPage() {
                         </div>
                         <CardDescription className="mt-2">{secret.notes}</CardDescription>
                       </div>
+                      
+                      {!secret.deprecated && (
+                        <Button
+                          variant={editingSecret === secret.envVar ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            if (editingSecret === secret.envVar) {
+                              handleCancelEdit();
+                            } else {
+                              setEditingSecret(secret.envVar);
+                              setSecretValue('');
+                              setShowValue(false);
+                            }
+                          }}
+                        >
+                          <Key className="h-4 w-4 mr-2" />
+                          {editingSecret === secret.envVar ? 'Annulla' : (secret.present ? 'Aggiorna' : 'Configura')}
+                        </Button>
+                      )}
                     </div>
                   </CardHeader>
                   
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
                       <div>
                         <div className="font-medium text-muted-foreground mb-1">Variabile d'ambiente</div>
                         <code className="px-2 py-1 bg-muted rounded text-xs">{secret.envVar}</code>
@@ -237,6 +325,53 @@ export default function APITokensPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Form di inserimento/aggiornamento secret */}
+                    {editingSecret === secret.envVar && (
+                      <div className="border-t pt-4 mt-4">
+                        <Label htmlFor={`secret-${secret.envVar}`} className="mb-2 block">
+                          Inserisci il valore del secret
+                        </Label>
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Textarea
+                              id={`secret-${secret.envVar}`}
+                              value={secretValue}
+                              onChange={(e) => setSecretValue(e.target.value)}
+                              placeholder={`Incolla qui il valore di ${secret.envVar}`}
+                              className="font-mono text-sm"
+                              rows={3}
+                              type={showValue ? 'text' : 'password'}
+                              autoComplete="off"
+                              spellCheck={false}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute top-2 right-2"
+                              onClick={() => setShowValue(!showValue)}
+                            >
+                              {showValue ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                          <Button
+                            onClick={() => handleSaveSecret(secret.envVar)}
+                            disabled={saving || !secretValue.trim()}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            {saving ? (
+                              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <Save className="h-4 w-4 mr-2" />
+                            )}
+                            Salva
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          ⚠️ Il valore verrà cifrato con AES-256-GCM e salvato nel database. Non sarà mai più visibile in chiaro.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -256,6 +391,8 @@ export default function APITokensPage() {
             <li>Gli agenti LLM NON possono accedere a questi endpoint</li>
             <li>Ogni modifica viene loggata dal sistema Guardian</li>
             <li>Non condividere mai i token in chat o in altri canali non sicuri</li>
+            <li>I token non sono mai salvati in localStorage, sessionStorage o cookie</li>
+            <li>I form input vengono svuotati immediatamente dopo il salvataggio</li>
           </ul>
         </AlertDescription>
       </Alert>
