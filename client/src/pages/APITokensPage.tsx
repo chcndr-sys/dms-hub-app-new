@@ -18,7 +18,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle2, XCircle, AlertTriangle, RefreshCw, Key, Database, Github, Cloud, Zap, Building2, Server, Save, Eye, EyeOff } from 'lucide-react';
 
 const API_BASE_URL = 'https://mihub.157-90-29-66.nip.io';
@@ -334,13 +333,12 @@ export default function APITokensPage() {
                         </Label>
                         <div className="flex gap-2">
                           <div className="relative flex-1">
-                            <Textarea
+                            <Input
                               id={`secret-${secret.envVar}`}
                               value={secretValue}
                               onChange={(e) => setSecretValue(e.target.value)}
                               placeholder={`Incolla qui il valore di ${secret.envVar}`}
                               className="font-mono text-sm"
-                              rows={3}
                               type={showValue ? 'text' : 'password'}
                               autoComplete="off"
                               spellCheck={false}
