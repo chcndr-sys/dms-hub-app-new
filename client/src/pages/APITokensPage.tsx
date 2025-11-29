@@ -7,283 +7,258 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, Eye, EyeOff, Save, RefreshCw } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle2, XCircle, AlertTriangle, RefreshCw, Key, Database, Github, Cloud, Zap, Building2, Server } from 'lucide-react';
 
-interface SecretMetadata {
-  name: string;
-  scope: string;
-  last4: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface TokenConfig {
-  name: string;
-  scope: string;
+interface SecretMeta {
+  id: string;
   label: string;
-  description: string;
-  placeholder: string;
+  category: string;
+  envVar: string;
+  env: string;
+  present: boolean;
+  lastUpdated: string | null;
+  notes: string;
+  deprecated: boolean;
 }
 
-const TOKEN_CONFIGS: TokenConfig[] = [
-  {
-    name: 'OPENAI_API_KEY',
-    scope: 'llm',
-    label: 'OpenAI API Key',
-    description: 'Usata dagli agenti mio e dev per chiamate GPT-4',
-    placeholder: 'sk-...',
-  },
-  {
-    name: 'GEMINI_API_KEY',
-    scope: 'llm',
-    label: 'Gemini API Key',
-    description: 'Usata dall\'agente gemini_arch per analisi architettura',
-    placeholder: 'AIza...',
-  },
-  {
-    name: 'GITHUB_PAT_DEV',
-    scope: 'repo',
-    label: 'GitHub Personal Access Token',
-    description: 'Usata dall\'agente dev per accesso repository',
-    placeholder: 'ghp_...',
-  },
-  {
-    name: 'VERCEL_TOKEN',
-    scope: 'deploy',
-    label: 'Vercel Token',
-    description: 'Usata per deploy automatici su Vercel',
-    placeholder: 'vercel_...',
-  },
-  {
-    name: 'TPER_API_KEY',
-    scope: 'mobility',
-    label: 'TPER API Key',
-    description: 'Usata per integrazioni trasporto pubblico',
-    placeholder: 'tper_...',
-  },
-  {
-    name: 'HETZNER_SSH_KEY',
-    scope: 'infra',
-    label: 'Hetzner SSH – Backend Mercati/GIS',
-    description: 'Chiave SSH per accesso server Hetzner (157.90.29.66) - root@157.90.29.66 - Path: /home/ubuntu/.ssh/hetzner_deploy_key - Fingerprint: SHA256:Gsnr7z2Zy+ehoj0dvlTFHiFntLRbeP267ZlZJs2nNDk',
-    placeholder: '-----BEGIN OPENSSH PRIVATE KEY-----',
-  },
-];
+interface SecretsMetaResponse {
+  success: boolean;
+  count: number;
+  secrets: SecretMeta[];
+}
+
+const CATEGORY_ICONS: Record<string, any> = {
+  'LLM': Zap,
+  'GitHub': Github,
+  'Database': Database,
+  'Backend': Server,
+  'Infra': Server,
+  'PA': Building2,
+  'Deploy': Cloud,
+  'Mobility': Cloud,
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'LLM': 'text-purple-500',
+  'GitHub': 'text-gray-700',
+  'Database': 'text-blue-500',
+  'Backend': 'text-green-500',
+  'Infra': 'text-orange-500',
+  'PA': 'text-indigo-500',
+  'Deploy': 'text-cyan-500',
+  'Mobility': 'text-teal-500',
+};
 
 export default function APITokensPage() {
-  const [secrets, setSecrets] = useState<Record<string, SecretMetadata>>({});
-  const [values, setValues] = useState<Record<string, string>>({});
-  const [showValues, setShowValues] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState<Record<string, boolean>>({});
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [secrets, setSecrets] = useState<SecretMeta[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Carica metadata dei secret esistenti
   useEffect(() => {
-    loadSecrets();
+    loadSecretsMetadata();
   }, []);
 
-  const loadSecrets = async () => {
+  const loadSecretsMetadata = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/secrets`);
-      const data = await response.json();
-
-      if (data.success) {
-        const secretsMap: Record<string, SecretMetadata> = {};
-        data.secrets.forEach((secret: SecretMetadata) => {
-          secretsMap[secret.name] = secret;
-        });
-        setSecrets(secretsMap);
+      const response = await fetch('https://mihub.157-90-29-66.nip.io/api/admin/secrets/meta');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-    } catch (error) {
-      console.error('Error loading secrets:', error);
-      setMessage({ type: 'error', text: 'Errore nel caricamento dei token' });
+      
+      const data: SecretsMetaResponse = await response.json();
+      
+      if (data.success) {
+        setSecrets(data.secrets);
+      } else {
+        throw new Error('Failed to load secrets metadata');
+      }
+    } catch (err) {
+      console.error('Error loading secrets metadata:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
   };
 
-  const saveSecret = async (config: TokenConfig) => {
-    const value = values[config.name];
-    if (!value || value.trim() === '') {
-      setMessage({ type: 'error', text: `Inserisci un valore per ${config.label}` });
-      return;
+  const groupedSecrets = secrets.reduce((acc, secret) => {
+    if (!acc[secret.category]) {
+      acc[secret.category] = [];
     }
+    acc[secret.category].push(secret);
+    return acc;
+  }, {} as Record<string, SecretMeta[]>);
 
-    setSaving({ ...saving, [config.name]: true });
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/secrets`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: config.name,
-          scope: config.scope,
-          value: value,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSecrets({ ...secrets, [config.name]: data.secret });
-        setValues({ ...values, [config.name]: '' }); // Clear input
-        setMessage({ type: 'success', text: `${config.label} salvata con successo` });
-      } else {
-        setMessage({ type: 'error', text: data.error || 'Errore nel salvataggio' });
-      }
-    } catch (error) {
-      console.error('Error saving secret:', error);
-      setMessage({ type: 'error', text: 'Errore nel salvataggio del token' });
-    } finally {
-      setSaving({ ...saving, [config.name]: false });
-    }
+  const stats = {
+    total: secrets.length,
+    present: secrets.filter(s => s.present).length,
+    missing: secrets.filter(s => !s.present).length,
+    deprecated: secrets.filter(s => s.deprecated).length,
   };
 
-  const toggleShowValue = (name: string) => {
-    setShowValues({ ...showValues, [name]: !showValues[name] });
-  };
-
-  const isConfigured = (name: string) => {
-    return secrets[name] !== undefined;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('it-IT');
-  };
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-3 text-lg">Caricamento metadata secrets...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-6">
+    <div className="container mx-auto p-6 max-w-7xl">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">API & Agent Tokens</h1>
         <p className="text-muted-foreground">
-          Gestione sicura delle API key per il sistema multi-agente.
-          I token sono cifrati con AES-256-GCM e non sono mai visibili in chiaro.
+          Gestione sicura delle API key per il sistema multi-agente. I token sono cifrati con AES-256-GCM e non sono mai visibili in chiaro.
         </p>
       </div>
 
-      {message && (
-        <Alert className={`mb-6 ${message.type === 'success' ? 'border-green-500' : 'border-red-500'}`}>
-          <AlertDescription>{message.text}</AlertDescription>
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Errore nel caricamento dei metadata: {error}
+          </AlertDescription>
         </Alert>
       )}
 
-      <div className="space-y-6">
-        {TOKEN_CONFIGS.map((config) => {
-          const secret = secrets[config.name];
-          const configured = isConfigured(config.name);
-
-          return (
-            <Card key={config.name}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      {config.label}
-                      {configured ? (
-                        <Badge variant="default" className="bg-green-500">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Configurato
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Non configurato
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription>{config.description}</CardDescription>
-                  </div>
-                  <Badge variant="outline">{config.scope}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {configured && secret && (
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Ultime 4 cifre:</span>
-                      <span className="ml-2 font-mono">****{secret.last4}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Aggiornato:</span>
-                      <span className="ml-2">{formatDate(secret.updated_at)}</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor={config.name}>
-                    {configured ? 'Aggiorna token' : 'Inserisci token'}
-                  </Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        id={config.name}
-                        type={showValues[config.name] ? 'text' : 'password'}
-                        placeholder={config.placeholder}
-                        value={values[config.name] || ''}
-                        onChange={(e) => setValues({ ...values, [config.name]: e.target.value })}
-                        className="pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => toggleShowValue(config.name)}
-                      >
-                        {showValues[config.name] ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <Button
-                      onClick={() => saveSecret(config)}
-                      disabled={saving[config.name] || !values[config.name]}
-                    >
-                      {saving[config.name] ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Salvataggio...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 mr-2" />
-                          Salva
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Il token verrà cifrato con AES-256-GCM prima di essere salvato nel database.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Totale Secrets</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Configurati</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.present}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Mancanti</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{stats.missing}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Deprecati</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{stats.deprecated}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="mt-8 p-4 bg-muted rounded-lg">
-        <h3 className="font-semibold mb-2">⚠️ Note di Sicurezza</h3>
-        <ul className="text-sm space-y-1 text-muted-foreground">
-          <li>• I token sono cifrati con AES-256-GCM usando una master key sul server</li>
-          <li>• Solo le ultime 4 cifre sono visibili in chiaro</li>
-          <li>• Gli agenti LLM NON possono accedere a questi endpoint</li>
-          <li>• Ogni modifica viene loggata dal sistema Guardian</li>
-          <li>• Non condividere mai i token in chat o in altri canali non sicuri</li>
-        </ul>
-      </div>
+      {/* Secrets by Category */}
+      {Object.entries(groupedSecrets).map(([category, categorySecrets]) => {
+        const Icon = CATEGORY_ICONS[category] || Key;
+        const colorClass = CATEGORY_COLORS[category] || 'text-gray-500';
+        
+        return (
+          <div key={category} className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Icon className={`h-5 w-5 ${colorClass}`} />
+              <h2 className="text-xl font-semibold">{category}</h2>
+              <Badge variant="secondary">{categorySecrets.length}</Badge>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4">
+              {categorySecrets.map((secret) => (
+                <Card key={secret.id} className={secret.deprecated ? 'opacity-60 border-red-200' : ''}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <CardTitle className="text-lg">{secret.label}</CardTitle>
+                          {secret.present ? (
+                            <Badge variant="default" className="bg-green-600">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Configurato
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Non configurato
+                            </Badge>
+                          )}
+                          {secret.deprecated && (
+                            <Badge variant="destructive">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              DEPRECATED
+                            </Badge>
+                          )}
+                          <Badge variant="outline">{secret.category}</Badge>
+                        </div>
+                        <CardDescription className="mt-2">{secret.notes}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <div className="font-medium text-muted-foreground mb-1">Variabile d'ambiente</div>
+                        <code className="px-2 py-1 bg-muted rounded text-xs">{secret.envVar}</code>
+                      </div>
+                      
+                      <div>
+                        <div className="font-medium text-muted-foreground mb-1">Ambiente</div>
+                        <Badge variant={secret.env === 'prod' ? 'default' : 'secondary'}>
+                          {secret.env}
+                        </Badge>
+                      </div>
+                      
+                      <div>
+                        <div className="font-medium text-muted-foreground mb-1">Ultimo aggiornamento</div>
+                        <div className="text-muted-foreground">
+                          {secret.lastUpdated 
+                            ? new Date(secret.lastUpdated).toLocaleString('it-IT') 
+                            : 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Security Notes */}
+      <Alert className="mt-8">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          <strong>⚠️ Note di Sicurezza</strong>
+          <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+            <li>I token sono cifrati con AES-256-GCM usando una master key sul server</li>
+            <li>Solo le ultime 4 cifre sono visibili in chiaro</li>
+            <li>Gli agenti LLM NON possono accedere a questi endpoint</li>
+            <li>Ogni modifica viene loggata dal sistema Guardian</li>
+            <li>Non condividere mai i token in chat o in altri canali non sicuri</li>
+          </ul>
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }
