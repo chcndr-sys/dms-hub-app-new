@@ -27,6 +27,7 @@ import GuardianLogsSection from '@/components/GuardianLogsSection';
 import { MultiAgentChatView } from '@/components/multi-agent/MultiAgentChatView';
 import { callOrchestrator } from '@/api/orchestratorClient';
 import { getLogs, getLogsStats, getGuardianHealth } from '@/api/logsClient';
+import { useInternalTraces } from '@/hooks/useInternalTraces';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Hook per dati reali da backend
@@ -471,6 +472,10 @@ export default function DashboardPA() {
   
   // Internal traces per Vista 4 agenti (dialoghi MIO ↔ Agenti)
   const [internalTracesMessages, setInternalTracesMessages] = useState<Array<{ from: string; to: string; message: string; timestamp: string; meta?: any }>>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  
+  // Hook per fetching automatico internalTraces
+  const { traces: fetchedTraces } = useInternalTraces(currentConversationId, 3000);
   const [zapierInputValue, setZapierInputValue] = useState('');
   const [zapierLoading, setZapierLoading] = useState(false);
   const [zapierError, setZapierError] = useState<string | null>(null);
@@ -592,6 +597,17 @@ export default function DashboardPA() {
       localStorage.setItem('mihub_internal_traces', JSON.stringify(internalTracesMessages));
     }
   }, [internalTracesMessages]);
+  
+  // Merge fetchedTraces con internalTracesMessages
+  useEffect(() => {
+    if (fetchedTraces.length > 0) {
+      setInternalTracesMessages(prev => {
+        const existingKeys = new Set(prev.map(t => `${t.timestamp}-${t.from}-${t.to}`));
+        const newTraces = fetchedTraces.filter(t => !existingKeys.has(`${t.timestamp}-${t.from}-${t.to}`));
+        return [...prev, ...newTraces];
+      });
+    }
+  }, [fetchedTraces]);
 
   // GIS Map state (blocco ufficiale da GestioneMercati)
   const [gisStalls, setGisStalls] = useState<any[]>([]);
@@ -636,6 +652,7 @@ export default function DashboardPA() {
       // Salva conversationId
       if (response.conversationId) {
         setMioConversationId(response.conversationId);
+        setCurrentConversationId(response.conversationId); // Per polling internalTraces
       }
       
       if (response.success && response.message) {
