@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react';
 
-const STORAGE_KEY = 'mio_conversation_id';
+const DEFAULT_STORAGE_KEY = 'mio_conversation_id';
 
 export interface ConversationPersistence {
   conversationId: string | null;
@@ -17,8 +17,10 @@ export interface ConversationPersistence {
 
 /**
  * Hook per gestire la persistenza del conversation_id
+ * @param storageKey - Chiave localStorage opzionale (default: 'mio_conversation_id')
  */
-export function useConversationPersistence(): ConversationPersistence {
+export function useConversationPersistence(storageKey?: string): ConversationPersistence {
+  const STORAGE_KEY = storageKey || DEFAULT_STORAGE_KEY;
   const [conversationId, setConversationIdState] = useState<string | null>(null);
 
   // Carica o genera conversation_id al mount
