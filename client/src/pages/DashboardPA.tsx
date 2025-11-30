@@ -574,9 +574,14 @@ export default function DashboardPA() {
     agent: msg.agent_name
   }));
   
+  const [gptdevInputValue, setGptdevInputValue] = useState('');
   const [manusInputValue, setManusInputValue] = useState('');
   const [abacusInputValue, setAbacusInputValue] = useState('');
   const [zapierInputValue, setZapierInputValue] = useState('');
+  
+  // State separati per invio (non confondere con loading da useAgentLogs)
+  const [mioSendingLoading, setMioSendingLoading] = useState(false);
+  const [mioSendingError, setMioSendingError] = useState<string | null>(null);
   
   // Internal traces per Vista 4 agenti (dialoghi MIO ↔ Agenti)
   const [internalTracesMessages, setInternalTracesMessages] = useState<Array<{ from: string; to: string; message: string; timestamp: string; meta?: any }>>([]);
@@ -647,15 +652,14 @@ export default function DashboardPA() {
     
     const text = mioInputValue.trim();
     setMioInputValue('');
-    setMioLoading(true);
-    setMioError(null);
+    setMioSendingLoading(true);
+    setMioSendingError(null);
     
     try {
       const response = await sendMioMessage(text, mioMainConversationId);
       
       // Salva conversationId per persistenza
       if (response.conversationId) {
-        setMioConversationId(response.conversationId);
         setCurrentConversationId(response.conversationId); // Per polling internalTraces
         setPersistedConversationId(response.conversationId); // Salva in localStorage
       }
@@ -666,13 +670,13 @@ export default function DashboardPA() {
       if (response.error) {
         const provider = response.error.provider ? ` (${response.error.provider.toUpperCase()})` : '';
         const errorMsg = response.error.message || 'Errore orchestratore';
-        setMioError(`[Errore LLM${provider}] ${errorMsg}`);
+        setMioSendingError(`[Errore LLM${provider}] ${errorMsg}`);
       }
     } catch (error) {
       console.error('[MIO Agent] Error:', error);
-      setMioError('Errore di connessione al server');
+      setMioSendingError('Errore di connessione al server');
     } finally {
-      setMioLoading(false);
+      setMioSendingLoading(false);
     }
   };
   
@@ -853,6 +857,56 @@ export default function DashboardPA() {
       setZapierError(errorMsg);
     } finally {
       setZapierLoading(false);
+    }
+  };
+  
+  // Handler per invio messaggio GPT Developer
+  const handleSendGptdev = async () => {
+    if (!gptdevInputValue.trim() || gptdevLoading) return;
+    
+    const text = gptdevInputValue.trim();
+    
+    setGptdevMessages(prev => [...prev, { role: 'user', text }]);
+    setGptdevInputValue('');
+    setGptdevLoading(true);
+    setGptdevError(null);
+    
+    try {
+      const response = await callOrchestrator({
+        mode: 'manual',
+        targetAgent: 'gptdev',
+        conversationId: gptdevConversationId,
+        message: text,
+        meta: { source: 'dashboard_gptdev_single', agent: 'gptdev' },
+      });
+      
+      if (response.conversationId) {
+        setGptdevConversationId(response.conversationId);
+      }
+      
+      if (response.success && response.message) {
+        setGptdevMessages(prev => [
+          ...prev,
+          { role: 'assistant', agent: response.agent, text: response.message! },
+        ]);
+      } else if (response.error) {
+        const errorMsg = response.error.message || 'Errore orchestratore. Riprova più tardi.';
+        setGptdevMessages(prev => [
+          ...prev,
+          { role: 'system', text: `[Errore] ${errorMsg}` },
+        ]);
+        setGptdevError(errorMsg);
+      }
+    } catch (error) {
+      console.error('[GPT Developer Agent] Error:', error);
+      const errorMsg = 'Errore di connessione al server';
+      setGptdevMessages(prev => [
+        ...prev,
+        { role: 'system', text: `[Errore] ${errorMsg}` },
+      ]);
+      setGptdevError(errorMsg);
+    } finally {
+      setGptdevLoading(false);
     }
   };
   
@@ -3809,19 +3863,19 @@ export default function DashboardPA() {
                   {/* Bottoni agenti - Disabilitati in vista quadrants */}
                   <div className="grid grid-cols-4 gap-2">
                     <button
-                      onClick={() => setSelectedAgent('mio')}
+                      onClick={() => setSelectedAgent('gptdev')}
                       disabled={viewMode === 'quad'}
                       className={`text-center p-3 rounded-lg border transition-all ${
                         viewMode === 'quad' 
-                          ? 'opacity-50 cursor-not-allowed bg-[#8b5cf6]/5 border-[#8b5cf6]/20'
-                          : selectedAgent === 'mio'
-                          ? 'bg-[#8b5cf6]/20 border-[#8b5cf6]'
-                          : 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/15'
+                          ? 'opacity-50 cursor-not-allowed bg-[#6366f1]/5 border-[#6366f1]/20'
+                          : selectedAgent === 'gptdev'
+                          ? 'bg-[#6366f1]/20 border-[#6366f1] shadow-lg shadow-[#6366f1]/20'
+                          : 'bg-[#0a0f1a] border-[#6366f1]/30 hover:bg-[#6366f1]/10 hover:border-[#6366f1]/50'
                       }`}
                     >
-                      <Brain className="h-5 w-5 text-purple-400 mx-auto mb-1" />
-                      <div className="text-xs text-[#e8fbff]/70">MIO</div>
-                      <div className="text-xs text-[#e8fbff]/50">Coordinatore</div>
+                      <Brain className="h-5 w-5 text-indigo-400 mx-auto mb-1" />
+                      <div className="text-xs text-[#e8fbff]/70">GPT Dev</div>
+                      <div className="text-xs text-[#e8fbff]/50">Sviluppatore</div>
                     </button>
                     <button
                       onClick={() => setSelectedAgent('manus')}
@@ -3878,19 +3932,25 @@ export default function DashboardPA() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {selectedAgent === 'mio' && <Brain className="h-5 w-5 text-purple-400" />}
+                            {selectedAgent === 'gptdev' && <Brain className="h-5 w-5 text-indigo-400" />}
                             {selectedAgent === 'manus' && <Wrench className="h-5 w-5 text-blue-400" />}
                             {selectedAgent === 'abacus' && <Calculator className="h-5 w-5 text-green-400" />}
                             {selectedAgent === 'zapier' && <Zap className="h-5 w-5 text-orange-400" />}
-                            <span className="text-[#e8fbff] font-medium capitalize">{selectedAgent}</span>
+                            <span className="text-[#e8fbff] font-medium">
+                              {selectedAgent === 'gptdev' && 'GPT Developer'}
+                              {selectedAgent === 'manus' && 'Manus'}
+                              {selectedAgent === 'abacus' && 'Abacus'}
+                              {selectedAgent === 'zapier' && 'Zapier'}
+                            </span>
                             <span className="text-xs text-[#e8fbff]/50">
-                              {selectedAgent === 'mio' && 'GPT-5 Coordinatore'}
+                              {selectedAgent === 'gptdev' && 'Sviluppatore AI'}
                               {selectedAgent === 'manus' && 'Operatore Esecutivo'}
                               {selectedAgent === 'abacus' && 'Analisi Dati'}
                               {selectedAgent === 'zapier' && 'Automazioni'}
                             </span>
                           </div>
                           <span className="text-xs text-[#e8fbff]/50">
-                            {selectedAgent === 'mio' && `${mioMessages.length} messaggi`}
+                            {selectedAgent === 'gptdev' && `${gptdevMessages.length} messaggi`}
                             {selectedAgent === 'manus' && `${manusMessages.length} messaggi`}
                             {selectedAgent === 'abacus' && `${abacusMessages.length} messaggi`}
                             {selectedAgent === 'zapier' && `${zapierMessages.length} messaggi`}
@@ -3898,7 +3958,7 @@ export default function DashboardPA() {
                         </div>
                         {/* Area messaggi */}
                         <div className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-auto">
-                          {selectedAgent === 'mio' && mioMessages.length === 0 && (
+                          {selectedAgent === 'gptdev' && gptdevMessages.length === 0 && (
                             <p className="text-[#e8fbff]/50 text-center text-sm">Nessun messaggio</p>
                           )}
                           {selectedAgent === 'manus' && manusMessages.length === 0 && (
@@ -4019,25 +4079,25 @@ export default function DashboardPA() {
                         </div>
                         {/* Input */}
                         <div className="flex gap-2">
-                          {selectedAgent === 'mio' && (
+                          {selectedAgent === 'gptdev' && (
                             <>
                               <input
                                 type="text"
-                                value={mioInputValue}
-                                onChange={(e) => setMioInputValue(e.target.value)}
+                                value={gptdevInputValue}
+                                onChange={(e) => setGptdevInputValue(e.target.value)}
                                 onKeyPress={(e) => {
-                                  if (e.key === 'Enter' && !mioLoading) {
-                                    handleSendMio();
+                                  if (e.key === 'Enter' && !gptdevLoading) {
+                                    handleSendGptdev();
                                   }
                                 }}
-                                placeholder="Messaggio a MIO..."
-                                className="flex-1 bg-[#0a0f1a] border border-[#8b5cf6]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#8b5cf6]"
-                                disabled={mioLoading}
+                                placeholder="Messaggio a GPT Developer..."
+                                className="flex-1 bg-[#0a0f1a] border border-[#6366f1]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#6366f1]"
+                                disabled={gptdevLoading}
                               />
                               <Button 
-                                onClick={handleSendMio}
+                                onClick={handleSendGptdev}
                                 className="bg-[#10b981] hover:bg-[#059669]" 
-                                disabled={mioLoading || !mioInputValue.trim()}
+                                disabled={gptdevLoading || !gptdevInputValue.trim()}
                               >
                                 <Send className="h-4 w-4" />
                               </Button>
