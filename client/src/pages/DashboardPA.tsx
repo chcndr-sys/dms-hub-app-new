@@ -29,6 +29,7 @@ import { callOrchestrator } from '@/api/orchestratorClient';
 import { getLogs, getLogsStats, getGuardianHealth } from '@/api/logsClient';
 import { useInternalTraces } from '@/hooks/useInternalTraces';
 import { useConversationPersistence } from '@/hooks/useConversationPersistence';
+import { useAgentLogs } from '@/hooks/useAgentLogs';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Hook per dati reali da backend
@@ -447,29 +448,85 @@ export default function DashboardPA() {
   const [selectedAgent, setSelectedAgent] = useState<'mio' | 'manus' | 'abacus' | 'zapier'>('mio');
   const [viewMode, setViewMode] = useState<'single' | 'quad'>('single');
   
-  // MIO Agent Chat state (Fase 1)
-  const [mioMessages, setMioMessages] = useState<Array<{ role: 'user' | 'assistant' | 'system'; text: string; agent?: string }>>([]);
+  // MIO Agent Chat state (Fase 1) - usa useAgentLogs
   const [mioInputValue, setMioInputValue] = useState('');
-  const [mioLoading, setMioLoading] = useState(false);
-  const [mioError, setMioError] = useState<string | null>(null);
-  const [mioConversationId, setMioConversationId] = useState<string | null>(null);
   
-  // Manus Agent Chat state
-  const [manusMessages, setManusMessages] = useState<Array<{ role: 'user' | 'assistant' | 'system'; text: string; agent?: string }>>([]);
+  // Persistenza conversazione per Chat principale MIO
+  const { conversationId: mioMainConversationId } = useConversationPersistence('mio-main');
+  
+  // Hook per caricare messaggi da agent_logs
+  const {
+    messages: mioMessagesRaw,
+    setMessages: setMioMessagesRaw,
+    loading: mioLoading,
+    error: mioError,
+  } = useAgentLogs({
+    conversationId: mioMainConversationId,
+    agentName: 'mio',
+  });
+  
+  // Converti formato per compatibilità
+  const mioMessages = mioMessagesRaw.map(msg => ({
+    role: msg.role as 'user' | 'assistant',
+    text: msg.content,
+    agent: msg.agent_name
+  }));
+  
+  const setMioMessages = (updater: any) => {
+    if (typeof updater === 'function') {
+      setMioMessagesRaw(prev => {
+        const converted = prev.map(msg => ({
+          role: msg.role as 'user' | 'assistant',
+          text: msg.content,
+          agent: msg.agent_name
+        }));
+        const updated = updater(converted);
+        return updated.map((msg: any) => ({
+          id: `local-${Date.now()}-${Math.random()}`,
+          conversation_id: mioMainConversationId ?? '',
+          agent_name: msg.agent || 'mio',
+          role: msg.role,
+          content: msg.text,
+          created_at: new Date().toISOString()
+        }));
+      });
+    } else {
+      setMioMessagesRaw(updater.map((msg: any) => ({
+        id: `local-${Date.now()}-${Math.random()}`,
+        conversation_id: mioMainConversationId ?? '',
+        agent_name: msg.agent || 'mio',
+        role: msg.role,
+        content: msg.text,
+        created_at: new Date().toISOString()
+      })));
+    }
+  };
+  
+  // Vista Singola Agenti - usa useAgentLogs con selectedAgent
+  const {
+    messages: singleAgentMessagesRaw,
+    loading: singleAgentLoading,
+    error: singleAgentError,
+  } = useAgentLogs({
+    conversationId: mioMainConversationId,
+    agentName: selectedAgent,
+  });
+  
+  // Converti formato per compatibilità Vista singola
+  const singleAgentMessages = singleAgentMessagesRaw.map(msg => ({
+    role: msg.role as 'user' | 'assistant',
+    text: msg.content,
+    agent: msg.agent_name
+  }));
+  
+  // Mantieni state separati per compatibilità con codice esistente
+  const manusMessages = selectedAgent === 'manus' ? singleAgentMessages : [];
+  const abacusMessages = selectedAgent === 'abacus' ? singleAgentMessages : [];
+  const zapierMessages = selectedAgent === 'zapier' ? singleAgentMessages : [];
+  
   const [manusInputValue, setManusInputValue] = useState('');
-  const [manusLoading, setManusLoading] = useState(false);
-  const [manusError, setManusError] = useState<string | null>(null);
-  const [manusConversationId, setManusConversationId] = useState<string | null>(null);
-  
-  // Abacus Agent Chat state
-  const [abacusMessages, setAbacusMessages] = useState<Array<{ role: 'user' | 'assistant' | 'system'; text: string; agent?: string }>>([]);
   const [abacusInputValue, setAbacusInputValue] = useState('');
-  const [abacusLoading, setAbacusLoading] = useState(false);
-  const [abacusError, setAbacusError] = useState<string | null>(null);
-  const [abacusConversationId, setAbacusConversationId] = useState<string | null>(null);
-  
-  // Zapier Agent Chat state
-  const [zapierMessages, setZapierMessages] = useState<Array<{ role: 'user' | 'assistant' | 'system'; text: string; agent?: string }>>([]);
+  const [zapierInputValue, setZapierInputValue] = useState('');
   
   // Internal traces per Vista 4 agenti (dialoghi MIO ↔ Agenti)
   const [internalTracesMessages, setInternalTracesMessages] = useState<Array<{ from: string; to: string; message: string; timestamp: string; meta?: any }>>([]);
@@ -488,10 +545,6 @@ export default function DashboardPA() {
 
   // Hook per fetching automatico internalTraces
   const { traces: fetchedTraces } = useInternalTraces(currentConversationId, 3000);
-  const [zapierInputValue, setZapierInputValue] = useState('');
-  const [zapierLoading, setZapierLoading] = useState(false);
-  const [zapierError, setZapierError] = useState<string | null>(null);
-  const [zapierConversationId, setZapierConversationId] = useState<string | null>(null);
   
   // Carica cronologia chat all'apertura
   useEffect(() => {
