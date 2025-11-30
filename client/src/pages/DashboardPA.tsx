@@ -26,7 +26,7 @@ import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
 import GuardianLogsSection from '@/components/GuardianLogsSection';
 import { MultiAgentChatView } from '@/components/multi-agent/MultiAgentChatView';
 import { callOrchestrator } from '@/api/orchestratorClient';
-import { sendMioMessage, sendAgentMessage } from '@/lib/mioOrchestratorClient';
+import { sendMioMessage, sendAgentMessage, MioChatMessage } from '@/lib/mioOrchestratorClient';
 import { getLogs, getLogsStats, getGuardianHealth } from '@/api/logsClient';
 import { useInternalTraces } from '@/hooks/useInternalTraces';
 import { useConversationPersistence } from '@/hooks/useConversationPersistence';
@@ -453,19 +453,15 @@ export default function DashboardPA() {
   const [mioInputValue, setMioInputValue] = useState('');
   
   // Persistenza conversazione per Chat principale MIO
-  const { conversationId: mioMainConversationId } = useConversationPersistence('mio-main');
+  const { conversationId: mioMainConversationId, setConversationId: setMioMainConversationId } = useConversationPersistence('mio-main');
   
   // Persistenza conversazioni separate per vista singola agenti
   const { conversationId: manusConversationId, setConversationId: setManusConversationId } = useConversationPersistence('manus-single');
   const { conversationId: abacusConversationId, setConversationId: setAbacusConversationId } = useConversationPersistence('abacus-single');
   const { conversationId: zapierConversationId, setConversationId: setZapierConversationId } = useConversationPersistence('zapier-single');
-  const { conversationId: gptdevConversationId, setConversationId: setGptdevConversationId } = useConversationPersistence('gptdev-single');  // STATO LOCALE per chat MIO principale (NO useAgentLogs)
-  type MioChatMessage = {
-    id: string;
-    role: 'user' | 'assistant' | 'system' | 'error';
-    content: string;
-    createdAt: string;
-  };
+  const { conversationId: gptdevConversationId, setConversationId: setGptdevConversationId } = useConversationPersistence('gptdev-single');
+  
+  // STATO LOCALE per chat MIO principale (NO useAgentLogs)
   
   const [mioMessages, setMioMessages] = useState<MioChatMessage[]>([]);
   const [mioSending, setMioSending] = useState(false);
@@ -642,19 +638,16 @@ export default function DashboardPA() {
     }) + ' (ora locale)';
   };
   
-  // Handler per invio messaggio MIO (MINIMALE - mostra messaggi immediatamente)
+  // Handler per invio messaggio MIO (FASE 1 - STABILIZZATO)
   const handleSendMio = async () => {
     const text = mioInputValue.trim();
     if (!text || mioSending) return;
 
-    console.log('[handleSendMio] Sending:', text);
-    setMioSendError(null);
     setMioSending(true);
     setMioInputValue('');
 
-    // 1. Aggiungi SUBITO il messaggio utente
     const userMsg: MioChatMessage = {
-      id: `user-${Date.now()}`,
+      id: crypto.randomUUID(),
       role: 'user',
       content: text,
       createdAt: new Date().toISOString(),
@@ -662,87 +655,22 @@ export default function DashboardPA() {
     setMioMessages(prev => [...prev, userMsg]);
 
     try {
-      // 2. Chiama il backend (conversationId opzionale - il backend lo crea se manca)
-      console.log('[handleSendMio] Calling /api/mihub/orchestrator...');
-      console.log('[handleSendMio] Current conversationId:', mioMainConversationId);
+      const { messages, conversationId } = await sendMioMessage(text, mioMainConversationId);
       
-      const requestBody: any = {
-        message: text,
-        mode: 'auto',
-        source: 'dashboard-pa-main',
-      };
-      
-      // Invia conversationId solo se esiste E se non è il primo messaggio
-      // (il backend crea un nuovo conversationId alla prima chiamata)
-      if (mioMainConversationId && mioMessages.length > 0) {
-        requestBody.conversationId = mioMainConversationId;
+      // IMPORTANTISSIMO: aggiorna conversationId con quello del backend
+      if (conversationId && conversationId !== mioMainConversationId) {
+        console.log('[handleSendMio] Updating conversationId:', conversationId);
+        setMioMainConversationId(conversationId);
       }
       
-      const res = await fetch('/api/mihub/orchestrator', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log('[handleSendMio] Response status:', res.status);
-
-      if (!res.ok) {
-        const errText = `HTTP ${res.status}`;
-        console.error('[handleSendMio] Error:', errText);
-        setMioSendError(errText);
-        
-        // Mostra errore nella chat
-        setMioMessages(prev => [
-          ...prev,
-          {
-            id: `err-${Date.now()}`,
-            role: 'error',
-            content: `Errore chiamata orchestrator: ${errText}`,
-            createdAt: new Date().toISOString(),
-          },
-        ]);
-        return;
-      }
-
-      // 3. Estrai la risposta
-      const data = await res.json();
-      console.log('[handleSendMio] Response data:', data);
-
-      // Se il backend ha restituito un conversationId, salvalo
-      if (data?.conversationId && data.conversationId !== mioMainConversationId) {
-        console.log('[handleSendMio] Saving new conversationId:', data.conversationId);
-        // TODO: salvare in localStorage tramite useConversationPersistence
-        // Per ora lo loggo solo
-      }
-
-      const replyText =
-        data?.message ??
-        data?.assistantMessage ??
-        data?.response ??
-        JSON.stringify(data);
-
-      // 4. Aggiungi la risposta di MIO
-      const assistantMsg: MioChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: replyText,
-        createdAt: new Date().toISOString(),
-      };
-      setMioMessages(prev => [...prev, assistantMsg]);
-      console.log('[handleSendMio] Success! Message added to chat');
-      
+      setMioMessages(prev => [...prev, ...messages]);
     } catch (err: any) {
-      const msg = err?.message ?? 'Errore di rete';
-      console.error('[handleSendMio] Network error:', err);
-      setMioSendError(msg);
-      
-      // Mostra errore nella chat
       setMioMessages(prev => [
         ...prev,
         {
-          id: `err-${Date.now()}`,
-          role: 'error',
-          content: `Errore di rete: ${msg}`,
+          id: crypto.randomUUID(),
+          role: 'system',
+          content: `Errore chiamata orchestrator: ${err.message}`,
           createdAt: new Date().toISOString(),
         },
       ]);

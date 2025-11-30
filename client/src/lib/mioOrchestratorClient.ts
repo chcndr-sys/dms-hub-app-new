@@ -1,18 +1,59 @@
 /**
+ * Tipo per i messaggi della chat MIO
+ */
+export interface MioChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  createdAt: string;
+}
+
+/**
  * Helper per inviare messaggi all'orchestratore MIO
  * Usato SOLO dalla chat principale MIO
  */
-export async function sendMioMessage(message: string, conversationId: string) {
-  console.log('[sendMioMessage] Sending', { message, conversationId });
+export async function sendMioMessage(
+  text: string,
+  currentConversationId: string | null
+): Promise<{ messages: MioChatMessage[]; conversationId: string }> {
+  const body: any = { message: text, mode: 'auto' };
+  if (currentConversationId) {
+    body.conversationId = currentConversationId;
+  }
+
+  console.log('[sendMioMessage] Request:', body);
 
   const res = await fetch('/api/mihub/orchestrator', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, conversationId, mode: 'auto' }),
+    body: JSON.stringify(body),
   });
 
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  if (!res.ok) {
+    throw new Error(`orchestrator HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  console.log('[sendMioMessage] Response:', data);
+
+  // IMPORTANTISSIMO: usa SEMPRE il conversationId restituito dal backend
+  const newConversationId = data.conversationId ?? currentConversationId ?? '';
+
+  // Trasforma la risposta in messaggi
+  const messages: MioChatMessage[] = [];
+  if (data.reply) {
+    messages.push({
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: data.reply,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  return {
+    messages,
+    conversationId: newConversationId,
+  };
 }
 
 /**
