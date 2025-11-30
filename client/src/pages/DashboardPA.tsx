@@ -3562,7 +3562,7 @@ export default function DashboardPA() {
                         <button
                           type="button"
                           onClick={handleSendMio}
-                          disabled={mioSendingLoading || !mioInputValue.trim()}
+                          disabled={mioSendingLoading}
                           className="bg-[#10b981] hover:bg-[#059669] px-4 py-2 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Invia
