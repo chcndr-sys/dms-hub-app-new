@@ -617,7 +617,11 @@ export default function DashboardPA() {
   
   // Handler per invio messaggio MIO (Fase 1)
   const handleSendMio = async () => {
-    if (!mioInputValue.trim() || mioLoading) return;
+    console.log('[handleSendMio] Called with:', { mioInputValue, mioLoading });
+    if (!mioInputValue.trim() || mioLoading) {
+      console.log('[handleSendMio] Blocked:', { isEmpty: !mioInputValue.trim(), isLoading: mioLoading });
+      return;
+    }
     
     const text = mioInputValue.trim();
     setMioInputValue('');
