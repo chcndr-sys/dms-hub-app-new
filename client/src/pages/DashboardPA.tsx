@@ -709,7 +709,7 @@ export default function DashboardPA() {
     try {
       const response = await callOrchestrator({
         mode: 'auto',
-        conversationId: mioConversationId,
+        conversationId: mioMainConversationId,
         message: text,
         meta: { source: 'dashboard_main' },
       });
@@ -772,7 +772,7 @@ export default function DashboardPA() {
       const response = await callOrchestrator({
         mode: 'manual',
         targetAgent: 'manus_worker',
-        conversationId: manusConversationId,
+        conversationId: mioMainConversationId,
         message: text,
         meta: { source: 'dashboard_manus' },
       });
@@ -850,7 +850,7 @@ export default function DashboardPA() {
       const response = await callOrchestrator({
         mode: 'manual',
         targetAgent,
-        conversationId: abacusConversationId,
+        conversationId: mioMainConversationId,
         message: text,
         meta: { source: 'dashboard_abacus', agent: targetAgent },
         task,
@@ -902,7 +902,7 @@ export default function DashboardPA() {
       // Zapier usa mode 'auto' per ora
       const response = await callOrchestrator({
         mode: 'auto',
-        conversationId: zapierConversationId,
+        conversationId: mioMainConversationId,
         message: text,
         meta: { source: 'dashboard_zapier', agent: 'zapier' },
       });
@@ -948,20 +948,20 @@ export default function DashboardPA() {
       
       switch (selectedAgent) {
         case 'mio':
-          conversationId = mioConversationId;
+          conversationId = mioMainConversationId;
           setMessages = setMioMessages;
           break;
         case 'manus':
-          conversationId = manusConversationId;
-          setMessages = setManusMessages;
+          conversationId = mioMainConversationId;
+          setMessages = () => {}; // Non usato, useAgentLogs gestisce tutto
           break;
         case 'abacus':
-          conversationId = abacusConversationId;
-          setMessages = setAbacusMessages;
+          conversationId = mioMainConversationId;
+          setMessages = () => {}; // Non usato, useAgentLogs gestisce tutto
           break;
         case 'zapier':
-          conversationId = zapierConversationId;
-          setMessages = setZapierMessages;
+          conversationId = mioMainConversationId;
+          setMessages = () => {}; // Non usato, useAgentLogs gestisce tutto
           break;
       }
       
@@ -988,7 +988,7 @@ export default function DashboardPA() {
     };
     
     loadConversationHistory();
-  }, [selectedAgent, mioConversationId, manusConversationId, abacusConversationId, zapierConversationId]);
+  }, [selectedAgent, mioMainConversationId]);
   
   // Fetch GIS Map Data (blocco ufficiale da GestioneMercati)
   useEffect(() => {
@@ -3816,8 +3816,8 @@ export default function DashboardPA() {
                           <Brain className="h-5 w-5 text-purple-400" />
                           <span className="text-[#e8fbff] font-medium">MIO</span>
                           <span className="text-xs text-[#e8fbff]/50">GPT-5 Coordinatore</span>
-                          {mioConversationId && (
-                            <span className="text-xs text-[#e8fbff]/30">ID: {mioConversationId.slice(0, 8)}...</span>
+                          {mioMainConversationId && (
+                            <span className="text-xs text-[#e8fbff]/30">ID: {mioMainConversationId.slice(0, 8)}...</span>
                           )}
                         </div>
                         <span className="text-xs text-[#e8fbff]/50">{mioMessages.length} messaggi</span>
