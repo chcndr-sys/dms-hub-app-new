@@ -10,7 +10,7 @@
   "rewrites": [
     {
       "source": "/api/mihub/:path*",
-      "destination": "https://mihub.157-90-29-66.nip.io/api/mihub/:path*"
+      "destination": "https://orchestratore.mio-hub.me/api/mihub/:path*"
     },
     {
       "source": "/((?!api).*)",
