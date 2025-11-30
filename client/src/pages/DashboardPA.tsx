@@ -478,6 +478,14 @@ export default function DashboardPA() {
   const { conversationId: persistedConversationId, setConversationId: persistConversationId } = useConversationPersistence();
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(persistedConversationId);
   
+  // Sincronizza currentConversationId con persistedConversationId
+  useEffect(() => {
+    if (persistedConversationId && persistedConversationId !== currentConversationId) {
+      setCurrentConversationId(persistedConversationId);
+      console.log('[DashboardPA] Synced conversationId:', persistedConversationId);
+    }
+  }, [persistedConversationId]);
+
   // Hook per fetching automatico internalTraces
   const { traces: fetchedTraces } = useInternalTraces(currentConversationId, 3000);
   const [zapierInputValue, setZapierInputValue] = useState('');
