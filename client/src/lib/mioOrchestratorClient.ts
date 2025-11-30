@@ -4,6 +4,8 @@
  * 
  * IMPORTANTE: Usa path relativo /api/mihub/orchestrator che viene
  * gestito dal proxy Vercel (vercel.json) verso il backend Hetzner.
+ * 
+ * Versione: 2025-11-30 - Fix proxy Vercel path relativo
  */
 
 export interface SendMioMessageResponse {
