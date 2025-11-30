@@ -645,16 +645,19 @@ export default function DashboardPA() {
   
   // Handler per invio messaggio MIO (UNICA funzione che invia al backend)
   const handleSendMio = async () => {
-    console.log('[handleSendMio] called', mioInputValue);
     const message = mioInputValue.trim();
+    console.log('[handleSendMio] called with:', message);
+
     if (!message || mioSendingLoading) return;
 
     setMioSendingLoading(true);
+    setMioSendingError(null);
+
     try {
       await sendMioMessage(message, mioMainConversationId);
-      setMioInputValue(''); // svuota SOLO dopo che la POST è andata
+      setMioInputValue('');
     } catch (err) {
-      console.error('[handleSendMio] error', err);
+      console.error('[handleSendMio] error:', err);
       setMioSendingError(err instanceof Error ? err.message : String(err));
     } finally {
       setMioSendingLoading(false);
@@ -3556,17 +3559,14 @@ export default function DashboardPA() {
                           className="flex-1 bg-[#0a0f1a] border border-[#8b5cf6]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#8b5cf6]"
                           disabled={mioLoading}
                         />
-                        <Button 
+                        <button
+                          type="button"
                           onClick={handleSendMio}
-                          className="bg-[#10b981] hover:bg-[#059669]" 
-                          disabled={mioLoading || !mioInputValue.trim()}
+                          disabled={mioSendingLoading || !mioInputValue.trim()}
+                          className="bg-[#10b981] hover:bg-[#059669] px-4 py-2 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {mioLoading ? (
-                            <RefreshCw className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
-                        </Button>
+                          Invia
+                        </button>
                       </div>
                       {mioError && (
                         <p className="text-xs text-[#ef4444] text-center">
