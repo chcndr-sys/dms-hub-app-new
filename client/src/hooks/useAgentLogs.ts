@@ -25,10 +25,15 @@ export function useAgentLogs({ conversationId, agentName, pollMs = 5000 }: UseAg
 
     let cancelled = false;
     let intervalId: number | undefined;
+    let isFirstLoad = true;
 
     const load = async () => {
       try {
-        setLoading(true);
+        // Loading solo al primo caricamento, non durante polling
+        if (isFirstLoad) {
+          setLoading(true);
+        }
+        
         const params = new URLSearchParams({
           conversation_id: conversationId,
           limit: '200',
@@ -50,14 +55,17 @@ export function useAgentLogs({ conversationId, agentName, pollMs = 5000 }: UseAg
           setError(err?.message ?? 'Errore caricamento log');
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && isFirstLoad) {
+          setLoading(false);
+          isFirstLoad = false;
+        }
       }
     };
 
     // primo load al mount
     load();
 
-    // polling
+    // polling silenzioso (senza loading)
     intervalId = window.setInterval(load, pollMs);
 
     return () => {
