@@ -1,10 +1,10 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 /**
  * Proxy endpoint per agent_logs dal backend Hetzner
  * GET /api/mio/agent-logs?conversation_id=xxx&agent_name=yyy&limit=200
  */
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
