@@ -645,22 +645,41 @@ export default function DashboardPA() {
   
   // Handler per invio messaggio MIO (UNICA funzione che invia al backend)
   const handleSendMio = async () => {
+    console.log('[handleSendMio] ===== FUNCTION CALLED =====');
+    console.log('[handleSendMio] mioInputValue:', mioInputValue);
+    console.log('[handleSendMio] mioSendingLoading:', mioSendingLoading);
+    
     const message = mioInputValue.trim();
-    console.log('[handleSendMio] called with:', message);
+    console.log('[handleSendMio] trimmed message:', message);
+    console.log('[handleSendMio] message length:', message.length);
 
-    if (!message || mioSendingLoading) return;
+    if (!message) {
+      console.log('[handleSendMio] EARLY RETURN: message is empty');
+      return;
+    }
+    
+    if (mioSendingLoading) {
+      console.log('[handleSendMio] EARLY RETURN: already sending');
+      return;
+    }
 
+    console.log('[handleSendMio] Setting loading to true...');
     setMioSendingLoading(true);
     setMioSendingError(null);
 
     try {
+      console.log('[handleSendMio] Calling sendMioMessage...');
       await sendMioMessage(message, mioMainConversationId);
+      console.log('[handleSendMio] sendMioMessage completed successfully');
       setMioInputValue('');
+      console.log('[handleSendMio] Input cleared');
     } catch (err) {
-      console.error('[handleSendMio] error:', err);
+      console.error('[handleSendMio] ERROR:', err);
       setMioSendingError(err instanceof Error ? err.message : String(err));
     } finally {
+      console.log('[handleSendMio] Setting loading to false...');
       setMioSendingLoading(false);
+      console.log('[handleSendMio] ===== FUNCTION COMPLETED =====');
     }
   };
   
