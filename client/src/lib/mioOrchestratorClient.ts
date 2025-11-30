@@ -26,6 +26,7 @@ export async function sendMioMessage(
   content: string,
   conversationId: string | null
 ): Promise<SendMioMessageResponse> {
+  console.log('[sendMioMessage] Sending:', { content, conversationId });
   const res = await fetch('https://orchestratore.mio-hub.me/api/mihub/orchestrator', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -37,8 +38,11 @@ export async function sendMioMessage(
   });
 
   if (!res.ok) {
+    console.error('[sendMioMessage] HTTP error:', res.status, res.statusText);
     throw new Error(`HTTP ${res.status}`);
   }
 
-  return res.json();
+  const data = await res.json();
+  console.log('[sendMioMessage] Response:', data);
+  return data;
 }
