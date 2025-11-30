@@ -36,6 +36,13 @@ export async function sendMioMessage(
   const data = await res.json();
   console.log('[sendMioMessage] Response:', data);
 
+  // Controlla se il backend ha restituito un errore nel JSON
+  if (data.error || data.success === false) {
+    const errorMsg = data.error?.message || 'Unknown error';
+    const errorCode = data.error?.statusCode || 500;
+    throw new Error(`orchestrator error ${errorCode}: ${errorMsg}`);
+  }
+
   // IMPORTANTISSIMO: usa SEMPRE il conversationId restituito dal backend
   const newConversationId = data.conversationId ?? currentConversationId ?? '';
 
@@ -103,6 +110,13 @@ export async function sendAgentMessage(
 
   const data = await res.json();
   console.log('[sendAgentMessage] Response:', data);
+
+  // Controlla se il backend ha restituito un errore nel JSON
+  if (data.error || data.success === false) {
+    const errorMsg = data.error?.message || 'Unknown error';
+    const errorCode = data.error?.statusCode || 500;
+    throw new Error(`orchestrator error ${errorCode}: ${errorMsg}`);
+  }
 
   // Aggiorna conversationId se il backend ne ha restituito uno nuovo
   const newConversationId = data.conversationId ?? conversationId ?? '';

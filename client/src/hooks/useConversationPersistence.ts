@@ -23,20 +23,18 @@ export function useConversationPersistence(storageKey?: string): ConversationPer
   const STORAGE_KEY = storageKey || DEFAULT_STORAGE_KEY;
   const [conversationId, setConversationIdState] = useState<string | null>(null);
 
-  // Carica o genera conversation_id al mount
+  // Carica conversation_id al mount (se esiste)
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       setConversationIdState(stored);
       console.log('[Persistence] Restored conversation_id:', stored);
     } else {
-      // Genera nuovo conversationId client-side
-      const newId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem(STORAGE_KEY, newId);
-      setConversationIdState(newId);
-      console.log('[Persistence] Generated new conversation_id:', newId);
+      // NON generare ID client-side! Il backend lo creerà alla prima chiamata
+      setConversationIdState(null);
+      console.log('[Persistence] No conversation_id found, will be created by backend');
     }
-  }, []);
+  }, [STORAGE_KEY]);
 
   // Salva conversation_id in localStorage
   const setConversationId = (id: string) => {
