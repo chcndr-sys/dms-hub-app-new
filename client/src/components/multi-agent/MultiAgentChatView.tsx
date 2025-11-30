@@ -1,43 +1,35 @@
-import React, { useState } from 'react';
-import { Brain, Wrench, Calculator, Zap, Send } from 'lucide-react';
+import React from 'react';
+import { Brain, Wrench, Calculator, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 // Tipi
-export type AgentType = 'mio' | 'manus' | 'abacus' | 'zapier' | 'gptdev';
-export type ViewMode = 'single' | 'multi';
+export type AgentType = 'gptdev' | 'manus' | 'abacus' | 'zapier';
 
-export interface InternalTrace {
-  from: string;
-  to: string;
-  message: string;
-  timestamp: string;
-  meta?: any;
+export interface AgentMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  agent_name: string;
+  created_at: string;
 }
 
 export interface MultiAgentChatViewProps {
-  mode: ViewMode;
-  selectedAgent?: AgentType;
-  internalTraces: InternalTrace[];
-  onSendMessage?: (agent: AgentType, message: string) => void;
+  gptdevMessages: AgentMessage[];
+  manusMessages: AgentMessage[];
+  abacusMessages: AgentMessage[];
+  zapierMessages: AgentMessage[];
+  gptdevLoading?: boolean;
+  manusLoading?: boolean;
+  abacusLoading?: boolean;
+  zapierLoading?: boolean;
 }
 
 // Configurazione agenti
 const agentConfig = {
-  mio: {
-    name: 'MIO',
-    subtitle: 'GPT-5 Coordinatore',
-    icon: Brain,
-    color: 'purple',
-    borderColor: 'border-[#8b5cf6]/30',
-    bgColor: 'bg-[#8b5cf6]/10',
-    textColor: 'text-purple-400',
-  },
   gptdev: {
     name: 'GPT Developer',
     subtitle: 'Sviluppatore AI',
     icon: Brain,
-    color: 'indigo',
     borderColor: 'border-[#6366f1]/30',
     bgColor: 'bg-[#6366f1]/10',
     textColor: 'text-indigo-400',
@@ -46,7 +38,6 @@ const agentConfig = {
     name: 'Manus',
     subtitle: 'Operatore Esecutivo',
     icon: Wrench,
-    color: 'blue',
     borderColor: 'border-[#3b82f6]/30',
     bgColor: 'bg-[#3b82f6]/10',
     textColor: 'text-blue-400',
@@ -55,7 +46,6 @@ const agentConfig = {
     name: 'Abacus',
     subtitle: 'Analisi Dati',
     icon: Calculator,
-    color: 'green',
     borderColor: 'border-[#10b981]/30',
     bgColor: 'bg-[#10b981]/10',
     textColor: 'text-green-400',
@@ -64,32 +54,22 @@ const agentConfig = {
     name: 'Zapier',
     subtitle: 'Automazioni',
     icon: Zap,
-    color: 'orange',
     borderColor: 'border-[#f59e0b]/30',
     bgColor: 'bg-[#f59e0b]/10',
     textColor: 'text-orange-400',
   },
 };
 
-// Componente singola card agente
+// Componente singola card agente (READ-ONLY)
 interface AgentCardProps {
   agent: AgentType;
-  traces: InternalTrace[];
-  showInput: boolean;
-  onSendMessage?: (message: string) => void;
+  messages: AgentMessage[];
+  loading?: boolean;
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ agent, traces, showInput, onSendMessage }) => {
-  const [inputValue, setInputValue] = useState('');
+const AgentCard: React.FC<AgentCardProps> = ({ agent, messages, loading }) => {
   const config = agentConfig[agent];
   const Icon = config.icon;
-
-  const handleSend = () => {
-    if (inputValue.trim() && onSendMessage) {
-      onSendMessage(inputValue);
-      setInputValue('');
-    }
-  };
 
   return (
     <Card className={`bg-[#0a0f1a] ${config.borderColor}`}>
@@ -99,118 +79,72 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, traces, showInput, onSendM
             <Icon className={`h-4 w-4 ${config.textColor}`} />
             <span className={config.textColor}>{config.name}</span>
           </div>
-          <span className="text-xs text-[#e8fbff]/50">{config.subtitle}</span>
+          <span className="text-xs text-[#e8fbff]/50">{messages.length} msg</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Area messaggi */}
+        {/* Area messaggi - SOLO LETTURA */}
         <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto space-y-2">
-          {traces.length === 0 ? (
-            <p className="text-[#e8fbff]/50 text-center text-xs">Nessun messaggio ancora.</p>
+          {messages.length === 0 ? (
+            <p className="text-[#e8fbff]/50 text-center text-xs">
+              {loading ? 'Caricamento...' : 'Nessun messaggio da MIO ancora.'}
+            </p>
           ) : (
-            traces.map((trace, idx) => (
-              <div key={idx} className={`p-2 rounded ${config.bgColor} border ${config.borderColor}`}>
+            messages.map((msg) => (
+              <div 
+                key={msg.id} 
+                className={`p-2 rounded border ${
+                  msg.role === 'user' 
+                    ? 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30' 
+                    : `${config.bgColor} ${config.borderColor}`
+                }`}
+              >
                 <div className="text-xs text-[#e8fbff]/50 mb-1">
-                  {trace.from} → {trace.to}
+                  {msg.role === 'user' ? 'MIO' : config.name}
                 </div>
-                <p className="text-xs text-[#e8fbff]">{trace.message}</p>
-                {trace.timestamp && (
-                  <div className="text-xs text-[#e8fbff]/30 mt-1">
-                    {new Date(trace.timestamp).toLocaleTimeString('it-IT', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </div>
-                )}
+                <p className="text-xs text-[#e8fbff] whitespace-pre-wrap">{msg.content}</p>
+                <div className="text-xs text-[#e8fbff]/30 mt-1">
+                  {new Date(msg.created_at).toLocaleTimeString('it-IT', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Input (solo se showInput) */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && showInput) {
-                handleSend();
-              }
-            }}
-            placeholder={showInput ? `Messaggio a ${config.name}...` : `Messaggio da ${config.name}...`}
-            className={`flex-1 bg-[#0b1220] border ${config.borderColor} rounded px-3 py-1.5 text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-${config.color}-400`}
-            disabled={!showInput}
-          />
-          <Button 
-            size="sm" 
-            className="bg-[#10b981] hover:bg-[#059669]" 
-            disabled={!showInput || !inputValue.trim()}
-            onClick={handleSend}
-          >
-            <Send className="h-3 w-3" />
-          </Button>
-        </div>
+        {/* Nessun input - READ ONLY */}
+        <p className="text-xs text-[#e8fbff]/30 text-center">
+          Solo lettura - Dialoghi MIO ↔ {config.name}
+        </p>
       </CardContent>
     </Card>
   );
 };
 
-// Componente principale
+// Componente principale - Vista 4 agenti READ-ONLY
 export const MultiAgentChatView: React.FC<MultiAgentChatViewProps> = ({
-  mode,
-  selectedAgent = 'mio',
-  internalTraces,
-  onSendMessage,
+  gptdevMessages,
+  manusMessages,
+  abacusMessages,
+  zapierMessages,
+  gptdevLoading,
+  manusLoading,
+  abacusLoading,
+  zapierLoading,
 }) => {
-  // Filtra traces per agente
-  const getTracesForAgent = (agent: AgentType): InternalTrace[] => {
-    return internalTraces.filter(
-      (trace) => trace.from === agent || trace.to === agent
-    );
-  };
-
-  // Vista 4 agenti
-  if (mode === 'multi') {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-        {(['gptdev', 'manus', 'abacus', 'zapier'] as AgentType[]).map((agent) => (
-          <AgentCard
-            key={agent}
-            agent={agent}
-            traces={getTracesForAgent(agent)}
-            showInput={true}
-            onSendMessage={(message) => {
-              if (onSendMessage) {
-                onSendMessage(agent, message);
-              }
-            }}
-          />
-        ))}
-
-        <p className="col-span-2 text-xs text-[#e8fbff]/30 text-center mt-2">
-          Vista 4 Quadranti - Dialoghi interni MIO ↔ Agenti
-        </p>
-      </div>
-    );
-  }
-
-  // Vista singola
   return (
-    <div className="max-w-2xl mx-auto">
-      <AgentCard
-        agent={selectedAgent}
-        traces={getTracesForAgent(selectedAgent)}
-        showInput={true}
-        onSendMessage={(message) => {
-          if (onSendMessage) {
-            onSendMessage(selectedAgent, message);
-          }
-        }}
-      />
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <AgentCard agent="gptdev" messages={gptdevMessages} loading={gptdevLoading} />
+        <AgentCard agent="manus" messages={manusMessages} loading={manusLoading} />
+        <AgentCard agent="abacus" messages={abacusMessages} loading={abacusLoading} />
+        <AgentCard agent="zapier" messages={zapierMessages} loading={zapierLoading} />
+      </div>
 
-      <p className="text-xs text-[#e8fbff]/30 text-center mt-2">
-        Vista singola - Chat diretta con {agentConfig[selectedAgent].name}
+      <p className="text-xs text-[#e8fbff]/30 text-center">
+        Vista 4 Quadranti - Monitora i dialoghi di MIO con gli agenti specializzati
       </p>
     </div>
   );

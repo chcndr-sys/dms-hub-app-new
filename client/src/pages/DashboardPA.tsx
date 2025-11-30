@@ -26,7 +26,7 @@ import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
 import GuardianLogsSection from '@/components/GuardianLogsSection';
 import { MultiAgentChatView } from '@/components/multi-agent/MultiAgentChatView';
 import { callOrchestrator } from '@/api/orchestratorClient';
-import { sendMioMessage } from '@/lib/mioOrchestratorClient';
+import { sendMioMessage, sendAgentMessage } from '@/lib/mioOrchestratorClient';
 import { getLogs, getLogsStats, getGuardianHealth } from '@/api/logsClient';
 import { useInternalTraces } from '@/hooks/useInternalTraces';
 import { useConversationPersistence } from '@/hooks/useConversationPersistence';
@@ -476,8 +476,42 @@ export default function DashboardPA() {
   const mioError = null;  // Converti formato per compatibilità
   // Rimosso: vecchia conversione mioMessages da useAgentLogs
   
-  // Vista Singola Agenti - usa useAgentLogs separati per ogni agente
-  // Hook separato per Manus (vista singola isolata)
+  // ========== VISTA 4 AGENTI (READ-ONLY) - Usa mioMainConversationId ==========
+  // Questi hook mostrano i dialoghi di MIO con gli agenti nella vista quad
+  const {
+    messages: gptdevQuadMessages,
+    loading: gptdevQuadLoading,
+  } = useAgentLogs({
+    conversationId: mioMainConversationId,
+    agentName: 'gptdev',
+  });
+
+  const {
+    messages: manusQuadMessages,
+    loading: manusQuadLoading,
+  } = useAgentLogs({
+    conversationId: mioMainConversationId,
+    agentName: 'manus',
+  });
+
+  const {
+    messages: abacusQuadMessages,
+    loading: abacusQuadLoading,
+  } = useAgentLogs({
+    conversationId: mioMainConversationId,
+    agentName: 'abacus',
+  });
+
+  const {
+    messages: zapierQuadMessages,
+    loading: zapierQuadLoading,
+  } = useAgentLogs({
+    conversationId: mioMainConversationId,
+    agentName: 'zapier',
+  });
+
+  // ========== VISTA SINGOLA AGENTI - Usa conversationId separati ==========
+  // Questi hook gestiscono le 4 chat isolate (GPT Dev, Manus, Abacus, Zapier)
   const {
     messages: manusMessagesRaw,
     loading: manusLoading,
@@ -718,9 +752,104 @@ export default function DashboardPA() {
     }
   };
   
-  // RIMOSSI: handleSendManus, handleSendAbacus, handleSendZapier, handleSendGptdev
-  // Tutte le viste sotto (vista singola, vista 4 agenti) sono SOLO LETTURA
-  // L'UNICA funzione che invia messaggi è handleSendMio (chat principale)
+  // ========== HANDLER VISTA SINGOLA AGENTI ==========
+  // Ogni agente ha il suo handler che usa sendAgentMessage
+  
+  const handleSendGptdev = async () => {
+    const text = gptdevInputValue.trim();
+    if (!text || gptdevLoading) return;
+
+    console.log('[handleSendGptdev] Sending:', text);
+    setGptdevInputValue('');
+
+    const { conversationId: newConvId, error } = await sendAgentMessage({
+      agent: 'gptdev',
+      text,
+      conversationId: gptdevConversationId,
+      mode: 'manual',
+    });
+
+    if (newConvId && newConvId !== gptdevConversationId) {
+      console.log('[handleSendGptdev] Saving new conversationId:', newConvId);
+      setGptdevConversationId(newConvId);
+    }
+
+    if (error) {
+      console.error('[handleSendGptdev] Error:', error);
+    }
+  };
+
+  const handleSendManus = async () => {
+    const text = manusInputValue.trim();
+    if (!text || manusLoading) return;
+
+    console.log('[handleSendManus] Sending:', text);
+    setManusInputValue('');
+
+    const { conversationId: newConvId, error } = await sendAgentMessage({
+      agent: 'manus',
+      text,
+      conversationId: manusConversationId,
+      mode: 'manual',
+    });
+
+    if (newConvId && newConvId !== manusConversationId) {
+      console.log('[handleSendManus] Saving new conversationId:', newConvId);
+      setManusConversationId(newConvId);
+    }
+
+    if (error) {
+      console.error('[handleSendManus] Error:', error);
+    }
+  };
+
+  const handleSendAbacus = async () => {
+    const text = abacusInputValue.trim();
+    if (!text || abacusLoading) return;
+
+    console.log('[handleSendAbacus] Sending:', text);
+    setAbacusInputValue('');
+
+    const { conversationId: newConvId, error } = await sendAgentMessage({
+      agent: 'abacus',
+      text,
+      conversationId: abacusConversationId,
+      mode: 'manual',
+    });
+
+    if (newConvId && newConvId !== abacusConversationId) {
+      console.log('[handleSendAbacus] Saving new conversationId:', newConvId);
+      setAbacusConversationId(newConvId);
+    }
+
+    if (error) {
+      console.error('[handleSendAbacus] Error:', error);
+    }
+  };
+
+  const handleSendZapier = async () => {
+    const text = zapierInputValue.trim();
+    if (!text || zapierLoading) return;
+
+    console.log('[handleSendZapier] Sending:', text);
+    setZapierInputValue('');
+
+    const { conversationId: newConvId, error } = await sendAgentMessage({
+      agent: 'zapier',
+      text,
+      conversationId: zapierConversationId,
+      mode: 'manual',
+    });
+
+    if (newConvId && newConvId !== zapierConversationId) {
+      console.log('[handleSendZapier] Saving new conversationId:', newConvId);
+      setZapierConversationId(newConvId);
+    }
+
+    if (error) {
+      console.error('[handleSendZapier] Error:', error);
+    }
+  };
   
   // ELIMINATO: loadConversationHistory() - causava 404 su endpoint inesistente
   // useAgentLogs per ogni agente gestisce automaticamente il caricamento
@@ -3889,27 +4018,111 @@ export default function DashboardPA() {
                             </div>
                           )}
                         </div>
-                        {/* Input */}
+                        {/* Input e bottone Invia per ogni agente */}
                         <div className="flex gap-2">
                           {selectedAgent === 'gptdev' && (
-                            <div className="flex-1 bg-[#0a0f1a]/50 border border-[#6366f1]/20 rounded-lg px-4 py-2 text-[#e8fbff]/50 text-sm">
-                              🔒 Vista SOLO LETTURA - Invio messaggi disabilitato
-                            </div>
+                            <>
+                              <input
+                                type="text"
+                                value={gptdevInputValue}
+                                onChange={(e) => setGptdevInputValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey && !gptdevLoading) {
+                                    e.preventDefault();
+                                    handleSendGptdev();
+                                  }
+                                }}
+                                placeholder="Messaggio a GPT Developer..."
+                                disabled={gptdevLoading}
+                                className="flex-1 bg-[#0a0f1a] border border-[#6366f1]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#6366f1]"
+                              />
+                              <button
+                                onClick={handleSendGptdev}
+                                disabled={gptdevLoading}
+                                className="bg-[#10b981] hover:bg-[#059669] disabled:bg-[#10b981]/50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                              >
+                                <Send className="h-4 w-4" />
+                                {gptdevLoading ? 'Invio...' : 'Invia'}
+                              </button>
+                            </>
                           )}
                           {selectedAgent === 'manus' && (
-                            <div className="flex-1 bg-[#0a0f1a]/50 border border-[#3b82f6]/20 rounded-lg px-4 py-2 text-[#e8fbff]/50 text-sm">
-                              🔒 Vista SOLO LETTURA - Invio messaggi disabilitato
-                            </div>
+                            <>
+                              <input
+                                type="text"
+                                value={manusInputValue}
+                                onChange={(e) => setManusInputValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey && !manusLoading) {
+                                    e.preventDefault();
+                                    handleSendManus();
+                                  }
+                                }}
+                                placeholder="Messaggio a Manus..."
+                                disabled={manusLoading}
+                                className="flex-1 bg-[#0a0f1a] border border-[#3b82f6]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#3b82f6]"
+                              />
+                              <button
+                                onClick={handleSendManus}
+                                disabled={manusLoading}
+                                className="bg-[#10b981] hover:bg-[#059669] disabled:bg-[#10b981]/50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                              >
+                                <Send className="h-4 w-4" />
+                                {manusLoading ? 'Invio...' : 'Invia'}
+                              </button>
+                            </>
                           )}
                           {selectedAgent === 'abacus' && (
-                            <div className="flex-1 bg-[#0a0f1a]/50 border border-[#10b981]/20 rounded-lg px-4 py-2 text-[#e8fbff]/50 text-sm">
-                              🔒 Vista SOLO LETTURA - Invio messaggi disabilitato
-                            </div>
+                            <>
+                              <input
+                                type="text"
+                                value={abacusInputValue}
+                                onChange={(e) => setAbacusInputValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey && !abacusLoading) {
+                                    e.preventDefault();
+                                    handleSendAbacus();
+                                  }
+                                }}
+                                placeholder="Messaggio a Abacus..."
+                                disabled={abacusLoading}
+                                className="flex-1 bg-[#0a0f1a] border border-[#10b981]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#10b981]"
+                              />
+                              <button
+                                onClick={handleSendAbacus}
+                                disabled={abacusLoading}
+                                className="bg-[#10b981] hover:bg-[#059669] disabled:bg-[#10b981]/50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                              >
+                                <Send className="h-4 w-4" />
+                                {abacusLoading ? 'Invio...' : 'Invia'}
+                              </button>
+                            </>
                           )}
                           {selectedAgent === 'zapier' && (
-                            <div className="flex-1 bg-[#0a0f1a]/50 border border-[#f59e0b]/20 rounded-lg px-4 py-2 text-[#e8fbff]/50 text-sm">
-                              🔒 Vista SOLO LETTURA - Invio messaggi disabilitato
-                            </div>
+                            <>
+                              <input
+                                type="text"
+                                value={zapierInputValue}
+                                onChange={(e) => setZapierInputValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey && !zapierLoading) {
+                                    e.preventDefault();
+                                    handleSendZapier();
+                                  }
+                                }}
+                                placeholder="Messaggio a Zapier..."
+                                disabled={zapierLoading}
+                                className="flex-1 bg-[#0a0f1a] border border-[#f59e0b]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#f59e0b]"
+                              />
+                              <button
+                                onClick={handleSendZapier}
+                                disabled={zapierLoading}
+                                className="bg-[#10b981] hover:bg-[#059669] disabled:bg-[#10b981]/50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                              >
+                                <Send className="h-4 w-4" />
+                                {zapierLoading ? 'Invio...' : 'Invia'}
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -3917,10 +4130,14 @@ export default function DashboardPA() {
 
                     {viewMode === 'quad' && (
                       <MultiAgentChatView
-                        mode="multi"
-                        selectedAgent={selectedAgent as 'mio' | 'manus' | 'abacus' | 'zapier'}
-                        internalTraces={internalTracesMessages}
-                        onSendMessage={undefined}
+                        gptdevMessages={gptdevQuadMessages}
+                        manusMessages={manusQuadMessages}
+                        abacusMessages={abacusQuadMessages}
+                        zapierMessages={zapierQuadMessages}
+                        gptdevLoading={gptdevQuadLoading}
+                        manusLoading={manusQuadLoading}
+                        abacusLoading={abacusQuadLoading}
+                        zapierLoading={zapierQuadLoading}
                       />
                     )}
                   </div>
