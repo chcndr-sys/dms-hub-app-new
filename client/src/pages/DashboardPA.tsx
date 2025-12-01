@@ -26,7 +26,7 @@ import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
 import GuardianLogsSection from '@/components/GuardianLogsSection';
 import { MultiAgentChatView } from '@/components/multi-agent/MultiAgentChatView';
 import { callOrchestrator } from '@/api/orchestratorClient';
-import { sendMioMessage, sendAgentMessage, MioChatMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient';
+import { sendMioMessage, sendAgentMessage, MioChatMessage, AgentChatMessage, initMioWebSocket, getMioWebSocket } from '@/lib/mioOrchestratorClient';
 import { getLogs, getLogsStats, getGuardianHealth } from '@/api/logsClient';
 // import { useInternalTraces } from '@/hooks/useInternalTraces'; // TODO: implementare hook
 import { useConversationPersistence } from '@/hooks/useConversationPersistence';
@@ -466,6 +466,42 @@ export default function DashboardPA() {
   const [mioMessages, setMioMessages] = useState<MioChatMessage[]>([]);
   const [mioSending, setMioSending] = useState(false);
   const [mioSendError, setMioSendError] = useState<string | null>(null);
+
+  // Initialize WebSocket connection for realtime MIO chat
+  useEffect(() => {
+    const ws = initMioWebSocket();
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('[MIO WebSocket] Received:', data);
+
+        // Handle realtime messages from MIO
+        if (data.reply || data.message) {
+          const replyContent = data.reply || data.message;
+          setMioMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: replyContent,
+              createdAt: new Date().toISOString(),
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error('[MIO WebSocket] Parse error:', err);
+      }
+    };
+
+    return () => {
+      // Cleanup on unmount
+      const currentWs = getMioWebSocket();
+      if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+        currentWs.close();
+      }
+    };
+  }, []);
   
   // Variabili di compatibilità per non rompere il resto del codice
   const mioLoading = false;

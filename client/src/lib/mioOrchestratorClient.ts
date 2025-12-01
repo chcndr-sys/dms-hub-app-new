@@ -9,6 +9,45 @@ export interface MioChatMessage {
 }
 
 /**
+ * WebSocket connection for realtime MIO chat
+ */
+const WS_URL =
+  process.env.NEXT_PUBLIC_WS_URL || "wss://orchestratore.mio-hub.me/mio/ws";
+
+let mioWS: WebSocket | null = null;
+
+export function initMioWebSocket(): WebSocket {
+  if (mioWS && mioWS.readyState === WebSocket.OPEN) {
+    return mioWS;
+  }
+
+  mioWS = new WebSocket(WS_URL);
+
+  mioWS.onopen = () => {
+    console.log("[MIO] WebSocket connected ✅");
+  };
+
+  mioWS.onclose = () => {
+    console.warn("[MIO] WebSocket disconnected ⚠️");
+    // Auto-reconnect after 3 seconds
+    setTimeout(() => {
+      console.log("[MIO] Attempting to reconnect...");
+      initMioWebSocket();
+    }, 3000);
+  };
+
+  mioWS.onerror = (err) => {
+    console.error("[MIO] WebSocket error:", err);
+  };
+
+  return mioWS;
+}
+
+export function getMioWebSocket(): WebSocket | null {
+  return mioWS;
+}
+
+/**
  * Helper per inviare messaggi all'orchestratore MIO
  * Usato SOLO dalla chat principale MIO
  */
