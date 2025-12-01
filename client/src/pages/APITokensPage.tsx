@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle2, XCircle, AlertTriangle, RefreshCw, Key, Database, Github, Cloud, Zap, Building2, Server, Save, Eye, EyeOff } from 'lucide-react';
 
-const API_BASE_URL = 'https://mihub.157-90-29-66.nip.io';
+// API_BASE_URL rimosso - usa path relativi per sfruttare il rewrite Vercel
 
 interface SecretMeta {
   id: string;
@@ -80,7 +80,7 @@ export default function APITokensPage() {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/secrets/meta`);
+      const response = await fetch('/api/mihub/secrets-meta');
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -110,7 +110,7 @@ export default function APITokensPage() {
     setSaving(true);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/secrets/${envVar}`, {
+      const response = await fetch(`/api/mihub/secrets/${envVar}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
