@@ -8,7 +8,6 @@
  */
 
 import { useState, useEffect } from 'react';
-import { trpc } from '@/lib/trpc';
 
 export type AgentId = 'mio_dev' | 'abacus' | 'zapier' | 'manus_worker';
 export type Mode = 'auto' | 'manual';
@@ -42,9 +41,6 @@ export function useOrchestrator(userId: string = 'user_dashboard') {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mutation per inviare messaggio
-  const orchestratorMutation = trpc.mihub.orchestrator.useMutation();
-
   /**
    * Invia messaggio all'orchestratore
    */
@@ -53,18 +49,33 @@ export function useOrchestrator(userId: string = 'user_dashboard') {
     setError(null);
 
     try {
-      const response = await orchestratorMutation.mutateAsync({
-        message: request.message,
-        userId,
-        mode: request.mode,
-        targetAgent: request.targetAgent,
-        context: {
-          dashboardTab: 'mio',
+      const response = await fetch('https://orchestratore.mio-hub.me/api/mihub/orchestrator', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          message: request.message,
+          userId,
+          mode: request.mode,
+          targetAgent: request.targetAgent,
+        }),
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
       setIsLoading(false);
-      return response as OrchestratorResponse;
+      return {
+        success: data.success,
+        message: data.message,
+        agentsUsed: data.agentsUsed || [],
+        conversationId: data.conversationId,
+        timestamp: new Date().toISOString(),
+      };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Errore sconosciuto';
       setError(errorMessage);
@@ -86,16 +97,18 @@ export function useOrchestrator(userId: string = 'user_dashboard') {
  */
 export function useAgentConversation(agentId: AgentId, userId: string = 'user_dashboard') {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<any>(null);
 
-  // Query per recuperare conversazione
-  const conversationQuery = trpc.mihub.getConversation.useQuery(
-    { userId, agentId, limit: 50 },
-    { refetchInterval: 5000 } // Polling ogni 5 secondi
-  );
-
-  useEffect(() => {
-    if (conversationQuery.data) {
-      const formattedMessages: Message[] = conversationQuery.data.map((msg: any) => ({
+  const fetchConversation = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`https://orchestratore.mio-hub.me/api/mihub/conversations/${userId}/${agentId}?limit=50`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      const formattedMessages: Message[] = data.map((msg: any) => ({
         id: msg.id,
         sender: msg.sender,
         content: msg.content,
@@ -103,14 +116,24 @@ export function useAgentConversation(agentId: AgentId, userId: string = 'user_da
         metadata: msg.metadata,
       }));
       setMessages(formattedMessages);
+      setIsLoading(false);
+    } catch (err) {
+      setError(err);
+      setIsLoading(false);
     }
-  }, [conversationQuery.data]);
+  };
+
+  useEffect(() => {
+    fetchConversation();
+    const interval = setInterval(fetchConversation, 5000);
+    return () => clearInterval(interval);
+  }, [userId, agentId]);
 
   return {
     messages,
-    isLoading: conversationQuery.isLoading,
-    error: conversationQuery.error,
-    refetch: conversationQuery.refetch,
+    isLoading,
+    error,
+    refetch: fetchConversation,
   };
 }
 
@@ -124,15 +147,17 @@ export function useAllConversations(userId: string = 'user_dashboard') {
     zapier: [],
     manus_worker: [],
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<any>(null);
 
-  // Query per recuperare tutte le conversazioni
-  const allConversationsQuery = trpc.mihub.getAllConversations.useQuery(
-    { userId },
-    { refetchInterval: 5000 } // Polling ogni 5 secondi
-  );
-
-  useEffect(() => {
-    if (allConversationsQuery.data) {
+  const fetchAllConversations = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`https://orchestratore.mio-hub.me/api/mihub/conversations/${userId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
       const formatted: Record<AgentId, Message[]> = {
         mio_dev: [],
         abacus: [],
@@ -141,7 +166,7 @@ export function useAllConversations(userId: string = 'user_dashboard') {
       };
 
       for (const agentId of ['mio_dev', 'abacus', 'zapier', 'manus_worker'] as AgentId[]) {
-        const agentMessages = allConversationsQuery.data[agentId] || [];
+        const agentMessages = data[agentId] || [];
         formatted[agentId] = agentMessages.map((msg: any) => ({
           id: msg.id,
           sender: msg.sender,
@@ -152,14 +177,24 @@ export function useAllConversations(userId: string = 'user_dashboard') {
       }
 
       setConversations(formatted);
+      setIsLoading(false);
+    } catch (err) {
+      setError(err);
+      setIsLoading(false);
     }
-  }, [allConversationsQuery.data]);
+  };
+
+  useEffect(() => {
+    fetchAllConversations();
+    const interval = setInterval(fetchAllConversations, 5000);
+    return () => clearInterval(interval);
+  }, [userId]);
 
   return {
     conversations,
-    isLoading: allConversationsQuery.isLoading,
-    error: allConversationsQuery.error,
-    refetch: allConversationsQuery.refetch,
+    isLoading,
+    error,
+    refetch: fetchAllConversations,
   };
 }
 
