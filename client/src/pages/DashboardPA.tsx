@@ -478,13 +478,13 @@ export default function DashboardPA() {
   const mioError = null;  // Converti formato per compatibilità
   // Rimosso: vecchia conversione mioMessages da useAgentLogs
   
-  // ========== VISTA 4 AGENTI (READ-ONLY) - Usa mioMainConversationId ==========
-  // Questi hook mostrano i dialoghi di MIO con gli agenti nella vista quad
+  // ========== VISTA 4 AGENTI (READ-ONLY) - Usa conversazioni singole ==========
+  // Questi hook mostrano i messaggi diretti dell'utente agli agenti
   const {
     messages: gptdevQuadMessages,
     loading: gptdevQuadLoading,
   } = useAgentLogs({
-    conversationId: mioMainConversationId,
+    conversationId: gptdevConversationId,
     agentName: 'gptdev',
   });
 
@@ -492,7 +492,7 @@ export default function DashboardPA() {
     messages: manusQuadMessages,
     loading: manusQuadLoading,
   } = useAgentLogs({
-    conversationId: mioMainConversationId,
+    conversationId: manusConversationId,
     agentName: 'manus',
   });
 
@@ -500,7 +500,7 @@ export default function DashboardPA() {
     messages: abacusQuadMessages,
     loading: abacusQuadLoading,
   } = useAgentLogs({
-    conversationId: mioMainConversationId,
+    conversationId: abacusConversationId,
     agentName: 'abacus',
   });
 
@@ -508,7 +508,7 @@ export default function DashboardPA() {
     messages: zapierQuadMessages,
     loading: zapierQuadLoading,
   } = useAgentLogs({
-    conversationId: mioMainConversationId,
+    conversationId: zapierConversationId,
     agentName: 'zapier',
   });
 
@@ -690,7 +690,7 @@ export default function DashboardPA() {
         message: text,
         mode: "manual",
         targetAgent: "gptdev",
-        conversationId: null, // 🔥 RESET: Forza nuova conversazione
+        conversationId: gptdevConversationId, // Usa conversazione esistente
       };
 
       console.log("🔥 [handleSendGptdev] Chiamata partita verso", URL);
@@ -774,7 +774,7 @@ export default function DashboardPA() {
         message: text,
         mode: "manual",
         targetAgent: "manus",
-        conversationId: null, // 🔥 RESET: Forza nuova conversazione
+        conversationId: manusConversationId, // Usa conversazione esistente
       };
 
       console.log("🔥 [handleSendManus] Chiamata partita verso", URL);
@@ -858,7 +858,7 @@ export default function DashboardPA() {
         message: text,
         mode: "manual",
         targetAgent: "abacus",
-        conversationId: null, // 🔥 RESET: Forza nuova conversazione
+        conversationId: abacusConversationId, // Usa conversazione esistente
       };
 
       console.log("🔥 [handleSendAbacus] Chiamata partita verso", URL);
@@ -942,7 +942,7 @@ export default function DashboardPA() {
         message: text,
         mode: "manual",
         targetAgent: "zapier",
-        conversationId: null, // 🔥 RESET: Forza nuova conversazione
+        conversationId: zapierConversationId, // Usa conversazione esistente
       };
 
       console.log("🔥 [handleSendZapier] Chiamata partita verso", URL);

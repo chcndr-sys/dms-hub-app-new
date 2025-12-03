@@ -87,7 +87,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, messages, loading }) => {
         <div className="h-64 bg-[#0b1220] rounded-lg p-3 overflow-y-auto space-y-2">
           {messages.length === 0 ? (
             <p className="text-[#e8fbff]/50 text-center text-xs">
-              {loading ? 'Caricamento...' : 'Nessun messaggio da MIO ancora.'}
+              {loading ? 'Caricamento...' : 'Nessun messaggio ancora.'}
             </p>
           ) : (
             messages.map((msg) => (
@@ -116,7 +116,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, messages, loading }) => {
 
         {/* Nessun input - READ ONLY */}
         <p className="text-xs text-[#e8fbff]/30 text-center">
-          Solo lettura - Dialoghi MIO ↔ {config.name}
+          Solo lettura - Chat {config.name}
         </p>
       </CardContent>
     </Card>
@@ -144,7 +144,7 @@ export const MultiAgentChatView: React.FC<MultiAgentChatViewProps> = ({
       </div>
 
       <p className="text-xs text-[#e8fbff]/30 text-center">
-        Vista 4 Quadranti - Monitora i dialoghi di MIO con gli agenti specializzati
+        Vista 4 Quadranti - Monitora le chat degli agenti specializzati
       </p>
     </div>
   );
