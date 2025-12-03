@@ -2618,7 +2618,7 @@ export default function DashboardPA() {
                             ? 'bg-[#8b5cf6]/20 border border-[#8b5cf6]/30' 
                             : 'bg-[#14b8a6]/10 border border-[#14b8a6]/30'
                         }`}>
-                          <p className="text-sm text-[#e8fbff]">{msg.message}</p>
+                          <p className="text-sm text-[#e8fbff]">{msg.content}</p>
                         </div>
                       </div>
                     ))}
@@ -3864,7 +3864,7 @@ export default function DashboardPA() {
                                     ) : 'Errore'}
                                     {msg.source && <span className="ml-2 text-[#e8fbff]/30">({msg.source})</span>}
                                   </div>
-                                  <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.message}</p>
+                                  <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
                                 </div>
                               </div>
                             </div>
@@ -4076,7 +4076,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.message}</p>
+                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
                                 {msg.agent && (
                                   <p className="text-[#e8fbff]/50 text-xs mt-1">da {msg.agent}</p>
                                 )}
@@ -4094,7 +4094,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.message}</p>
+                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
                                 {msg.agent && (
                                   <p className="text-[#e8fbff]/50 text-xs mt-1">da {msg.agent}</p>
                                 )}
@@ -4112,7 +4112,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.message}</p>
+                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
                                 {msg.agent && (
                                   <p className="text-[#e8fbff]/50 text-xs mt-1">da {msg.agent}</p>
                                 )}
@@ -4130,7 +4130,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.message}</p>
+                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
                                 {msg.agent && (
                                   <p className="text-[#e8fbff]/50 text-xs mt-1">da {msg.agent}</p>
                                 )}
