@@ -67,8 +67,8 @@ export default function APITokensPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingSecret, setEditingSecret] = useState<string | null>(null);
-  const [secretValue, setSecretValue] = useState('');
-  const [showValue, setShowValue] = useState(false);
+  const [secretValues, setSecretValues] = useState<Record<string, string>>({});
+  const [showValues, setShowValues] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -102,7 +102,8 @@ export default function APITokensPage() {
   };
 
   const handleSaveSecret = async (envVar: string) => {
-    if (!secretValue.trim()) {
+    const value = secretValues[envVar] || '';
+    if (!value.trim()) {
       alert('Il valore del secret non può essere vuoto');
       return;
     }
@@ -116,7 +117,7 @@ export default function APITokensPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          value: secretValue,
+          value: value,
         }),
       });
 
@@ -128,9 +129,9 @@ export default function APITokensPage() {
 
       if (data.success) {
         // Svuota immediatamente il campo input
-        setSecretValue('');
+        setSecretValues(prev => ({ ...prev, [envVar]: '' }));
         setEditingSecret(null);
-        setShowValue(false);
+        setShowValues(prev => ({ ...prev, [envVar]: false }));
         
         // Ricarica i metadata per aggiornare lo stato
         await loadSecretsMetadata();
@@ -149,9 +150,11 @@ export default function APITokensPage() {
 
   const handleCancelEdit = () => {
     // Svuota il campo e chiudi il form
-    setSecretValue('');
+    if (editingSecret) {
+      setSecretValues(prev => ({ ...prev, [editingSecret]: '' }));
+      setShowValues(prev => ({ ...prev, [editingSecret]: false }));
+    }
     setEditingSecret(null);
-    setShowValue(false);
   };
 
   const groupedSecrets = secrets.reduce((acc, secret) => {
@@ -289,8 +292,8 @@ export default function APITokensPage() {
                               handleCancelEdit();
                             } else {
                               setEditingSecret(secret.envVar);
-                              setSecretValue('');
-                              setShowValue(false);
+                              setSecretValues(prev => ({ ...prev, [secret.envVar]: '' }));
+                              setShowValues(prev => ({ ...prev, [secret.envVar]: false }));
                             }
                           }}
                         >
@@ -335,11 +338,11 @@ export default function APITokensPage() {
                           <div className="relative flex-1">
                             <Input
                               id={`secret-${secret.envVar}`}
-                              value={secretValue}
-                              onChange={(e) => setSecretValue(e.target.value)}
+                              value={secretValues[secret.envVar] || ''}
+                              onChange={(e) => setSecretValues(prev => ({ ...prev, [secret.envVar]: e.target.value }))}
                               placeholder={`Incolla qui il valore di ${secret.envVar}`}
                               className="font-mono text-sm"
-                              type={showValue ? 'text' : 'password'}
+                              type={showValues[secret.envVar] ? 'text' : 'password'}
                               autoComplete="off"
                               spellCheck={false}
                             />
@@ -347,14 +350,14 @@ export default function APITokensPage() {
                               variant="ghost"
                               size="sm"
                               className="absolute top-2 right-2"
-                              onClick={() => setShowValue(!showValue)}
+                              onClick={() => setShowValues(prev => ({ ...prev, [secret.envVar]: !prev[secret.envVar] }))}
                             >
-                              {showValue ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              {showValues[secret.envVar] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </Button>
                           </div>
                           <Button
                             onClick={() => handleSaveSecret(secret.envVar)}
-                            disabled={saving || !secretValue.trim()}
+                            disabled={saving || !(secretValues[secret.envVar] || '').trim()}
                             className="bg-green-600 hover:bg-green-700"
                           >
                             {saving ? (
