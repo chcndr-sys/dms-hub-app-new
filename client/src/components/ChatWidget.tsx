@@ -73,7 +73,20 @@ export default function ChatWidget({ userRole = 'cliente', userId, context }: Ch
       const data = await sendMioMessage(text, conversationId);
       console.log('[ChatWidget] Received response:', data);
 
-      // Il polling di useAgentLogs aggiornerà automaticamente i messaggi
+      // Aggiungi la risposta direttamente ai messaggi
+      if (data.messages && data.messages.length > 0) {
+        setMessages(prev => [
+          ...prev,
+          ...data.messages.map(msg => ({
+            id: msg.id,
+            conversation_id: data.conversationId,
+            agent_name: 'mio',
+            role: msg.role,
+            content: msg.content,
+            created_at: msg.createdAt,
+          })),
+        ]);
+      }
     } catch (error) {
       console.error('[ChatWidget] Error sending message:', error);
       setMessages(prev => [
