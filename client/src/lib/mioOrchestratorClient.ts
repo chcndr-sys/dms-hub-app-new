@@ -23,7 +23,8 @@ export async function sendMioMessage(
   }
 
   console.log('[sendMioMessage] Request:', body);
-  console.log('[FORCE REBUILD 2025-12-03 07:23] Using DIRECT LINK to Hetzner backend');
+  console.log('[FORCE REBUILD 2025-12-03 07:32] Using DIRECT LINK to Hetzner backend');
+  alert('sendMioMessage called! URL: https://orchestratore.mio-hub.me/api/mihub/orchestrator');
 
   // DIRECT LINK: Bypassiamo il proxy Vercel e chiamiamo direttamente Hetzner
   const res = await fetch('https://orchestratore.mio-hub.me/api/mihub/orchestrator', {
