@@ -665,11 +665,11 @@ export default function DashboardPA() {
   
   const handleSendGptdev = async () => {
     const text = gptdevInputValue.trim();
-    if (!text || gptdevLoading) return;
+    if (!text) return;
 
     setGptdevInputValue('');
 
-    // Aggiungi SUBITO il messaggio utente
+    // 🔥 TABULA RASA: Aggiungi messaggio utente
     const userMsg: AgentChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -679,14 +679,56 @@ export default function DashboardPA() {
     setGptdevMessages(prev => [...prev, userMsg]);
 
     try {
-      await sendAgentMessage(
-        'gptdev',
-        text,
-        gptdevConversationId,
-        setGptdevConversationId,
-        (msg) => setGptdevMessages(prev => [...prev, msg])
-      );
+      // 🔥 TABULA RASA: Direct fetch con conversationId: null
+      const URL = "https://orchestratore.mio-hub.me/api/mihub/orchestrator";
+      const body = {
+        message: text,
+        mode: "manual",
+        targetAgent: "gptdev",
+        conversationId: null, // 🔥 RESET: Forza nuova conversazione
+      };
+
+      console.log("🔥 [handleSendGptdev] Chiamata partita verso", URL);
+      console.log("🔥 [handleSendGptdev] Payload:", body);
+
+      const response = await fetch(URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      console.log("🔥 [handleSendGptdev] Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("🔥 [handleSendGptdev] HTTP ERROR:", response.status, errorText);
+        throw new Error(`HTTP Error ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("🔥 [handleSendGptdev] Response data:", data);
+
+      // Aggiorna conversationId se il backend ne ha restituito uno nuovo
+      if (data.conversationId) {
+        console.log("🔥 [handleSendGptdev] Updating conversationId:", data.conversationId);
+        setGptdevConversationId(data.conversationId);
+      }
+
+      // Aggiungi risposta dell'agente
+      const replyContent = data.message || data.reply;
+      if (replyContent) {
+        setGptdevMessages(prev => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: replyContent,
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+      }
     } catch (err: any) {
+      console.error("🔥 [handleSendGptdev] NETWORK ERROR:", err);
       setGptdevMessages(prev => [
         ...prev,
         {
@@ -701,10 +743,11 @@ export default function DashboardPA() {
 
   const handleSendManus = async () => {
     const text = manusInputValue.trim();
-    if (!text || manusLoading) return;
+    if (!text) return;
 
     setManusInputValue('');
 
+    // 🔥 TABULA RASA: Aggiungi messaggio utente
     const userMsg: AgentChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -714,14 +757,56 @@ export default function DashboardPA() {
     setManusMessages(prev => [...prev, userMsg]);
 
     try {
-      await sendAgentMessage(
-        'manus',
-        text,
-        manusConversationId,
-        setManusConversationId,
-        (msg) => setManusMessages(prev => [...prev, msg])
-      );
+      // 🔥 TABULA RASA: Direct fetch con conversationId: null
+      const URL = "https://orchestratore.mio-hub.me/api/mihub/orchestrator";
+      const body = {
+        message: text,
+        mode: "manual",
+        targetAgent: "manus",
+        conversationId: null, // 🔥 RESET: Forza nuova conversazione
+      };
+
+      console.log("🔥 [handleSendManus] Chiamata partita verso", URL);
+      console.log("🔥 [handleSendManus] Payload:", body);
+
+      const response = await fetch(URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      console.log("🔥 [handleSendManus] Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("🔥 [handleSendManus] HTTP ERROR:", response.status, errorText);
+        throw new Error(`HTTP Error ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("🔥 [handleSendManus] Response data:", data);
+
+      // Aggiorna conversationId se il backend ne ha restituito uno nuovo
+      if (data.conversationId) {
+        console.log("🔥 [handleSendManus] Updating conversationId:", data.conversationId);
+        setManusConversationId(data.conversationId);
+      }
+
+      // Aggiungi risposta dell'agente
+      const replyContent = data.message || data.reply;
+      if (replyContent) {
+        setManusMessages(prev => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: replyContent,
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+      }
     } catch (err: any) {
+      console.error("🔥 [handleSendManus] NETWORK ERROR:", err);
       setManusMessages(prev => [
         ...prev,
         {
@@ -736,10 +821,11 @@ export default function DashboardPA() {
 
   const handleSendAbacus = async () => {
     const text = abacusInputValue.trim();
-    if (!text || abacusLoading) return;
+    if (!text) return;
 
     setAbacusInputValue('');
 
+    // 🔥 TABULA RASA: Aggiungi messaggio utente
     const userMsg: AgentChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -749,14 +835,56 @@ export default function DashboardPA() {
     setAbacusMessages(prev => [...prev, userMsg]);
 
     try {
-      await sendAgentMessage(
-        'abacus',
-        text,
-        abacusConversationId,
-        setAbacusConversationId,
-        (msg) => setAbacusMessages(prev => [...prev, msg])
-      );
+      // 🔥 TABULA RASA: Direct fetch con conversationId: null
+      const URL = "https://orchestratore.mio-hub.me/api/mihub/orchestrator";
+      const body = {
+        message: text,
+        mode: "manual",
+        targetAgent: "abacus",
+        conversationId: null, // 🔥 RESET: Forza nuova conversazione
+      };
+
+      console.log("🔥 [handleSendAbacus] Chiamata partita verso", URL);
+      console.log("🔥 [handleSendAbacus] Payload:", body);
+
+      const response = await fetch(URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      console.log("🔥 [handleSendAbacus] Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("🔥 [handleSendAbacus] HTTP ERROR:", response.status, errorText);
+        throw new Error(`HTTP Error ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("🔥 [handleSendAbacus] Response data:", data);
+
+      // Aggiorna conversationId se il backend ne ha restituito uno nuovo
+      if (data.conversationId) {
+        console.log("🔥 [handleSendAbacus] Updating conversationId:", data.conversationId);
+        setAbacusConversationId(data.conversationId);
+      }
+
+      // Aggiungi risposta dell'agente
+      const replyContent = data.message || data.reply;
+      if (replyContent) {
+        setAbacusMessages(prev => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: replyContent,
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+      }
     } catch (err: any) {
+      console.error("🔥 [handleSendAbacus] NETWORK ERROR:", err);
       setAbacusMessages(prev => [
         ...prev,
         {
@@ -771,10 +899,11 @@ export default function DashboardPA() {
 
   const handleSendZapier = async () => {
     const text = zapierInputValue.trim();
-    if (!text || zapierLoading) return;
+    if (!text) return;
 
     setZapierInputValue('');
 
+    // 🔥 TABULA RASA: Aggiungi messaggio utente
     const userMsg: AgentChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -784,14 +913,56 @@ export default function DashboardPA() {
     setZapierMessages(prev => [...prev, userMsg]);
 
     try {
-      await sendAgentMessage(
-        'zapier',
-        text,
-        zapierConversationId,
-        setZapierConversationId,
-        (msg) => setZapierMessages(prev => [...prev, msg])
-      );
+      // 🔥 TABULA RASA: Direct fetch con conversationId: null
+      const URL = "https://orchestratore.mio-hub.me/api/mihub/orchestrator";
+      const body = {
+        message: text,
+        mode: "manual",
+        targetAgent: "zapier",
+        conversationId: null, // 🔥 RESET: Forza nuova conversazione
+      };
+
+      console.log("🔥 [handleSendZapier] Chiamata partita verso", URL);
+      console.log("🔥 [handleSendZapier] Payload:", body);
+
+      const response = await fetch(URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      console.log("🔥 [handleSendZapier] Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("🔥 [handleSendZapier] HTTP ERROR:", response.status, errorText);
+        throw new Error(`HTTP Error ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("🔥 [handleSendZapier] Response data:", data);
+
+      // Aggiorna conversationId se il backend ne ha restituito uno nuovo
+      if (data.conversationId) {
+        console.log("🔥 [handleSendZapier] Updating conversationId:", data.conversationId);
+        setZapierConversationId(data.conversationId);
+      }
+
+      // Aggiungi risposta dell'agente
+      const replyContent = data.message || data.reply;
+      if (replyContent) {
+        setZapierMessages(prev => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: replyContent,
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+      }
     } catch (err: any) {
+      console.error("🔥 [handleSendZapier] NETWORK ERROR:", err);
       setZapierMessages(prev => [
         ...prev,
         {
