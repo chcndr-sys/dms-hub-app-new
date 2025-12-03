@@ -3661,7 +3661,10 @@ export default function DashboardPA() {
                                 )}
                                 <div className="flex-1">
                                   <div className="text-xs text-[#e8fbff]/50 mb-1">
-                                    {msg.role === 'user' ? 'Tu' : msg.role === 'assistant' ? 'MIO' : 'Errore'}
+                                    {msg.role === 'user' ? 'Tu' : msg.role === 'assistant' ? (
+                                      msg.agentName ? `${msg.agentName.toUpperCase()}` : 'MIO'
+                                    ) : 'Errore'}
+                                    {msg.source && <span className="ml-2 text-[#e8fbff]/30">({msg.source})</span>}
                                   </div>
                                   <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
                                 </div>
