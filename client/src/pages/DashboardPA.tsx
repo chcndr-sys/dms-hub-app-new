@@ -526,8 +526,9 @@ export default function DashboardPA() {
   
   const manusMessages = manusMessagesRaw.map(msg => ({
     role: msg.role as 'user' | 'assistant',
-    content: msg.message,
-    agent: msg.agent_name
+    content: msg.content,  // Backend ora restituisce già 'content'
+    agent: msg.agent_name,
+    pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
   // Hook separato per Abacus (vista singola isolata)
@@ -543,8 +544,9 @@ export default function DashboardPA() {
   
   const abacusMessages = abacusMessagesRaw.map(msg => ({
     role: msg.role as 'user' | 'assistant',
-    content: msg.message,
-    agent: msg.agent_name
+    content: msg.content,  // Backend ora restituisce già 'content'
+    agent: msg.agent_name,
+    pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
   // Hook separato per Zapier (vista singola isolata)
@@ -571,14 +573,16 @@ export default function DashboardPA() {
   
   const gptdevMessages = gptdevMessagesRaw.map(msg => ({
     role: msg.role as 'user' | 'assistant',
-    content: msg.message,
-    agent: msg.agent_name
+    content: msg.content,  // Backend ora restituisce già 'content'
+    agent: msg.agent_name,
+    pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
   const zapierMessages = zapierMessagesRaw.map(msg => ({
     role: msg.role as 'user' | 'assistant',
-    content: msg.message,
-    agent: msg.agent_name
+    content: msg.content,  // Backend ora restituisce già 'content'
+    agent: msg.agent_name,
+    pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
   const [gptdevInputValue, setGptdevInputValue] = useState('');
@@ -678,8 +682,9 @@ export default function DashboardPA() {
       conversation_id: gptdevConversationId || '',
       agent_name: 'gptdev',
       role: 'user' as const,
-      message: text,
+      content: text,  // Usa 'content' per match con AgentLogMessage interface
       created_at: new Date().toISOString(),
+      pending: true,  // Flag per Optimistic UI
     };
     setGptdevMessages(prev => [...prev, userMsg]);
 
@@ -719,21 +724,11 @@ export default function DashboardPA() {
         setGptdevConversationId(data.conversationId);
       }
 
-      // Aggiungi risposta dell'agente
-      const replyContent = data.message || data.reply;
-      if (replyContent) {
-        setGptdevMessages(prev => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            conversation_id: data.conversationId || gptdevConversationId || '',
-            agent_name: 'gptdev',
-            role: 'assistant' as const,
-            message: replyContent,
-            created_at: new Date().toISOString(),
-          },
-        ]);
-      }
+      // Rimuovi messaggio pending (il polling caricherà quello confermato dal server)
+      setGptdevMessages(prev => prev.filter(msg => !msg.pending));
+      
+      // Il polling caricherà automaticamente il messaggio utente e la risposta dal server
+      // Non aggiungiamo manualmente la risposta per evitare duplicati
     } catch (err: any) {
       console.error("🔥 [handleSendGptdev] NETWORK ERROR:", err);
       setGptdevMessages(prev => [
@@ -762,8 +757,9 @@ export default function DashboardPA() {
       conversation_id: manusConversationId || '',
       agent_name: 'manus',
       role: 'user' as const,
-      message: text,
+      content: text,  // Usa 'content' per match con AgentLogMessage interface
       created_at: new Date().toISOString(),
+      pending: true,  // Flag per Optimistic UI
     };
     setManusMessages(prev => [...prev, userMsg]);
 
@@ -803,21 +799,11 @@ export default function DashboardPA() {
         setManusConversationId(data.conversationId);
       }
 
-      // Aggiungi risposta dell'agente
-      const replyContent = data.message || data.reply;
-      if (replyContent) {
-        setManusMessages(prev => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            conversation_id: data.conversationId || manusConversationId || '',
-            agent_name: 'manus',
-            role: 'assistant' as const,
-            message: replyContent,
-            created_at: new Date().toISOString(),
-          },
-        ]);
-      }
+      // Rimuovi messaggio pending (il polling caricherà quello confermato dal server)
+      setManusMessages(prev => prev.filter(msg => !msg.pending));
+      
+      // Il polling caricherà automaticamente il messaggio utente e la risposta dal server
+      // Non aggiungiamo manualmente la risposta per evitare duplicati
     } catch (err: any) {
       console.error("🔥 [handleSendManus] NETWORK ERROR:", err);
       setManusMessages(prev => [
@@ -846,8 +832,9 @@ export default function DashboardPA() {
       conversation_id: abacusConversationId || '',
       agent_name: 'abacus',
       role: 'user' as const,
-      message: text,
+      content: text,  // Usa 'content' per match con AgentLogMessage interface
       created_at: new Date().toISOString(),
+      pending: true,  // Flag per Optimistic UI
     };
     setAbacusMessages(prev => [...prev, userMsg]);
 
@@ -887,21 +874,11 @@ export default function DashboardPA() {
         setAbacusConversationId(data.conversationId);
       }
 
-      // Aggiungi risposta dell'agente
-      const replyContent = data.message || data.reply;
-      if (replyContent) {
-        setAbacusMessages(prev => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            conversation_id: data.conversationId || abacusConversationId || '',
-            agent_name: 'abacus',
-            role: 'assistant' as const,
-            message: replyContent,
-            created_at: new Date().toISOString(),
-          },
-        ]);
-      }
+      // Rimuovi messaggio pending (il polling caricherà quello confermato dal server)
+      setAbacusMessages(prev => prev.filter(msg => !msg.pending));
+      
+      // Il polling caricherà automaticamente il messaggio utente e la risposta dal server
+      // Non aggiungiamo manualmente la risposta per evitare duplicati
     } catch (err: any) {
       console.error("🔥 [handleSendAbacus] NETWORK ERROR:", err);
       setAbacusMessages(prev => [
@@ -930,8 +907,9 @@ export default function DashboardPA() {
       conversation_id: zapierConversationId || '',
       agent_name: 'zapier',
       role: 'user' as const,
-      message: text,
+      content: text,  // Usa 'content' per match con AgentLogMessage interface
       created_at: new Date().toISOString(),
+      pending: true,  // Flag per Optimistic UI
     };
     setZapierMessages(prev => [...prev, userMsg]);
 
@@ -971,21 +949,11 @@ export default function DashboardPA() {
         setZapierConversationId(data.conversationId);
       }
 
-      // Aggiungi risposta dell'agente
-      const replyContent = data.message || data.reply;
-      if (replyContent) {
-        setZapierMessages(prev => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            conversation_id: data.conversationId || zapierConversationId || '',
-            agent_name: 'zapier',
-            role: 'assistant' as const,
-            message: replyContent,
-            created_at: new Date().toISOString(),
-          },
-        ]);
-      }
+      // Rimuovi messaggio pending (il polling caricherà quello confermato dal server)
+      setZapierMessages(prev => prev.filter(msg => !msg.pending));
+      
+      // Il polling caricherà automaticamente il messaggio utente e la risposta dal server
+      // Non aggiungiamo manualmente la risposta per evitare duplicati
     } catch (err: any) {
       console.error("🔥 [handleSendZapier] NETWORK ERROR:", err);
       setZapierMessages(prev => [

@@ -45,8 +45,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Transform backend response to match frontend expectations
     // Backend returns: { success: true, data: [...], pagination: {...} }
     // Frontend expects: { logs: [...] }
+    // CRITICAL: Map 'message' field to 'content' to match AgentLogMessage interface
+    const transformedLogs = (data.data || []).map((log: any) => ({
+      ...log,
+      content: log.message || log.content,  // Backend usa 'message', frontend si aspetta 'content'
+    }));
+
     return res.status(200).json({
-      logs: data.data || [],
+      logs: transformedLogs,
       pagination: data.pagination,
     });
   } catch (error: any) {

@@ -7,6 +7,7 @@ export interface AgentLogMessage {
   role: 'user' | 'assistant' | string;
   content: string;
   created_at: string;
+  pending?: boolean;  // Flag per messaggi locali non ancora confermati dal server
 }
 
 interface UseAgentLogsOptions {
@@ -47,7 +48,13 @@ export function useAgentLogs({ conversationId, agentName, pollMs = 5000 }: UseAg
         const data = await res.json();
 
         if (!cancelled) {
-          setMessages(data.logs || []);
+          // Preserva messaggi pending locali durante polling
+          setMessages(prev => {
+            const pendingMessages = prev.filter(msg => msg.pending);
+            const serverMessages = data.logs || [];
+            // Merge: Server messages + Pending local messages
+            return [...serverMessages, ...pendingMessages];
+          });
           setError(null);
         }
       } catch (err: any) {
