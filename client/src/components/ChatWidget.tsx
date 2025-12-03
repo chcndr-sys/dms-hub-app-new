@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
 import { useConversationPersistence } from '@/hooks/useConversationPersistence';
 import { useAgentLogs } from '@/hooks/useAgentLogs';
-import { sendMioMessage } from '@/lib/mioOrchestratorClient';
+import { sendDirectMessageToHetzner } from '@/lib/DirectMioClient';
 
 interface ChatWidgetProps {
   userRole?: 'cliente' | 'operatore' | 'pa' | 'super_admin' | 'owner';
@@ -18,7 +18,7 @@ interface ChatWidgetProps {
   };
 }
 
-// Usa sendMioMessage che chiama /api/mihub/orchestrator tramite proxy Vercel
+// 👻 GHOSTBUSTER: Usa sendDirectMessageToHetzner che chiama DIRETTAMENTE Hetzner
 
 export default function ChatWidget({ userRole = 'cliente', userId, context }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -70,7 +70,7 @@ export default function ChatWidget({ userRole = 'cliente', userId, context }: Ch
     try {
       console.log('[ChatWidget] Sending message with conversationId:', conversationId);
       
-      const data = await sendMioMessage(text, conversationId);
+      const data = await sendDirectMessageToHetzner(text, conversationId);
       console.log('[ChatWidget] Received response:', data);
 
       // Aggiungi la risposta direttamente ai messaggi

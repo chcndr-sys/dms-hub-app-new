@@ -26,7 +26,11 @@ import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
 import GuardianLogsSection from '@/components/GuardianLogsSection';
 import { MultiAgentChatView } from '@/components/multi-agent/MultiAgentChatView';
 import { callOrchestrator } from '@/api/orchestratorClient';
-import { sendMioMessage, sendAgentMessage, MioChatMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient';
+import { sendAgentMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient';
+import { sendDirectMessageToHetzner, DirectMioMessage } from '@/lib/DirectMioClient';
+
+// 👻 GHOSTBUSTER: MioChatMessage sostituito con DirectMioMessage
+type MioChatMessage = DirectMioMessage;
 import { getLogs, getLogsStats, getGuardianHealth } from '@/api/logsClient';
 // import { useInternalTraces } from '@/hooks/useInternalTraces'; // TODO: implementare hook
 import { useConversationPersistence } from '@/hooks/useConversationPersistence';
@@ -656,7 +660,7 @@ export default function DashboardPA() {
     setMioMessages(prev => [...prev, userMsg]);
 
     try {
-      const { messages, conversationId } = await sendMioMessage(text, mioMainConversationId);
+      const { messages, conversationId } = await sendDirectMessageToHetzner(text, mioMainConversationId);
       
       // IMPORTANTISSIMO: aggiorna conversationId con quello del backend
       if (conversationId && conversationId !== mioMainConversationId) {
