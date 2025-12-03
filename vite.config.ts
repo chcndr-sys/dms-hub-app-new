@@ -32,6 +32,13 @@ export default defineConfig({
   },
   server: {
     host: true,
+    proxy: {
+      '/api/mihub': {
+        target: 'https://orchestratore.mio-hub.me',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
     allowedHosts: [
       ".manuspre.computer",
       ".manus.computer",
