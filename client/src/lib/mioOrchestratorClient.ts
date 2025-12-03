@@ -17,6 +17,7 @@ export async function sendMioMessage(
   text: string,
   currentConversationId: string | null
 ): Promise<{ messages: MioChatMessage[]; conversationId: string }> {
+  debugger; // FORCE STOP HERE - 2025-12-03 07:43
   const body: any = { message: text, mode: 'auto' };
   if (currentConversationId) {
     body.conversationId = currentConversationId;
