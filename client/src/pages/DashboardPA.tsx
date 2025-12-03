@@ -3832,7 +3832,7 @@ export default function DashboardPA() {
                                     ) : 'Errore'}
                                     {msg.source && <span className="ml-2 text-[#e8fbff]/30">({msg.source})</span>}
                                   </div>
-                                  <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
+                                  <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
                                 </div>
                               </div>
                             </div>
@@ -4044,7 +4044,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
+                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
                                 <p className="text-[#e8fbff]/50 text-xs mt-1">
                                   da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
                                 </p>
@@ -4062,7 +4062,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
+                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
                                 <p className="text-[#e8fbff]/50 text-xs mt-1">
                                   da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
                                 </p>
@@ -4080,7 +4080,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
+                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
                                 <p className="text-[#e8fbff]/50 text-xs mt-1">
                                   da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
                                 </p>
@@ -4098,7 +4098,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap">{msg.content}</p>
+                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
                                 <p className="text-[#e8fbff]/50 text-xs mt-1">
                                   da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
                                 </p>
