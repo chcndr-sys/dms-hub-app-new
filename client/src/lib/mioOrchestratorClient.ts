@@ -23,7 +23,8 @@ export async function sendMioMessage(
 
   console.log('[sendMioMessage] Request:', body);
 
-  const res = await fetch('/api/mihub/orchestrator', {
+  // DIRECT LINK: Bypassiamo il proxy Vercel e chiamiamo direttamente Hetzner
+  const res = await fetch('https://orchestratore.mio-hub.me/api/mihub/orchestrator', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -98,7 +99,8 @@ export async function sendAgentMessage(
 
   console.log('[sendAgentMessage] Request:', { agent, body });
 
-  const res = await fetch('/api/mihub/orchestrator', {
+  // DIRECT LINK: Bypassiamo il proxy Vercel e chiamiamo direttamente Hetzner
+  const res = await fetch('https://orchestratore.mio-hub.me/api/mihub/orchestrator', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
