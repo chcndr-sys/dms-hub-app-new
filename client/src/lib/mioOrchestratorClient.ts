@@ -91,17 +91,16 @@ export async function sendAgentMessage(
   setConversationId: (id: string) => void,
   pushMessage: (msg: AgentChatMessage) => void
 ): Promise<void> {
+  // 🔥 FIX ERRORE 400: Usa conversationId: null per reset
   const body: any = {
     message: text,
     mode: 'manual',
     targetAgent: agent,
+    conversationId: null, // 🔥 RESET: Forza nuova conversazione
   };
-  
-  if (conversationId) {
-    body.conversationId = conversationId;
-  }
 
-  console.log('[sendAgentMessage] Request:', { agent, body });
+  console.log('🔥 [sendAgentMessage] Agent:', agent);
+  console.log('🔥 [sendAgentMessage] Payload:', JSON.stringify(body, null, 2));
 
   // DIRECT LINK: Bypassiamo il proxy Vercel e chiamiamo direttamente Hetzner
   const res = await fetch('https://orchestratore.mio-hub.me/api/mihub/orchestrator', {
@@ -110,8 +109,12 @@ export async function sendAgentMessage(
     body: JSON.stringify(body),
   });
 
+  console.log('🔥 [sendAgentMessage] Status:', res.status);
+
   if (!res.ok) {
-    throw new Error(`orchestrator HTTP ${res.status}`);
+    const errText = await res.text();
+    console.error('🔥 [sendAgentMessage] ERROR Response:', errText);
+    throw new Error(`orchestrator HTTP ${res.status}: ${errText}`);
   }
 
   const data = await res.json();
