@@ -644,6 +644,9 @@ export default function DashboardPA() {
   };
   
   // Handler per invio messaggio MIO (FASE 1 - STABILIZZATO)
+  // ---------------------------------------------------------
+  // 🔥 OPERAZIONE "TABULA RASA" - CHIAMATA INLINE DIRETTA
+  // ---------------------------------------------------------
   const handleSendMio = async () => {
     const text = mioInputValue.trim();
     if (!text || mioSending) return;
@@ -651,6 +654,7 @@ export default function DashboardPA() {
     setMioSending(true);
     setMioInputValue('');
 
+    // 1. UI Optimistic Update (mostra subito il messaggio utente)
     const userMsg: MioChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -660,30 +664,71 @@ export default function DashboardPA() {
     setMioMessages(prev => [...prev, userMsg]);
 
     try {
-      const { messages, conversationId } = await sendDirectMessageToHetzner(text, mioMainConversationId);
+      console.log("🔥 TABULA RASA: Inizio chiamata diretta...");
+      console.log("🔥 TABULA RASA: Message:", text);
+      console.log("🔥 TABULA RASA: Old ConversationId:", mioMainConversationId);
       
-      // IMPORTANTISSIMO: aggiorna conversationId con quello del backend
-      if (conversationId && conversationId !== mioMainConversationId) {
-        console.log('[handleSendMio] Updating conversationId:', conversationId);
-        setMioMainConversationId(conversationId);
-      }
-      
-      setMioMessages(prev => [...prev, ...messages]);
-    } catch (err: any) {
-      setMioMessages(prev => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: 'system',
-          content: `Errore chiamata orchestrator: ${err.message}`,
-          createdAt: new Date().toISOString(),
+      // 2. CHIAMATA FETCH PURA (Nessun import, nessun wrapper)
+      const response = await fetch("https://orchestratore.mio-hub.me/api/mihub/orchestrator", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
         },
-      ]);
+        body: JSON.stringify({
+          mode: "auto",
+          message: text,
+          // 3. TRUCCO SALVAVITA: Passiamo NULL per forzare una nuova conversazione
+          // Se il vecchio ID era corrotto su Neon, questo risolve il 404.
+          conversationId: null, 
+          meta: { source: "dashboard_tabula_rasa" }
+        })
+      });
+
+      console.log("🔥 TABULA RASA: Status Response", response.status);
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("🔥 TABULA RASA: Error Response Body:", errText);
+        throw new Error(`Server ha risposto ${response.status}: ${errText}`);
+      }
+
+      const data = await response.json();
+      console.log("🔥 TABULA RASA: Dati ricevuti", data);
+
+      // 4. Aggiornamento UI con risposta AI
+      // Nota: Salviamo il NUOVO conversationId che il server ci restituisce
+      if (data.conversationId) {
+        console.log("🔥 TABULA RASA: New ConversationId:", data.conversationId);
+        setMioMainConversationId(data.conversationId); 
+      }
+
+      const aiMsg: MioChatMessage = { 
+        id: crypto.randomUUID(),
+        role: 'assistant', 
+        content: data.message || data.reply || data.response || "Risposta vuota", 
+        createdAt: new Date().toISOString()
+      };
+      setMioMessages(prev => [...prev, aiMsg]);
+      
+      console.log("🔥 TABULA RASA: SUCCESS! ✅");
+
+    } catch (error: any) {
+      console.error("🔥 TABULA RASA ERROR:", error);
+      const errorMsg: MioChatMessage = { 
+        id: crypto.randomUUID(),
+        role: 'system', 
+        content: `🔥 TABULA RASA ERROR: ${error.message}`, 
+        createdAt: new Date().toISOString()
+      };
+      setMioMessages(prev => [...prev, errorMsg]);
     } finally {
       setMioSending(false);
-      console.log('[handleSendMio] Completed');
+      console.log("🔥 TABULA RASA: Completed");
     }
   };
+  // ---------------------------------------------------------
+  // FINE BLOCCO TABULA RASA
+  // ---------------------------------------------------------
   
   // ========== HANDLER VISTA SINGOLA AGENTI ==========
   // Ogni agente ha il suo handler che usa sendAgentMessage
