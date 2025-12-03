@@ -738,7 +738,7 @@ export default function DashboardPA() {
           conversation_id: gptdevConversationId || '',
           agent_name: 'gptdev',
           role: 'system' as const,
-          message: `Errore: ${err.message}`,
+          content: `Errore: ${err.message}`,  // Usa 'content' per match con AgentLogMessage
           created_at: new Date().toISOString(),
         },
       ]);
@@ -813,7 +813,7 @@ export default function DashboardPA() {
           conversation_id: manusConversationId || '',
           agent_name: 'manus',
           role: 'system' as const,
-          message: `Errore: ${err.message}`,
+          content: `Errore: ${err.message}`,  // Usa 'content' per match con AgentLogMessage
           created_at: new Date().toISOString(),
         },
       ]);
@@ -888,7 +888,7 @@ export default function DashboardPA() {
           conversation_id: abacusConversationId || '',
           agent_name: 'abacus',
           role: 'system' as const,
-          message: `Errore: ${err.message}`,
+          content: `Errore: ${err.message}`,  // Usa 'content' per match con AgentLogMessage
           created_at: new Date().toISOString(),
         },
       ]);
@@ -963,7 +963,7 @@ export default function DashboardPA() {
           conversation_id: zapierConversationId || '',
           agent_name: 'zapier',
           role: 'system' as const,
-          message: `Errore: ${err.message}`,
+          content: `Errore: ${err.message}`,  // Usa 'content' per match con AgentLogMessage
           created_at: new Date().toISOString(),
         },
       ]);
