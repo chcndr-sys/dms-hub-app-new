@@ -9,10 +9,6 @@
   },
   "rewrites": [
     {
-      "source": "/api/mihub/:path*",
-      "destination": "https://orchestratore.mio-hub.me/api/mihub/:path*"
-    },
-    {
       "source": "/((?!api).*)",
       "destination": "/index.html"
     }
