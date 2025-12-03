@@ -89,7 +89,12 @@ export default function APITokensPage() {
       const data: SecretsMetaResponse = await response.json();
       
       if (data.success) {
-        setSecrets(data.secrets);
+        // Mappa envvar → envVar per compatibilità backend
+        const mappedSecrets = data.secrets.map(secret => ({
+          ...secret,
+          envVar: (secret as any).envvar || secret.envVar
+        }));
+        setSecrets(mappedSecrets);
       } else {
         throw new Error('Failed to load secrets metadata');
       }
