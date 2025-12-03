@@ -526,7 +526,7 @@ export default function DashboardPA() {
   
   const manusMessages = manusMessagesRaw.map(msg => ({
     role: msg.role as 'user' | 'assistant',
-    content: msg.content,
+    content: msg.message,
     agent: msg.agent_name
   }));
   
@@ -543,7 +543,7 @@ export default function DashboardPA() {
   
   const abacusMessages = abacusMessagesRaw.map(msg => ({
     role: msg.role as 'user' | 'assistant',
-    content: msg.content,
+    content: msg.message,
     agent: msg.agent_name
   }));
   
@@ -571,13 +571,13 @@ export default function DashboardPA() {
   
   const gptdevMessages = gptdevMessagesRaw.map(msg => ({
     role: msg.role as 'user' | 'assistant',
-    content: msg.content,
+    content: msg.message,
     agent: msg.agent_name
   }));
   
   const zapierMessages = zapierMessagesRaw.map(msg => ({
     role: msg.role as 'user' | 'assistant',
-    content: msg.content,
+    content: msg.message,
     agent: msg.agent_name
   }));
   
@@ -678,7 +678,7 @@ export default function DashboardPA() {
       conversation_id: gptdevConversationId || '',
       agent_name: 'gptdev',
       role: 'user' as const,
-      content: text,
+      message: text,
       created_at: new Date().toISOString(),
     };
     setGptdevMessages(prev => [...prev, userMsg]);
@@ -729,7 +729,7 @@ export default function DashboardPA() {
             conversation_id: data.conversationId || gptdevConversationId || '',
             agent_name: 'gptdev',
             role: 'assistant' as const,
-            content: replyContent,
+            message: replyContent,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -743,7 +743,7 @@ export default function DashboardPA() {
           conversation_id: gptdevConversationId || '',
           agent_name: 'gptdev',
           role: 'system' as const,
-          content: `Errore: ${err.message}`,
+          message: `Errore: ${err.message}`,
           created_at: new Date().toISOString(),
         },
       ]);
@@ -762,7 +762,7 @@ export default function DashboardPA() {
       conversation_id: manusConversationId || '',
       agent_name: 'manus',
       role: 'user' as const,
-      content: text,
+      message: text,
       created_at: new Date().toISOString(),
     };
     setManusMessages(prev => [...prev, userMsg]);
@@ -813,7 +813,7 @@ export default function DashboardPA() {
             conversation_id: data.conversationId || manusConversationId || '',
             agent_name: 'manus',
             role: 'assistant' as const,
-            content: replyContent,
+            message: replyContent,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -827,7 +827,7 @@ export default function DashboardPA() {
           conversation_id: manusConversationId || '',
           agent_name: 'manus',
           role: 'system' as const,
-          content: `Errore: ${err.message}`,
+          message: `Errore: ${err.message}`,
           created_at: new Date().toISOString(),
         },
       ]);
@@ -846,7 +846,7 @@ export default function DashboardPA() {
       conversation_id: abacusConversationId || '',
       agent_name: 'abacus',
       role: 'user' as const,
-      content: text,
+      message: text,
       created_at: new Date().toISOString(),
     };
     setAbacusMessages(prev => [...prev, userMsg]);
@@ -897,7 +897,7 @@ export default function DashboardPA() {
             conversation_id: data.conversationId || abacusConversationId || '',
             agent_name: 'abacus',
             role: 'assistant' as const,
-            content: replyContent,
+            message: replyContent,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -911,7 +911,7 @@ export default function DashboardPA() {
           conversation_id: abacusConversationId || '',
           agent_name: 'abacus',
           role: 'system' as const,
-          content: `Errore: ${err.message}`,
+          message: `Errore: ${err.message}`,
           created_at: new Date().toISOString(),
         },
       ]);
@@ -930,7 +930,7 @@ export default function DashboardPA() {
       conversation_id: zapierConversationId || '',
       agent_name: 'zapier',
       role: 'user' as const,
-      content: text,
+      message: text,
       created_at: new Date().toISOString(),
     };
     setZapierMessages(prev => [...prev, userMsg]);
@@ -981,7 +981,7 @@ export default function DashboardPA() {
             conversation_id: data.conversationId || zapierConversationId || '',
             agent_name: 'zapier',
             role: 'assistant' as const,
-            content: replyContent,
+            message: replyContent,
             created_at: new Date().toISOString(),
           },
         ]);
@@ -995,7 +995,7 @@ export default function DashboardPA() {
           conversation_id: zapierConversationId || '',
           agent_name: 'zapier',
           role: 'system' as const,
-          content: `Errore: ${err.message}`,
+          message: `Errore: ${err.message}`,
           created_at: new Date().toISOString(),
         },
       ]);
