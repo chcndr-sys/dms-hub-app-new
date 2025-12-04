@@ -165,6 +165,11 @@ export function AIChatBox({
     }
   };
 
+  // Auto-scroll when messages change (new message received)
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedInput = input.trim();

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Brain, Wrench, Calculator, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -70,6 +70,12 @@ interface AgentCardProps {
 const AgentCard: React.FC<AgentCardProps> = ({ agent, messages, loading }) => {
   const config = agentConfig[agent];
   const Icon = config.icon;
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll quando arrivano nuovi messaggi
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   return (
     <Card className={`bg-[#0a0f1a] ${config.borderColor}`}>
@@ -90,27 +96,31 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, messages, loading }) => {
               {loading ? 'Caricamento...' : 'Nessun messaggio ancora.'}
             </p>
           ) : (
-            messages.map((msg) => (
-              <div 
-                key={msg.id} 
-                className={`p-2 rounded border ${
-                  msg.role === 'user' 
-                    ? 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30' 
-                    : `${config.bgColor} ${config.borderColor}`
-                }`}
-              >
-                <div className="text-xs text-[#e8fbff]/50 mb-1">
-                  {msg.role === 'user' ? 'Utente' : config.name}
+            <>
+              {messages.map((msg) => (
+                <div 
+                  key={msg.id} 
+                  className={`p-2 rounded border ${
+                    msg.role === 'user' 
+                      ? 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30' 
+                      : `${config.bgColor} ${config.borderColor}`
+                  }`}
+                >
+                  <div className="text-xs text-[#e8fbff]/50 mb-1">
+                    {msg.role === 'user' ? 'Utente' : config.name}
+                  </div>
+                  <p className="text-xs text-[#e8fbff] whitespace-pre-wrap">{msg.content}</p>
+                  <div className="text-xs text-[#e8fbff]/30 mt-1">
+                    {new Date(msg.created_at).toLocaleTimeString('it-IT', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </div>
                 </div>
-                <p className="text-xs text-[#e8fbff] whitespace-pre-wrap">{msg.content}</p>
-                <div className="text-xs text-[#e8fbff]/30 mt-1">
-                  {new Date(msg.created_at).toLocaleTimeString('it-IT', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </div>
-              </div>
-            ))
+              ))}
+              {/* Scroll anchor */}
+              <div ref={messagesEndRef} />
+            </>
           )}
         </div>
 
