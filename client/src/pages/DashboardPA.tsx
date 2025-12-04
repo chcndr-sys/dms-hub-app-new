@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { 
   Users, TrendingUp, Store, ShoppingCart, Leaf, MapPin, 
@@ -456,6 +456,8 @@ export default function DashboardPA() {
   
   // 🔥 MIO Agent Chat state - USA CONTEXT CONDIVISO!
   const [mioInputValue, setMioInputValue] = useState('');
+  const [showMioScrollButton, setShowMioScrollButton] = useState(false);
+  const mioMessagesRef = useRef<HTMLDivElement>(null);
   
   // 🔥 CONTEXT CONDIVISO: Stato MIO dal Context
   const {
@@ -1093,6 +1095,50 @@ export default function DashboardPA() {
       setActiveTab(tab);
     }
   }, [location]);
+
+  // Scroll MIO chat to bottom
+  const scrollMioToBottom = () => {
+    if (mioMessagesRef.current) {
+      mioMessagesRef.current.scrollTo({
+        top: mioMessagesRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Auto-scroll MIO quando cambiano messaggi
+  useEffect(() => {
+    scrollMioToBottom();
+  }, [mioMessages]);
+
+  // Scroll iniziale MIO al mount
+  useEffect(() => {
+    if (mioMessages.length > 0 && mioMessagesRef.current) {
+      setTimeout(() => {
+        if (mioMessagesRef.current) {
+          mioMessagesRef.current.scrollTo({
+            top: mioMessagesRef.current.scrollHeight,
+            behavior: 'instant' as ScrollBehavior
+          });
+        }
+      }, 300);
+    }
+  }, []);
+
+  // Listener scroll MIO per bottone
+  useEffect(() => {
+    const messagesDiv = mioMessagesRef.current;
+    if (!messagesDiv) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = messagesDiv;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowMioScrollButton(!isNearBottom);
+    };
+
+    messagesDiv.addEventListener('scroll', handleScroll);
+    return () => messagesDiv.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const QuickAccessButton = ({ href, icon, label, color = 'teal' }: any) => (
     <button
@@ -3849,7 +3895,8 @@ export default function DashboardPA() {
                         <span className="text-xs text-[#e8fbff]/50">{mioMessages.length} messaggi</span>
                       </div>
                       {/* Area messaggi */}
-                      <div className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-auto space-y-3">
+                      <div className="relative">
+                        <div ref={mioMessagesRef} className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-auto space-y-3">
                         {mioMessages.length === 0 ? (
                           <p className="text-[#e8fbff]/50 text-center text-sm">Nessun messaggio</p>
                         ) : (
@@ -3888,6 +3935,17 @@ export default function DashboardPA() {
                               <p className="text-[#e8fbff]/70 text-sm">MIO sta pensando...</p>
                             </div>
                           </div>
+                        )}
+                        </div>
+                        {/* Bottone Scroll to Bottom */}
+                        {showMioScrollButton && mioMessages.length > 0 && (
+                          <button
+                            onClick={() => scrollMioToBottom()}
+                            className="absolute bottom-2 right-2 z-10 size-10 rounded-full bg-[#8b5cf6] shadow-lg flex items-center justify-center hover:bg-[#8b5cf6]/90 transition-all"
+                            aria-label="Torna all'ultimo messaggio"
+                          >
+                            <ArrowDown className="size-5 text-white" />
+                          </button>
                         )}
                       </div>
                       {/* Input */}

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Loader2, Send, User, Sparkles } from "lucide-react";
+import { Loader2, Send, User, Sparkles, ArrowDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Streamdown } from "streamdown";
 
@@ -121,6 +121,7 @@ export function AIChatBox({
   suggestedPrompts,
 }: AIChatBoxProps) {
   const [input, setInput] = useState("");
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLFormElement>(null);
@@ -169,6 +170,44 @@ export function AIChatBox({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Scroll iniziale al mount (per messaggi già esistenti)
+  useEffect(() => {
+    if (displayMessages.length > 0) {
+      // Scroll immediato senza animazione al mount
+      const viewport = scrollAreaRef.current?.querySelector(
+        '[data-radix-scroll-area-viewport]'
+      ) as HTMLDivElement;
+
+      if (viewport) {
+        // Timeout più lungo per assicurarsi che il DOM sia renderizzato
+        setTimeout(() => {
+          viewport.scrollTo({
+            top: viewport.scrollHeight,
+            behavior: 'instant' as ScrollBehavior
+          });
+        }, 300);
+      }
+    }
+  }, []);
+
+  // Listener per mostrare/nascondere bottone scroll
+  useEffect(() => {
+    const viewport = scrollAreaRef.current?.querySelector(
+      '[data-radix-scroll-area-viewport]'
+    ) as HTMLDivElement;
+
+    if (!viewport) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = viewport;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowScrollButton(!isNearBottom);
+    };
+
+    viewport.addEventListener('scroll', handleScroll);
+    return () => viewport.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,6 +343,17 @@ export function AIChatBox({
               )}
             </div>
           </ScrollArea>
+        )}
+
+        {/* Bottone Scroll to Bottom */}
+        {showScrollButton && displayMessages.length > 0 && (
+          <button
+            onClick={() => scrollToBottom()}
+            className="absolute bottom-20 right-6 z-10 size-10 rounded-full bg-primary shadow-lg flex items-center justify-center hover:bg-primary/90 transition-all"
+            aria-label="Torna all'ultimo messaggio"
+          >
+            <ArrowDown className="size-5 text-primary-foreground" />
+          </button>
         )}
       </div>
 

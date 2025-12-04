@@ -77,6 +77,15 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, messages, loading }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Scroll iniziale al mount (per messaggi già esistenti)
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
+      }, 300);
+    }
+  }, []);
+
   return (
     <Card className={`bg-[#0a0f1a] ${config.borderColor}`}>
       <CardHeader className="pb-3">
