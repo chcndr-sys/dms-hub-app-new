@@ -69,7 +69,17 @@ const AGENTS: Agent[] = [
 ];
 
 export default function MIHUBDashboard() {
-  const [conversationId] = useState(`conv_${Date.now()}`);
+  // 🆔 UUID v4 valido per Postgres (fix invalid input syntax)
+  const [conversationId] = useState(() => {
+    // Pulisci eventuali ID vecchi in formato "conv_..." dalla cache
+    const stored = sessionStorage.getItem('mihub_conversation_id');
+    if (stored && !stored.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+      sessionStorage.removeItem('mihub_conversation_id');
+    }
+    const newId = crypto.randomUUID();
+    sessionStorage.setItem('mihub_conversation_id', newId);
+    return newId;
+  });
   const [activeAgent, setActiveAgent] = useState<string>("mio");
   const [messageInputs, setMessageInputs] = useState<Record<string, string>>({
     mio: "",
