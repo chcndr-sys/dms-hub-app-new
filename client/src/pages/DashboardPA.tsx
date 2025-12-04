@@ -724,11 +724,24 @@ export default function DashboardPA() {
         setGptdevConversationId(data.conversationId);
       }
 
-      // Rimuovi messaggio pending (il polling caricherà quello confermato dal server)
-      setGptdevMessages(prev => prev.filter(msg => !msg.pending));
+      // 🔥 FIX: Backend NON salva messaggi nel DB, quindi gestiamo tutto lato frontend
+      // Rimuovi flag pending dal messaggio utente
+      setGptdevMessages(prev => prev.map(msg => 
+        msg.pending ? { ...msg, pending: false } : msg
+      ));
       
-      // Il polling caricherà automaticamente il messaggio utente e la risposta dal server
-      // Non aggiungiamo manualmente la risposta per evitare duplicati
+      // Aggiungi risposta dell'agente manualmente
+      if (data.message) {
+        const assistantMsg = {
+          id: crypto.randomUUID(),
+          conversation_id: data.conversationId || gptdevConversationId || '',
+          agent_name: 'gptdev',
+          role: 'assistant' as const,
+          content: data.message,
+          created_at: new Date().toISOString(),
+        };
+        setGptdevMessages(prev => [...prev, assistantMsg]);
+      }
     } catch (err: any) {
       console.error("🔥 [handleSendGptdev] NETWORK ERROR:", err);
       setGptdevMessages(prev => [
@@ -799,11 +812,21 @@ export default function DashboardPA() {
         setManusConversationId(data.conversationId);
       }
 
-      // Rimuovi messaggio pending (il polling caricherà quello confermato dal server)
-      setManusMessages(prev => prev.filter(msg => !msg.pending));
+      // 🔥 FIX: Backend NON salva messaggi nel DB, quindi gestiamo tutto lato frontend
+      setManusMessages(prev => prev.map(msg => msg.pending ? { ...msg, pending: false } : msg));
       
-      // Il polling caricherà automaticamente il messaggio utente e la risposta dal server
-      // Non aggiungiamo manualmente la risposta per evitare duplicati
+      // Aggiungi risposta dell'agente manualmente
+      if (data.message) {
+        const assistantMsg = {
+          id: crypto.randomUUID(),
+          conversation_id: data.conversationId || manusConversationId || '',
+          agent_name: 'manus',
+          role: 'assistant' as const,
+          content: data.message,
+          created_at: new Date().toISOString(),
+        };
+        setManusMessages(prev => [...prev, assistantMsg]);
+      }
     } catch (err: any) {
       console.error("🔥 [handleSendManus] NETWORK ERROR:", err);
       setManusMessages(prev => [
@@ -874,11 +897,21 @@ export default function DashboardPA() {
         setAbacusConversationId(data.conversationId);
       }
 
-      // Rimuovi messaggio pending (il polling caricherà quello confermato dal server)
-      setAbacusMessages(prev => prev.filter(msg => !msg.pending));
+      // 🔥 FIX: Backend NON salva messaggi nel DB, quindi gestiamo tutto lato frontend
+      setAbacusMessages(prev => prev.map(msg => msg.pending ? { ...msg, pending: false } : msg));
       
-      // Il polling caricherà automaticamente il messaggio utente e la risposta dal server
-      // Non aggiungiamo manualmente la risposta per evitare duplicati
+      // Aggiungi risposta dell'agente manualmente
+      if (data.message) {
+        const assistantMsg = {
+          id: crypto.randomUUID(),
+          conversation_id: data.conversationId || abacusConversationId || '',
+          agent_name: 'abacus',
+          role: 'assistant' as const,
+          content: data.message,
+          created_at: new Date().toISOString(),
+        };
+        setAbacusMessages(prev => [...prev, assistantMsg]);
+      }
     } catch (err: any) {
       console.error("🔥 [handleSendAbacus] NETWORK ERROR:", err);
       setAbacusMessages(prev => [
@@ -949,11 +982,21 @@ export default function DashboardPA() {
         setZapierConversationId(data.conversationId);
       }
 
-      // Rimuovi messaggio pending (il polling caricherà quello confermato dal server)
-      setZapierMessages(prev => prev.filter(msg => !msg.pending));
+      // 🔥 FIX: Backend NON salva messaggi nel DB, quindi gestiamo tutto lato frontend
+      setZapierMessages(prev => prev.map(msg => msg.pending ? { ...msg, pending: false } : msg));
       
-      // Il polling caricherà automaticamente il messaggio utente e la risposta dal server
-      // Non aggiungiamo manualmente la risposta per evitare duplicati
+      // Aggiungi risposta dell'agente manualmente
+      if (data.message) {
+        const assistantMsg = {
+          id: crypto.randomUUID(),
+          conversation_id: data.conversationId || zapierConversationId || '',
+          agent_name: 'zapier',
+          role: 'assistant' as const,
+          content: data.message,
+          created_at: new Date().toISOString(),
+        };
+        setZapierMessages(prev => [...prev, assistantMsg]);
+      }
     } catch (err: any) {
       console.error("🔥 [handleSendZapier] NETWORK ERROR:", err);
       setZapierMessages(prev => [
