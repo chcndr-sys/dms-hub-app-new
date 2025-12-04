@@ -458,6 +458,8 @@ export default function DashboardPA() {
   const [mioInputValue, setMioInputValue] = useState('');
   const [showMioScrollButton, setShowMioScrollButton] = useState(false);
   const mioMessagesRef = useRef<HTMLDivElement>(null);
+  const [showSingleChatScrollButton, setShowSingleChatScrollButton] = useState(false);
+  const singleChatMessagesRef = useRef<HTMLDivElement>(null);
   
   // 🔥 CONTEXT CONDIVISO: Stato MIO dal Context
   const {
@@ -1140,6 +1142,56 @@ export default function DashboardPA() {
     return () => messagesDiv.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Scroll chat singole to bottom
+  const scrollSingleChatToBottom = () => {
+    if (singleChatMessagesRef.current) {
+      singleChatMessagesRef.current.scrollTo({
+        top: singleChatMessagesRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Auto-scroll chat singole quando cambiano messaggi
+  useEffect(() => {
+    scrollSingleChatToBottom();
+  }, [gptdevMessages, manusMessages, abacusMessages, zapierMessages, selectedAgent]);
+
+  // Scroll iniziale chat singole al mount
+  useEffect(() => {
+    const currentMessages = 
+      selectedAgent === 'gptdev' ? gptdevMessages :
+      selectedAgent === 'manus' ? manusMessages :
+      selectedAgent === 'abacus' ? abacusMessages :
+      zapierMessages;
+
+    if (currentMessages.length > 0 && singleChatMessagesRef.current) {
+      setTimeout(() => {
+        if (singleChatMessagesRef.current) {
+          singleChatMessagesRef.current.scrollTo({
+            top: singleChatMessagesRef.current.scrollHeight,
+            behavior: 'instant' as ScrollBehavior
+          });
+        }
+      }, 300);
+    }
+  }, [selectedAgent]);
+
+  // Listener scroll chat singole per bottone
+  useEffect(() => {
+    const messagesDiv = singleChatMessagesRef.current;
+    if (!messagesDiv) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = messagesDiv;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowSingleChatScrollButton(!isNearBottom);
+    };
+
+    messagesDiv.addEventListener('scroll', handleScroll);
+    return () => messagesDiv.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const QuickAccessButton = ({ href, icon, label, color = 'teal' }: any) => (
     <button
       onClick={() => setLocation(href)}
@@ -1185,7 +1237,7 @@ export default function DashboardPA() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0b1220]">
+    <div className="min-h-screen bg-[#0b1220] overflow-x-hidden">
       {/* Header */}
       <header className="bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white py-6 px-6 sticky top-0 z-50 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -4121,7 +4173,8 @@ export default function DashboardPA() {
                           </span>
                         </div>
                         {/* Area messaggi */}
-                        <div className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-auto">
+                        <div className="relative">
+                          <div ref={singleChatMessagesRef} className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-auto">
                           {selectedAgent === 'gptdev' && gptdevMessages.length === 0 && (
                             <p className="text-[#e8fbff]/50 text-center text-sm">Nessun messaggio</p>
                           )}
@@ -4239,6 +4292,17 @@ export default function DashboardPA() {
                                 <p className="text-[#e8fbff]/70 text-sm">Zapier sta elaborando...</p>
                               </div>
                             </div>
+                          )}
+                          </div>
+                          {/* Bottone Scroll to Bottom */}
+                          {showSingleChatScrollButton && (
+                            <button
+                              onClick={() => scrollSingleChatToBottom()}
+                              className="absolute bottom-2 right-2 z-10 size-10 rounded-full bg-[#8b5cf6] shadow-lg flex items-center justify-center hover:bg-[#8b5cf6]/90 transition-all"
+                              aria-label="Torna all'ultimo messaggio"
+                            >
+                              <ArrowDown className="size-5 text-white" />
+                            </button>
                           )}
                         </div>
                         {/* Input e bottone Invia per ogni agente */}
