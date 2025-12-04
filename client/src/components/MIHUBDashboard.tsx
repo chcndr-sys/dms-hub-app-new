@@ -68,18 +68,32 @@ const AGENTS: Agent[] = [
   }
 ];
 
+// Helper: Valida UUID v4
+const isValidUUID = (uuid: string): boolean => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
+};
+
 export default function MIHUBDashboard() {
-  // 🆔 UUID v4 valido per Postgres (fix invalid input syntax)
-  const [conversationId] = useState(() => {
-    // Pulisci eventuali ID vecchi in formato "conv_..." dalla cache
-    const stored = sessionStorage.getItem('mihub_conversation_id');
-    if (stored && !stored.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
-      sessionStorage.removeItem('mihub_conversation_id');
+  // ♾️ CHAT ETERNA: Un UUID generato UNA VOLTA e salvato PER SEMPRE
+  const [conversationId, setConversationId] = useState<string>('');
+
+  // Carica o genera l'ID FISSO al mount
+  useEffect(() => {
+    // 1. Cerca un ID esistente nel localStorage ("cassetto" del browser)
+    let storedId = localStorage.getItem('mihub_global_conversation_id');
+
+    // 2. Se non c'è (o è vecchio/invalido), ne crea uno NUOVO e lo salva PER SEMPRE
+    if (!storedId || !isValidUUID(storedId)) {
+      storedId = crypto.randomUUID(); // Genera UUID valido
+      localStorage.setItem('mihub_global_conversation_id', storedId);
+      console.log('♾️ [Chat Eterna] Nuovo conversation_id generato:', storedId);
+    } else {
+      console.log('♾️ [Chat Eterna] Conversation_id esistente caricato:', storedId);
     }
-    const newId = crypto.randomUUID();
-    sessionStorage.setItem('mihub_conversation_id', newId);
-    return newId;
-  });
+
+    // 3. Usa quell'ID. Punto.
+    setConversationId(storedId);
+  }, []);
   const [activeAgent, setActiveAgent] = useState<string>("mio");
   const [messageInputs, setMessageInputs] = useState<Record<string, string>>({
     mio: "",
