@@ -23,11 +23,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<DeployResponse>
 ) {
-  // Solo POST
-  if (req.method !== 'POST') {
+  // Accetta sia GET che POST
+  if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({
       success: false,
-      message: 'Method not allowed. Use POST.'
+      message: 'Method not allowed. Use GET or POST.'
     });
   }
 
@@ -42,7 +42,14 @@ export default async function handler(
     });
   }
 
-  const { reason, branch = 'master' } = req.body;
+  // Estrai parametri (da body per POST, da query per GET)
+  const reason = req.method === 'POST' 
+    ? req.body?.reason 
+    : req.query?.reason as string;
+  
+  const branch = req.method === 'POST'
+    ? req.body?.branch || 'master'
+    : req.query?.branch as string || 'master';
 
   if (!reason) {
     return res.status(400).json({
