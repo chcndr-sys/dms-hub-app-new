@@ -372,6 +372,17 @@ const mockData = {
 };
 
 export default function DashboardPA() {
+  // 🆘 FORZATURA DI EMERGENZA: Ripristino conversation_id storico
+  useEffect(() => {
+    const TARGET_ID = 'dfab3001-0969-4d6d-93b5-e6f69eecb794';
+    
+    if (localStorage.getItem('mihub_global_conversation_id') !== TARGET_ID) {
+      console.log("⚠️ RIPRISTINO CHAT STORICA...");
+      localStorage.setItem('mihub_global_conversation_id', TARGET_ID);
+      window.location.reload(); // Ricarica per applicare
+    }
+  }, []);
+
   // Dati reali dal backend MIHUB
   const realData = useDashboardData();
   
