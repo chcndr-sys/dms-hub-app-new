@@ -62,7 +62,8 @@ export function MioProvider({ children }: { children: ReactNode }) {
       try {
         const params = new URLSearchParams({
           conversation_id: storedId,
-          agent_name: 'mio',
+          // ✅ FIX: Rimuovo filtro agent_name per mostrare TUTTI i messaggi della conversazione
+          // (user, MIO, Abacus, Manus, ecc.)
           limit: '200',
         });
         
