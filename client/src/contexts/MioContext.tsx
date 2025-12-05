@@ -67,7 +67,7 @@ export function MioProvider({ children }: { children: ReactNode }) {
           limit: '200',
         });
         
-        const response = await fetch(`/api/mio/agent-logs?${params.toString()}`);
+        const response = await fetch(`https://orchestratore.mio-hub.me/api/mio/agent-logs?${params.toString()}`);
         if (!response.ok) return;
         
         const data = await response.json();
