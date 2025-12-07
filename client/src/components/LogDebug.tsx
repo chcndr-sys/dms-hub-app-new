@@ -138,59 +138,40 @@ function APILogsTab() {
   const [filterEndpoint, setFilterEndpoint] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  // Mock data per demo (TODO: sostituire con chiamata TRPC reale)
+  // Carica log dal backend
   useEffect(() => {
-    const mockLogs: APILog[] = [
-      {
-        id: 1,
-        timestamp: new Date(Date.now() - 1000 * 60 * 2),
-        method: 'GET',
-        endpoint: '/api/markets',
-        statusCode: 200,
-        responseTime: 45,
-        responseBody: '{"success":true,"data":[...],"count":1}'
-      },
-      {
-        id: 2,
-        timestamp: new Date(Date.now() - 1000 * 60 * 3),
-        method: 'GET',
-        endpoint: '/api/gis/market-map',
-        statusCode: 200,
-        responseTime: 123,
-        responseBody: '{"success":true,"data":{...}}'
-      },
-      {
-        id: 3,
-        timestamp: new Date(Date.now() - 1000 * 60 * 5),
-        method: 'GET',
-        endpoint: '/api/stalls/999',
-        statusCode: 404,
-        responseTime: 12,
-        error: 'Stall not found'
-      },
-      {
-        id: 4,
-        timestamp: new Date(Date.now() - 1000 * 60 * 7),
-        method: 'POST',
-        endpoint: '/api/vendors',
-        statusCode: 201,
-        responseTime: 89,
-        requestBody: '{"business_name":"Test SRL","vat_number":"IT12345678901"}',
-        responseBody: '{"success":true,"data":{"id":6}}'
-      },
-      {
-        id: 5,
-        timestamp: new Date(Date.now() - 1000 * 60 * 10),
-        method: 'GET',
-        endpoint: '/api/markets/1/stalls',
-        statusCode: 200,
-        responseTime: 234,
-        responseBody: '{"success":true,"data":[...],"count":160}'
+    const loadLogs = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/system/logs?limit=50');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        
+        // Converti formato backend in formato componente
+        const convertedLogs: APILog[] = data.logs.map((log: any, index: number) => ({
+          id: index + 1,
+          timestamp: new Date(log.timestamp),
+          method: 'GET', // TODO: estrarre dal messaggio se disponibile
+          endpoint: log.source,
+          statusCode: log.level === 'error' ? 500 : 200,
+          responseTime: 0,
+          error: log.level === 'error' ? log.message : undefined,
+          responseBody: log.level !== 'error' ? log.message : undefined
+        }));
+        
+        setLogs(convertedLogs);
+      } catch (err: any) {
+        console.error('Error loading logs:', err);
+        toast.error('Errore caricamento log');
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
     
-    setLogs(mockLogs);
-    setLoading(false);
+    loadLogs();
+    // Ricarica ogni 30 secondi
+    const interval = setInterval(loadLogs, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredLogs = logs.filter(log => {
@@ -567,32 +548,63 @@ function IntegrationLogsTab() {
 // ============================================================================
 
 function SystemStatusTab() {
-  const [status, setStatus] = useState<SystemStatus>({
-    backend: {
-      url: 'https://mihub.157-90-29-66.nip.io',
-      status: 'up',
-      uptime: 99.8,
-      lastCheck: new Date()
-    },
-    database: {
-      host: 'Neon Cloud (PostgreSQL)',
-      status: 'connected',
-      activeConnections: 5,
-      maxConnections: 100,
-      lastQuery: new Date()
-    },
-    deploy: {
-      version: 'v2.1.3',
-      deployDate: new Date('2025-11-22T16:30:00'),
-      branch: 'master',
-      commit: '59a2879'
-    },
-    integrations: {
-      'DMS Legacy': 'in_preparation',
-      'Pepe GIS': 'active',
-      'TPER': 'in_preparation'
-    }
-  });
+  const [status, setStatus] = useState<SystemStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStatus = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/system/status');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        
+        // Converti formato backend in formato componente
+        const convertedStatus: SystemStatus = {
+          backend: {
+            url: 'https://api.mio-hub.me',
+            status: data.status.processes.find((p: any) => p.name === 'mihub-backend')?.status === 'online' ? 'up' : 'down',
+            uptime: 99.8, // TODO: calcolare da uptime
+            lastCheck: new Date()
+          },
+          database: {
+            host: 'Neon Cloud (PostgreSQL)',
+            status: 'connected',
+            activeConnections: 5,
+            maxConnections: 100,
+            lastQuery: new Date()
+          },
+          deploy: {
+            version: 'v3.1',
+            deployDate: new Date('2025-12-07'),
+            branch: 'master',
+            commit: 'latest'
+          },
+          integrations: {
+            'DMS Legacy': 'in_preparation',
+            'Pepe GIS': 'active',
+            'TPER': 'in_preparation'
+          }
+        };
+        
+        setStatus(convertedStatus);
+      } catch (err: any) {
+        console.error('Error loading status:', err);
+        toast.error('Errore caricamento stato sistema');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadStatus();
+    // Ricarica ogni 30 secondi
+    const interval = setInterval(loadStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading || !status) {
+    return <div className="text-center text-[#e8fbff]/60 py-8">Caricamento stato sistema...</div>;
+  }
 
   return (
     <div className="space-y-6">
