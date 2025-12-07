@@ -22,7 +22,7 @@ export default function CouncilPage() {
         </CardHeader>
         <CardContent className="p-0 h-[calc(100%-5rem)]">
           <iframe
-            src="http://157.90.29.66:8002"
+            src="https://council.mio-hub.me"
             className="w-full h-full border-0"
             title="LLM Council"
             allow="clipboard-read; clipboard-write"
