@@ -313,7 +313,8 @@ export default function GuardianLogsSection() {
               {(() => {
                 const impreseLogs = guardianLogs.filter((log: any) => 
                   log.endpoint?.includes('/api/imprese') || 
-                  log.endpoint?.includes('/api/qualificazioni')
+                  log.endpoint?.includes('/api/qualificazioni') ||
+                  log.endpoint?.includes('/api/admin/migrate-pdnd')
                 );
                 return impreseLogs.length === 0 ? (
                   <div className="text-center py-8 text-[#e8fbff]/60">
@@ -326,6 +327,7 @@ export default function GuardianLogsSection() {
                       <li>GET /api/imprese/:id</li>
                       <li>GET /api/qualificazioni</li>
                       <li>GET /api/imprese/:id/qualificazioni</li>
+                      <li>POST /api/admin/migrate-pdnd (Migration)</li>
                     </ul>
                   </div>
                 ) : (
