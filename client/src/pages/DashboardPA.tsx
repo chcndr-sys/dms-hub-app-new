@@ -4581,17 +4581,17 @@ const openDocModal = (docKey) => {
     },
     stato_progetto: {
         title: '📋 Stato Progetto Aggiornato',
-        content: '<p>Documento completo con stato attuale, architettura, funzionalità operative, TODO prioritizzati e guide.</p>'
+        content: `<p>Documento completo con stato attuale, architettura, funzionalità operative, TODO prioritizzati e guide.</p>`
     },
     resoconto_ecosistema: {
         title: '📊 Resoconto Completo Ecosistema',
-        content: '<p>Resoconto originale completo dell'ecosistema DMS Hub con tutte le 8 applicazioni web integrate.</p>'
+        content: `<p>Resoconto originale completo dell'ecosistema DMS Hub con tutte le 8 applicazioni web integrate.</p>`
     }
   };
   setDocModalContent(content[docKey]);
 };
 
-const DocModal = ({ content, onClose }) => {
+const DocModal: React.FC<{ content: { title: string; content: string } | null; onClose: () => void }> = ({ content, onClose }) => {
   if (!content) return null;
 
   return (
@@ -4604,6 +4604,3 @@ const DocModal = ({ content, onClose }) => {
     </div>
   );
 };
-
-// Aggiungi questo al return principale del componente DashboardPA
-<DocModal content={docModalContent} onClose={() => setDocModalContent(null)} />
