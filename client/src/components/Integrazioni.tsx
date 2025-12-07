@@ -317,6 +317,38 @@ function APIDashboard() {
           data = await testEndpointResponse.json();
           break;
           
+        // IMPRESE & QUALIFICAZIONI - chiamate REST dirette
+        case '/api/imprese':
+          const impreseResponse = await fetch('http://157.90.29.66:3000/api/imprese', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          data = await impreseResponse.json();
+          break;
+        case '/api/imprese/:id':
+          const impresaId = parsedBody.id || 1;
+          const impresaResponse = await fetch(`http://157.90.29.66:3000/api/imprese/${impresaId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          data = await impresaResponse.json();
+          break;
+        case '/api/qualificazioni':
+          const qualificazioniResponse = await fetch('http://157.90.29.66:3000/api/qualificazioni', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          data = await qualificazioniResponse.json();
+          break;
+        case '/api/imprese/:id/qualificazioni':
+          const impresaIdForQual = parsedBody.id || 1;
+          const qualificazioniByImpresaResponse = await fetch(`http://157.90.29.66:3000/api/imprese/${impresaIdForQual}/qualificazioni`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          data = await qualificazioniByImpresaResponse.json();
+          break;
+          
         default:
           // Check if endpoint is defined in api/index.json but not implemented
           if (endpointInfo) {
