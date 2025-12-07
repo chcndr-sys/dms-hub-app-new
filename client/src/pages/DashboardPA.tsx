@@ -24,6 +24,7 @@ import { MarketMapComponent } from '@/components/MarketMapComponent';
 import MIOAgent from '@/components/MIOAgent';
 import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
 import GuardianLogsSection from '@/components/GuardianLogsSection';
+import ImpreseQualificazioniPanel from '@/components/ImpreseQualificazioniPanel';
 import { MultiAgentChatView } from '@/components/multi-agent/MultiAgentChatView';
 import { callOrchestrator } from '@/api/orchestratorClient';
 import { sendAgentMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient';
@@ -1499,6 +1500,17 @@ export default function DashboardPA() {
             >
               <Building2 className="h-6 w-6" />
               <span className="text-xs font-medium">Gestione Mercati</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('imprese')}
+              className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
+                activeTab === 'imprese'
+                  ? 'bg-[#10b981] border-[#10b981] text-white shadow-lg'
+                  : 'bg-[#10b981]/10 border-[#10b981]/30 hover:bg-[#10b981]/20 text-[#10b981]'
+              }`}
+            >
+              <Building2 className="h-6 w-6" />
+              <span className="text-xs font-medium">Imprese</span>
             </button>
             <button
               onClick={() => setActiveTab('docs')}
@@ -3671,7 +3683,12 @@ export default function DashboardPA() {
             <GestioneMercati />
           </TabsContent>
 
-          {/* TAB 23: DOCUMENTAZIONE */}
+          {/* TAB 23: IMPRESE & QUALIFICAZIONI */}
+          <TabsContent value="imprese" className="space-y-6">
+            <ImpreseQualificazioniPanel />
+          </TabsContent>
+
+          {/* TAB 24: DOCUMENTAZIONE */}
           <TabsContent value="docs" className="space-y-6">
             <Card className="bg-[#1a2332] border-[#06b6d4]/30">
               <CardHeader>
