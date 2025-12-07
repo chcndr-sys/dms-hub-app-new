@@ -3545,7 +3545,7 @@ export default function DashboardPA() {
                         </div>
                         <Button 
                           className="w-full bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
-                          onClick={() => window.open('https://github.com/Chcndr/dms-system-blueprint', '_blank')}
+                          onClick={() => window.open('https://github.com/Chcndr/dms-system-blueprint/blob/main/01_architettura/MASTER_SYSTEM_PLAN.md', '_blank')}
                         >
                           <Download className="h-4 w-4 mr-2" />
                           Apri Blueprint DMS
@@ -3565,7 +3565,7 @@ export default function DashboardPA() {
                         </div>
                         <Button 
                           className="w-full bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
-                          onClick={() => window.open('/STATO_PROGETTO_AGGIORNATO.md', '_blank')}
+                          onClick={() => openDocModal('stato_progetto')}
                         >
                           <Download className="h-4 w-4 mr-2" />
                           Visualizza Documento
@@ -3586,7 +3586,7 @@ export default function DashboardPA() {
                         </div>
                         <Button 
                           className="w-full bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
-                          onClick={() => window.open('/RESOCONTO_COMPLETO_DMS_HUB.md', '_blank')}
+                          onClick={() => openDocModal('resoconto_ecosistema')}
                         >
                           <Download className="h-4 w-4 mr-2" />
                           Visualizza Documento
@@ -3598,46 +3598,37 @@ export default function DashboardPA() {
                   {/* Sezioni Principali */}
                   <Card className="bg-[#0b1220] border-[#06b6d4]/30">
                     <CardHeader>
-                      <CardTitle className="text-[#e8fbff] text-lg">📚 Sezioni Principali</CardTitle>
+                      <CardTitle className="text-[#e8fbff] text-lg">📚 Documentazione Tecnica</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20">
+                        <div onClick={() => openDocModal('executive_summary')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
                           <div className="text-[#06b6d4] font-semibold mb-2">🎯 Executive Summary</div>
                           <p className="text-[#e8fbff]/60 text-sm">Panoramica generale ecosistema DMS Hub</p>
                         </div>
-                        <div className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20">
+                        <div onClick={() => openDocModal('architettura_tecnica')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
                           <div className="text-[#06b6d4] font-semibold mb-2">🏭 Architettura Tecnica</div>
-                          <p className="text-[#e8fbff]/60 text-sm">Stack, Database 39 tabelle, API tRPC</p>
+                          <p className="text-[#e8fbff]/60 text-sm">Stack, Database, API e Servizi</p>
                         </div>
-                        <div className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20">
-                          <div className="text-[#06b6d4] font-semibold mb-2">📱 8 Applicazioni Web</div>
+                        <div onClick={() => openDocModal('applicazioni_web')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
+                          <div className="text-[#06b6d4] font-semibold mb-2">📱 Applicazioni Web</div>
                           <p className="text-[#e8fbff]/60 text-sm">Stato e features di ogni app</p>
                         </div>
-                        <div className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20">
+                        <div onClick={() => openDocModal('integrazioni')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
                           <div className="text-[#06b6d4] font-semibold mb-2">⭐ Sistema Integrazioni</div>
-                          <p className="text-[#e8fbff]/60 text-sm">Implementazione completa (NUOVO!)</p>
+                          <p className="text-[#e8fbff]/60 text-sm">LLM Council, GitHub, Zapier, Neon</p>
                         </div>
-                        <div className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20">
+                        <div onClick={() => openDocModal('funzionalita_operative')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
                           <div className="text-[#06b6d4] font-semibold mb-2">✅ Funzionalità Operative</div>
-                          <p className="text-[#e8fbff]/60 text-sm">Cosa funziona e cosa manca</p>
+                          <p className="text-[#e8fbff]/60 text-sm">Stato attuale delle funzionalità</p>
                         </div>
-                        <div className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20">
+                        <div onClick={() => openDocModal('todo_prioritizzati')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2322]/80">
                           <div className="text-[#06b6d4] font-semibold mb-2">📅 TODO Prioritizzati</div>
-                          <p className="text-[#e8fbff]/60 text-sm">Roadmap Alta/Media/Bassa priorità</p>
+                          <p className="text-[#e8fbff]/60 text-sm">Roadmap e prossimi passi</p>
                         </div>
-                        <div className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20">
-                          <div className="text-[#06b6d4] font-semibold mb-2">🔗 6 Integrazioni Esterne</div>
-                          <p className="text-[#e8fbff]/60 text-sm">TPER, Centro Mobilità, ARPAE, etc.</p>
-                        </div>
-                        <div className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20">
-                          <div className="text-[#06b6d4] font-semibold mb-2">📚 Guide Operative</div>
-                          <p className="text-[#e8fbff]/60 text-sm">Come usare API Keys, Webhook, Health Check</p>
-                        </div>
-                        <div className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20">
-                          <div className="text-[#06b6d4] font-semibold mb-2">🎯 Metriche Successo</div>
-                          <p className="text-[#e8fbff]/60 text-sm">KPI e obiettivi scala nazionale</p>
-                        </div>
+                        
+                        
+                        
                       </div>
                     </CardContent>
                   </Card>
@@ -4474,3 +4465,102 @@ function LogsSection() {
   );
 }
 
+
+
+// Modale Documentazione
+const [docModalContent, setDocModalContent] = useState(null);
+
+const openDocModal = (docKey) => {
+  const content = {
+    executive_summary: {
+      title: '🎯 Executive Summary',
+      content: `
+        <p>Il DMS Hub è un ecosistema integrato per la gestione dei mercati, della mobilità sostenibile e dei servizi civici. La piattaforma si compone di un backend centrale (MIO Hub), una dashboard per la Pubblica Amministrazione, un sistema di agenti AI specializzati e diverse applicazioni web per cittadini e operatori.</p>
+      `
+    },
+    architettura_tecnica: {
+      title: '🏭 Architettura Tecnica',
+      content: `
+        <ul>
+          <li><b>Frontend:</b> React, Vite, TypeScript, TailwindCSS (su Vercel)</li>
+          <li><b>Backend:</b> Node.js, Express, PM2 (su Hetzner)</li>
+          <li><b>Database:</b> PostgreSQL (Neon)</li>
+          <li><b>Agenti AI:</b> Gemini 2.5 Flash</li>
+          <li><b>Integrazioni:</b> GitHub, Zapier</li>
+        </ul>
+      `
+    },
+    applicazioni_web: {
+      title: '📱 Applicazioni Web',
+      content: `
+        <p>L'ecosistema include 8 applicazioni web, tra cui:</p>
+        <ul>
+          <li><b>Dashboard PA:</b> Il centro di controllo per la PA.</li>
+          <li><b>LLM Council:</b> Per il confronto tra modelli linguistici.</li>
+          <li><b>BUS Hub:</b> Gestione del trasporto pubblico.</li>
+          <li><b>Core Map:</b> Mappa GIS interattiva.</li>
+        </ul>
+      `
+    },
+    integrazioni: {
+      title: '⭐ Sistema Integrazioni',
+      content: `
+        <p>Il sistema è integrato con diversi servizi esterni per estendere le sue funzionalità:</p>
+        <ul>
+          <li><b>LLM Council:</b> Per il confronto e la valutazione dei modelli AI.</li>
+          <li><b>GitHub:</b> Per la gestione del codice sorgente e il deploy.</li>
+          <li><b>Zapier:</b> Per l'automazione dei workflow.</li>
+          <li><b>Neon:</b> Per il database PostgreSQL serverless.</li>
+        </ul>
+      `
+    },
+    funzionalita_operative: {
+      title: '✅ Funzionalità Operative',
+      content: `
+        <p>Stato attuale delle funzionalità chiave:</p>
+        <ul>
+          <li><b>Chat Agenti:</b> MIO e Abacus operativi. Manus e Zapier da configurare.</li>
+          <li><b>Dashboard:</b> Dati real-time e storici disponibili.</li>
+          <li><b>Deploy:</b> Automatico via GitHub Actions.</li>
+        </ul>
+      `
+    },
+    todo_prioritizzati: {
+      title: '📅 TODO Prioritizzati',
+      content: `
+        <p>Prossimi passi per lo sviluppo:</p>
+        <ul>
+          <li><b>Configurare Agenti:</b> Attivare Manus e Zapier.</li>
+          <li><b>Espandere Dashboard:</b> Aggiungere nuove sezioni e grafici.</li>
+          <li><b>Documentazione:</b> Completare la documentazione interattiva.</li>
+        </ul>
+      `
+    },
+    stato_progetto: {
+        title: '📋 Stato Progetto Aggiornato',
+        content: '<p>Documento completo con stato attuale, architettura, funzionalità operative, TODO prioritizzati e guide.</p>'
+    },
+    resoconto_ecosistema: {
+        title: '📊 Resoconto Completo Ecosistema',
+        content: '<p>Resoconto originale completo dell'ecosistema DMS Hub con tutte le 8 applicazioni web integrate.</p>'
+    }
+  };
+  setDocModalContent(content[docKey]);
+};
+
+const DocModal = ({ content, onClose }) => {
+  if (!content) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-[#1a2332] border border-[#06b6d4]/30 rounded-lg p-6 max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-2xl font-bold text-[#e8fbff] mb-4">{content.title}</h2>
+        <div className="text-[#e8fbff]/80 space-y-4" dangerouslySetInnerHTML={{ __html: content.content }} />
+        <Button onClick={onClose} className="mt-6 bg-[#06b6d4] hover:bg-[#06b6d4]/80">Chiudi</Button>
+      </div>
+    </div>
+  );
+};
+
+// Aggiungi questo al return principale del componente DashboardPA
+<DocModal content={docModalContent} onClose={() => setDocModalContent(null)} />
