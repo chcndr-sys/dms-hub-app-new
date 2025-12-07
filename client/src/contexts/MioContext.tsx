@@ -90,6 +90,52 @@ export function MioProvider({ children }: { children: ReactNode }) {
     loadHistory();
   }, []);
 
+  // 🔥 POLLING: Ricarica messaggi ogni 3 secondi per aggiornamenti real-time
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const pollMessages = async () => {
+      try {
+        const params = new URLSearchParams({
+          conversation_id: conversationId,
+          agent_name: 'mio',
+          limit: '200',
+        });
+        
+        const response = await fetch(`/api/mio/agent-logs?${params.toString()}`);
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        if (data.logs && data.logs.length > 0) {
+          const loadedMessages: MioMessage[] = data.logs.map((log: any) => ({
+            id: log.id,
+            role: log.role as 'user' | 'assistant' | 'system',
+            content: log.message || log.content || '',
+            createdAt: log.created_at,
+            agentName: log.agent_name,
+          }));
+          
+          // Aggiorna solo se ci sono nuovi messaggi
+          setMessages(prev => {
+            if (prev.length !== loadedMessages.length) {
+              console.log('🔥 [MioContext POLLING] Nuovi messaggi:', loadedMessages.length - prev.length);
+              return loadedMessages;
+            }
+            return prev;
+          });
+        }
+      } catch (err) {
+        console.error('🔥 [MioContext POLLING] Errore:', err);
+      }
+    };
+
+    // Polling ogni 3 secondi
+    const intervalId = setInterval(pollMessages, 3000);
+    
+    // Cleanup
+    return () => clearInterval(intervalId);
+  }, [conversationId]);
+
   // 🔥 PERSISTENZA: Salva conversationId in localStorage quando cambia
   useEffect(() => {
     if (conversationId) {
