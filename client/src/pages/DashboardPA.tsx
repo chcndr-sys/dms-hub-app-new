@@ -855,14 +855,20 @@ export default function DashboardPA() {
   };
 
   // Scroll MIO quando cambiano messaggi
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!mioMessagesRef.current || mioMessages.length === 0) return;
     
-    // Scroll istantaneo all'ultimo messaggio
-    mioMessagesRef.current.scrollTo({
-      top: mioMessagesRef.current.scrollHeight,
-      behavior: 'auto' // Istantaneo, no animazione
-    });
+    // Timeout per assicurarsi che il DOM sia aggiornato
+    const timeoutId = setTimeout(() => {
+      if (mioMessagesRef.current) {
+        mioMessagesRef.current.scrollTo({
+          top: mioMessagesRef.current.scrollHeight,
+          behavior: 'smooth' // Animazione fluida
+        });
+      }
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [mioMessages]);
 
   // Listener scroll MIO per bottone
@@ -4246,6 +4252,9 @@ export default function DashboardPA() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Modale Documentazione */}
+      <DocModal content={docModalContent} onClose={() => setDocModalContent(null)} />
     </div>
   );
 }

@@ -72,8 +72,16 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, messages, loading }) => {
   const Icon = config.icon;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 🚫 AUTO-SCROLL DISABILITATO in 4-chat view per evitare jitter/possessione pagina
-  // L'utente scrolla manualmente ogni singola chat quando necessario
+  // ✅ AUTO-SCROLL ABILITATO - Scrolla automaticamente all'ultimo messaggio
+  useEffect(() => {
+    if (messagesEndRef.current && messages.length > 0) {
+      // Timeout per assicurarsi che il DOM sia aggiornato
+      const timeoutId = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages]);
 
   return (
     <Card className={`bg-[#0a0f1a] ${config.borderColor}`}>
