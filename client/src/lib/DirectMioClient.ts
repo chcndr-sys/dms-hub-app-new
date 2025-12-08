@@ -26,7 +26,7 @@ export const sendDirectMessageToHetzner = async (
   message: string,
   conversationId: string | null
 ): Promise<DirectMioResponse> => {
-  const URL = "https://orchestratore.mio-hub.me/api/mihub/orchestrator";
+  const URL = "/api/mihub/orchestrator";
   
   const payload: any = {
     message: message,

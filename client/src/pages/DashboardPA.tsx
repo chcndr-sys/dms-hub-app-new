@@ -805,7 +805,7 @@ export default function DashboardPA() {
   useEffect(() => {
     const fetchGuardianLogs = async () => {
       try {
-        const response = await fetch('https://orchestratore.mio-hub.me/api/guardian/logs');
+        const response = await fetch('/api/guardian/logs');
         const logs = await response.json();
         if (Array.isArray(logs)) {
           setGuardianLogs(logs);

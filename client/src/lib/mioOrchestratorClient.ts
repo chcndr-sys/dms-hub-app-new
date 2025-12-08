@@ -28,7 +28,7 @@ export async function sendMioMessage(
   console.error('🚨🚨🚨 THIS IS THE NEW CODE! 🚨🚨🚨');
 
   // DIRECT LINK: Bypassiamo il proxy Vercel e chiamiamo direttamente Hetzner
-  const res = await fetch('https://orchestratore.mio-hub.me/api/mihub/orchestrator', {
+  const res = await fetch('/api/mihub/orchestrator', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -103,7 +103,7 @@ export async function sendAgentMessage(
   console.log('🔥 [sendAgentMessage] Payload:', JSON.stringify(body, null, 2));
 
   // DIRECT LINK: Bypassiamo il proxy Vercel e chiamiamo direttamente Hetzner
-  const res = await fetch('https://orchestratore.mio-hub.me/api/mihub/orchestrator', {
+  const res = await fetch('/api/mihub/orchestrator', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
