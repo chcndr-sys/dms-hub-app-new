@@ -115,13 +115,34 @@ export function MioProvider({ children }: { children: ReactNode }) {
             agentName: log.agent_name,
           }));
           
-          // Aggiorna solo se ci sono nuovi messaggi
+          // 🔥 DEDUPLICAZIONE: Merge intelligente tra messaggi locali e server
           setMessages(prev => {
-            if (prev.length !== loadedMessages.length) {
-              console.log('🔥 [MioContext POLLING] Nuovi messaggi:', loadedMessages.length - prev.length);
-              return loadedMessages;
+            // Crea un Set di ID dei messaggi dal server
+            const serverIds = new Set(loadedMessages.map(m => m.id));
+            
+            // Mantieni solo i messaggi locali che NON sono nel server (optimistic pending)
+            const localOnly = prev.filter(m => !serverIds.has(m.id));
+            
+            // Deduplica per contenuto + timestamp (per messaggi optimistic senza ID server)
+            const deduped = loadedMessages.filter(serverMsg => {
+              // Se un messaggio locale ha stesso content e timestamp simile (±2 sec), è un duplicato
+              const isDuplicate = localOnly.some(localMsg => 
+                localMsg.content === serverMsg.content && 
+                Math.abs(new Date(localMsg.createdAt).getTime() - new Date(serverMsg.createdAt).getTime()) < 2000
+              );
+              return !isDuplicate;
+            });
+            
+            // Merge: messaggi locali pending + messaggi server dedupati
+            const merged = [...localOnly, ...deduped].sort((a, b) => 
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+            
+            if (merged.length !== prev.length) {
+              console.log('🔥 [MioContext POLLING] Messaggi aggiornati:', prev.length, '→', merged.length);
             }
-            return prev;
+            
+            return merged;
           });
         }
       } catch (err) {
