@@ -57,12 +57,32 @@ export function useAgentLogs({
         const data = await res.json();
 
         if (!cancelled) {
-          // Preserva messaggi pending locali durante polling
+          // 🔥 DEDUPLICAZIONE: Merge intelligente tra messaggi locali e server
           setMessages(prev => {
-            const pendingMessages = prev.filter(msg => msg.pending);
             const serverMessages = data.logs || [];
-            // Merge: Server messages + Pending local messages
-            return [...serverMessages, ...pendingMessages];
+            
+            // Crea un Set di ID dei messaggi dal server
+            const serverIds = new Set(serverMessages.map((m: AgentLogMessage) => m.id));
+            
+            // Mantieni solo i messaggi locali che NON sono nel server (pending o temporanei)
+            const localOnly = prev.filter(msg => !serverIds.has(msg.id));
+            
+            // Deduplica per contenuto + timestamp (per messaggi senza ID server)
+            const deduped = serverMessages.filter((serverMsg: AgentLogMessage) => {
+              // Se un messaggio locale ha stesso content e timestamp simile (±2 sec), è un duplicato
+              const isDuplicate = localOnly.some(localMsg => 
+                localMsg.content === serverMsg.content && 
+                Math.abs(new Date(localMsg.created_at).getTime() - new Date(serverMsg.created_at).getTime()) < 2000
+              );
+              return !isDuplicate;
+            });
+            
+            // Merge: messaggi locali pending + messaggi server dedupati
+            const merged = [...localOnly, ...deduped].sort((a, b) => 
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
+            
+            return merged;
           });
           setError(null);
         }
