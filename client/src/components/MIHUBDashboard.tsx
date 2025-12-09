@@ -125,11 +125,14 @@ export default function MIHUBDashboard() {
 
   // Auto-scroll to bottom quando arrivano nuovi messaggi
   useEffect(() => {
-    Object.values(scrollRefs.current).forEach(ref => {
-      if (ref) {
-        ref.scrollTop = ref.scrollHeight;
-      }
-    });
+    // Aspetta che il DOM sia aggiornato prima di scrollare
+    setTimeout(() => {
+      Object.values(scrollRefs.current).forEach(ref => {
+        if (ref) {
+          ref.scrollTop = ref.scrollHeight;
+        }
+      });
+    }, 100); // 100ms delay per assicurare rendering completo
   }, [messages]);
 
   const handleSendMessage = async (agentId: string) => {
