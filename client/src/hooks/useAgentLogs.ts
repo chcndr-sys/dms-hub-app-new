@@ -28,6 +28,7 @@ export function useAgentLogs({
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | undefined>();
+  const wsConnectedRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -96,6 +97,7 @@ export function useAgentLogs({
 
         ws.onopen = () => {
           console.log('[useAgentLogs] WebSocket connected');
+          wsConnectedRef.current = true;
           // Subscribe to conversation
           ws.send(JSON.stringify({
             action: 'subscribe',
@@ -142,6 +144,7 @@ export function useAgentLogs({
         ws.onclose = () => {
           console.log('[useAgentLogs] WebSocket disconnected');
           wsRef.current = null;
+          wsConnectedRef.current = false;
 
           // Riconnetti dopo 5 secondi se non cancellato
           if (!cancelled && useWebSocket) {
@@ -165,10 +168,23 @@ export function useAgentLogs({
     }
 
     // Polling silenzioso come fallback (ridotto a 30s)
-    intervalId = window.setInterval(load, pollMs);
+    // Solo se WebSocket non è abilitato o fallisce
+    let fallbackTimeout: number | undefined;
+    if (!useWebSocket) {
+      intervalId = window.setInterval(load, pollMs);
+    } else {
+      // Polling di fallback solo se WebSocket non si connette entro 10s
+      fallbackTimeout = window.setTimeout(() => {
+        if (!wsConnectedRef.current) {
+          console.log('[useAgentLogs] WebSocket failed to connect, starting polling fallback');
+          intervalId = window.setInterval(load, pollMs);
+        }
+      }, 10000);
+    }
 
     return () => {
       cancelled = true;
+      if (fallbackTimeout) window.clearTimeout(fallbackTimeout);
       if (intervalId) window.clearInterval(intervalId);
       if (reconnectTimeoutRef.current) window.clearTimeout(reconnectTimeoutRef.current);
       if (wsRef.current) {
