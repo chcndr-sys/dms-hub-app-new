@@ -47,6 +47,9 @@ export function MioProvider({ children }: { children: ReactNode }) {
   // 🔥 PERSISTENZA: Carica cronologia al mount
   useEffect(() => {
     const loadHistory = async () => {
+      // 🔥 SVUOTA messaggi all'inizio per evitare duplicati al refresh
+      setMessages([]);
+      
       // Leggi conversationId da localStorage
       const storedId = localStorage.getItem('mioMainConversationId');
       

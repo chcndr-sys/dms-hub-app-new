@@ -42,6 +42,8 @@ export function useAgentLogs({
         // Loading solo al primo caricamento, non durante polling
         if (isFirstLoad) {
           setLoading(true);
+          // 🔥 SVUOTA messaggi al primo caricamento per evitare duplicati al refresh
+          setMessages([]);
         }
         
         const params = new URLSearchParams({

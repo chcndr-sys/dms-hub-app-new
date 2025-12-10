@@ -5,7 +5,19 @@
   "rewrites": [
     {
       "source": "/api/mihub/:path*",
-      "destination": "https://orchestratore.mio-hub.me/api/mihub/:path*"
+      "destination": "https://api.mio-hub.me/api/mihub/:path*"
+    },
+    {
+      "source": "/api/guardian/:path*",
+      "destination": "https://api.mio-hub.me/api/guardian/:path*"
+    },
+    {
+      "source": "/api/mio/:path*",
+      "destination": "https://api.mio-hub.me/api/mio/:path*"
+    },
+    {
+      "source": "/api/abacus/:path*",
+      "destination": "https://api.mio-hub.me/api/abacus/:path*"
     },
     {
       "source": "/(.*)",
