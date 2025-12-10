@@ -467,7 +467,7 @@ export default function DashboardPA() {
   
   // Multi-Agent Chat state
   const [showMultiAgentChat, setShowMultiAgentChat] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<'gptdev' | 'manus' | 'abacus' | 'zapier'>('gptdev');
+  const [selectedAgent, setSelectedAgent] = useState<'mio' | 'gptdev' | 'manus' | 'abacus' | 'zapier'>('gptdev');
   const [viewMode, setViewMode] = useState<'single' | 'quad'>('single');
   
   // 🔥 MIO Agent Chat state - USA CONTEXT CONDIVISO!
@@ -709,6 +709,10 @@ export default function DashboardPA() {
 
     setMioInputValue('');
 
+    // Imposta la vista Guardian Logs su MIO singolo
+    setViewMode('single');
+    setSelectedAgent('mio');
+
     // 🔥 USA LA FUNZIONE DEL CONTEXT!
     await sendMioMessage(text, { source: "dashboard_pa" });
     
@@ -889,23 +893,6 @@ export default function DashboardPA() {
     
     return () => clearTimeout(timeoutId);
   }, [mioMessages]);
-
-  // Scroll MIO al mount iniziale (quando la pagina viene aperta)
-  useEffect(() => {
-    if (!mioMessagesRef.current || mioMessages.length === 0) return;
-    
-    // Timeout più lungo per assicurarsi che tutto sia renderizzato
-    const timeoutId = setTimeout(() => {
-      if (mioMessagesRef.current) {
-        mioMessagesRef.current.scrollTo({
-          top: mioMessagesRef.current.scrollHeight,
-          behavior: 'auto' // Scroll istantaneo al mount
-        });
-      }
-    }, 300);
-    
-    return () => clearTimeout(timeoutId);
-  }, []); // Esegui solo una volta al mount
 
   // Listener scroll MIO per bottone
   useEffect(() => {
@@ -1556,7 +1543,21 @@ export default function DashboardPA() {
               <span className="text-xs font-medium">Documentazione</span>
             </button>
             <button
-              onClick={() => setActiveTab('mio')}
+              onClick={() => {
+                setActiveTab('mio');
+                // Imposta la vista Guardian Logs su MIO singolo
+                setViewMode('single');
+                setSelectedAgent('mio');
+                // Scroll automatico alla chat MIO dopo un breve delay
+                setTimeout(() => {
+                  if (mioMessagesRef.current) {
+                    mioMessagesRef.current.scrollTo({
+                      top: mioMessagesRef.current.scrollHeight,
+                      behavior: 'smooth'
+                    });
+                  }
+                }, 300);
+              }}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 activeTab === 'mio'
                   ? 'bg-[#8b5cf6] border-[#8b5cf6] text-white shadow-lg'
@@ -4390,9 +4391,9 @@ export default function DashboardPA() {
                 <div className="space-y-3">
                   {guardianLogs
                     .filter(log => {
-                      // Vista 4 agenti: mostra tutti gli agenti (mio, manus, abacus, zapier)
+                      // Vista 4 agenti: mostra tutti gli agenti (mio, gptdev, manus, abacus, zapier)
                       if (viewMode === 'quad') {
-                        return ['mio', 'manus', 'abacus', 'zapier'].includes(log.agent);
+                        return ['mio', 'gptdev', 'manus', 'abacus', 'zapier'].includes(log.agent);
                       }
                       // Vista singola: mostra solo l'agente selezionato
                       if (viewMode === 'single' && selectedAgent) {

@@ -53,7 +53,15 @@ export default function ChatWidget({ userRole = 'cliente', userId, context }: Ch
   if (!isOpen) {
     return (
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsOpen(true);
+          // Scroll automatico agli ultimi messaggi dopo l'apertura
+          setTimeout(() => {
+            if (messagesEndRef.current) {
+              messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+          }, 300);
+        }}
         className="fixed z-[9999] w-14 h-14 bg-[#14b8a6] hover:bg-[#0d9488] text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110"
         style={{ bottom: '1.5rem', right: '1.5rem', position: 'fixed' }}
         aria-label="Apri chat AI"
