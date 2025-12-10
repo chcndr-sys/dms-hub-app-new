@@ -3970,7 +3970,66 @@ export default function DashboardPA() {
               </CardContent>
             </Card>
 
-            {/* SEZIONE B: Pannello Multi-Agente (sotto la chat principale) */}
+            {/* SEZIONE Guardian Logs per MIO Principale */}
+            <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-[#8b5cf6]" />
+                  Attività Agenti Recente (Guardian)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-xs text-[#e8fbff]/50">Ultimi 50 eventi • Aggiornamento automatico ogni 10s</p>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {guardianLogs
+                      .filter(log => log.agent === 'mio')
+                      .slice(0, 50)
+                      .map((log, idx) => {
+                      const statusColor = log.status === 'allowed' ? 'text-[#10b981]' : 'text-[#ef4444]';
+                      const statusBg = log.status === 'allowed' ? 'bg-[#10b981]/10 border-[#10b981]/30' : 'bg-[#ef4444]/10 border-[#ef4444]/30';
+                      const agentColor = 'text-[#8b5cf6]';
+                      return (
+                        <div key={idx} className={`p-3 rounded-lg border ${statusBg}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-xs font-mono px-2 py-0.5 rounded ${statusBg} ${statusColor} uppercase`}>
+                                  {log.status}
+                                </span>
+                                <span className={`text-xs font-semibold ${agentColor}`}>
+                                  {log.agent}
+                                </span>
+                                <span className="text-xs text-[#e8fbff]/50">•</span>
+                                <span className="text-xs text-[#e8fbff]/70">
+                                  {log.method}
+                                </span>
+                              </div>
+                              <p className="text-xs text-[#e8fbff]/60 font-mono break-all">
+                                {log.path}
+                              </p>
+                              {log.reason && (
+                                <p className="text-xs text-[#e8fbff]/50 mt-1">
+                                  ⚠️ {log.reason}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-xs text-[#e8fbff]/40 whitespace-nowrap">
+                              {new Date(log.timestamp).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })} (ora locale)
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {guardianLogs.filter(log => log.agent === 'mio').length === 0 && (
+                      <p className="text-xs text-[#e8fbff]/30 text-center py-4">Nessun log disponibile</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SEZIONE B: Pannello Multi-Agente (sotto la chat principale) */
             <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
