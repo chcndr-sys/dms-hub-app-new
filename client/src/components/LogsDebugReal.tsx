@@ -32,9 +32,9 @@ export function LogsSectionReal() {
       }
     };
     fetchLogs();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchLogs, 30000);
-    return () => clearInterval(interval);
+    // 🔥 POLLING DISABILITATO per evitare interferenze
+    // const interval = setInterval(fetchLogs, 30000);
+    // return () => clearInterval(interval);
   }, []);
 
   // Calculate stats from Guardian logs
@@ -219,9 +219,9 @@ export function DebugSectionReal() {
       }
     };
     fetchData();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+    // 🔥 POLLING DISABILITATO per evitare interferenze
+    // const interval = setInterval(fetchData, 30000);
+    // return () => clearInterval(interval);
   }, []);
 
   if (loading) {
