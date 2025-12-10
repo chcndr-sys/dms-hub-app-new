@@ -4373,9 +4373,9 @@ export default function DashboardPA() {
                 <div className="space-y-3">
                   {guardianLogs
                     .filter(log => {
-                      // Vista 4 agenti: mostra tutti gli agenti (mio, manus, abacus, zapier)
+                      // Vista 4 agenti: mostra tutti gli agenti (mio, manus, abacus, zapier, gptdev)
                       if (viewMode === 'quad') {
-                        return ['mio', 'manus', 'abacus', 'zapier'].includes(log.agent);
+                        return ['mio', 'manus', 'abacus', 'zapier', 'gptdev'].includes(log.agent);
                       }
                       // Vista singola: mostra solo l'agente selezionato
                       if (viewMode === 'single' && selectedAgent) {
@@ -4390,6 +4390,7 @@ export default function DashboardPA() {
                     const statusBg = log.status === 'allowed' ? 'bg-[#10b981]/10 border-[#10b981]/30' : 'bg-[#ef4444]/10 border-[#ef4444]/30';
                     const agentColor = 
                       log.agent === 'mio' ? 'text-purple-400' :
+                      log.agent === 'gptdev' ? 'text-indigo-400' :
                       log.agent === 'manus' ? 'text-blue-400' :
                       log.agent === 'abacus' ? 'text-green-400' :
                       log.agent === 'zapier' ? 'text-orange-400' : 'text-gray-400';
