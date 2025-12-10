@@ -469,6 +469,7 @@ export default function DashboardPA() {
   const [showMultiAgentChat, setShowMultiAgentChat] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<'gptdev' | 'manus' | 'abacus' | 'zapier'>('gptdev');
   const [viewMode, setViewMode] = useState<'single' | 'quad'>('single');
+  const [activeChat, setActiveChat] = useState<'mio' | 'gptdev' | 'manus' | 'abacus' | 'zapier' | 'quad' | null>('mio'); // Traccia dove si sta scrivendo
   
   // 🔥 MIO Agent Chat state - USA CONTEXT CONDIVISO!
   const [mioInputValue, setMioInputValue] = useState('');
@@ -889,6 +890,23 @@ export default function DashboardPA() {
     
     return () => clearTimeout(timeoutId);
   }, [mioMessages]);
+
+  // Scroll MIO al mount iniziale (quando la sezione viene aperta)
+  useEffect(() => {
+    if (!mioMessagesRef.current || mioMessages.length === 0) return;
+    
+    // Timeout più lungo per assicurarsi che tutto sia renderizzato
+    const timeoutId = setTimeout(() => {
+      if (mioMessagesRef.current) {
+        mioMessagesRef.current.scrollTo({
+          top: mioMessagesRef.current.scrollHeight,
+          behavior: 'auto' // Scroll istantaneo al mount
+        });
+      }
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
+  }, []); // Esegui solo una volta al mount
 
   // Listener scroll MIO per bottone
   useEffect(() => {
@@ -3935,6 +3953,7 @@ export default function DashboardPA() {
                           type="text"
                           value={mioInputValue}
                           onChange={(e) => setMioInputValue(e.target.value)}
+                          onFocus={() => setActiveChat('mio')}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey && !mioSending) {
                               e.preventDefault();
@@ -3984,9 +4003,22 @@ export default function DashboardPA() {
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {guardianLogs
                       .filter(log => {
-                        // Mostra solo i logs di MIO quando parla con l'utente (non coordinamento)
                         const conversationId = log.meta?.conversationId || '';
-                        return log.agent === 'mio' && (conversationId.includes('mio') || conversationId.includes('main'));
+                        
+                        // Filtra in base a activeChat
+                        if (activeChat === 'mio') {
+                          // Mostra solo i logs di MIO quando parla con l'utente
+                          return log.agent === 'mio' && (conversationId.includes('mio') || conversationId.includes('main'));
+                        } else if (activeChat === 'quad') {
+                          // Mostra logs di tutti gli agenti (coordinamento)
+                          return ['mio', 'gptdev', 'manus', 'abacus', 'zapier'].includes(log.agent) && 
+                                 !conversationId.includes('-single');
+                        } else if (activeChat) {
+                          // Mostra logs dell'agente specifico nella conversazione singola
+                          return log.agent === activeChat && conversationId === `${activeChat}-single`;
+                        }
+                        
+                        return false;
                       })
                       .slice(0, 50)
                       .map((log, idx) => {
@@ -4050,7 +4082,10 @@ export default function DashboardPA() {
                   {/* Barra toggle Vista singola / Vista 4 agenti */}
                   <div className="flex gap-3">
                     <Button
-                      onClick={() => setViewMode('single')}
+                      onClick={() => {
+                        setViewMode('single');
+                        setActiveChat(selectedAgent); // Imposta activeChat all'agente selezionato
+                      }}
                       className={viewMode === 'single' 
                         ? 'flex-1 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white' 
                         : 'flex-1 bg-[#8b5cf6]/20 hover:bg-[#8b5cf6]/30 text-[#8b5cf6]'}
@@ -4059,7 +4094,10 @@ export default function DashboardPA() {
                       Vista singola
                     </Button>
                     <Button
-                      onClick={() => setViewMode('quad')}
+                      onClick={() => {
+                        setViewMode('quad');
+                        setActiveChat('quad'); // Imposta activeChat a 'quad' per mostrare tutti i logs
+                      }}
                       className={viewMode === 'quad' 
                         ? 'flex-1 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white' 
                         : 'flex-1 bg-[#8b5cf6]/20 hover:bg-[#8b5cf6]/30 text-[#8b5cf6]'}
@@ -4072,7 +4110,10 @@ export default function DashboardPA() {
                   {/* Bottoni agenti - Disabilitati in vista quadrants */}
                   <div className="grid grid-cols-4 gap-2">
                     <button
-                      onClick={() => setSelectedAgent('gptdev')}
+                      onClick={() => {
+                        setSelectedAgent('gptdev');
+                        if (viewMode === 'single') setActiveChat('gptdev');
+                      }}
                       disabled={viewMode === 'quad'}
                       className={`text-center p-3 rounded-lg border transition-all ${
                         viewMode === 'quad' 
@@ -4087,7 +4128,10 @@ export default function DashboardPA() {
                       <div className="text-xs text-[#e8fbff]/50">Sviluppatore</div>
                     </button>
                     <button
-                      onClick={() => setSelectedAgent('manus')}
+                      onClick={() => {
+                        setSelectedAgent('manus');
+                        if (viewMode === 'single') setActiveChat('manus');
+                      }}
                       disabled={viewMode === 'quad'}
                       className={`text-center p-3 rounded-lg border transition-all ${
                         viewMode === 'quad' 
@@ -4102,7 +4146,10 @@ export default function DashboardPA() {
                       <div className="text-xs text-[#e8fbff]/50">Esecutivo</div>
                     </button>
                     <button
-                      onClick={() => setSelectedAgent('abacus')}
+                      onClick={() => {
+                        setSelectedAgent('abacus');
+                        if (viewMode === 'single') setActiveChat('abacus');
+                      }}
                       disabled={viewMode === 'quad'}
                       className={`text-center p-3 rounded-lg border transition-all ${
                         viewMode === 'quad' 
@@ -4117,7 +4164,10 @@ export default function DashboardPA() {
                       <div className="text-xs text-[#e8fbff]/50">Analisi</div>
                     </button>
                     <button
-                      onClick={() => setSelectedAgent('zapier')}
+                      onClick={() => {
+                        setSelectedAgent('zapier');
+                        if (viewMode === 'single') setActiveChat('zapier');
+                      }}
                       disabled={viewMode === 'quad'}
                       className={`text-center p-3 rounded-lg border transition-all ${
                         viewMode === 'quad' 
