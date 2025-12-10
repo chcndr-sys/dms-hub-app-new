@@ -185,25 +185,12 @@ export function useAgentLogs({
     // Primo load al mount
     load();
 
-    // Connetti WebSocket
-    if (useWebSocket) {
-      connectWebSocket();
-    }
-
-    // Polling silenzioso come fallback (ridotto a 30s)
-    // Solo se WebSocket non è abilitato o fallisce
+    // 🔥 POLLING E WEBSOCKET DISABILITATI PER STABILITÀ
+    // I messaggi si caricano SOLO al mount, nessun aggiornamento automatico
+    console.log('[useAgentLogs] Polling e WebSocket DISABILITATI - Caricamento solo al mount');
+    
     let fallbackTimeout: number | undefined;
-    if (!useWebSocket) {
-      intervalId = window.setInterval(load, pollMs);
-    } else {
-      // Polling di fallback solo se WebSocket non si connette entro 10s
-      fallbackTimeout = window.setTimeout(() => {
-        if (!wsConnectedRef.current) {
-          console.log('[useAgentLogs] WebSocket failed to connect, starting polling fallback');
-          intervalId = window.setInterval(load, pollMs);
-        }
-      }, 10000);
-    }
+    // Tutto disabilitato
 
     return () => {
       cancelled = true;
