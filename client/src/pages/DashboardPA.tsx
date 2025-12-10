@@ -4474,7 +4474,7 @@ export default function DashboardPA() {
               </CardContent>
             </Card>
 
-            {/* Attività Agenti Recente Card */}
+            {/* Attivita Agenti Recente Card */}
             <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
