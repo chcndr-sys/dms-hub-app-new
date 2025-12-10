@@ -33,6 +33,9 @@ export function useAgentLogs({
   useEffect(() => {
     if (!conversationId) return;
 
+    // 🔥 SVUOTA messaggi IMMEDIATAMENTE al cambio conversationId per evitare duplicati
+    setMessages([]);
+
     let cancelled = false;
     let intervalId: number | undefined;
     let isFirstLoad = true;
@@ -42,8 +45,6 @@ export function useAgentLogs({
         // Loading solo al primo caricamento, non durante polling
         if (isFirstLoad) {
           setLoading(true);
-          // 🔥 SVUOTA messaggi al primo caricamento per evitare duplicati al refresh
-          setMessages([]);
         }
         
         const params = new URLSearchParams({
