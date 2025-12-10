@@ -493,6 +493,9 @@ export default function DashboardPA() {
   const { conversationId: zapierConversationId, setConversationId: setZapierConversationId } = useConversationPersistence('zapier-single');
   const { conversationId: gptdevConversationId, setConversationId: setGptdevConversationId } = useConversationPersistence('gptdev-single');
   
+  // 🔥 Conversazione condivisa per Vista 4 Agenti (BACKSTAGE)
+  const { conversationId: multiAgentConversationId, setConversationId: setMultiAgentConversationId } = useConversationPersistence('multi-agent-coordination');
+  
   // Variabili di compatibilità per non rompere il resto del codice
   const mioLoading = false;
   const mioError = null;  // Converti formato per compatibilità
@@ -505,7 +508,7 @@ export default function DashboardPA() {
     messages: gptdevQuadMessages,
     loading: gptdevQuadLoading,
   } = useAgentLogs({
-    conversationId: viewMode === 'quad' ? gptdevConversationId : null, // 🔥 NULL se non in vista quad
+    conversationId: viewMode === 'quad' ? multiAgentConversationId : null, // 🔥 BACKSTAGE: Conversazione condivisa
     agentName: 'gptdev',
     enablePolling: viewMode === 'quad',
     excludeUserMessages: true, // 🔥 BACKSTAGE: Solo coordinamento MIO ↔ Agenti
@@ -515,7 +518,7 @@ export default function DashboardPA() {
     messages: manusQuadMessages,
     loading: manusQuadLoading,
   } = useAgentLogs({
-    conversationId: viewMode === 'quad' ? manusConversationId : null, // 🔥 NULL se non in vista quad
+    conversationId: viewMode === 'quad' ? multiAgentConversationId : null, // 🔥 BACKSTAGE: Conversazione condivisa
     agentName: 'manus',
     enablePolling: viewMode === 'quad',
     excludeUserMessages: true, // 🔥 BACKSTAGE: Solo coordinamento MIO ↔ Agenti
@@ -525,7 +528,7 @@ export default function DashboardPA() {
     messages: abacusQuadMessages,
     loading: abacusQuadLoading,
   } = useAgentLogs({
-    conversationId: viewMode === 'quad' ? abacusConversationId : null, // 🔥 NULL se non in vista quad
+    conversationId: viewMode === 'quad' ? multiAgentConversationId : null, // 🔥 BACKSTAGE: Conversazione condivisa
     agentName: 'abacus',
     enablePolling: viewMode === 'quad',
     excludeUserMessages: true, // 🔥 BACKSTAGE: Solo coordinamento MIO ↔ Agenti
@@ -535,7 +538,7 @@ export default function DashboardPA() {
     messages: zapierQuadMessages,
     loading: zapierQuadLoading,
   } = useAgentLogs({
-    conversationId: viewMode === 'quad' ? zapierConversationId : null, // 🔥 NULL se non in vista quad
+    conversationId: viewMode === 'quad' ? multiAgentConversationId : null, // 🔥 BACKSTAGE: Conversazione condivisa
     agentName: 'zapier',
     enablePolling: viewMode === 'quad',
     excludeUserMessages: true, // 🔥 BACKSTAGE: Solo coordinamento MIO ↔ Agenti
