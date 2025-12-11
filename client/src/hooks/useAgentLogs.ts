@@ -67,7 +67,19 @@ export function useAgentLogs({
         if (!cancelled) {
           // 🔥 DEDUPLICAZIONE: Merge intelligente tra messaggi locali e server
           setMessages(prev => {
-            const serverMessages = data.logs || [];
+            // ✅ FIX: Backend ritorna "data" non "logs", e "message" non "content"
+            const rawMessages = data.data || data.logs || [];
+            
+            // ✅ Mappa "message" → "content" per compatibilità
+            const serverMessages = rawMessages.map((msg: any) => ({
+              id: msg.id,
+              conversation_id: msg.conversation_id,
+              agent_name: msg.agent_name || msg.agent,
+              role: msg.role,
+              content: msg.content || msg.message,
+              created_at: msg.created_at,
+              pending: false
+            }));
             
             // Crea un Set di ID dei messaggi dal server
             const serverIds = new Set(serverMessages.map((m: AgentLogMessage) => m.id));

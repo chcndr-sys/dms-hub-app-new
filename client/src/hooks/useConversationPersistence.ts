@@ -30,9 +30,17 @@ export function useConversationPersistence(storageKey?: string): ConversationPer
       setConversationIdState(stored);
       console.log('[Persistence] Restored conversation_id:', stored);
     } else {
-      // NON generare ID client-side! Il backend lo creerà alla prima chiamata
-      setConversationIdState(null);
-      console.log('[Persistence] No conversation_id found, will be created by backend');
+      // ✅ FIX: Per conversazioni di coordinamento, usa il nome della key come ID
+      if (STORAGE_KEY.includes('coordination')) {
+        const fixedId = STORAGE_KEY;  // es. "mio-manus-coordination"
+        localStorage.setItem(STORAGE_KEY, fixedId);
+        setConversationIdState(fixedId);
+        console.log('[Persistence] Created fixed coordination ID:', fixedId);
+      } else {
+        // Per chat singole, rimane null finché non viene creato dal backend
+        setConversationIdState(null);
+        console.log('[Persistence] No conversation_id found, will be created by backend');
+      }
     }
   }, [STORAGE_KEY]);
 
