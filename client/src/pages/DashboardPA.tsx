@@ -486,6 +486,7 @@ export default function DashboardPA() {
     error: mioSendError,
     sendMessage: sendMioMessage,
     setConversationId: setMioMainConversationId,
+    stopGeneration,
   } = useMio();
   
   // 👥 DOPPIO CANALE - Vista Singola usa user-{agent}-direct
@@ -3897,13 +3898,13 @@ export default function DashboardPA() {
                           {/* Pulsante STOP sempre visibile */}
                           <button
                             onClick={stopGeneration}
-                            disabled={!isLoading}
+                            disabled={!mioSending}
                             className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                              isLoading
+                              mioSending
                                 ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse cursor-pointer'
                                 : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
                             }`}
-                            title={isLoading ? 'Interrompi tutti gli agenti' : 'Nessuna elaborazione in corso'}
+                            title={mioSending ? 'Interrompi tutti gli agenti' : 'Nessuna elaborazione in corso'}
                           >
                             <StopCircle className="h-4 w-4" />
                             <span className="text-sm">STOP</span>
