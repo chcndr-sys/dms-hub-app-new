@@ -58,7 +58,8 @@ export function useAgentLogs({
         if (agentName) params.set('agent_name', agentName);
         if (excludeUserMessages) params.set('exclude_user_messages', 'true'); // 🔥 VISTA 4 AGENTI
 
-        const res = await fetch(`/api/mio/agent-logs?${params.toString()}`);
+        // 🚀 TUBO DRITTO - Usa endpoint diretto senza logica complessa
+        const res = await fetch(`/api/mihub/direct-messages/${conversationId}`);
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
@@ -67,8 +68,8 @@ export function useAgentLogs({
         if (!cancelled) {
           // 🔥 DEDUPLICAZIONE: Merge intelligente tra messaggi locali e server
           setMessages(prev => {
-            // ✅ FIX: Backend ritorna "data" non "logs", e "message" non "content"
-            const rawMessages = data.data || data.logs || [];
+            // ✅ FIX: Backend direct-messages ritorna "messages"
+            const rawMessages = data.messages || data.data || data.logs || [];
             
             // ✅ Mappa "message" → "content" per compatibilità
             const serverMessages = rawMessages.map((msg: any) => ({
