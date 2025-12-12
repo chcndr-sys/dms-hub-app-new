@@ -59,8 +59,8 @@ export function useAgentLogs({
         if (agentName) params.set('agent_name', agentName);
         if (excludeUserMessages) params.set('exclude_user_messages', 'true'); // 🔥 VISTA 4 AGENTI
 
-        // 🚀 TUBO DRITTO - Usa endpoint diretto senza logica complessa
-        const res = await fetch(`/api/mihub/direct-messages/${conversationId}`);
+        // 🚀 TUBO DRITTO - Usa endpoint get-messages con conversation_id
+        const res = await fetch(`/api/mihub/get-messages?${params.toString()}`);
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }

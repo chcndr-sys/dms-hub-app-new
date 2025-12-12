@@ -565,6 +565,7 @@ export default function DashboardPA() {
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
+    created_at: msg.created_at,  // Timestamp per visualizzazione
     pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
@@ -583,6 +584,7 @@ export default function DashboardPA() {
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
+    created_at: msg.created_at,  // Timestamp per visualizzazione
     pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
@@ -612,6 +614,7 @@ export default function DashboardPA() {
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
+    created_at: msg.created_at,  // Timestamp per visualizzazione
     pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
@@ -619,6 +622,7 @@ export default function DashboardPA() {
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
+    created_at: msg.created_at,  // Timestamp per visualizzazione
     pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
@@ -3933,11 +3937,18 @@ export default function DashboardPA() {
                                   <Brain className="h-4 w-4 text-purple-400 mt-0.5" />
                                 )}
                                 <div className="flex-1">
-                                  <div className="text-xs text-[#e8fbff]/50 mb-1">
-                                    {msg.role === 'user' ? 'Tu' : msg.role === 'assistant' ? (
-                                      msg.agentName ? `${msg.agentName.toUpperCase()}` : 'MIO'
-                                    ) : 'Errore'}
-                                    {msg.source && <span className="ml-2 text-[#e8fbff]/30">({msg.source})</span>}
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="text-xs text-[#e8fbff]/50">
+                                      {msg.role === 'user' ? 'Tu' : msg.role === 'assistant' ? (
+                                        msg.agentName ? `${msg.agentName.toUpperCase()}` : 'MIO'
+                                      ) : 'Errore'}
+                                      {msg.source && <span className="ml-2 text-[#e8fbff]/30">({msg.source})</span>}
+                                    </div>
+                                    {msg.created_at && (
+                                      <div className="text-xs text-[#e8fbff]/30">
+                                        {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                      </div>
+                                    )}
                                   </div>
                                   <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
                                 </div>
@@ -4163,10 +4174,17 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <p className="text-[#e8fbff]/50 text-xs">
+                                    da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
+                                  </p>
+                                  {msg.created_at && (
+                                    <p className="text-[#e8fbff]/30 text-xs">
+                                      {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                  )}
+                                </div>
                                 <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
-                                <p className="text-[#e8fbff]/50 text-xs mt-1">
-                                  da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
-                                </p>
                               </div>
                             </div>
                           ))}
@@ -4181,10 +4199,17 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <p className="text-[#e8fbff]/50 text-xs">
+                                    da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
+                                  </p>
+                                  {msg.created_at && (
+                                    <p className="text-[#e8fbff]/30 text-xs">
+                                      {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                  )}
+                                </div>
                                 <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
-                                <p className="text-[#e8fbff]/50 text-xs mt-1">
-                                  da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
-                                </p>
                               </div>
                             </div>
                           ))}
@@ -4199,10 +4224,17 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <p className="text-[#e8fbff]/50 text-xs">
+                                    da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
+                                  </p>
+                                  {msg.created_at && (
+                                    <p className="text-[#e8fbff]/30 text-xs">
+                                      {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                  )}
+                                </div>
                                 <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
-                                <p className="text-[#e8fbff]/50 text-xs mt-1">
-                                  da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
-                                </p>
                               </div>
                             </div>
                           ))}
@@ -4217,10 +4249,17 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <p className="text-[#e8fbff]/50 text-xs">
+                                    da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
+                                  </p>
+                                  {msg.created_at && (
+                                    <p className="text-[#e8fbff]/30 text-xs">
+                                      {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                  )}
+                                </div>
                                 <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
-                                <p className="text-[#e8fbff]/50 text-xs mt-1">
-                                  da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
-                                </p>
                               </div>
                             </div>
                           ))}
