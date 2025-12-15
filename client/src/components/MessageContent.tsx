@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { Play, Check, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, Code, AlertCircle } from 'lucide-react';
 
 interface MessageContentProps {
   content: string;
 }
 
 export const MessageContent: React.FC<MessageContentProps> = ({ content }) => {
-  const [executedBlocks, setExecutedBlocks] = useState<Set<number>>(new Set());
+  const [autoExecuted, setAutoExecuted] = useState<Set<number>>(new Set());
   const [errors, setErrors] = useState<Map<number, string>>(new Map());
+  const [showCode, setShowCode] = useState<Map<number, boolean>>(new Map());
+  const hasAutoExecuted = useRef<Set<number>>(new Set());
 
   // Rileva blocchi di codice JavaScript che contengono window.sharedWorkspaceAPI
   const detectWorkspaceCode = (text: string): { hasCode: boolean; blocks: { code: string; index: number }[] } => {
@@ -33,7 +35,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({ content }) => {
       eval(code);
       
       // Marca come eseguito
-      setExecutedBlocks(prev => new Set(prev).add(blockIndex));
+      setAutoExecuted(prev => new Set(prev).add(blockIndex));
       setErrors(prev => {
         const newErrors = new Map(prev);
         newErrors.delete(blockIndex);
@@ -47,6 +49,24 @@ export const MessageContent: React.FC<MessageContentProps> = ({ content }) => {
 
   const { hasCode, blocks } = detectWorkspaceCode(content);
 
+  // AUTO-RUN: Esegui automaticamente i blocchi di codice workspace
+  useEffect(() => {
+    if (hasCode && blocks.length > 0) {
+      // Delay di 500ms per assicurarsi che la lavagna sia pronta
+      const timer = setTimeout(() => {
+        blocks.forEach(({ code, index }) => {
+          // Esegui solo se non è già stato eseguito
+          if (!hasAutoExecuted.current.has(index)) {
+            executeCode(code, index);
+            hasAutoExecuted.current.add(index);
+          }
+        });
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasCode, blocks.length]);
+
   if (!hasCode) {
     // Nessun codice workspace, renderizza normalmente
     return (
@@ -56,7 +76,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({ content }) => {
     );
   }
 
-  // Ha codice workspace, renderizza con pulsanti di esecuzione
+  // Ha codice workspace, renderizza con badge elegante
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   const codeBlockRegex = /```javascript\n([\s\S]*?)```/g;
@@ -78,40 +98,43 @@ export const MessageContent: React.FC<MessageContentProps> = ({ content }) => {
 
     if (isWorkspaceCode) {
       const currentBlockIndex = blockCounter;
-      const isExecuted = executedBlocks.has(currentBlockIndex);
+      const isExecuted = autoExecuted.has(currentBlockIndex);
       const error = errors.get(currentBlockIndex);
+      const codeVisible = showCode.get(currentBlockIndex) || false;
 
       parts.push(
-        <div key={`code-${match.index}`} className="my-3 bg-[#0a0f1a] rounded-lg border border-[#8b5cf6]/30 overflow-hidden">
-          <div className="bg-[#8b5cf6]/10 px-3 py-2 flex items-center justify-between">
-            <span className="text-xs text-[#8b5cf6] font-mono">🎨 Codice Lavagna</span>
+        <div key={`code-${match.index}`} className="my-3">
+          {/* Badge elegante */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-full">
+            <Sparkles className="h-4 w-4 text-purple-400" />
+            <span className="text-sm text-purple-300 font-medium">
+              Disegno aggiunto alla lavagna
+            </span>
+            {/* Pulsante Show Code (opzionale per debug) */}
             <button
-              onClick={() => executeCode(code, currentBlockIndex)}
-              disabled={isExecuted}
-              className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${
-                isExecuted
-                  ? 'bg-green-500/20 text-green-400 cursor-not-allowed'
-                  : 'bg-[#8b5cf6] text-white hover:bg-[#8b5cf6]/90'
-              }`}
+              onClick={() => setShowCode(prev => new Map(prev).set(currentBlockIndex, !codeVisible))}
+              className="ml-2 p-1 hover:bg-purple-500/20 rounded transition-colors"
+              title={codeVisible ? "Nascondi codice" : "Mostra codice"}
             >
-              {isExecuted ? (
-                <>
-                  <Check className="h-3 w-3" />
-                  Eseguito
-                </>
-              ) : (
-                <>
-                  <Play className="h-3 w-3" />
-                  Esegui sulla Lavagna
-                </>
-              )}
+              <Code className="h-3 w-3 text-purple-400/60" />
             </button>
           </div>
-          <pre className="p-3 text-xs text-[#e8fbff]/80 font-mono overflow-x-auto">
-            <code>{code}</code>
-          </pre>
+
+          {/* Codice (nascosto di default) */}
+          {codeVisible && (
+            <div className="mt-2 bg-[#0a0f1a] rounded-lg border border-[#8b5cf6]/30 overflow-hidden">
+              <div className="bg-[#8b5cf6]/10 px-3 py-2">
+                <span className="text-xs text-[#8b5cf6] font-mono">🎨 Codice Lavagna</span>
+              </div>
+              <pre className="p-3 text-xs text-[#e8fbff]/80 font-mono overflow-x-auto">
+                <code>{code}</code>
+              </pre>
+            </div>
+          )}
+
+          {/* Errore (se presente) */}
           {error && (
-            <div className="bg-red-500/10 border-t border-red-500/30 px-3 py-2 flex items-start gap-2">
+            <div className="mt-2 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 flex items-start gap-2">
               <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
               <span className="text-xs text-red-400">{error}</span>
             </div>
