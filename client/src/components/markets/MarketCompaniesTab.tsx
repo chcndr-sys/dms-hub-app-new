@@ -69,6 +69,7 @@ type CompanyFormData = {
   indirizzo_civico: string;
   indirizzo_cap: string;
   indirizzo_provincia: string;
+  comune: string;
   
   // Contatti & Attività
   pec: string;
@@ -667,6 +668,7 @@ function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps
     indirizzo_civico: (company as any)?.indirizzo_civico || '',
     indirizzo_cap: (company as any)?.indirizzo_cap || '',
     indirizzo_provincia: (company as any)?.indirizzo_provincia || '',
+    comune: (company as any)?.comune || '',
     
     // Contatti & Attività
     pec: (company as any)?.pec || '',
@@ -948,6 +950,20 @@ function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps
                   maxLength={2}
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Comune <span className="text-orange-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.comune}
+                onChange={(e) => setFormData({ ...formData, comune: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-800 border border-orange-500/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="es. Grosseto"
+              />
             </div>
           </div>
 
