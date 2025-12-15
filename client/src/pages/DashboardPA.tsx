@@ -469,7 +469,7 @@ export default function DashboardPA() {
   // Multi-Agent Chat state
   const [showMultiAgentChat, setShowMultiAgentChat] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<'mio' | 'gptdev' | 'manus' | 'abacus' | 'zapier'>('gptdev');
-  const [viewMode, setViewMode] = useState<'single' | 'quad'>('single');
+  const [viewMode, setViewMode] = useState<'single' | 'quad'>('quad');  // 🎯 FIX: Vista 4 Agenti come default
   
   // 🔥 MIO Agent Chat state - USA CONTEXT CONDIVISO!
   const [mioInputValue, setMioInputValue] = useState('');
@@ -565,6 +565,8 @@ export default function DashboardPA() {
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
+    sender: msg.sender,  // 🔥 FIX: Aggiungo sender per distinguere MIO da Utente
+    created_at: msg.created_at,  // 🕒 FIX: Aggiungo timestamp per mostrare orario
     pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
@@ -583,6 +585,8 @@ export default function DashboardPA() {
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
+    sender: msg.sender,  // 🔥 FIX: Aggiungo sender per distinguere MIO da Utente
+    created_at: msg.created_at,  // 🕒 FIX: Aggiungo timestamp per mostrare orario
     pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
@@ -612,6 +616,8 @@ export default function DashboardPA() {
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
+    sender: msg.sender,  // 🔥 FIX: Aggiungo sender per distinguere MIO da Utente
+    created_at: msg.created_at,  // 🕒 FIX: Aggiungo timestamp per mostrare orario
     pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
@@ -619,6 +625,8 @@ export default function DashboardPA() {
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
+    sender: msg.sender,  // 🔥 FIX: Aggiungo sender per distinguere MIO da Utente
+    created_at: msg.created_at,  // 🕒 FIX: Aggiungo timestamp per mostrare orario
     pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
@@ -4130,12 +4138,43 @@ export default function DashboardPA() {
                               {selectedAgent === 'zapier' && 'Automazioni'}
                             </span>
                           </div>
-                          <span className="text-xs text-[#e8fbff]/50">
-                            {selectedAgent === 'gptdev' && `${gptdevMessages.length} messaggi`}
-                            {selectedAgent === 'manus' && `${manusMessages.length} messaggi`}
-                            {selectedAgent === 'abacus' && `${abacusMessages.length} messaggi`}
-                            {selectedAgent === 'zapier' && `${zapierMessages.length} messaggi`}
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-[#e8fbff]/50">
+                              {selectedAgent === 'gptdev' && `${gptdevMessages.length} messaggi`}
+                              {selectedAgent === 'manus' && `${manusMessages.length} messaggi`}
+                              {selectedAgent === 'abacus' && `${abacusMessages.length} messaggi`}
+                              {selectedAgent === 'zapier' && `${zapierMessages.length} messaggi`}
+                            </span>
+                            {/* 🛑 Pulsante STOP per Vista Singola Agente */}
+                            <button
+                              onClick={stopGeneration}
+                              disabled={
+                                (selectedAgent === 'gptdev' && !gptdevLoading) ||
+                                (selectedAgent === 'manus' && !manusLoading) ||
+                                (selectedAgent === 'abacus' && !abacusLoading) ||
+                                (selectedAgent === 'zapier' && !zapierLoading)
+                              }
+                              className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 text-xs ${
+                                (selectedAgent === 'gptdev' && gptdevLoading) ||
+                                (selectedAgent === 'manus' && manusLoading) ||
+                                (selectedAgent === 'abacus' && abacusLoading) ||
+                                (selectedAgent === 'zapier' && zapierLoading)
+                                  ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse cursor-pointer'
+                                  : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
+                              }`}
+                              title={
+                                (selectedAgent === 'gptdev' && gptdevLoading) ||
+                                (selectedAgent === 'manus' && manusLoading) ||
+                                (selectedAgent === 'abacus' && abacusLoading) ||
+                                (selectedAgent === 'zapier' && zapierLoading)
+                                  ? 'Interrompi agente'
+                                  : 'Nessuna elaborazione in corso'
+                              }
+                            >
+                              <StopCircle className="h-3.5 w-3.5" />
+                              <span>STOP</span>
+                            </button>
+                          </div>
                         </div>
                         {/* Area messaggi */}
                         <div className="relative">
@@ -4164,9 +4203,12 @@ export default function DashboardPA() {
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
                                 <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
-                                <p className="text-[#e8fbff]/50 text-xs mt-1">
-                                  da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
-                                </p>
+                                <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
+                                  <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
+                                  <span className="text-[#e8fbff]/30">
+                                    {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -4182,9 +4224,12 @@ export default function DashboardPA() {
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
                                 <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
-                                <p className="text-[#e8fbff]/50 text-xs mt-1">
-                                  da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
-                                </p>
+                                <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
+                                  <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
+                                  <span className="text-[#e8fbff]/30">
+                                    {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -4200,9 +4245,12 @@ export default function DashboardPA() {
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
                                 <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
-                                <p className="text-[#e8fbff]/50 text-xs mt-1">
-                                  da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
-                                </p>
+                                <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
+                                  <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
+                                  <span className="text-[#e8fbff]/30">
+                                    {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -4218,9 +4266,12 @@ export default function DashboardPA() {
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
                                 <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
-                                <p className="text-[#e8fbff]/50 text-xs mt-1">
-                                  da {msg.role === 'user' ? 'Utente' : (msg.agent || 'agente')}
-                                </p>
+                                <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
+                                  <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
+                                  <span className="text-[#e8fbff]/30">
+                                    {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           ))}

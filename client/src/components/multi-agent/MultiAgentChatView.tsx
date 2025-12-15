@@ -118,7 +118,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, messages, loading }) => {
                 >
                   <div className="text-xs text-[#e8fbff]/50 mb-1">
                     {msg.role === 'user' 
-                      ? (msg.sender === 'mio' ? 'MIO' : 'Utente')  // 🔥 FIX: Distingue MIO da Utente usando sender
+                      ? (msg.sender === 'user' ? 'Tu' : 'MIO')  // 🔥 FIX: Mostra MIO quando orchestrator delega, Tu quando utente invia
                       : config.name
                     }
                   </div>
