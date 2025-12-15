@@ -78,6 +78,26 @@ type CompanyFormData = {
   codice_ateco: string;
   descrizione_ateco: string;
   
+  // Rappresentante Legale
+  rappresentante_legale_cognome: string;
+  rappresentante_legale_nome: string;
+  rappresentante_legale_cf: string;
+  rappresentante_legale_data_nascita: string;
+  rappresentante_legale_luogo_nascita: string;
+  
+  // Residenza Rappresentante
+  rappresentante_legale_residenza_via: string;
+  rappresentante_legale_residenza_civico: string;
+  rappresentante_legale_residenza_cap: string;
+  rappresentante_legale_residenza_comune: string;
+  rappresentante_legale_residenza_provincia: string;
+  
+  // Dati Economici
+  capitale_sociale: string;
+  numero_addetti: string;
+  sito_web: string;
+  data_iscrizione_ri: string;
+  
   // Legacy (mantenuto per compatibilità)
   stato: "active" | "suspended" | "closed";
 };
@@ -677,6 +697,26 @@ function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps
     codice_ateco: (company as any)?.codice_ateco || '',
     descrizione_ateco: (company as any)?.descrizione_ateco || '',
     
+    // Rappresentante Legale
+    rappresentante_legale_cognome: (company as any)?.rappresentante_legale_cognome || '',
+    rappresentante_legale_nome: (company as any)?.rappresentante_legale_nome || '',
+    rappresentante_legale_cf: (company as any)?.rappresentante_legale_cf || '',
+    rappresentante_legale_data_nascita: (company as any)?.rappresentante_legale_data_nascita || '',
+    rappresentante_legale_luogo_nascita: (company as any)?.rappresentante_legale_luogo_nascita || '',
+    
+    // Residenza Rappresentante
+    rappresentante_legale_residenza_via: (company as any)?.rappresentante_legale_residenza_via || '',
+    rappresentante_legale_residenza_civico: (company as any)?.rappresentante_legale_residenza_civico || '',
+    rappresentante_legale_residenza_cap: (company as any)?.rappresentante_legale_residenza_cap || '',
+    rappresentante_legale_residenza_comune: (company as any)?.rappresentante_legale_residenza_comune || '',
+    rappresentante_legale_residenza_provincia: (company as any)?.rappresentante_legale_residenza_provincia || '',
+    
+    // Dati Economici
+    capitale_sociale: (company as any)?.capitale_sociale?.toString() || '',
+    numero_addetti: (company as any)?.numero_addetti?.toString() || '',
+    sito_web: (company as any)?.sito_web || '',
+    data_iscrizione_ri: (company as any)?.data_iscrizione_ri || '',
+    
     // Legacy
     stato: company?.stato || 'active',
   });
@@ -713,6 +753,26 @@ function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps
         telefono: formData.telefono,
         codice_ateco: formData.codice_ateco,
         descrizione_ateco: formData.descrizione_ateco,
+        
+        // Rappresentante Legale
+        rappresentante_legale_cognome: formData.rappresentante_legale_cognome,
+        rappresentante_legale_nome: formData.rappresentante_legale_nome,
+        rappresentante_legale_cf: formData.rappresentante_legale_cf,
+        rappresentante_legale_data_nascita: formData.rappresentante_legale_data_nascita,
+        rappresentante_legale_luogo_nascita: formData.rappresentante_legale_luogo_nascita,
+        
+        // Residenza Rappresentante
+        rappresentante_legale_residenza_via: formData.rappresentante_legale_residenza_via,
+        rappresentante_legale_residenza_civico: formData.rappresentante_legale_residenza_civico,
+        rappresentante_legale_residenza_cap: formData.rappresentante_legale_residenza_cap,
+        rappresentante_legale_residenza_comune: formData.rappresentante_legale_residenza_comune,
+        rappresentante_legale_residenza_provincia: formData.rappresentante_legale_residenza_provincia,
+        
+        // Dati Economici
+        capitale_sociale: formData.capitale_sociale ? parseFloat(formData.capitale_sociale) : null,
+        numero_addetti: formData.numero_addetti ? parseInt(formData.numero_addetti) : null,
+        sito_web: formData.sito_web,
+        data_iscrizione_ri: formData.data_iscrizione_ri,
         
         // Legacy (per compatibilità con vendors)
         code: formData.codice_fiscale,
@@ -1059,6 +1119,221 @@ function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* GRUPPO 4: RAPPRESENTANTE LEGALE */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide border-b border-gray-700 pb-2">
+              Rappresentante Legale
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Cognome
+                </label>
+                <input
+                  type="text"
+                  value={formData.rappresentante_legale_cognome}
+                  onChange={(e) => setFormData({ ...formData, rappresentante_legale_cognome: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="es. Rossi"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Nome
+                </label>
+                <input
+                  type="text"
+                  value={formData.rappresentante_legale_nome}
+                  onChange={(e) => setFormData({ ...formData, rappresentante_legale_nome: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="es. Mario"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Codice Fiscale
+              </label>
+              <input
+                type="text"
+                value={formData.rappresentante_legale_cf}
+                onChange={(e) => setFormData({ ...formData, rappresentante_legale_cf: e.target.value.toUpperCase() })}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="es. RSSMRA80A01D612H"
+                maxLength={16}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Data di Nascita
+                </label>
+                <input
+                  type="date"
+                  value={formData.rappresentante_legale_data_nascita}
+                  onChange={(e) => setFormData({ ...formData, rappresentante_legale_data_nascita: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Luogo di Nascita
+                </label>
+                <input
+                  type="text"
+                  value={formData.rappresentante_legale_luogo_nascita}
+                  onChange={(e) => setFormData({ ...formData, rappresentante_legale_luogo_nascita: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="es. Grosseto"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* GRUPPO 5: RESIDENZA RAPPRESENTANTE */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide border-b border-gray-700 pb-2">
+              Residenza Rappresentante Legale
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Via
+                </label>
+                <input
+                  type="text"
+                  value={formData.rappresentante_legale_residenza_via}
+                  onChange={(e) => setFormData({ ...formData, rappresentante_legale_residenza_via: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="es. Via Verdi"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Civico
+                </label>
+                <input
+                  type="text"
+                  value={formData.rappresentante_legale_residenza_civico}
+                  onChange={(e) => setFormData({ ...formData, rappresentante_legale_residenza_civico: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="es. 5"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  CAP
+                </label>
+                <input
+                  type="text"
+                  value={formData.rappresentante_legale_residenza_cap}
+                  onChange={(e) => setFormData({ ...formData, rappresentante_legale_residenza_cap: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="es. 58100"
+                  maxLength={5}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Comune
+                </label>
+                <input
+                  type="text"
+                  value={formData.rappresentante_legale_residenza_comune}
+                  onChange={(e) => setFormData({ ...formData, rappresentante_legale_residenza_comune: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="es. Grosseto"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Provincia
+                </label>
+                <input
+                  type="text"
+                  value={formData.rappresentante_legale_residenza_provincia}
+                  onChange={(e) => setFormData({ ...formData, rappresentante_legale_residenza_provincia: e.target.value.toUpperCase() })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="es. GR"
+                  maxLength={2}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* GRUPPO 6: DATI ECONOMICI */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide border-b border-gray-700 pb-2">
+              Dati Economici
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Capitale Sociale (€)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.capitale_sociale}
+                  onChange={(e) => setFormData({ ...formData, capitale_sociale: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="es. 10000.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Numero Addetti
+                </label>
+                <input
+                  type="number"
+                  value={formData.numero_addetti}
+                  onChange={(e) => setFormData({ ...formData, numero_addetti: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="es. 5"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Sito Web
+              </label>
+              <input
+                type="url"
+                value={formData.sito_web}
+                onChange={(e) => setFormData({ ...formData, sito_web: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="es. https://www.example.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Data Iscrizione RI
+              </label>
+              <input
+                type="date"
+                value={formData.data_iscrizione_ri}
+                onChange={(e) => setFormData({ ...formData, data_iscrizione_ri: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
           </div>
 
