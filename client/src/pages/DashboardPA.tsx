@@ -635,6 +635,12 @@ export default function DashboardPA() {
   const [abacusInputValue, setAbacusInputValue] = useState('');
   const [zapierInputValue, setZapierInputValue] = useState('');
   
+  // Stati di loading per invio messaggi agenti singoli
+  const [gptdevSending, setGptdevSending] = useState(false);
+  const [manusSending, setManusSending] = useState(false);
+  const [abacusSending, setAbacusSending] = useState(false);
+  const [zapierSending, setZapierSending] = useState(false);
+  
   // Rimosso: mioSendingLoading e mioSendingError (ora usati mioSending e mioSendError)
   
   // Internal traces per Vista 4 agenti (dialoghi MIO ↔ Agenti)
@@ -738,62 +744,82 @@ export default function DashboardPA() {
   
   const handleSendGptdev = async () => {
     const text = gptdevInputValue.trim();
-    if (!text) return;
+    if (!text || gptdevSending) return;
     setGptdevInputValue('');
+    setGptdevSending(true);
 
-    await sendToAgent({
-      targetAgent: 'gptdev',
-      message: text,
-      conversationId: gptdevConversationId,
-      mode: 'manual',
-      onUpdateMessages: setGptdevMessages,
-      onUpdateConversationId: setGptdevConversationId,
-    });
+    try {
+      await sendToAgent({
+        targetAgent: 'gptdev',
+        message: text,
+        conversationId: gptdevConversationId,
+        mode: 'manual',
+        onUpdateMessages: setGptdevMessages,
+        onUpdateConversationId: setGptdevConversationId,
+      });
+    } finally {
+      setGptdevSending(false);
+    }
   };
 
   const handleSendManus = async () => {
     const text = manusInputValue.trim();
-    if (!text) return;
+    if (!text || manusSending) return;
     setManusInputValue('');
+    setManusSending(true);
 
-    await sendToAgent({
-      targetAgent: 'manus',
-      message: text,
-      conversationId: manusConversationId,
-      mode: 'manual',
-      onUpdateMessages: setManusMessages,
-      onUpdateConversationId: setManusConversationId,
-    });
+    try {
+      await sendToAgent({
+        targetAgent: 'manus',
+        message: text,
+        conversationId: manusConversationId,
+        mode: 'manual',
+        onUpdateMessages: setManusMessages,
+        onUpdateConversationId: setManusConversationId,
+      });
+    } finally {
+      setManusSending(false);
+    }
   };
 
   const handleSendAbacus = async () => {
     const text = abacusInputValue.trim();
-    if (!text) return;
+    if (!text || abacusSending) return;
     setAbacusInputValue('');
+    setAbacusSending(true);
 
-    await sendToAgent({
-      targetAgent: 'abacus',
-      message: text,
-      conversationId: abacusConversationId,
-      mode: 'manual',
-      onUpdateMessages: setAbacusMessages,
-      onUpdateConversationId: setAbacusConversationId,
-    });
+    try {
+      await sendToAgent({
+        targetAgent: 'abacus',
+        message: text,
+        conversationId: abacusConversationId,
+        mode: 'manual',
+        onUpdateMessages: setAbacusMessages,
+        onUpdateConversationId: setAbacusConversationId,
+      });
+    } finally {
+      setAbacusSending(false);
+    }
   };
 
   const handleSendZapier = async () => {
     const text = zapierInputValue.trim();
-    if (!text) return;
+    if (!text || zapierSending) return;
     setZapierInputValue('');
+    setZapierSending(true);
 
-    await sendToAgent({
-      targetAgent: 'zapier',
-      message: text,
-      conversationId: zapierConversationId,
-      mode: 'manual',
-      onUpdateMessages: setZapierMessages,
-      onUpdateConversationId: setZapierConversationId,
-    });
+    try {
+      await sendToAgent({
+        targetAgent: 'zapier',
+        message: text,
+        conversationId: zapierConversationId,
+        mode: 'manual',
+        onUpdateMessages: setZapierMessages,
+        onUpdateConversationId: setZapierConversationId,
+      });
+    } finally {
+      setZapierSending(false);
+    }
   };
   
   // ELIMINATO: loadConversationHistory() - causava 404 su endpoint inesistente
@@ -4153,24 +4179,24 @@ export default function DashboardPA() {
                             <button
                               onClick={stopGeneration}
                               disabled={
-                                (selectedAgent === 'gptdev' && !gptdevLoading) ||
-                                (selectedAgent === 'manus' && !manusLoading) ||
-                                (selectedAgent === 'abacus' && !abacusLoading) ||
-                                (selectedAgent === 'zapier' && !zapierLoading)
+                                (selectedAgent === 'gptdev' && !gptdevSending && !gptdevLoading) ||
+                                (selectedAgent === 'manus' && !manusSending && !manusLoading) ||
+                                (selectedAgent === 'abacus' && !abacusSending && !abacusLoading) ||
+                                (selectedAgent === 'zapier' && !zapierSending && !zapierLoading)
                               }
                               className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-2 text-xs ${
-                                (selectedAgent === 'gptdev' && gptdevLoading) ||
-                                (selectedAgent === 'manus' && manusLoading) ||
-                                (selectedAgent === 'abacus' && abacusLoading) ||
-                                (selectedAgent === 'zapier' && zapierLoading)
+                                (selectedAgent === 'gptdev' && (gptdevSending || gptdevLoading)) ||
+                                (selectedAgent === 'manus' && (manusSending || manusLoading)) ||
+                                (selectedAgent === 'abacus' && (abacusSending || abacusLoading)) ||
+                                (selectedAgent === 'zapier' && (zapierSending || zapierLoading))
                                   ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse cursor-pointer'
                                   : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'
                               }`}
                               title={
-                                (selectedAgent === 'gptdev' && gptdevLoading) ||
-                                (selectedAgent === 'manus' && manusLoading) ||
-                                (selectedAgent === 'abacus' && abacusLoading) ||
-                                (selectedAgent === 'zapier' && zapierLoading)
+                                (selectedAgent === 'gptdev' && (gptdevSending || gptdevLoading)) ||
+                                (selectedAgent === 'manus' && (manusSending || manusLoading)) ||
+                                (selectedAgent === 'abacus' && (abacusSending || abacusLoading)) ||
+                                (selectedAgent === 'zapier' && (zapierSending || zapierLoading))
                                   ? 'Interrompi agente'
                                   : 'Nessuna elaborazione in corso'
                               }
@@ -4281,7 +4307,7 @@ export default function DashboardPA() {
                           ))}
                           
                           {/* Loading indicator */}
-                          {selectedAgent === 'gptdev' && gptdevLoading && (
+                          {selectedAgent === 'gptdev' && (gptdevSending || gptdevLoading) && (
                             <div className="p-3 rounded-lg bg-[#10b981]/10 border border-[#10b981]/20 mr-8">
                               <div className="flex items-center gap-2">
                                 <RefreshCw className="h-4 w-4 text-[#10b981] animate-spin" />
@@ -4289,7 +4315,7 @@ export default function DashboardPA() {
                               </div>
                             </div>
                           )}
-                          {selectedAgent === 'manus' && manusLoading && (
+                          {selectedAgent === 'manus' && (manusSending || manusLoading) && (
                             <div className="p-3 rounded-lg bg-[#10b981]/10 border border-[#10b981]/20 mr-8">
                               <div className="flex items-center gap-2">
                                 <RefreshCw className="h-4 w-4 text-[#10b981] animate-spin" />
@@ -4297,7 +4323,7 @@ export default function DashboardPA() {
                               </div>
                             </div>
                           )}
-                          {selectedAgent === 'abacus' && abacusLoading && (
+                          {selectedAgent === 'abacus' && (abacusSending || abacusLoading) && (
                             <div className="p-3 rounded-lg bg-[#10b981]/10 border border-[#10b981]/20 mr-8">
                               <div className="flex items-center gap-2">
                                 <RefreshCw className="h-4 w-4 text-[#10b981] animate-spin" />
@@ -4305,7 +4331,7 @@ export default function DashboardPA() {
                               </div>
                             </div>
                           )}
-                          {selectedAgent === 'zapier' && zapierLoading && (
+                          {selectedAgent === 'zapier' && (zapierSending || zapierLoading) && (
                             <div className="p-3 rounded-lg bg-[#10b981]/10 border border-[#10b981]/20 mr-8">
                               <div className="flex items-center gap-2">
                                 <RefreshCw className="h-4 w-4 text-[#10b981] animate-spin" />
@@ -4334,22 +4360,22 @@ export default function DashboardPA() {
                                 value={gptdevInputValue}
                                 onChange={(e) => setGptdevInputValue(e.target.value)}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey && !gptdevLoading) {
+                                  if (e.key === 'Enter' && !e.shiftKey && !gptdevSending) {
                                     e.preventDefault();
                                     handleSendGptdev();
                                   }
                                 }}
                                 placeholder="Messaggio a GPT Developer..."
-                                disabled={gptdevLoading}
+                                disabled={gptdevSending}
                                 className="flex-1 bg-[#0a0f1a] border border-[#6366f1]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#6366f1]"
                               />
                               <button
                                 onClick={handleSendGptdev}
-                                disabled={gptdevLoading}
+                                disabled={gptdevSending}
                                 className="bg-[#10b981] hover:bg-[#059669] disabled:bg-[#10b981]/50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                               >
                                 <Send className="h-4 w-4" />
-                                {gptdevLoading ? 'Invio...' : 'Invia'}
+                                {gptdevSending ? 'Invio...' : 'Invia'}
                               </button>
                             </>
                           )}
@@ -4360,18 +4386,18 @@ export default function DashboardPA() {
                                 value={manusInputValue}
                                 onChange={(e) => setManusInputValue(e.target.value)}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey && !manusLoading) {
+                                  if (e.key === 'Enter' && !e.shiftKey && !manusSending) {
                                     e.preventDefault();
                                     handleSendManus();
                                   }
                                 }}
                                 placeholder="Messaggio a Manus..."
-                                disabled={manusLoading}
+                                disabled={manusSending}
                                 className="flex-1 bg-[#0a0f1a] border border-[#3b82f6]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#3b82f6]"
                               />
                               <button
                                 onClick={handleSendManus}
-                                disabled={manusLoading}
+                                disabled={manusSending}
                                 className="bg-[#10b981] hover:bg-[#059669] disabled:bg-[#10b981]/50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                               >
                                 <Send className="h-4 w-4" />
@@ -4386,18 +4412,18 @@ export default function DashboardPA() {
                                 value={abacusInputValue}
                                 onChange={(e) => setAbacusInputValue(e.target.value)}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey && !abacusLoading) {
+                                  if (e.key === 'Enter' && !e.shiftKey && !abacusSending) {
                                     e.preventDefault();
                                     handleSendAbacus();
                                   }
                                 }}
                                 placeholder="Messaggio a Abacus..."
-                                disabled={abacusLoading}
+                                disabled={abacusSending}
                                 className="flex-1 bg-[#0a0f1a] border border-[#10b981]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#10b981]"
                               />
                               <button
                                 onClick={handleSendAbacus}
-                                disabled={abacusLoading}
+                                disabled={abacusSending}
                                 className="bg-[#10b981] hover:bg-[#059669] disabled:bg-[#10b981]/50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                               >
                                 <Send className="h-4 w-4" />
@@ -4412,18 +4438,18 @@ export default function DashboardPA() {
                                 value={zapierInputValue}
                                 onChange={(e) => setZapierInputValue(e.target.value)}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey && !zapierLoading) {
+                                  if (e.key === 'Enter' && !e.shiftKey && !zapierSending) {
                                     e.preventDefault();
                                     handleSendZapier();
                                   }
                                 }}
                                 placeholder="Messaggio a Zapier..."
-                                disabled={zapierLoading}
+                                disabled={zapierSending}
                                 className="flex-1 bg-[#0a0f1a] border border-[#f59e0b]/30 rounded-lg px-4 py-2 text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#f59e0b]"
                               />
                               <button
                                 onClick={handleSendZapier}
-                                disabled={zapierLoading}
+                                disabled={zapierSending}
                                 className="bg-[#10b981] hover:bg-[#059669] disabled:bg-[#10b981]/50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                               >
                                 <Send className="h-4 w-4" />
