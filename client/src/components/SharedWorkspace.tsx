@@ -109,20 +109,28 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
     await handleAutoSave();
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!editorRef.current) return;
 
-    const snapshot = editorRef.current.store.getSnapshot();
-    const dataStr = JSON.stringify(snapshot, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `workspace-${effectiveConversationId}-${Date.now()}.json`;
-    link.click();
-    
-    URL.revokeObjectURL(url);
+    try {
+      // Esporta la lavagna come PNG
+      const blob = await editorRef.current.exportToBlob({
+        format: 'png',
+        quality: 1,
+        scale: 2, // 2x resolution per qualità migliore
+      });
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `lavagna-${effectiveConversationId}-${Date.now()}.png`;
+      link.click();
+      
+      URL.revokeObjectURL(url);
+      console.log('[SharedWorkspace] Exported as PNG');
+    } catch (error) {
+      console.error('[SharedWorkspace] Export failed:', error);
+    }
   };
 
   const toggleFullscreen = () => {
@@ -223,7 +231,49 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
               },
             };
             
+            // Gestione upload immagini con Base64
+            editor.registerExternalAssetHandler('file', async ({ file }) => {
+              // Verifica che sia un'immagine
+              if (!file.type.startsWith('image/')) {
+                console.warn('[SharedWorkspace] File non supportato:', file.type);
+                return null;
+              }
+              
+              // Limite 2MB
+              const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+              if (file.size > MAX_SIZE) {
+                console.error('[SharedWorkspace] Immagine troppo grande (max 2MB):', file.size);
+                alert('Immagine troppo grande! Limite: 2MB');
+                return null;
+              }
+              
+              // Converti in Base64
+              return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const base64 = reader.result as string;
+                  resolve({
+                    id: `asset-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                    type: 'image',
+                    typeName: 'asset',
+                    props: {
+                      name: file.name,
+                      src: base64, // Base64 data URL
+                      w: 0, // tldraw calcolerà automaticamente
+                      h: 0,
+                      mimeType: file.type,
+                      isAnimated: false,
+                    },
+                    meta: {},
+                  });
+                  console.log('[SharedWorkspace] Immagine caricata come Base64:', file.name);
+                };
+                reader.readAsDataURL(file);
+              });
+            });
+            
             console.log('[SharedWorkspace] API exposed to window.sharedWorkspaceAPI');
+            console.log('[SharedWorkspace] Image upload handler registered (Base64)');
             loadWorkspaceState();
           }}
           components={components}
