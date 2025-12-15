@@ -28,6 +28,7 @@ import GuardianLogsSection from '@/components/GuardianLogsSection';
 import ImpreseQualificazioniPanel from '@/components/ImpreseQualificazioniPanel';
 import { MultiAgentChatView } from '@/components/multi-agent/MultiAgentChatView';
 import { SharedWorkspace } from '@/components/SharedWorkspace';
+import { MessageContent } from '@/components/MessageContent';
 import { callOrchestrator } from '@/api/orchestratorClient';
 import { sendAgentMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient';
 import { sendDirectMessageToHetzner, DirectMioMessage } from '@/lib/DirectMioClient';
@@ -4024,7 +4025,7 @@ export default function DashboardPA() {
                                       {new Date(msg.createdAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                   </div>
-                                  <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
+                                  <MessageContent content={msg.content} />
                                 </div>
                               </div>
                             </div>
@@ -4279,7 +4280,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
+                                <MessageContent content={msg.content} />
                                 <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
                                   <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
                                   <span className="text-[#e8fbff]/30">
@@ -4300,7 +4301,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
+                                <MessageContent content={msg.content} />
                                 <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
                                   <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
                                   <span className="text-[#e8fbff]/30">
@@ -4321,7 +4322,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
+                                <MessageContent content={msg.content} />
                                 <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
                                   <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
                                   <span className="text-[#e8fbff]/30">
@@ -4342,7 +4343,7 @@ export default function DashboardPA() {
                                   ? 'bg-red-500/10 border border-red-500/30'
                                   : 'bg-[#10b981]/10 border border-[#10b981]/20'
                               }`}>
-                                <p className="text-[#e8fbff] text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
+                                <MessageContent content={msg.content} />
                                 <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
                                   <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
                                   <span className="text-[#e8fbff]/30">
