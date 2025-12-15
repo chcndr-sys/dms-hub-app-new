@@ -113,10 +113,17 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
     if (!editorRef.current) return;
 
     try {
-      // Esporta la lavagna come PNG
-      const blob = await editorRef.current.exportToBlob({
+      // Ottieni tutte le shape della pagina corrente
+      const shapeIds = editorRef.current.getCurrentPageShapeIds();
+      if (shapeIds.size === 0) {
+        alert('Nessuna forma sulla lavagna da esportare!');
+        return;
+      }
+      
+      // Esporta la lavagna come PNG usando toImage()
+      const { blob } = await editorRef.current.toImage([...shapeIds], {
         format: 'png',
-        quality: 1,
+        background: true, // Include sfondo
         scale: 2, // 2x resolution per qualità migliore
       });
       
@@ -130,6 +137,7 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
       console.log('[SharedWorkspace] Exported as PNG');
     } catch (error) {
       console.error('[SharedWorkspace] Export failed:', error);
+      alert('Errore durante l\'export: ' + error);
     }
   };
 
