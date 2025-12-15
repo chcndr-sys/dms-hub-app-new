@@ -133,25 +133,7 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
     // Possiamo nascondere/modificare elementi UI
   };
 
-  // Esponi API globale per gli agenti
-  useEffect(() => {
-    if (editorRef.current) {
-      (window as any).sharedWorkspaceAPI = {
-        addShape: (shape: any) => {
-          if (!editorRef.current) return;
-          editorRef.current.createShape(shape);
-        },
-        getSnapshot: () => {
-          if (!editorRef.current) return null;
-          return editorRef.current.store.getSnapshot();
-        },
-        loadSnapshot: (snapshot: any) => {
-          if (!editorRef.current) return;
-          editorRef.current.store.loadSnapshot(snapshot);
-        },
-      };
-    }
-  }, []);
+  // API viene esposta in onMount callback (vedi Tldraw onMount)
 
   return (
     <div 
@@ -205,6 +187,24 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
       <Tldraw
         onMount={(editor) => {
           editorRef.current = editor;
+          
+          // Esponi API globale per gli agenti
+          (window as any).sharedWorkspaceAPI = {
+            addShape: (shape: any) => {
+              if (!editorRef.current) return;
+              editorRef.current.createShape(shape);
+            },
+            getSnapshot: () => {
+              if (!editorRef.current) return null;
+              return editorRef.current.store.getSnapshot();
+            },
+            loadSnapshot: (snapshot: any) => {
+              if (!editorRef.current) return;
+              editorRef.current.store.loadSnapshot(snapshot);
+            },
+          };
+          
+          console.log('[SharedWorkspace] API exposed to window.sharedWorkspaceAPI');
           loadWorkspaceState();
         }}
         components={components}
