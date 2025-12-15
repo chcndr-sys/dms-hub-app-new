@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Tldraw, TLEditorComponents, TLUiOverrides, useEditor, exportToBlob } from 'tldraw';
+import { Tldraw, TLEditorComponents, TLUiOverrides, useEditor, exportToBlob, AssetRecordType } from 'tldraw';
 import 'tldraw/tldraw.css';
-import { Maximize2, Minimize2, Save, Download } from 'lucide-react';
+import { Maximize2, Minimize2, Save, Download, Upload } from 'lucide-react';
 
 interface SharedWorkspaceProps {
   conversationId?: string;
@@ -17,6 +17,7 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveIntervalRef = useRef<number | undefined>();
 
   // Memoizza loadWorkspaceState per evitare re-render
@@ -143,6 +144,64 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
     }
   };
 
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editorRef.current) return;
+
+    // Limite 2MB per non appesantire il DB
+    if (file.size > 2 * 1024 * 1024) {
+      alert("L'immagine \u00e8 troppo grande (max 2MB)");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const src = reader.result as string;
+      
+      // Crea l'asset
+      const assetId = AssetRecordType.createId();
+      const imageWidth = 200; // Default width
+      const imageHeight = 200; // Default height
+      
+      editorRef.current.createAssets([{
+        id: assetId,
+        type: 'image',
+        typeName: 'asset',
+        props: {
+          name: file.name,
+          src: src, // Base64
+          w: imageWidth,
+          h: imageHeight,
+          mimeType: file.type,
+          isAnimated: false
+        },
+        meta: {}
+      }]);
+      
+      // Crea la shape che usa l'asset
+      editorRef.current.createShape({
+        type: 'image',
+        x: 100, // Posizione default
+        y: 100,
+        props: {
+          assetId: assetId,
+          w: imageWidth,
+          h: imageHeight,
+        }
+      });
+      
+      console.log('[SharedWorkspace] Image uploaded:', file.name);
+    };
+    reader.readAsDataURL(file);
+    
+    // Reset input
+    e.target.value = '';
+  };
+
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
 
@@ -195,6 +254,14 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
             <Save className="h-3.5 w-3.5" />
             Save
           </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+            style={{ display: 'none' }}
+          />
           <button
             onClick={handleExport}
             className="px-3 py-1.5 bg-[#8b5cf6]/20 hover:bg-[#8b5cf6]/30 border border-[#8b5cf6]/30 rounded-lg text-[#8b5cf6] text-xs font-medium flex items-center gap-2 transition-colors"
@@ -202,6 +269,14 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
           >
             <Download className="h-3.5 w-3.5" />
             Export
+          </button>
+          <button
+            onClick={handleUploadClick}
+            className="px-3 py-1.5 bg-[#10b981]/20 hover:bg-[#10b981]/30 border border-[#10b981]/30 rounded-lg text-[#10b981] text-xs font-medium flex items-center gap-2 transition-colors"
+            title="Upload Image"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Upload
           </button>
           <button
             onClick={toggleFullscreen}
