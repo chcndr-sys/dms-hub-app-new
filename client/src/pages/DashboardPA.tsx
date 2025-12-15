@@ -27,6 +27,7 @@ import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
 import GuardianLogsSection from '@/components/GuardianLogsSection';
 import ImpreseQualificazioniPanel from '@/components/ImpreseQualificazioniPanel';
 import { MultiAgentChatView } from '@/components/multi-agent/MultiAgentChatView';
+import { SharedWorkspace } from '@/components/SharedWorkspace';
 import { callOrchestrator } from '@/api/orchestratorClient';
 import { sendAgentMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient';
 import { sendDirectMessageToHetzner, DirectMioMessage } from '@/lib/DirectMioClient';
@@ -4521,6 +4522,27 @@ export default function DashboardPA() {
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* 🎨 SHARED WORKSPACE - Area di lavoro condivisa */}
+            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-[#14b8a6]" />
+                  Shared Workspace - Lavagna Collaborativa
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-[#e8fbff]/70 text-sm mb-4">
+                  Area di staging per output complessi, diagrammi e annotazioni. Gli agenti possono disegnare automaticamente schemi e report.
+                </p>
+                <SharedWorkspace 
+                  conversationId={mioMainConversationId}
+                  onSave={(snapshot) => {
+                    console.log('[Dashboard] Workspace saved:', snapshot);
+                  }}
+                />
               </CardContent>
             </Card>
 
