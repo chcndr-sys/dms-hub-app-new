@@ -719,8 +719,8 @@ export default function DashboardPA() {
 
     setMioInputValue('');
 
-    // Imposta la vista Guardian Logs su MIO singolo
-    setViewMode('single');
+    // Non cambiamo la vista quando si invia un messaggio
+    // setViewMode('single');  // RIMOSSO: lasciamo la vista corrente
     setSelectedAgent('mio');
 
     // 🔥 USA LA FUNZIONE DEL CONTEXT!
@@ -1555,8 +1555,7 @@ export default function DashboardPA() {
             <button
               onClick={() => {
                 setActiveTab('mio');
-                // Imposta la vista Guardian Logs su MIO singolo
-                setViewMode('single');
+                // Non impostiamo più viewMode qui, lasciamo il default 'quad'
                 setSelectedAgent('mio');
                 // Scroll automatico alla chat MIO dopo un breve delay
                 setTimeout(() => {
