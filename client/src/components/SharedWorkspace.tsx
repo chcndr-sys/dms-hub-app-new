@@ -26,10 +26,13 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
       const response = await fetch(`https://api.mio-hub.me/api/workspace/load?conversationId=${effectiveConversationId}`);
       if (response.ok) {
         const data = await response.json();
-        if (data.snapshot && editorRef.current) {
+        // Backend restituisce { success, data: { snapshot } }
+        if (data.data?.snapshot && editorRef.current) {
           // Carica lo snapshot nel editor
-          editorRef.current.store.loadSnapshot(data.snapshot);
-          console.log('[SharedWorkspace] Snapshot loaded successfully');
+          editorRef.current.store.loadSnapshot(data.data.snapshot);
+          console.log('[SharedWorkspace] Snapshot loaded successfully from database');
+        } else {
+          console.log('[SharedWorkspace] No snapshot found in response');
         }
       } else {
         console.log('[SharedWorkspace] No saved workspace found');
