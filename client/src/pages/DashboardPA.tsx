@@ -39,6 +39,7 @@ import { getLogs, getLogsStats, getGuardianHealth } from '@/api/logsClient';
 import { useConversationPersistence } from '@/hooks/useConversationPersistence';
 import { useAgentLogs } from '@/hooks/useAgentLogs';
 import { useMio } from '@/contexts/MioContext';
+import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Hook per dati reali da backend
@@ -1191,18 +1192,63 @@ export default function DashboardPA() {
     </Card>
   );
 
+  // 🟢 System Status Indicators Component
+  const SystemStatusIndicators = () => {
+    const { apiStatus, pm2Status } = useSystemStatus(30000); // Check ogni 30s
+
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'online': return 'bg-green-400';
+        case 'offline': return 'bg-red-500';
+        case 'checking': return 'bg-yellow-400';
+        default: return 'bg-gray-400';
+      }
+    };
+
+    const getStatusText = (status: string) => {
+      switch (status) {
+        case 'online': return 'Online';
+        case 'offline': return 'Offline';
+        case 'checking': return 'Check...';
+        default: return 'Unknown';
+      }
+    };
+
+    return (
+      <div className="flex items-center gap-3">
+        {/* Backend API Indicator */}
+        <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
+          <div className={`w-2 h-2 rounded-full ${getStatusColor(apiStatus)} ${apiStatus === 'online' ? 'animate-pulse' : ''}`} />
+          <span className="text-xs font-medium">API</span>
+          <span className="text-xs opacity-75">{getStatusText(apiStatus)}</span>
+        </div>
+
+        {/* PM2 Status Indicator */}
+        <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/20">
+          <div className={`w-2 h-2 rounded-full ${getStatusColor(pm2Status)} ${pm2Status === 'online' ? 'animate-pulse' : ''}`} />
+          <span className="text-xs font-medium">PM2</span>
+          <span className="text-xs opacity-75">{getStatusText(pm2Status)}</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#0b1220] overflow-x-hidden">
       {/* Header */}
-      <header className="bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white py-6 px-6 sticky top-0 z-50 shadow-lg">
+      <header className="bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white py-3 px-6 sticky top-0 z-50 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <BarChart3 className="h-8 w-8" />
+            <BarChart3 className="h-6 w-6" />
             <div>
-              <h1 className="text-2xl font-bold">Dashboard PA - DMS HUB</h1>
-              <p className="text-sm opacity-90">Analytics e Monitoraggio Ecosistema</p>
+              <h1 className="text-xl font-bold">Dashboard PA - DMS HUB</h1>
+              <p className="text-xs opacity-90">Analytics e Monitoraggio Ecosistema</p>
             </div>
           </div>
+          
+          {/* 🟢 Status Indicators */}
+          <SystemStatusIndicators />
+          
           <div className="flex items-center gap-4">
             <select
               value={selectedPeriod}
