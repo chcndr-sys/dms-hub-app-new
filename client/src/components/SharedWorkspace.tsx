@@ -16,27 +16,8 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
   const editorRef = useRef<any>(null);
   const autoSaveIntervalRef = useRef<number | undefined>();
 
-  // Auto-save ogni 10 secondi
-  useEffect(() => {
-    autoSaveIntervalRef.current = window.setInterval(() => {
-      handleAutoSave();
-    }, 10000);
-
-    return () => {
-      if (autoSaveIntervalRef.current) {
-        window.clearInterval(autoSaveIntervalRef.current);
-      }
-    };
-  }, [conversationId]);
-
-  // Carica stato salvato al mount
-  useEffect(() => {
-    if (conversationId) {
-      loadWorkspaceState();
-    }
-  }, [conversationId]);
-
-  const loadWorkspaceState = async () => {
+  // Memoizza loadWorkspaceState per evitare re-render
+  const loadWorkspaceState = useCallback(async () => {
     try {
       const response = await fetch(`https://api.mio-hub.me/api/workspace/load?conversationId=${conversationId}`);
       if (response.ok) {
@@ -49,9 +30,10 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
     } catch (error) {
       console.error('[SharedWorkspace] Failed to load state:', error);
     }
-  };
+  }, [conversationId]);
 
-  const handleAutoSave = async () => {
+  // Memoizza handleAutoSave per evitare re-render
+  const handleAutoSave = useCallback(async () => {
     if (!editorRef.current || !conversationId) return;
 
     try {
@@ -76,7 +58,27 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [conversationId, onSave]);
+
+  // Auto-save ogni 10 secondi
+  useEffect(() => {
+    autoSaveIntervalRef.current = window.setInterval(() => {
+      handleAutoSave();
+    }, 10000);
+
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        window.clearInterval(autoSaveIntervalRef.current);
+      }
+    };
+  }, [handleAutoSave]);
+
+  // Carica stato salvato al mount
+  useEffect(() => {
+    if (conversationId) {
+      loadWorkspaceState();
+    }
+  }, [conversationId, loadWorkspaceState]);
 
   const handleManualSave = async () => {
     await handleAutoSave();
