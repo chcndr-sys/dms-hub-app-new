@@ -19,6 +19,7 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
   const editorRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveIntervalRef = useRef<number | undefined>();
+  const autoReloadIntervalRef = useRef<number | undefined>();
 
   // Memoizza loadWorkspaceState per evitare re-render
   const loadWorkspaceState = useCallback(async () => {
@@ -97,12 +98,14 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
 
   // Auto-reload ogni 5 secondi per caricare shapes aggiunte dagli agenti
   useEffect(() => {
-    const autoReloadInterval = window.setInterval(() => {
+    autoReloadIntervalRef.current = window.setInterval(() => {
       loadWorkspaceState();
     }, 5000);
 
     return () => {
-      window.clearInterval(autoReloadInterval);
+      if (autoReloadIntervalRef.current) {
+        window.clearInterval(autoReloadIntervalRef.current);
+      }
     };
   }, [effectiveConversationId, loadWorkspaceState]);
 
@@ -159,8 +162,14 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const src = reader.result as string;
+      
+      // PAUSA AUTO-RELOAD durante upload
+      if (autoReloadIntervalRef.current) {
+        window.clearInterval(autoReloadIntervalRef.current);
+        console.log('[SharedWorkspace] Auto-reload paused for image upload');
+      }
       
       // Crea l'asset
       const assetId = AssetRecordType.createId();
@@ -196,8 +205,15 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
       
       console.log('[SharedWorkspace] Image uploaded:', file.name);
       
-      // Salva immediatamente per evitare che l'auto-reload cancelli l'immagine
-      handleAutoSave();
+      // AWAIT salvataggio completo
+      await handleAutoSave();
+      console.log('[SharedWorkspace] Image saved to database');
+      
+      // RIPRENDI AUTO-RELOAD dopo salvataggio
+      autoReloadIntervalRef.current = window.setInterval(() => {
+        loadWorkspaceState();
+      }, 5000);
+      console.log('[SharedWorkspace] Auto-reload resumed');
     };
     reader.readAsDataURL(file);
     
