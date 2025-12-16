@@ -85,79 +85,117 @@ export default function RoutePage() {
     );
   };
 
-  const handlePlanRoute = () => {
+  const handlePlanRoute = async () => {
     if (!origin || !destination) {
       toast.error('Inserisci partenza e destinazione');
       return;
     }
 
+    if (!userLocation) {
+      toast.error('Rileva prima la tua posizione');
+      return;
+    }
+
     setLoading(true);
 
-    // Calcola opzioni multi-modali
-    setTimeout(() => {
-      const options = [
-        {
-          mode: 'walk',
-          label: 'A piedi',
-          icon: <Footprints className="h-4 w-4" />,
-          duration: 35,
-          distance: 2.3,
-          co2: 0,
-          credits: 25,
-          sustainability: 100
-        },
-        {
-          mode: 'bike',
-          label: 'Bicicletta',
-          icon: <Bike className="h-4 w-4" />,
-          duration: 12,
-          distance: 2.3,
-          co2: 0,
-          credits: 20,
-          sustainability: 100
-        },
-        {
-          mode: 'transit',
-          label: 'Bus/Tram',
-          icon: <Bus className="h-4 w-4" />,
-          duration: 18,
-          distance: 2.8,
-          co2: 85,
-          credits: 15,
-          sustainability: 75
-        },
-        {
-          mode: 'car',
-          label: 'Auto',
-          icon: <Car className="h-4 w-4" />,
-          duration: 8,
-          distance: 2.5,
-          co2: 450,
-          credits: 0,
-          sustainability: 20
-        }
-      ];
+    try {
+      // Parse destination (può essere "Posteggio #1" o indirizzo)
+      const stallMatch = destination.match(/Posteggio #(\d+)/);
+      const stallId = stallMatch ? parseInt(stallMatch[1]) : null;
 
-      setRouteOptions(options);
-
-      // Calcola piano per modalità selezionata
-      const selectedOption = options.find(o => o.mode === mode) || options[0];
-      const mockPlan: RoutePlan = {
-        stops: [
-          { name: 'Mercato Esperanto', address: 'Via Roma 12, Grosseto', duration: 15 },
-          { name: 'Negozio BIO', address: 'Piazza Dante 5, Grosseto', duration: 10 },
-          { name: 'Libreria Indipendente', address: 'Via Mazzini 23, Grosseto', duration: 8 },
-        ],
-        totalDistance: selectedOption.distance,
-        totalTime: selectedOption.duration,
-        co2Saved: 450 - selectedOption.co2, // CO₂ risparmiata vs auto
-        creditsEarned: selectedOption.credits,
+      // Mappa modalità frontend → backend
+      const modeMap: Record<string, string> = {
+        'walk': 'walking',
+        'bike': 'cycling',
+        'transit': 'bus',
+        'car': 'driving'
       };
 
-      setPlan(mockPlan);
+      const apiMode = modeMap[mode] || 'walking';
+
+      // Chiama API routing
+      const response = await fetch('http://157.90.29.66:3000/api/routing/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start: {
+            lat: userLocation.lat,
+            lng: userLocation.lng
+          },
+          destination: stallId ? { stallId } : { marketId: 1 },
+          mode: apiMode,
+          includeTPL: mode === 'transit'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Errore calcolo percorso');
+      }
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Errore calcolo percorso');
+      }
+
+      // Converti risposta API in RoutePlan
+      const route = data.route;
+      const plan: RoutePlan = {
+        stops: [
+          {
+            name: route.destination.marketName || 'Destinazione',
+            address: route.destination.marketAddress || '',
+            duration: route.summary.duration_min
+          }
+        ],
+        totalDistance: parseFloat(route.summary.distance_km),
+        totalTime: route.summary.duration_min,
+        co2Saved: route.summary.co2_saved_g,
+        creditsEarned: route.summary.credits
+      };
+
+      setPlan(plan);
+      setDirections(route);
+      
+      // Calcola anche altre modalità per confronto
+      const modes = ['walking', 'cycling', 'bus', 'driving'];
+      const options = await Promise.all(
+        modes.map(async (m) => {
+          try {
+            const res = await fetch('http://157.90.29.66:3000/api/routing/calculate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                start: { lat: userLocation.lat, lng: userLocation.lng },
+                destination: stallId ? { stallId } : { marketId: 1 },
+                mode: m
+              })
+            });
+            const d = await res.json();
+            return {
+              mode: m === 'walking' ? 'walk' : m === 'cycling' ? 'bike' : m === 'bus' ? 'transit' : 'car',
+              label: m === 'walking' ? 'A piedi' : m === 'cycling' ? 'Bicicletta' : m === 'bus' ? 'Bus/Tram' : 'Auto',
+              icon: m === 'walking' ? <Footprints className="h-4 w-4" /> : m === 'cycling' ? <Bike className="h-4 w-4" /> : m === 'bus' ? <Bus className="h-4 w-4" /> : <Car className="h-4 w-4" />,
+              duration: d.route.summary.duration_min,
+              distance: parseFloat(d.route.summary.distance_km),
+              co2: m === 'driving' ? 192 * parseFloat(d.route.summary.distance_km) : m === 'bus' ? 68 * parseFloat(d.route.summary.distance_km) : 0,
+              credits: d.route.summary.credits,
+              sustainability: m === 'driving' ? 20 : m === 'bus' ? 75 : 100
+            };
+          } catch (e) {
+            return null;
+          }
+        })
+      );
+
+      setRouteOptions(options.filter(o => o !== null) as any[]);
       setLoading(false);
-      toast.success(`Percorso ${selectedOption.label} calcolato!`);
-    }, 1500);
+      toast.success(`✅ Percorso calcolato! +${route.summary.credits} crediti`);
+    } catch (error) {
+      console.error('Error calculating route:', error);
+      setLoading(false);
+      toast.error('❌ Errore calcolo percorso. Riprova.');
+    }
   };
 
   const handleStartNavigation = () => {
