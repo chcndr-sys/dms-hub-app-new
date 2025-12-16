@@ -229,7 +229,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/vendors`);
+      const response = await fetch(`${API_BASE_URL}/api/imprese`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const json = await response.json();
       
@@ -238,15 +238,15 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
         throw new Error('Formato risposta non valido');
       }
       
-      // Map English fields to Italian frontend schema
+      // Map imprese fields to frontend schema
       const mappedData = json.data.map((v: any) => ({
         id: v.id,
-        code: v.code,
-        denominazione: v.business_name,
-        partita_iva: v.vat_number,
-        referente: v.contact_name,
-        telefono: v.phone,
-        stato: v.status,
+        code: v.codice_fiscale, // Usa CF come code
+        denominazione: v.denominazione,
+        partita_iva: v.partita_iva,
+        referente: v.rappresentante_legale_nome + ' ' + v.rappresentante_legale_cognome,
+        telefono: v.telefono,
+        stato: v.stato_impresa,
       }));
       
       console.log('[MarketCompaniesTab] fetchCompanies: caricati', mappedData.length, 'imprese');
