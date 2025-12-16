@@ -109,9 +109,25 @@ export default function RoutePage() {
     setLoading(true);
 
     try {
-      // Parse destination (può essere "Posteggio #1" o indirizzo)
+      // Parse destination (può essere coordinate GPS, stallId, o marketId)
+      const coordMatch = destination.match(/\(([-\d.]+),\s*([-\d.]+)\)/);
       const stallMatch = destination.match(/Posteggio #(\d+)/);
-      const stallId = stallMatch ? parseInt(stallMatch[1]) : null;
+      
+      let destinationPayload: any;
+      
+      if (coordMatch) {
+        // Coordinate GPS dirette (es: "Frutta e Verdura (42.758, 11.112)")
+        destinationPayload = {
+          lat: parseFloat(coordMatch[1]),
+          lng: parseFloat(coordMatch[2])
+        };
+      } else if (stallMatch) {
+        // StallId (es: "Posteggio #1")
+        destinationPayload = { stallId: parseInt(stallMatch[1]) };
+      } else {
+        // Fallback a marketId
+        destinationPayload = { marketId: 1 };
+      }
 
       // Mappa modalità frontend → backend
       const modeMap: Record<string, string> = {
@@ -133,7 +149,7 @@ export default function RoutePage() {
             lat: userLocation.lat,
             lng: userLocation.lng
           },
-          destination: stallId ? { stallId } : { marketId: 1 },
+          destination: destinationPayload,
           mode: apiMode,
           includeTPL: mode === 'transit'
         })
@@ -178,7 +194,7 @@ export default function RoutePage() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 start: { lat: userLocation.lat, lng: userLocation.lng },
-                destination: stallId ? { stallId } : { marketId: 1 },
+                destination: destinationPayload,
                 mode: m
               })
             });
@@ -210,27 +226,39 @@ export default function RoutePage() {
   };
 
   const handleStartNavigation = () => {
-    if (!directions) {
+    if (!plan || !userLocation) {
       toast.error('Calcola prima il percorso');
       return;
     }
     
-    setNavigationActive(true);
-    setCurrentStep(0);
-    toast.success('🧭Navigazione avviata! +15 crediti al completamento');
+    // Parse coordinate destinazione
+    const coordMatch = destination.match(/\(([-\d.]+),\s*([-\d.]+)\)/);
     
-    // Avvia tracking posizione real-time
-    if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setUserLocation({ lat: latitude, lng: longitude });
-          // TODO: Calcolare distanza da prossima svolta e aggiornare currentStep
-        },
-        (error) => console.error('Error tracking location:', error),
-        { enableHighAccuracy: true, maximumAge: 0 }
-      );
+    if (!coordMatch) {
+      toast.error('Coordinate destinazione non valide');
+      return;
     }
+    
+    const destLat = parseFloat(coordMatch[1]);
+    const destLng = parseFloat(coordMatch[2]);
+    
+    // Mappa modalità per Google Maps
+    const travelModeMap: Record<string, string> = {
+      'walk': 'walking',
+      'bike': 'bicycling',
+      'transit': 'transit',
+      'car': 'driving'
+    };
+    
+    const travelMode = travelModeMap[mode] || 'walking';
+    
+    // URL Google Maps con navigazione attiva
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${destLat},${destLng}&travelmode=${travelMode}`;
+    
+    // Apri Google Maps (o Apple Maps su iOS)
+    window.open(mapsUrl, '_blank');
+    
+    toast.success('🧭 Navigazione avviata! +' + plan.creditsEarned + ' crediti al completamento');
   };
 
   return (
@@ -458,7 +486,9 @@ export default function RoutePage() {
               </CardContent>
             </Card>
 
-            {/* Mappa Percorso */}
+            {/* Mappa Percorso - TEMPORANEAMENTE DISABILITATA (Google Maps API key mancante) */}
+            {/* TODO: Sostituire con Leaflet o configurare Google Maps API key */}
+            {/*
             {origin && destination && (
               <Card>
                 <CardHeader>
@@ -491,6 +521,7 @@ export default function RoutePage() {
                 </CardContent>
               </Card>
             )}
+            */
 
             {/* Tappe del percorso */}
             <Card>
@@ -521,58 +552,7 @@ export default function RoutePage() {
               </CardContent>
             </Card>
 
-            {/* Istruzioni Navigazione Turn-by-Turn */}
-            {navigationActive && directions && (
-              <Card className="border-green-500 bg-green-50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-green-900">
-                    <Navigation className="h-5 w-5 animate-pulse" />
-                    Navigazione Attiva
-                  </CardTitle>
-                  <CardDescription>Segui le istruzioni passo-passo</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {directions.routes[0]?.legs[0]?.steps.map((step: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className={`flex items-start gap-3 p-3 rounded-lg transition-all ${
-                          idx === currentStep
-                            ? 'bg-green-200 border-2 border-green-600'
-                            : 'bg-white border border-gray-200'
-                        }`}
-                      >
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                          idx === currentStep ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'
-                        }`}>
-                          {idx + 1}
-                        </div>
-                        <div className="flex-1">
-                          <p
-                            className={`font-semibold ${
-                              idx === currentStep ? 'text-green-900 text-lg' : 'text-gray-700'
-                            }`}
-                            dangerouslySetInnerHTML={{ __html: step.instructions }}
-                          />
-                          <p className="text-sm text-gray-600 mt-1">
-                            {step.distance.text} • {step.duration.text}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <Button
-                    onClick={() => {
-                      setNavigationActive(false);
-                      toast.success('✅ Navigazione completata! +15 crediti guadagnati');
-                    }}
-                    className="w-full mt-4 bg-red-600 hover:bg-red-700"
-                  >
-                    Termina Navigazione
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+            {/* Turn-by-turn navigation gestita da Google/Apple Maps */}
 
             {/* Azioni */}
             <div className="grid grid-cols-2 gap-4">
