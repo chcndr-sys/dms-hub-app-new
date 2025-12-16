@@ -1704,7 +1704,8 @@ export default function DashboardPA() {
                         number: s.number,
                         status: s.status,
                         type: s.type,
-                        vendor_name: s.vendor_business_name || undefined
+                        vendor_name: s.vendor_business_name || undefined,
+                        impresa_id: s.impresa_id || undefined
                       }));
                       return (
                         <MarketMapComponent
@@ -1830,7 +1831,8 @@ export default function DashboardPA() {
                         number: s.number,
                         status: s.status,
                         type: s.type,
-                        vendor_name: s.vendor_business_name || undefined
+                        vendor_name: s.vendor_business_name || undefined,
+                        impresa_id: s.impresa_id || undefined
                       }));
                       return (
                         <MarketMapComponent
@@ -3253,7 +3255,8 @@ export default function DashboardPA() {
                         number: s.number,
                         status: s.status,
                         type: s.type,
-                        vendor_name: s.vendor_business_name || undefined
+                        vendor_name: s.vendor_business_name || undefined,
+                        impresa_id: s.impresa_id || undefined
                       }));
                       return (
                         <MarketMapComponent
@@ -3442,7 +3445,8 @@ export default function DashboardPA() {
                         number: s.number,
                         status: s.status,
                         type: s.type,
-                        vendor_name: s.vendor_business_name || undefined
+                        vendor_name: s.vendor_business_name || undefined,
+                        impresa_id: s.impresa_id || undefined
                       }));
                       return (
                         <MarketMapComponent
