@@ -226,10 +226,11 @@ export function MarketMapComponent({
             />
           )}
 
-          {/* Marker rosso "M" al centro mercato */}
-          <Marker
-            position={mapCenter}
-            icon={L.divIcon({
+          {/* Marker rosso "M" al centro mercato (nascosto in modalità routing) */}
+          {!routeConfig?.enabled && (
+            <Marker
+              position={mapCenter}
+              icon={L.divIcon({
               className: 'market-center-marker',
               html: `<div style="
                 background: #ef4444;
@@ -262,7 +263,8 @@ export function MarketMapComponent({
                 </div>
               </div>
             </Popup>
-          </Marker>
+            </Marker>
+          )}
 
           {/* Piazzole (stalls) */}
           {(() => {
