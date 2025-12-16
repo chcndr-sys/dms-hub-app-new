@@ -15,7 +15,7 @@ import BottomNav from '@/components/BottomNav';
 import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
-import MobilityMap from '@/components/MobilityMap';
+// import MobilityMap from '@/components/MobilityMap'; // Rimosso - non più utilizzato
 import { trpc } from '@/lib/trpc';
 
 interface RouteStop {
@@ -42,11 +42,12 @@ export default function RoutePage() {
   const [routeOptions, setRouteOptions] = useState<any[]>([]);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
-  const [navigationActive, setNavigationActive] = useState(false);
-  const [directions, setDirections] = useState<any>(null);
-  const [currentStep, setCurrentStep] = useState(0);
+  // State rimossi - navigazione gestita da app native
+  // const [navigationActive, setNavigationActive] = useState(false);
+  // const [directions, setDirections] = useState<any>(null);
+  // const [currentStep, setCurrentStep] = useState(0);
   
-  const mobilityData = trpc.mobility.list.useQuery();
+  // const mobilityData = trpc.mobility.list.useQuery(); // Rimosso - non più utilizzato
 
   // Auto-carica destinazione da URL params (coordinate o indirizzo)
   useEffect(() => {
@@ -182,7 +183,7 @@ export default function RoutePage() {
       };
 
       setPlan(plan);
-      setDirections(route);
+      // setDirections(route); // Rimosso - non più utilizzato
       
       // Calcola anche altre modalità per confronto
       const modes = ['walking', 'cycling', 'bus', 'driving'];
@@ -205,7 +206,7 @@ export default function RoutePage() {
               icon: m === 'walking' ? <Footprints className="h-4 w-4" /> : m === 'cycling' ? <Bike className="h-4 w-4" /> : m === 'bus' ? <Bus className="h-4 w-4" /> : <Car className="h-4 w-4" />,
               duration: d.route.summary.duration_min,
               distance: parseFloat(d.route.summary.distance_km),
-              co2: m === 'driving' ? 192 * parseFloat(d.route.summary.distance_km) : m === 'bus' ? 68 * parseFloat(d.route.summary.distance_km) : 0,
+              co2_saved: d.route.summary.co2_saved_g, // CO₂ risparmiata dal backend
               credits: d.route.summary.credits,
               sustainability: m === 'driving' ? 20 : m === 'bus' ? 75 : 100
             };
@@ -362,7 +363,7 @@ export default function RoutePage() {
                         <span className="font-semibold text-sm">{option.label}</span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {option.duration} min • {option.co2}g CO₂
+                        {option.duration} min • -{option.co2_saved}g CO₂
                       </div>
                       <div className="text-xs font-semibold text-green-600 mt-1">
                         +{option.credits} crediti
@@ -465,13 +466,13 @@ export default function RoutePage() {
                     <p className="font-semibold mb-2">Risparmio CO₂ vs Auto:</p>
                     <div className="flex items-center justify-between">
                       <span>Auto (benzina)</span>
-                      <span className="font-bold text-red-600">450g CO₂</span>
+                      <span className="font-bold text-red-600">
+                        {Math.round(plan.totalDistance * 193)}g CO₂
+                      </span>
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span>{routeOptions.find(o => o.mode === mode)?.label || 'Tua scelta'}</span>
-                      <span className="font-bold text-green-600">
-                        {routeOptions.find(o => o.mode === mode)?.co2 || 0}g CO₂
-                      </span>
+                      <span>A piedi</span>
+                      <span className="font-bold text-green-600">0g CO₂</span>
                     </div>
                     <div className="mt-2 pt-2 border-t border-green-200">
                       <div className="flex items-center justify-between">
@@ -486,42 +487,7 @@ export default function RoutePage() {
               </CardContent>
             </Card>
 
-            {/* Mappa Percorso - TEMPORANEAMENTE DISABILITATA (Google Maps API key mancante) */}
-            {/* TODO: Sostituire con Leaflet o configurare Google Maps API key */}
-            {/*
-            {origin && destination && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mappa Percorso</CardTitle>
-                  <CardDescription>Visualizzazione interattiva del percorso calcolato</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[400px] rounded-lg overflow-hidden">
-                    <MobilityMap
-                      stops={mobilityData.data?.filter((m: any) => m.type === 'bus' || m.type === 'tram').slice(0, 5).map((m: any) => ({
-                        id: m.id,
-                        type: m.type,
-                        stopName: m.stopName,
-                        lineNumber: m.lineNumber,
-                        lineName: m.lineName,
-                        lat: m.lat,
-                        lng: m.lng,
-                        nextArrival: m.nextArrival,
-                        occupancy: m.occupancy,
-                        status: m.status
-                      })) || []}
-                      showDirections={true}
-                      origin={origin}
-                      destination={destination}
-                      center={{ lat: 42.7606, lng: 11.1133 }}
-                      zoom={13}
-                      onDirectionsCalculated={(dirs) => setDirections(dirs)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            */
+            {/* Mappa Percorso rimossa - Navigazione gestita da Google/Apple Maps nativa */}
 
             {/* Tappe del percorso */}
             <Card>
