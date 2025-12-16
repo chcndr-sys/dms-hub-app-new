@@ -264,8 +264,8 @@ export default function RoutePage() {
     const stallMatch = destination.match(/Posteggio #(\d+)/);
     const stallNumber = stallMatch ? stallMatch[1] : '';
     
-    // URL mappa GIS con routing
-    const mapUrl = `/mappa?route=true&userLat=${userLocation.lat}&userLng=${userLocation.lng}&destLat=${destLat}&destLng=${destLng}&mode=${mode}${stallNumber ? `&stallNumber=${stallNumber}` : ''}`;
+    // URL mappa GIS con routing (usa travelMode mappato)
+    const mapUrl = `/mappa?route=true&userLat=${userLocation.lat}&userLng=${userLocation.lng}&destLat=${destLat}&destLng=${destLng}&mode=${travelMode}${stallNumber ? `&stallNumber=${stallNumber}` : ''}`;
     
     // Redirect a mappa GIS
     window.location.href = mapUrl;
