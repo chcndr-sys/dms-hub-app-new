@@ -22,7 +22,7 @@ import GestioneMercati from '@/components/GestioneMercati';
 import Integrazioni from '@/components/Integrazioni';
 import { GISMap } from '@/components/GISMap';
 import { MarketMapComponent } from '@/components/MarketMapComponent';
-import { MapModal } from '@/components/MapModal';
+
 import MIOAgent from '@/components/MIOAgent';
 import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
 import GuardianLogsSection from '@/components/GuardianLogsSection';
@@ -395,7 +395,7 @@ export default function DashboardPA() {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [realtimeData, setRealtimeData] = useState(mockData.realtime);
    const [activeTab, setActiveTab] = useState('overview');
-  const [mapModalOpen, setMapModalOpen] = useState(false);
+
   const [tccValue, setTccValue] = useState(0.20);
   
   // Carbon Credits - Simulatore completo
@@ -1278,16 +1278,6 @@ export default function DashboardPA() {
           <h3 className="text-sm font-semibold text-[#e8fbff]/70 mb-3">Accesso Rapido Applicativi</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-3">
             <QuickAccessButton href="/" icon={<Store className="h-5 w-5" />} label="Home" />
-            <button
-              onClick={() => {
-                console.log('[DEBUG] Opening MapModal...');
-                setMapModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all bg-[#14b8a6]/10 border-[#14b8a6]/30 hover:bg-[#14b8a6]/20 text-[#14b8a6]"
-            >
-              <MapPin className="h-5 w-5" />
-              <span className="text-sm font-medium">Mappa</span>
-            </button>
             <QuickAccessButton href="/wallet" icon={<Leaf className="h-5 w-5" />} label="Wallet" />
             <QuickAccessButton href="/route" icon={<TrendingUp className="h-5 w-5" />} label="Route" />
             <QuickAccessButton href="/civic" icon={<AlertCircle className="h-5 w-5" />} label="Segnala" />
@@ -1681,7 +1671,7 @@ export default function DashboardPA() {
               }`}
             >
               <Globe className="h-6 w-6" />
-              <span className="text-xs font-medium">Workspace</span>
+              <span className="text-xs font-medium">Gestione HUB</span>
             </button>
             <button
               onClick={() => window.location.href = '/council'}
@@ -4870,26 +4860,155 @@ function LogsSection() {
             </CardContent>
           </Card>
         </TabsContent>
-          {/* TAB: MAPPA GIS (placeholder vuoto) */}
+          {/* TAB: MAPPA GIS */}
           <TabsContent value="mappa" className="space-y-6">
+            {/* Barra Ricerca e Filtri */}
             <Card className="bg-[#1a2332] border-[#14b8a6]/30">
               <CardContent className="pt-6">
-                <div className="text-center py-12">
-                  <MapPin className="h-16 w-16 text-[#14b8a6]/40 mx-auto mb-4" />
-                  <p className="text-[#e8fbff]/60 text-lg">Tab Mappa GIS</p>
-                  <p className="text-sm text-[#e8fbff]/40 mt-2">Contenuto da collegare</p>
+                <div className="flex flex-col md:flex-row gap-4">
+                  {/* Input Ricerca */}
+                  <div className="flex-1">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Cerca mercato, posteggio, impresa..."
+                        className="w-full px-4 py-3 pl-10 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/40 focus:outline-none focus:border-[#14b8a6] transition-colors"
+                      />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#14b8a6]/60" />
+                    </div>
+                  </div>
+
+                  {/* Filtri Posteggi */}
+                  <div className="flex gap-2 flex-wrap">
+                    <button className="px-4 py-2 rounded-lg border border-[#14b8a6] bg-[#14b8a6] text-white font-medium text-sm transition-colors">
+                      Tutti
+                    </button>
+                    <button className="px-4 py-2 rounded-lg border border-[#10b981]/30 bg-[#10b981]/10 text-[#10b981] hover:bg-[#10b981]/20 font-medium text-sm transition-colors">
+                      Liberi
+                    </button>
+                    <button className="px-4 py-2 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/20 font-medium text-sm transition-colors">
+                      Occupati
+                    </button>
+                    <button className="px-4 py-2 rounded-lg border border-[#f59e0b]/30 bg-[#f59e0b]/10 text-[#f59e0b] hover:bg-[#f59e0b]/20 font-medium text-sm transition-colors">
+                      Riservati
+                    </button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Statistiche Mercato */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#e8fbff]/60">Posteggi Totali</p>
+                      <p className="text-2xl font-bold text-[#e8fbff]">186</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-[#14b8a6]/20 flex items-center justify-center">
+                      <Store className="h-6 w-6 text-[#14b8a6]" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-[#1a2332] border-[#10b981]/30">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#e8fbff]/60">Liberi</p>
+                      <p className="text-2xl font-bold text-[#10b981]">45</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-[#10b981]/20 flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-[#10b981]" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-[#1a2332] border-[#ef4444]/30">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#e8fbff]/60">Occupati</p>
+                      <p className="text-2xl font-bold text-[#ef4444]">128</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-[#ef4444]/20 flex items-center justify-center">
+                      <XCircle className="h-6 w-6 text-[#ef4444]" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-[#1a2332] border-[#f59e0b]/30">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#e8fbff]/60">Riservati</p>
+                      <p className="text-2xl font-bold text-[#f59e0b]">13</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-[#f59e0b]/20 flex items-center justify-center">
+                      <AlertCircle className="h-6 w-6 text-[#f59e0b]" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Mappa GIS */}
+            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-[#14b8a6]" />
+                  Pianta Mercato Grosseto - GIS Interattiva
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden">
+                  <MarketMapComponent
+                    marketId={1}
+                    onStallClick={(stallId) => console.log('Stall clicked:', stallId)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Legenda */}
+            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-base">
+                  <Filter className="h-4 w-4 text-[#14b8a6]" />
+                  Legenda Mappa
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-[#10b981]"></div>
+                    <span className="text-sm text-[#e8fbff]/80">Posteggio Libero</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-[#ef4444]"></div>
+                    <span className="text-sm text-[#e8fbff]/80">Posteggio Occupato</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-[#f59e0b]"></div>
+                    <span className="text-sm text-[#e8fbff]/80">Posteggio Riservato</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-[#64748b]"></div>
+                    <span className="text-sm text-[#e8fbff]/80">Non Assegnabile</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* TAB: WORKSPACE (placeholder vuoto) */}
+          {/* TAB: GESTIONE HUB (placeholder vuoto) */}
           <TabsContent value="workspace" className="space-y-6">
             <Card className="bg-[#1a2332] border-[#06b6d4]/30">
               <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <Globe className="h-16 w-16 text-[#06b6d4]/40 mx-auto mb-4" />
-                  <p className="text-[#e8fbff]/60 text-lg">Tab Workspace</p>
+                  <p className="text-[#e8fbff]/60 text-lg">Gestione HUB</p>
                   <p className="text-sm text-[#e8fbff]/40 mt-2">Contenuto da definire</p>
                 </div>
               </CardContent>
@@ -4897,7 +5016,7 @@ function LogsSection() {
           </TabsContent>
       </Tabs>
       <PanicButton />
-      <MapModal isOpen={mapModalOpen} onClose={() => setMapModalOpen(false)} />
+
     </>
   );
 }
