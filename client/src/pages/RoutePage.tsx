@@ -91,9 +91,12 @@ export default function RoutePage() {
       return;
     }
 
-    if (!userLocation) {
-      toast.error('Rileva prima la tua posizione');
-      return;
+    // Geocode origin if not using GPS
+    let startCoords = userLocation;
+    if (!startCoords) {
+      // TODO: Geocoding API per convertire indirizzo in coordinate
+      // Per ora usa coordinate fisse Grosseto centro
+      startCoords = { lat: 42.760, lng: 11.110 };
     }
 
     setLoading(true);
@@ -119,8 +122,8 @@ export default function RoutePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           start: {
-            lat: userLocation.lat,
-            lng: userLocation.lng
+            lat: startCoords.lat,
+            lng: startCoords.lng
           },
           destination: stallId ? { stallId } : { marketId: 1 },
           mode: apiMode,
@@ -166,7 +169,7 @@ export default function RoutePage() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                start: { lat: userLocation.lat, lng: userLocation.lng },
+                start: { lat: startCoords.lat, lng: startCoords.lng },
                 destination: stallId ? { stallId } : { marketId: 1 },
                 mode: m
               })
