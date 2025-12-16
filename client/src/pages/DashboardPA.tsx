@@ -4644,12 +4644,162 @@ export default function DashboardPA() {
 
           {/* TAB: MAPPA GIS */}
           <TabsContent value="mappa" className="space-y-6">
+            {/* Barra Ricerca e Filtri */}
             <Card className="bg-[#1a2332] border-[#14b8a6]/30">
               <CardContent className="pt-6">
-                <div className="text-center py-12">
-                  <MapPin className="h-16 w-16 text-[#14b8a6]/40 mx-auto mb-4" />
-                  <p className="text-[#e8fbff]/60 text-lg">Mappa GIS</p>
-                  <p className="text-sm text-[#e8fbff]/40 mt-2">Contenuto da implementare</p>
+                <div className="flex flex-col md:flex-row gap-4">
+                  {/* Input Ricerca */}
+                  <div className="flex-1">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Cerca mercato, posteggio, impresa..."
+                        className="w-full px-4 py-3 pl-10 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/40 focus:outline-none focus:border-[#14b8a6] transition-colors"
+                      />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#14b8a6]/60" />
+                    </div>
+                  </div>
+
+                  {/* Filtri Posteggi */}
+                  <div className="flex gap-2 flex-wrap">
+                    <button className="px-4 py-2 rounded-lg border border-[#14b8a6] bg-[#14b8a6] text-white font-medium text-sm transition-colors">
+                      Tutti
+                    </button>
+                    <button className="px-4 py-2 rounded-lg border border-[#10b981]/30 bg-[#10b981]/10 text-[#10b981] hover:bg-[#10b981]/20 font-medium text-sm transition-colors">
+                      Liberi
+                    </button>
+                    <button className="px-4 py-2 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/20 font-medium text-sm transition-colors">
+                      Occupati
+                    </button>
+                    <button className="px-4 py-2 rounded-lg border border-[#f59e0b]/30 bg-[#f59e0b]/10 text-[#f59e0b] hover:bg-[#f59e0b]/20 font-medium text-sm transition-colors">
+                      Riservati
+                    </button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Statistiche Mercato */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#e8fbff]/60">Posteggi Totali</p>
+                      <p className="text-2xl font-bold text-[#e8fbff]">186</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-[#14b8a6]/20 flex items-center justify-center">
+                      <Store className="h-6 w-6 text-[#14b8a6]" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-[#1a2332] border-[#10b981]/30">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#e8fbff]/60">Liberi</p>
+                      <p className="text-2xl font-bold text-[#10b981]">45</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-[#10b981]/20 flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-[#10b981]" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-[#1a2332] border-[#ef4444]/30">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#e8fbff]/60">Occupati</p>
+                      <p className="text-2xl font-bold text-[#ef4444]">128</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-[#ef4444]/20 flex items-center justify-center">
+                      <XCircle className="h-6 w-6 text-[#ef4444]" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-[#1a2332] border-[#f59e0b]/30">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#e8fbff]/60">Riservati</p>
+                      <p className="text-2xl font-bold text-[#f59e0b]">13</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-[#f59e0b]/20 flex items-center justify-center">
+                      <AlertCircle className="h-6 w-6 text-[#f59e0b]" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Mappa GIS */}
+            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-[#14b8a6]" />
+                  Pianta Mercato Grosseto - GIS Interattiva
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {gisMapData && gisStalls.length > 0 ? (
+                  <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden" style={{ height: '600px' }}>
+                    <MarketMapComponent
+                      refreshKey={gisMapRefreshKey}
+                      mapData={gisMapData}
+                      center={gisMapCenter}
+                      zoom={17}
+                      height="100%"
+                      stallsData={gisStalls.map(s => ({
+                        id: s.id,
+                        number: s.number,
+                        status: s.status,
+                        type: s.type,
+                        vendor_name: s.vendor_business_name || undefined,
+                        impresa_id: s.impresa_id || undefined
+                      }))}
+                      onStallClick={(stallNumber) => console.log('Stall clicked:', stallNumber)}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-[600px] text-[#e8fbff]/60">
+                    <div className="text-center">
+                      <MapPin className="h-12 w-12 mx-auto mb-4 text-[#14b8a6]/40" />
+                      <p>Caricamento mappa GIS...</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Legenda */}
+            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-base">
+                  <Filter className="h-4 w-4 text-[#14b8a6]" />
+                  Legenda Mappa
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-[#10b981]"></div>
+                    <span className="text-sm text-[#e8fbff]/80">Posteggio Libero</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-[#ef4444]"></div>
+                    <span className="text-sm text-[#e8fbff]/80">Posteggio Occupato</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-[#f59e0b]"></div>
+                    <span className="text-sm text-[#e8fbff]/80">Posteggio Riservato</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-[#64748b]"></div>
+                    <span className="text-sm text-[#e8fbff]/80">Non Assegnabile</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
