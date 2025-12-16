@@ -310,34 +310,16 @@ export default function RoutePage() {
       return;
     }
     
-    // Parse coordinate destinazione
-    const coordMatch = destination.match(/\(([-\d.]+),\s*([-\d.]+)\)/);
-    
-    if (!coordMatch) {
-      toast.error('Coordinate destinazione non valide');
-      return;
+    // Scroll alla mappa GIS
+    const mapElement = document.querySelector('.leaflet-container')?.parentElement?.parentElement;
+    if (mapElement) {
+      mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     
-    const destLat = parseFloat(coordMatch[1]);
-    const destLng = parseFloat(coordMatch[2]);
-    
-    // Mappa modalità per Google Maps
-    const travelModeMap: Record<string, string> = {
-      'walk': 'walking',
-      'bike': 'bicycling',
-      'transit': 'transit',
-      'car': 'driving'
-    };
-    
-    const travelMode = travelModeMap[mode] || 'walking';
-    
-    // URL Google Maps per navigazione nativa
-    const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${destLat},${destLng}&travelmode=${travelMode}`;
-    
-    // Apri Google Maps in nuova tab/app nativa
-    window.open(mapsUrl, '_blank');
-    
-    toast.success('🧭 Navigazione avviata! +' + plan.creditsEarned + ' crediti al completamento');
+    // Toast con istruzioni
+    toast.success('🧭 Navigazione attiva! Segui il percorso verde sulla mappa. +' + plan.creditsEarned + ' crediti al completamento', {
+      duration: 5000
+    });
   };
 
   return (
