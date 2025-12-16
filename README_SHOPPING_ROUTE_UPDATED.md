@@ -1,7 +1,7 @@
 # 🛣️ SHOPPING ROUTE ETICO - BLUEPRINT AGGIORNATO
 
-**Versione:** 3.5.1 (Fix Navigazione)  
-**Data:** 16 Dicembre 2024  
+**Versione:** 3.6.0 (Mappa GIS Integrata)  
+**Data:** 16 Dicembre 2025  
 **Status:** ✅ Production Ready
 
 ---
@@ -14,7 +14,10 @@ Shopping Route Etico è il sistema di routing sostenibile di MIO-HUB che guida g
 - ✅ Calcolo percorso ottimizzato (API backend)
 - ✅ Supporto 4 modalità trasporto (piedi, bici, bus, auto)
 - ✅ Calcolo CO₂ risparmiata e crediti guadagnati
-- ✅ **Navigazione nativa** via Google/Apple Maps (NUOVO)
+- ✅ **Navigazione nativa** via Google/Apple Maps
+- ✅ **Mappa GIS integrata** con 160 posteggi Mercato Grosseto (NUOVO v3.6)
+- ✅ **Search & Filtri** posteggi in tempo reale (NUOVO v3.6)
+- ✅ **Routing dinamico** con percorso verde sulla mappa (NUOVO v3.6)
 - ✅ Integrazione con vetrine commercianti
 - ✅ Coordinate GPS pre-compilate da vetrina
 
@@ -183,17 +186,25 @@ Trova fermate trasporto pubblico vicine.
        ├─ Crediti: +1926
        └─ Confronto modalità (piedi/bici/bus/auto)
        ↓
-5. Avvia Navigazione
+5. Visualizza Mappa GIS (NUOVO v3.6)
+   ├─ Mappa sempre visibile sotto le statistiche
+   ├─ Mostra 160 posteggi Mercato Grosseto
+   ├─ Search bar: cerca per posteggio, impresa, mercato
+   ├─ Filtri: Tutti, Liberi, Occupati, Riservati
+   ├─ Statistiche real-time (Totali/Liberi/Occupati/Riservati)
+   └─ Percorso verde appare sulla mappa quando calcolato
+       ↓
+6. Avvia Navigazione
    ├─ Click: "Avvia Navigazione"
    ├─ Apre Google Maps (Android) o Apple Maps (iOS)
    └─ URL: https://www.google.com/maps/dir/?api=1&origin=...&destination=...&travelmode=walking
        ↓
-6. Navigazione Nativa
+7. Navigazione Nativa
    ├─ App Maps con turn-by-turn vocale
    ├─ Traffico real-time
    └─ Indicazioni passo-passo
        ↓
-7. Arrivo Destinazione
+8. Arrivo Destinazione
    └─ Sistema assegna crediti (TODO: integrazione gamification)
 ```
 
@@ -347,6 +358,31 @@ curl "https://api.mio-hub.me/api/routing/tpl-stops?lat=42.76&lng=11.11&radius=10
 
 ## 🐛 FIX RECENTI
 
+### v3.6.0 - Mappa GIS Integrata (16 Dic 2025)
+**Commit:** `2f7ea09`
+
+**Nuove Funzionalità:**
+- ✅ Mappa GIS sempre visibile in RoutePage
+- ✅ Search bar per cercare posteggi/imprese/mercati
+- ✅ Filtri stato: Tutti, Liberi, Occupati, Riservati
+- ✅ Statistiche real-time con card colorate
+- ✅ Routing dinamico: percorso verde appare quando calcolato
+- ✅ Design responsive per mobile/tablet/desktop
+- ✅ Stesso design di Dashboard PA Mappa GIS tab
+
+**Implementazione:**
+1. ✅ Import MarketMapComponent in RoutePage
+2. ✅ Stati GIS: gisStalls, gisMapData, gisSearchQuery, gisStatusFilter
+3. ✅ useEffect per fetch dati GIS da API backend
+4. ✅ Logica filtro search/status
+5. ✅ routeConfig dinamico basato su plan e userLocation
+6. ✅ Sezione mappa con search, filtri, statistiche, legenda
+
+**File Modificati:**
+- `client/src/pages/RoutePage.tsx` (+279 righe)
+
+---
+
 ### v3.5.1 - Fix Crash Google Maps (16 Dic 2024)
 **Commit:** `3fe4a35`
 
@@ -385,12 +421,6 @@ curl "https://api.mio-hub.me/api/routing/tpl-stops?lat=42.76&lng=11.11&radius=10
 ---
 
 ## 🔮 ROADMAP
-
-### v3.6 - Mappa Leaflet (Opzionale)
-- [ ] Sostituire `MobilityMap` con Leaflet
-- [ ] Visualizzare tracciato percorso sulla mappa
-- [ ] Nessuna API key necessaria
-- Tempo: 2-3 ore
 
 ### v3.7 - OpenRouteService API Key
 - [ ] Configurare API key nel backend
@@ -453,15 +483,19 @@ dms-hub-app-new/
 Shopping Route Etico è **production ready** con:
 - ✅ Calcolo percorso funzionante
 - ✅ Navigazione nativa affidabile
+- ✅ **Mappa GIS integrata con 160 posteggi** (v3.6)
+- ✅ **Search & Filtri real-time** (v3.6)
+- ✅ **Routing dinamico con percorso verde** (v3.6)
 - ✅ Zero dipendenze esterne (API key)
 - ✅ Supporto multi-piattaforma (Android/iOS/Desktop)
 - ✅ Integrazione completa con vetrine
+- ✅ Design responsive mobile-first
 
 **Pronto per testing utenti reali su smartphone.**
 
 ---
 
-**Versione:** 3.5.1  
-**Ultimo aggiornamento:** 16 Dicembre 2024  
+**Versione:** 3.6.0  
+**Ultimo aggiornamento:** 16 Dicembre 2025  
 **Sviluppato da:** Manus AI Agent  
 **Per:** Alessandro Checchi - MIO-HUB Project
