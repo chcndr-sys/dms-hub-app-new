@@ -4962,12 +4962,33 @@ function LogsSection() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden">
-                  <MarketMapComponent
-                    marketId={1}
-                    onStallClick={(stallId) => console.log('Stall clicked:', stallId)}
-                  />
-                </div>
+                {gisMapData && gisStalls.length > 0 ? (
+                  <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden" style={{ height: '600px' }}>
+                    <MarketMapComponent
+                      refreshKey={gisMapRefreshKey}
+                      mapData={gisMapData}
+                      center={gisMapCenter}
+                      zoom={17}
+                      height="100%"
+                      stallsData={gisStalls.map(s => ({
+                        id: s.id,
+                        number: s.number,
+                        status: s.status,
+                        type: s.type,
+                        vendor_name: s.vendor_business_name || undefined,
+                        impresa_id: s.impresa_id || undefined
+                      }))}
+                      onStallClick={(stallNumber) => console.log('Stall clicked:', stallNumber)}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-[600px] text-[#e8fbff]/60">
+                    <div className="text-center">
+                      <MapPin className="h-12 w-12 mx-auto mb-4 text-[#14b8a6]/40" />
+                      <p>Caricamento mappa GIS...</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
