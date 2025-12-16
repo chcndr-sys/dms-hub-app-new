@@ -19,9 +19,22 @@ import {
   Globe,
   MessageCircle,
   Navigation,
+  Pencil,
+  Upload,
+  X,
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 
 const API_BASE_URL = MIHUB_API_BASE_URL;
@@ -64,6 +77,15 @@ export default function VetrinePage() {
   const [selectedImpresa, setSelectedImpresa] = useState<Impresa | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  // Stati modal modifica
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editDescrizione, setEditDescrizione] = useState('');
+  const [editSocialFacebook, setEditSocialFacebook] = useState('');
+  const [editSocialInstagram, setEditSocialInstagram] = useState('');
+  const [editSocialWebsite, setEditSocialWebsite] = useState('');
+  const [editSocialWhatsapp, setEditSocialWhatsapp] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -117,6 +139,63 @@ export default function VetrinePage() {
     }
   };
 
+  const handleOpenEditModal = () => {
+    if (!selectedImpresa) return;
+    
+    // Popola i campi del form con i dati attuali
+    setEditDescrizione(selectedImpresa.vetrina_descrizione || '');
+    setEditSocialFacebook(selectedImpresa.social_facebook || '');
+    setEditSocialInstagram(selectedImpresa.social_instagram || '');
+    setEditSocialWebsite(selectedImpresa.social_website || '');
+    setEditSocialWhatsapp(selectedImpresa.social_whatsapp || '');
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveVetrina = async () => {
+    if (!selectedImpresa) return;
+    
+    setIsSaving(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/imprese/${selectedImpresa.id}/vetrina`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vetrina_descrizione: editDescrizione,
+          social_facebook: editSocialFacebook,
+          social_instagram: editSocialInstagram,
+          social_website: editSocialWebsite,
+          social_whatsapp: editSocialWhatsapp,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Aggiorna i dati locali
+        setSelectedImpresa({
+          ...selectedImpresa,
+          vetrina_descrizione: editDescrizione,
+          social_facebook: editSocialFacebook,
+          social_instagram: editSocialInstagram,
+          social_website: editSocialWebsite,
+          social_whatsapp: editSocialWhatsapp,
+        });
+        
+        toast.success('Vetrina aggiornata con successo!');
+        setIsEditModalOpen(false);
+      } else {
+        toast.error(result.error || 'Errore nell\'aggiornamento');
+      }
+    } catch (error) {
+      console.error('Error saving vetrina:', error);
+      toast.error('Errore nel salvataggio');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -136,19 +215,31 @@ export default function VetrinePage() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="bg-primary text-primary-foreground p-3 shadow-md">
-          <div className="container max-w-2xl flex items-center gap-4">
+          <div className="container max-w-2xl flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={() => navigate('/vetrine')}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <Store className="h-6 w-6" />
+                <h1 className="text-lg font-bold">Vetrina Negozio</h1>
+              </div>
+            </div>
+            {/* Pulsante Modifica (visibile solo al proprietario - per ora sempre visibile) */}
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               className="text-primary-foreground hover:bg-primary-foreground/20"
-              onClick={() => navigate('/vetrine')}
+              onClick={handleOpenEditModal}
             >
-              <ArrowLeft className="h-5 w-5" />
+              <Pencil className="h-4 w-4 mr-2" />
+              Modifica
             </Button>
-            <div className="flex items-center gap-2">
-              <Store className="h-6 w-6" />
-              <h1 className="text-lg font-bold">Vetrina Negozio</h1>
-            </div>
           </div>
         </header>
 
@@ -353,6 +444,119 @@ export default function VetrinePage() {
             </Card>
           )}
         </div>
+
+        {/* Modal Modifica Vetrina */}
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>✏️ Modifica Vetrina</DialogTitle>
+              <DialogDescription>
+                Aggiorna le informazioni della tua vetrina digitale
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6 py-4">
+              {/* Descrizione */}
+              <div className="space-y-2">
+                <Label htmlFor="descrizione">Descrizione</Label>
+                <Textarea
+                  id="descrizione"
+                  placeholder="Descrivi la tua attività..."
+                  value={editDescrizione}
+                  onChange={(e) => setEditDescrizione(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {editDescrizione.length} caratteri
+                </p>
+              </div>
+
+              {/* Social Media */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold">Social Media</h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="facebook">
+                    <Facebook className="h-4 w-4 inline mr-2" />
+                    Facebook
+                  </Label>
+                  <Input
+                    id="facebook"
+                    type="url"
+                    placeholder="https://facebook.com/tuapagina"
+                    value={editSocialFacebook}
+                    onChange={(e) => setEditSocialFacebook(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="instagram">
+                    <Instagram className="h-4 w-4 inline mr-2" />
+                    Instagram
+                  </Label>
+                  <Input
+                    id="instagram"
+                    placeholder="@tuoaccount o URL completo"
+                    value={editSocialInstagram}
+                    onChange={(e) => setEditSocialInstagram(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="website">
+                    <Globe className="h-4 w-4 inline mr-2" />
+                    Sito Web
+                  </Label>
+                  <Input
+                    id="website"
+                    type="url"
+                    placeholder="https://tuosito.it"
+                    value={editSocialWebsite}
+                    onChange={(e) => setEditSocialWebsite(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp">
+                    <MessageCircle className="h-4 w-4 inline mr-2" />
+                    WhatsApp
+                  </Label>
+                  <Input
+                    id="whatsapp"
+                    type="tel"
+                    placeholder="+39 333 1234567"
+                    value={editSocialWhatsapp}
+                    onChange={(e) => setEditSocialWhatsapp(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* TODO: Upload Immagini - da implementare nella prossima iterazione */}
+              <div className="p-4 border border-dashed rounded-lg bg-muted/50">
+                <p className="text-sm text-muted-foreground text-center">
+                  📸 Upload immagini disponibile a breve
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditModalOpen(false)}
+                disabled={isSaving}
+              >
+                Annulla
+              </Button>
+              <Button
+                onClick={handleSaveVetrina}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Salvataggio...' : '💾 Salva Modifiche'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
