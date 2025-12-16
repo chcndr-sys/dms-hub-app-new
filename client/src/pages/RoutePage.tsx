@@ -778,12 +778,19 @@ export default function RoutePage() {
                       impresa_id: s.impresa_id || undefined
                     }))}
                     onStallClick={(stallNumber) => console.log('Stall clicked:', stallNumber)}
-                    routeConfig={plan && userLocation ? {
-                      enabled: true,
-                      userLocation: { lat: userLocation.lat, lng: userLocation.lng },
-                      destination: gisMapCenter ? { lat: gisMapCenter[0], lng: gisMapCenter[1] } : { lat: 42.7634, lng: 11.1139 },
-                      mode: mode === 'walk' ? 'walking' : mode === 'bike' ? 'cycling' : 'driving'
-                    } : undefined}
+                    routeConfig={plan && userLocation ? (() => {
+                      // Parse coordinate destinazione da stringa (es. "Frutta e Verdura Rossi - Posteggio #1 (42.75892858, 11.11205399)")
+                      const coordMatch = destination.match(/\(([\-\d.]+),\s*([\-\d.]+)\)/);
+                      const destLat = coordMatch ? parseFloat(coordMatch[1]) : (gisMapCenter ? gisMapCenter[0] : 42.7634);
+                      const destLng = coordMatch ? parseFloat(coordMatch[2]) : (gisMapCenter ? gisMapCenter[1] : 11.1139);
+                      
+                      return {
+                        enabled: true,
+                        userLocation: { lat: userLocation.lat, lng: userLocation.lng },
+                        destination: { lat: destLat, lng: destLng },
+                        mode: mode === 'walk' ? 'walking' : mode === 'bike' ? 'cycling' : 'driving'
+                      };
+                    })() : undefined}
                   />
                 </div>
               ) : (
