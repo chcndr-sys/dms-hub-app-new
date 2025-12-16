@@ -708,7 +708,41 @@ export default function DashboardPA() {
   const [gisMapData, setGisMapData] = useState<any | null>(null);
   const [gisMapCenter, setGisMapCenter] = useState<[number, number] | null>(null);
   const [gisMapRefreshKey, setGisMapRefreshKey] = useState(0);
+  
+  // GIS Map filters
+  const [gisSearchQuery, setGisSearchQuery] = useState('');
+  const [gisStatusFilter, setGisStatusFilter] = useState<string>('all');
   const gisMarketId = 1; // Mercato Grosseto ID=1 (default)
+  
+  // Filtered stalls based on search and status
+  const filteredGisStalls = gisStalls.filter(stall => {
+    // Filter by status
+    if (gisStatusFilter !== 'all' && stall.status !== gisStatusFilter) {
+      return false;
+    }
+    
+    // Filter by search query
+    if (gisSearchQuery) {
+      const query = gisSearchQuery.toLowerCase();
+      return (
+        // Posteggio
+        stall.number?.toLowerCase().includes(query) ||
+        stall.gis_slot_id?.toLowerCase().includes(query) ||
+        // Impresa
+        stall.vendor_business_name?.toLowerCase().includes(query) ||
+        // Mercato (hardcoded per ora - Grosseto)
+        'grosseto'.includes(query) ||
+        'mercato grosseto'.includes(query) ||
+        'toscana'.includes(query) ||
+        // Giorno mercato
+        'giovedì'.includes(query) ||
+        'giovedi'.includes(query) ||
+        'thursday'.includes(query)
+      );
+    }
+    
+    return true;
+  });
   
   // Format timestamp for Guardian logs
   const formatTimestamp = (timestamp: string) => {
@@ -4655,6 +4689,8 @@ export default function DashboardPA() {
                       <input
                         type="text"
                         placeholder="Cerca mercato, posteggio, impresa..."
+                        value={gisSearchQuery}
+                        onChange={(e) => setGisSearchQuery(e.target.value)}
                         className="w-full px-4 py-3 pl-10 pr-12 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/40 focus:outline-none focus:border-[#14b8a6] transition-colors"
                       />
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#14b8a6]/60" />
@@ -4756,7 +4792,7 @@ export default function DashboardPA() {
                       center={gisMapCenter}
                       zoom={17}
                       height="100%"
-                      stallsData={gisStalls.map(s => ({
+                      stallsData={filteredGisStalls.map(s => ({
                         id: s.id,
                         number: s.number,
                         status: s.status,
@@ -5053,6 +5089,8 @@ function LogsSection() {
                       <input
                         type="text"
                         placeholder="Cerca mercato, posteggio, impresa..."
+                        value={gisSearchQuery}
+                        onChange={(e) => setGisSearchQuery(e.target.value)}
                         className="w-full px-4 py-3 pl-10 pr-12 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/40 focus:outline-none focus:border-[#14b8a6] transition-colors"
                       />
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#14b8a6]/60" />
@@ -5154,7 +5192,7 @@ function LogsSection() {
                       center={gisMapCenter}
                       zoom={17}
                       height="100%"
-                      stallsData={gisStalls.map(s => ({
+                      stallsData={filteredGisStalls.map(s => ({
                         id: s.id,
                         number: s.number,
                         status: s.status,
