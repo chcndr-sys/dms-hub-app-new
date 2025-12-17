@@ -128,8 +128,19 @@ function parseTRPCRouter(filePath, fileName) {
       
       // Estrai descrizione da commento (se presente)
       let description = '';
-      if (i > 0 && lines[i - 1].trim().startsWith('//')) {
-        description = lines[i - 1].trim().replace('//', '').trim();
+      // Cerca nei 5 commenti precedenti, partendo dal più lontano
+      // Così troviamo prima la descrizione vera e non le righe decorative
+      for (let j = 5; j >= 1; j--) {
+        if (i - j < 0) continue;
+        const commentLine = lines[i - j].trim();
+        if (commentLine.startsWith('//')) {
+          const cleanComment = commentLine.replace(/^\/\/\s*/, '').trim();
+          // Ignora righe con solo caratteri ripetuti (===, ---, etc)
+          if (cleanComment && !/^[=\-_*#]+$/.test(cleanComment)) {
+            description = cleanComment;
+            break; // Trovata descrizione valida, stop
+          }
+        }
       }
       
       endpoints.push({
@@ -276,11 +287,11 @@ function mergeWithExistingIndex(newEndpoints, existingIndexPath) {
     
     const existing = existingEndpointsMap.get(newEp.path);
     if (existing) {
-      // Preserva descrizione e note custom
+      // Usa nuova descrizione (auto-discovered), fallback a quella esistente
       mergedEndpoints.push({
         ...newEp,
-        description: existing.description || newEp.description,
-        implementation_note: existing.implementation_note || newEp.implementation_note,
+        description: newEp.description || existing.description,
+        implementation_note: newEp.implementation_note || existing.implementation_note,
         test: existing.test || newEp.test
       });
     } else {
