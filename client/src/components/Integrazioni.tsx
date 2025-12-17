@@ -502,12 +502,12 @@ function APIDashboard() {
                       <div className="flex items-center gap-2 mb-1">
                         <p className="text-xs font-mono text-[#e8fbff]/80 truncate">{endpoint.path}</p>
                         {endpoint.test?.enabled === false ? (
-                          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 border text-[10px]">
-                            Not Implemented
+                          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 border text-[10px]">
+                            Manual Test
                           </Badge>
                         ) : (
                           <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border text-[10px]">
-                            Implemented
+                            Auto Test
                           </Badge>
                         )}
                       </div>
