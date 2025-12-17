@@ -13,7 +13,8 @@
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "docs:sync": "node scripts/sync_api_docs.cjs",
     "docs:blueprint": "node scripts/generate_blueprint.cjs",
-    "docs:update": "npm run docs:sync && npm run docs:blueprint"
+    "docs:update": "npm run docs:sync && npm run docs:blueprint",
+    "test:agents": "node scripts/test_agents_capabilities.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
