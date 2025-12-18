@@ -95,6 +95,15 @@
       "params": {
         "fields": "array (es: [{selector: '#email', value: 'test@example.com'}])"
       }
+    },
+    {
+      "name": "browser.getContent",
+      "description": "Ottiene tutto il contenuto testuale visibile di una pagina web. Restituisce testo pulito senza tag HTML, ideale per estrarre informazioni (titoli, notizie, prezzi) usando l'intelligenza dell'LLM. Non richiede CSS selectors.",
+      "agent": "manus",
+      "method": "POST",
+      "params": {
+        "url": "string (optional: se omesso usa pagina corrente)"
+      }
     }
   ]
 }
