@@ -116,12 +116,14 @@ export default function APITokensPage() {
     setSaving(true);
     
     try {
-      const response = await fetch(`/api/mihub/secrets/${envVar}`, {
+      const response = await fetch(`/admin/secrets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          name: envVar,
+          scope: 'global',
           value: value,
         }),
       });
