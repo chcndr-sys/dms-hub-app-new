@@ -35,7 +35,7 @@ export function MioProvider({ children }: { children: ReactNode }) {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // 🔨 FORZATURA ID STORICO (Ripristino messaggi)
-  const FORCE_ID = 'mio-main';
+  const FORCE_ID = 'dfab3001-0969-4d6d-93b5-e6f69eecb794';
   
   useEffect(() => {
     const current = localStorage.getItem('mioMainConversationId');
@@ -65,16 +65,17 @@ export function MioProvider({ children }: { children: ReactNode }) {
       try {
         const params = new URLSearchParams({
           conversation_id: storedId,
-          // Nessun limite - carica tutti i messaggi dal database
+          agent_name: 'mio',
+          limit: '200',
         });
         
-        const response = await fetch(`https://api.mio-hub.me/api/mio/agent-logs?${params.toString()}`);
+        const response = await fetch(`/api/mio/agent-logs?${params.toString()}`);
         if (!response.ok) return;
         
         const data = await response.json();
-        if (data.data && data.data.length > 0) {
+        if (data.logs && data.logs.length > 0) {
           // Converti formato backend → MioMessage
-          const loadedMessages: MioMessage[] = data.data.map((log: any) => ({
+          const loadedMessages: MioMessage[] = data.logs.map((log: any) => ({
             id: log.id,
             role: log.role as 'user' | 'assistant' | 'system',
             content: log.message || log.content || '',
