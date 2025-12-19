@@ -3,7 +3,7 @@ import { PanicButton } from '@/components/PanicButton';
 import { useLocation } from 'wouter';
 import { 
   Users, TrendingUp, Store, ShoppingCart, Leaf, MapPin, 
-  Activity, BarChart3, PieChart, ArrowUpRight, ArrowDownRight,
+  Activity, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, ArrowDown,
   Bike, Car, Bus, Footprints, Zap, Package, Globe, Award,
   Calendar, Clock, AlertCircle, AlertTriangle, CheckCircle, Download, FileText, Bot, Send,
   Shield, Lock, UserCheck, Terminal, Bug, Code, Wrench, RefreshCw,
