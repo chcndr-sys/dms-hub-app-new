@@ -73,9 +73,9 @@ export function MioProvider({ children }: { children: ReactNode }) {
         if (!response.ok) return;
         
         const data = await response.json();
-        if (data.logs && data.logs.length > 0) {
+        if (data.data && data.data.length > 0) {
           // Converti formato backend → MioMessage
-          const loadedMessages: MioMessage[] = data.logs.map((log: any) => ({
+          const loadedMessages: MioMessage[] = data.data.map((log: any) => ({
             id: log.id,
             role: log.role as 'user' | 'assistant' | 'system',
             content: log.message || log.content || '',
