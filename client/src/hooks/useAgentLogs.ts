@@ -79,6 +79,7 @@ export function useAgentLogs({
               agent_name: msg.agent_name || msg.agent,
               role: msg.role,
               content: msg.content || msg.message,
+              sender: msg.sender, // 🔥 FIX: Include sender per mostrare "Tu" invece di "da MIO"
               created_at: msg.created_at,
               pending: false
             }));
