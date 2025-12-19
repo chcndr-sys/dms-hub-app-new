@@ -65,7 +65,6 @@ export function MioProvider({ children }: { children: ReactNode }) {
       try {
         const params = new URLSearchParams({
           conversation_id: storedId,
-          agent_name: 'mio',
           // Nessun limite - carica tutti i messaggi dal database
         });
         
