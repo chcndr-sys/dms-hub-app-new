@@ -63,19 +63,15 @@ export function MioProvider({ children }: { children: ReactNode }) {
       if (!storedId) return;
 
       try {
-        const params = new URLSearchParams({
-          conversation_id: storedId,
-          agent_name: 'mio',
-          limit: '500',  // Massimo consentito dal backend
-        });
-        
-        const response = await fetch(`/api/mio/agent-logs?${params.toString()}`);
+        // 🚀 TUBO DRITTO - Usa endpoint diretto per mio-main
+        const response = await fetch(`/api/mihub/direct-messages/mio-main?limit=500`);
         if (!response.ok) return;
         
         const data = await response.json();
-        if (data.logs && data.logs.length > 0) {
+        const rawMessages = data.messages || data.data || [];
+        if (rawMessages.length > 0) {
           // Converti formato backend → MioMessage
-          const loadedMessages: MioMessage[] = data.logs.map((log: any) => ({
+          const loadedMessages: MioMessage[] = rawMessages.map((log: any) => ({
             id: log.id,
             role: log.role as 'user' | 'assistant' | 'system',
             content: log.message || log.content || '',
