@@ -63,20 +63,20 @@ export function MioProvider({ children }: { children: ReactNode }) {
       if (!storedId) return;
 
       try {
-        // 🚀 TUBO DRITTO - Usa endpoint diretto per mio-main
-        const response = await fetch(`/api/mihub/direct-messages/mio-main?limit=500`);
+        // 🚀 TUBO DRITTO - Connessione diretta database → frontend (bypassa Hetzner)
+        const response = await fetch(`/api/mihub/get-messages?conversation_id=mio-main&limit=500`);
         if (!response.ok) return;
         
         const data = await response.json();
-        const rawMessages = data.messages || data.data || [];
+        const rawMessages = data.messages || data.logs || [];
         if (rawMessages.length > 0) {
           // Converti formato backend → MioMessage
           const loadedMessages: MioMessage[] = rawMessages.map((log: any) => ({
             id: log.id,
             role: log.role as 'user' | 'assistant' | 'system',
-            content: log.message || log.content || '',
+            content: log.content || log.message || '',  // 🔥 FIX: Preferisci content (agent_messages)
             createdAt: log.created_at,
-            agentName: log.agent_name,
+            agentName: log.agent_name || log.agent || log.sender,  // 🔥 FIX: Fallback multipli
           }));
           
           setMessages(loadedMessages);

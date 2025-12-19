@@ -87,7 +87,7 @@ export default async function handler(
 
       return res.status(200).json({
         success: true,
-        logs: messages,
+        messages: messages,  // 🔥 FIX: Usa 'messages' invece di 'logs'
         pagination: {
           total: messages.length,
           limit: parseInt(limit as string),
