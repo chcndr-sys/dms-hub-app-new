@@ -524,6 +524,7 @@ export default function DashboardPA() {
   } = useAgentLogs({
     conversationId: viewMode === 'quad' ? mioGptdevConversationId : null, // 🔥 Chat MIO ↔ GPT Dev (isolata)
     agentName: 'gptdev',
+    mode: 'auto',  // 🎯 Vista 4: coordinamento MIO
     enablePolling: viewMode === 'quad',
     excludeUserMessages: true, // 🔥 Solo coordinamento MIO ↔ GPT Dev
   });
@@ -534,6 +535,7 @@ export default function DashboardPA() {
   } = useAgentLogs({
     conversationId: viewMode === 'quad' ? mioManusConversationId : null, // 🔥 Chat MIO ↔ Manus (isolata)
     agentName: 'manus',
+    mode: 'auto',  // 🎯 Vista 4: coordinamento MIO
     enablePolling: viewMode === 'quad',
     excludeUserMessages: true, // 🔥 Solo coordinamento MIO ↔ Manus
   });
@@ -544,6 +546,7 @@ export default function DashboardPA() {
   } = useAgentLogs({
     conversationId: viewMode === 'quad' ? mioAbacusConversationId : null, // 🔥 Chat MIO ↔ Abacus (isolata)
     agentName: 'abacus',
+    mode: 'auto',  // 🎯 Vista 4: coordinamento MIO
     enablePolling: viewMode === 'quad',
     excludeUserMessages: true, // 🔥 Solo coordinamento MIO ↔ Abacus
   });
@@ -554,6 +557,7 @@ export default function DashboardPA() {
   } = useAgentLogs({
     conversationId: viewMode === 'quad' ? mioZapierConversationId : null, // 🔥 Chat MIO ↔ Zapier (isolata)
     agentName: 'zapier',
+    mode: 'auto',  // 🎯 Vista 4: coordinamento MIO
     enablePolling: viewMode === 'quad',
     excludeUserMessages: true, // 🔥 Solo coordinamento MIO ↔ Zapier
   });
@@ -568,6 +572,7 @@ export default function DashboardPA() {
   } = useAgentLogs({
     conversationId: manusConversationId,
     agentName: 'manus',
+    mode: 'direct',  // 🎯 Chat singola: conversazione diretta User ↔ Manus
   });
   
   const manusMessages = manusMessagesRaw.map(msg => ({
@@ -588,6 +593,7 @@ export default function DashboardPA() {
   } = useAgentLogs({
     conversationId: abacusConversationId,
     agentName: 'abacus',
+    mode: 'direct',  // 🎯 Chat singola: conversazione diretta User ↔ Abacus
   });
   
   const abacusMessages = abacusMessagesRaw.map(msg => ({
@@ -608,6 +614,7 @@ export default function DashboardPA() {
   } = useAgentLogs({
     conversationId: zapierConversationId,
     agentName: 'zapier',
+    mode: 'direct',  // 🎯 Chat singola: conversazione diretta User ↔ Zapier
   });
   
   // Hook separato per GPT Developer (vista singola isolata)
@@ -619,6 +626,7 @@ export default function DashboardPA() {
   } = useAgentLogs({
     conversationId: gptdevConversationId,
     agentName: 'gptdev',
+    mode: 'direct',  // 🎯 Chat singola: conversazione diretta User ↔ GPT Dev
   });
   
   const gptdevMessages = gptdevMessagesRaw.map(msg => ({
