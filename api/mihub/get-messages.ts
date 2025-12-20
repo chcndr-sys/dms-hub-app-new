@@ -53,15 +53,15 @@ export default async function handler(
           SELECT 
             id,
             conversation_id,
-            agent_name,
+            agent,
             sender,
             role,
-            content,
+            message,
             created_at,
             metadata
           FROM agent_messages
           WHERE conversation_id = ${conversation_id}
-            AND agent_name = ${agent_name}
+            AND agent = ${agent_name}
           ORDER BY created_at ASC
           LIMIT ${parseInt(limit as string)}
         `;
@@ -70,10 +70,10 @@ export default async function handler(
           SELECT 
             id,
             conversation_id,
-            agent_name,
+            agent,
             sender,
             role,
-            content,
+            message,
             created_at,
             metadata
           FROM agent_messages
