@@ -4365,7 +4365,7 @@ export default function DashboardPA() {
                               }`}>
                                 <MessageContent content={msg.content} />
                                 <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
-                                  <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
+                                  <span>da {msg.role === 'user' ? 'Tu' : (msg.agent || 'agente')}</span>
                                   <span className="text-[#e8fbff]/30">
                                     {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                                   </span>
@@ -4386,7 +4386,7 @@ export default function DashboardPA() {
                               }`}>
                                 <MessageContent content={msg.content} />
                                 <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
-                                  <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
+                                  <span>da {msg.role === 'user' ? 'Tu' : (msg.agent || 'agente')}</span>
                                   <span className="text-[#e8fbff]/30">
                                     {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                                   </span>
@@ -4407,7 +4407,7 @@ export default function DashboardPA() {
                               }`}>
                                 <MessageContent content={msg.content} />
                                 <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
-                                  <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
+                                  <span>da {msg.role === 'user' ? 'Tu' : (msg.agent || 'agente')}</span>
                                   <span className="text-[#e8fbff]/30">
                                     {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                                   </span>
@@ -4428,7 +4428,7 @@ export default function DashboardPA() {
                               }`}>
                                 <MessageContent content={msg.content} />
                                 <div className="flex items-center justify-between text-[#e8fbff]/50 text-xs mt-1">
-                                  <span>da {msg.role === 'user' ? (msg.sender === 'user' ? 'Tu' : 'MIO') : (msg.agent || 'agente')}</span>
+                                  <span>da {msg.role === 'user' ? 'Tu' : (msg.agent || 'agente')}</span>
                                   <span className="text-[#e8fbff]/30">
                                     {new Date(msg.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                                   </span>
