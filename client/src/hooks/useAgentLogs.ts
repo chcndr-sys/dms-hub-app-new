@@ -57,7 +57,12 @@ export function useAgentLogs({
           limit: '500',  // Massimo consentito dal backend
         });
         if (agentName) params.set('agent_name', agentName);
-        if (excludeUserMessages) params.set('exclude_user_messages', 'true'); // 🔥 VISTA 4 AGENTI
+        if (excludeUserMessages) {
+          params.set('exclude_user_messages', 'true'); // 🔥 VISTA 4 AGENTI
+          params.set('mode', 'auto'); // Vista 4 Agenti mostra solo coordinamento MIO
+        } else {
+          params.set('mode', 'direct'); // Chat singola mostra solo messaggi diretti
+        }
 
         // 🚀 TUBO DIRETTO DATABASE→FRONTEND (bypassa Hetzner)
         const res = await fetch(`/api/mihub/get-messages?${params.toString()}`);

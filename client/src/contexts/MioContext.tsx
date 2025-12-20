@@ -64,7 +64,7 @@ export function MioProvider({ children }: { children: ReactNode }) {
 
       try {
         // 🚀 TUBO DRITTO - Connessione diretta database → frontend (bypassa Hetzner)
-        const response = await fetch(`/api/mihub/get-messages?conversation_id=mio-main&limit=500`);
+        const response = await fetch(`/api/mihub/get-messages?conversation_id=mio-main&mode=auto&limit=500`);
         if (!response.ok) return;
         
         const data = await response.json();

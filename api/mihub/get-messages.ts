@@ -22,7 +22,7 @@ export default async function handler(
   }
 
   try {
-    const { conversation_id, agent_name, limit = '200' } = req.query;
+    const { conversation_id, agent_name, mode, limit = '200' } = req.query;
 
     // Validazione
     if (!conversation_id || typeof conversation_id !== 'string') {
@@ -58,10 +58,12 @@ export default async function handler(
             role,
             message,
             created_at,
-            meta
+            meta,
+            mode
           FROM agent_messages
           WHERE conversation_id = ${conversation_id}
             AND agent = ${agent_name}
+            AND (${mode}::varchar IS NULL OR mode = ${mode})
           ORDER BY created_at ASC
           LIMIT ${parseInt(limit as string)}
         `;
@@ -75,9 +77,11 @@ export default async function handler(
             role,
             message,
             created_at,
-            meta
+            meta,
+            mode
           FROM agent_messages
           WHERE conversation_id = ${conversation_id}
+            AND (${mode}::varchar IS NULL OR mode = ${mode})
           ORDER BY created_at ASC
           LIMIT ${parseInt(limit as string)}
         `;
