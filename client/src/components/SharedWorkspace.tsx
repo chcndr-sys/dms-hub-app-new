@@ -29,8 +29,42 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
         const data = await response.json();
         // Backend restituisce { success, data: { snapshot } }
         if (data.data?.snapshot && editorRef.current) {
-          // Carica lo snapshot nel editor
-          editorRef.current.store.loadSnapshot(data.data.snapshot);
+          const snapshot = data.data.snapshot;
+          
+          // 🔧 FIX: Filtra asset con dimensioni invalide (w=0, h=0, o undefined)
+          if (snapshot.store) {
+            const filteredStore: Record<string, any> = {};
+            const assetsToRemove: string[] = [];
+            
+            // Prima passa: identifica asset invalidi
+            for (const [key, value] of Object.entries(snapshot.store)) {
+              if (key.startsWith('asset:')) {
+                const asset = value as any;
+                if (!asset.props?.w || !asset.props?.h || asset.props.w <= 0 || asset.props.h <= 0) {
+                  console.warn('[SharedWorkspace] Skipping invalid asset:', key, asset.props);
+                  assetsToRemove.push(key);
+                  continue;
+                }
+              }
+              filteredStore[key] = value;
+            }
+            
+            // Seconda passa: rimuovi shape che referenziano asset invalidi
+            for (const [key, value] of Object.entries(filteredStore)) {
+              if (key.startsWith('shape:')) {
+                const shape = value as any;
+                if (shape.props?.assetId && assetsToRemove.includes(shape.props.assetId)) {
+                  console.warn('[SharedWorkspace] Skipping shape with invalid asset:', key);
+                  delete filteredStore[key];
+                }
+              }
+            }
+            
+            snapshot.store = filteredStore;
+          }
+          
+          // Carica lo snapshot filtrato nel editor
+          editorRef.current.store.loadSnapshot(snapshot);
           console.log('[SharedWorkspace] Snapshot loaded successfully from database');
         } else {
           console.log('[SharedWorkspace] No snapshot found in response');
