@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { callOrchestrator } from '../api/orchestratorClient';
 
 // 🔥 TABULA RASA: Context condiviso per MIO (Widget + Dashboard)
 
@@ -47,7 +48,7 @@ export function MioProvider({ children }: { children: ReactNode }) {
       setConversationId(MIO_MAIN_CONVERSATION_ID);
 
       try {
-        // 🚀 TUBO DRITTO - Connessione diretta database → frontend
+        // 🚀 TUBO DRITTO - Connessione diretta database → frontend (via Vercel API)
         console.log('🔥 [MioContext] Caricamento messaggi da:', MIO_MAIN_CONVERSATION_ID);
         const response = await fetch(`/api/mihub/get-messages?conversation_id=${MIO_MAIN_CONVERSATION_ID}&limit=500`);
         if (!response.ok) {
@@ -96,35 +97,19 @@ export function MioProvider({ children }: { children: ReactNode }) {
     setMessages(prev => [...prev, userMsg]);
 
     try {
-      console.log('🔥 [MioContext] Invio messaggio a MIO...');
+      console.log('🔥 [MioContext] Invio messaggio a MIO via Hetzner...');
       console.log('🔥 [MioContext] ConversationId:', MIO_MAIN_CONVERSATION_ID);
       
-      // Crea nuovo AbortController per questa richiesta
-      abortControllerRef.current = new AbortController();
-      
-      const response = await fetch("/api/mihub/orchestrator", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          mode: "auto",
-          message: text,
-          conversationId: MIO_MAIN_CONVERSATION_ID, // 🏝️ USA SEMPRE mio-main
-          meta: { ...meta, source: meta.source || "mio_context" }
-        }),
-        signal: abortControllerRef.current.signal
+      // 🚀 CHIAMATA DIRETTA A HETZNER - NON PASSA PER VERCEL PROXY
+      // Usa callOrchestrator() che chiama https://orchestratore.mio-hub.me/api/mihub/orchestrator
+      const data = await callOrchestrator({
+        mode: "auto",
+        message: text,
+        conversationId: MIO_MAIN_CONVERSATION_ID, // 🏝️ USA SEMPRE mio-main
+        meta: { ...meta, source: meta.source || "mio_context" }
       });
 
-      console.log('🔥 [MioContext] Status Response:', response.status);
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Server ha risposto ${response.status}: ${errText}`);
-      }
-
-      const data = await response.json();
-      console.log('🔥 [MioContext] Dati ricevuti:', data);
+      console.log('🔥 [MioContext] Dati ricevuti da Hetzner:', data);
 
       // 🔥 RECONCILIAZIONE: Sostituisci messaggio temporaneo con quello reale dal server
       setMessages(prev => {
@@ -134,17 +119,17 @@ export function MioProvider({ children }: { children: ReactNode }) {
         // Aggiungi messaggio utente reale
         const userMsgConfirmed: MioMessage = {
           ...userMsg,
-          id: data.userMessageId || tempUserId,
+          id: (data as any).userMessageId || tempUserId,
         };
         
         // Aggiungi la risposta
         const aiMsg: MioMessage = {
-          id: data.assistantMessageId || crypto.randomUUID(),
+          id: (data as any).assistantMessageId || crypto.randomUUID(),
           role: 'assistant',
-          content: data.message || data.reply || data.response || "Risposta vuota",
+          content: data.message || "Risposta vuota",
           createdAt: new Date().toISOString(),
-          agentName: data.agent || data.agentName || 'mio',
-          source: data.source,
+          agentName: data.agent || 'mio',
+          source: (data as any).source,
         };
         
         return [...withoutTemp, userMsgConfirmed, aiMsg];
