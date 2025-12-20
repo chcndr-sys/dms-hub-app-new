@@ -184,6 +184,34 @@ export function MioProvider({ children }: { children: ReactNode }) {
       });
       console.log('🔥 [MioContext TABULA RASA] SUCCESS! ✅');
 
+      // 🔥 POLLING TEMPORANEO: Ricarica messaggi dopo 3s per catturare la risposta dell'agente
+      setTimeout(async () => {
+        try {
+          const finalId = data.conversationId || conversationId;
+          if (finalId) {
+            console.log('🔄 [MioContext] Polling post-invio per nuove risposte...');
+            const response = await fetch(`/api/mihub/get-messages?conversation_id=${finalId}&mode=auto&limit=500`);
+            if (response.ok) {
+              const pollData = await response.json();
+              const rawMessages = pollData.messages || pollData.logs || [];
+              if (rawMessages.length > 0) {
+                const loadedMessages: MioMessage[] = rawMessages.map((log: any) => ({
+                  id: log.id,
+                  role: log.role as 'user' | 'assistant' | 'system',
+                  content: log.message || log.content || '',
+                  createdAt: log.created_at,
+                  agentName: log.agent_name || log.agent || log.sender,
+                }));
+                setMessages(loadedMessages);
+                console.log('✅ [MioContext] Messaggi aggiornati dal polling:', loadedMessages.length);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('❌ [MioContext] Errore polling post-invio:', err);
+        }
+      }, 3000);
+
     } catch (err: any) {
       console.error('🔥 [MioContext TABULA RASA] ERROR:', err);
       
