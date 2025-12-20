@@ -27,24 +27,15 @@ interface MioContextValue {
 
 const MioContext = createContext<MioContextValue | undefined>(undefined);
 
+// 🏝️ ARCHITETTURA 8 ISOLE - ID fisso per Chat MIO principale
+const MIO_MAIN_CONVERSATION_ID = 'mio-main';
+
 export function MioProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<MioMessage[]>([]);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(MIO_MAIN_CONVERSATION_ID);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  // 🔨 FORZATURA ID STORICO (Ripristino messaggi)
-  const FORCE_ID = 'dfab3001-0969-4d6d-93b5-e6f69eecb794';
-  
-  useEffect(() => {
-    const current = localStorage.getItem('mioMainConversationId');
-    if (current !== FORCE_ID) {
-      console.warn("⚠️ FORZATURA ID STORICO...");
-      localStorage.setItem('mioMainConversationId', FORCE_ID);
-      window.location.reload();
-    }
-  }, []);
 
   // 🔥 PERSISTENZA: Carica cronologia al mount
   useEffect(() => {
@@ -52,21 +43,17 @@ export function MioProvider({ children }: { children: ReactNode }) {
       // 🔥 SVUOTA messaggi all'inizio per evitare duplicati al refresh
       setMessages([]);
       
-      // Leggi conversationId da localStorage
-      const storedId = localStorage.getItem('mioMainConversationId');
-      
-      // ✅ IMPOSTA conversationId SUBITO (anche se non ci sono messaggi)
-      if (storedId) {
-        setConversationId(storedId);
-      }
-      
-      if (!storedId) return;
+      // 🏝️ USA SEMPRE mio-main per la chat principale
+      setConversationId(MIO_MAIN_CONVERSATION_ID);
 
       try {
-        // 🚀 TUBO DRITTO - Connessione diretta database → frontend (bypassa Hetzner)
-        // 🔥 FIX: Rimosso mode=auto per caricare TUTTI i messaggi (user e assistant)
-        const response = await fetch(`/api/mihub/get-messages?conversation_id=mio-main&limit=500`);
-        if (!response.ok) return;
+        // 🚀 TUBO DRITTO - Connessione diretta database → frontend
+        console.log('🔥 [MioContext] Caricamento messaggi da:', MIO_MAIN_CONVERSATION_ID);
+        const response = await fetch(`/api/mihub/get-messages?conversation_id=${MIO_MAIN_CONVERSATION_ID}&limit=500`);
+        if (!response.ok) {
+          console.error('🔥 [MioContext] Errore API:', response.status);
+          return;
+        }
         
         const data = await response.json();
         const rawMessages = data.messages || data.logs || [];
@@ -75,13 +62,12 @@ export function MioProvider({ children }: { children: ReactNode }) {
           const loadedMessages: MioMessage[] = rawMessages.map((log: any) => ({
             id: log.id,
             role: log.role as 'user' | 'assistant' | 'system',
-            content: log.message || log.content || '',  // 🔥 FIX: Preferisci message (agent_messages)
+            content: log.message || log.content || '',
             createdAt: log.created_at,
-            agentName: log.agent_name || log.agent || log.sender,  // 🔥 FIX: Fallback multipli
+            agentName: log.agent_name || log.agent || log.sender,
           }));
           
           setMessages(loadedMessages);
-          setConversationId(storedId);
           console.log('🔥 [MioContext] Cronologia caricata:', loadedMessages.length, 'messaggi');
         }
       } catch (err) {
@@ -91,19 +77,6 @@ export function MioProvider({ children }: { children: ReactNode }) {
 
     loadHistory();
   }, []);
-
-  // 🔥 POLLING DISABILITATO PER STABILITÀ
-  // I messaggi si caricano SOLO al mount, nessun aggiornamento automatico
-  // useEffect(() => {
-  //   ... polling code disabled ...
-  // }, [conversationId]);
-
-  // 🔥 PERSISTENZA: Salva conversationId in localStorage quando cambia
-  useEffect(() => {
-    if (conversationId) {
-      localStorage.setItem('mioMainConversationId', conversationId);
-    }
-  }, [conversationId]);
 
   // 🔥 TABULA RASA: Funzione sendMessage condivisa
   const sendMessage = useCallback(async (text: string, meta: Record<string, any> = {}) => {
@@ -123,8 +96,8 @@ export function MioProvider({ children }: { children: ReactNode }) {
     setMessages(prev => [...prev, userMsg]);
 
     try {
-      console.log('🔥 [MioContext TABULA RASA] Inizio chiamata diretta...');
-      console.log('🔥 [MioContext TABULA RASA] ConversationId:', conversationId);
+      console.log('🔥 [MioContext] Invio messaggio a MIO...');
+      console.log('🔥 [MioContext] ConversationId:', MIO_MAIN_CONVERSATION_ID);
       
       // Crea nuovo AbortController per questa richiesta
       abortControllerRef.current = new AbortController();
@@ -137,13 +110,13 @@ export function MioProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           mode: "auto",
           message: text,
-          conversationId: conversationId, // Usa conversationId esistente o null per nuova
+          conversationId: MIO_MAIN_CONVERSATION_ID, // 🏝️ USA SEMPRE mio-main
           meta: { ...meta, source: meta.source || "mio_context" }
         }),
         signal: abortControllerRef.current.signal
       });
 
-      console.log('🔥 [MioContext TABULA RASA] Status Response:', response.status);
+      console.log('🔥 [MioContext] Status Response:', response.status);
 
       if (!response.ok) {
         const errText = await response.text();
@@ -151,24 +124,17 @@ export function MioProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await response.json();
-      console.log('🔥 [MioContext TABULA RASA] Dati ricevuti:', data);
-
-      // ✅ NON sovrascrivere conversationId se ne abbiamo già uno
-      if (data.conversationId && !conversationId) {
-        console.log('🔥 [MioContext TABULA RASA] Nuovo conversationId:', data.conversationId);
-        setConversationId(data.conversationId);
-      }
+      console.log('🔥 [MioContext] Dati ricevuti:', data);
 
       // 🔥 RECONCILIAZIONE: Sostituisci messaggio temporaneo con quello reale dal server
       setMessages(prev => {
         // Rimuovi il messaggio temporaneo
         const withoutTemp = prev.filter(m => m.id !== tempUserId);
         
-        // Aggiungi messaggio utente reale (se il server lo restituisce)
-        // Altrimenti mantieni quello optimistic ma con flag "confirmed"
+        // Aggiungi messaggio utente reale
         const userMsgConfirmed: MioMessage = {
           ...userMsg,
-          id: data.userMessageId || tempUserId, // Usa ID reale se disponibile
+          id: data.userMessageId || tempUserId,
         };
         
         // Aggiungi la risposta
@@ -183,30 +149,26 @@ export function MioProvider({ children }: { children: ReactNode }) {
         
         return [...withoutTemp, userMsgConfirmed, aiMsg];
       });
-      console.log('🔥 [MioContext TABULA RASA] SUCCESS! ✅');
+      console.log('🔥 [MioContext] SUCCESS! ✅');
 
-      // 🔥 POLLING TEMPORANEO: Ricarica messaggi dopo 3s per catturare la risposta dell'agente
+      // 🔥 POLLING TEMPORANEO: Ricarica messaggi dopo 3s per catturare eventuali risposte aggiuntive
       setTimeout(async () => {
         try {
-          const finalId = data.conversationId || conversationId;
-          if (finalId) {
-            console.log('🔄 [MioContext] Polling post-invio per nuove risposte...');
-            // 🔥 FIX: Rimosso mode=auto per caricare TUTTI i messaggi
-            const response = await fetch(`/api/mihub/get-messages?conversation_id=${finalId}&limit=500`);
-            if (response.ok) {
-              const pollData = await response.json();
-              const rawMessages = pollData.messages || pollData.logs || [];
-              if (rawMessages.length > 0) {
-                const loadedMessages: MioMessage[] = rawMessages.map((log: any) => ({
-                  id: log.id,
-                  role: log.role as 'user' | 'assistant' | 'system',
-                  content: log.message || log.content || '',
-                  createdAt: log.created_at,
-                  agentName: log.agent_name || log.agent || log.sender,
-                }));
-                setMessages(loadedMessages);
-                console.log('✅ [MioContext] Messaggi aggiornati dal polling:', loadedMessages.length);
-              }
+          console.log('🔄 [MioContext] Polling post-invio per nuove risposte...');
+          const response = await fetch(`/api/mihub/get-messages?conversation_id=${MIO_MAIN_CONVERSATION_ID}&limit=500`);
+          if (response.ok) {
+            const pollData = await response.json();
+            const rawMessages = pollData.messages || pollData.logs || [];
+            if (rawMessages.length > 0) {
+              const loadedMessages: MioMessage[] = rawMessages.map((log: any) => ({
+                id: log.id,
+                role: log.role as 'user' | 'assistant' | 'system',
+                content: log.message || log.content || '',
+                createdAt: log.created_at,
+                agentName: log.agent_name || log.agent || log.sender,
+              }));
+              setMessages(loadedMessages);
+              console.log('✅ [MioContext] Messaggi aggiornati dal polling:', loadedMessages.length);
             }
           }
         } catch (err) {
@@ -215,7 +177,7 @@ export function MioProvider({ children }: { children: ReactNode }) {
       }, 3000);
 
     } catch (err: any) {
-      console.error('🔥 [MioContext TABULA RASA] ERROR:', err);
+      console.error('🔥 [MioContext] ERROR:', err);
       
       // Se l'errore è dovuto all'abort, non mostrare errore
       if (err.name === 'AbortError') {
@@ -234,7 +196,7 @@ export function MioProvider({ children }: { children: ReactNode }) {
         const errorMsg: MioMessage = {
           id: crypto.randomUUID(),
           role: 'system',
-          content: `🔥 TABULA RASA ERROR: ${err.message}`,
+          content: `🔥 ERROR: ${err.message}`,
           createdAt: new Date().toISOString(),
         };
         setMessages(prev => [...prev, errorMsg]);
@@ -243,7 +205,7 @@ export function MioProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [conversationId]);
+  }, []);
 
   const stopGeneration = useCallback(() => {
     if (abortControllerRef.current) {
@@ -254,7 +216,7 @@ export function MioProvider({ children }: { children: ReactNode }) {
 
   const clearMessages = useCallback(() => {
     setMessages([]);
-    setConversationId(null);
+    // 🏝️ NON resettare conversationId - mantieni sempre mio-main
     setError(null);
   }, []);
 
