@@ -58,7 +58,7 @@ export default async function handler(
             role,
             message,
             created_at,
-            metadata
+            meta
           FROM agent_messages
           WHERE conversation_id = ${conversation_id}
             AND agent = ${agent_name}
@@ -75,7 +75,7 @@ export default async function handler(
             role,
             message,
             created_at,
-            metadata
+            meta
           FROM agent_messages
           WHERE conversation_id = ${conversation_id}
           ORDER BY created_at ASC
