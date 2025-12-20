@@ -571,8 +571,8 @@ export default function DashboardPA() {
     error: manusError,
   } = useAgentLogs({
     conversationId: manusConversationId,
-    agentName: 'manus',
-    mode: 'direct',  // 🎯 Chat singola: conversazione diretta User ↔ Manus
+    // 🔥 FIX: Rimosso agentName per caricare TUTTI i messaggi (user + assistant)
+    // Il conversation_id 'user-manus-direct' è già sufficiente
   });
   
   const manusMessages = manusMessagesRaw.map(msg => ({
@@ -592,8 +592,8 @@ export default function DashboardPA() {
     error: abacusError,
   } = useAgentLogs({
     conversationId: abacusConversationId,
-    agentName: 'abacus',
-    mode: 'direct',  // 🎯 Chat singola: conversazione diretta User ↔ Abacus
+    // 🔥 FIX: Rimosso agentName per caricare TUTTI i messaggi (user + assistant)
+    // Il conversation_id 'user-abacus-direct' è già sufficiente
   });
   
   const abacusMessages = abacusMessagesRaw.map(msg => ({
@@ -613,8 +613,8 @@ export default function DashboardPA() {
     error: zapierError,
   } = useAgentLogs({
     conversationId: zapierConversationId,
-    agentName: 'zapier',
-    mode: 'direct',  // 🎯 Chat singola: conversazione diretta User ↔ Zapier
+    // 🔥 FIX: Rimosso agentName per caricare TUTTI i messaggi (user + assistant)
+    // Il conversation_id 'user-zapier-direct' è già sufficiente
   });
   
   // Hook separato per GPT Developer (vista singola isolata)
@@ -625,8 +625,8 @@ export default function DashboardPA() {
     error: gptdevError,
   } = useAgentLogs({
     conversationId: gptdevConversationId,
-    agentName: 'gptdev',
-    mode: 'direct',  // 🎯 Chat singola: conversazione diretta User ↔ GPT Dev
+    // 🔥 FIX: Rimosso agentName per caricare TUTTI i messaggi (user + assistant)
+    // Il conversation_id 'user-gptdev-direct' è già sufficiente
   });
   
   const gptdevMessages = gptdevMessagesRaw.map(msg => ({
