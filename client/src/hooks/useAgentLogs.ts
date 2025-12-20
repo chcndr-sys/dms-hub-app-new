@@ -60,7 +60,7 @@ export function useAgentLogs({
         if (excludeUserMessages) params.set('exclude_user_messages', 'true'); // 🔥 VISTA 4 AGENTI
 
         // 🚀 TUBO DIRETTO DATABASE→FRONTEND (bypassa Hetzner)
-        const res = await fetch(`/api/mihub/get-messages?conversation_id=${conversationId}&limit=500`);
+        const res = await fetch(`/api/mihub/get-messages?${params.toString()}`);
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
