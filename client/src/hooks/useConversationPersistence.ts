@@ -16,34 +16,46 @@ export interface ConversationPersistence {
 }
 
 /**
+ * 🔥 FIX: Funzione helper per ottenere il valore iniziale SINCRONAMENTE
+ * Questo evita il problema del null al primo render
+ */
+function getInitialConversationId(storageKey?: string): string | null {
+  const STORAGE_KEY = storageKey || DEFAULT_STORAGE_KEY;
+  
+  // Prova a leggere dal localStorage
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    return stored;
+  }
+  
+  // Se c'è una storageKey specifica (es. 'user-gptdev-direct'), usala come ID fisso
+  if (storageKey) {
+    localStorage.setItem(STORAGE_KEY, storageKey);
+    return storageKey;
+  }
+  
+  // Per il default, ritorna null
+  return null;
+}
+
+/**
  * Hook per gestire la persistenza del conversation_id
  * @param storageKey - Chiave localStorage opzionale (default: 'mio_conversation_id')
  */
 export function useConversationPersistence(storageKey?: string): ConversationPersistence {
   const STORAGE_KEY = storageKey || DEFAULT_STORAGE_KEY;
-  const [conversationId, setConversationIdState] = useState<string | null>(null);
+  
+  // 🔥 FIX: Inizializza SINCRONAMENTE con il valore dal localStorage
+  // Questo evita il problema del null al primo render che causava
+  // il mancato caricamento dei messaggi nelle chat singole
+  const [conversationId, setConversationIdState] = useState<string | null>(() => {
+    return getInitialConversationId(storageKey);
+  });
 
-  // Carica conversation_id al mount (se esiste)
+  // Log per debug (solo al mount)
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setConversationIdState(stored);
-      console.log('[Persistence] Restored conversation_id:', stored);
-    } else {
-      // 🔥 FIX: Per TUTTE le conversazioni con storageKey definita, usa la key come ID fisso
-      // Questo include sia coordinamento (mio-manus-coordination) che chat singole (user-gptdev-direct)
-      if (storageKey) {
-        const fixedId = storageKey;  // es. "user-gptdev-direct" o "mio-manus-coordination"
-        localStorage.setItem(STORAGE_KEY, fixedId);
-        setConversationIdState(fixedId);
-        console.log('[Persistence] Created fixed ID from storageKey:', fixedId);
-      } else {
-        // Solo per il default (mio_conversation_id) rimane null finché non viene creato
-        setConversationIdState(null);
-        console.log('[Persistence] No conversation_id found, will be created by backend');
-      }
-    }
-  }, [STORAGE_KEY, storageKey]);
+    console.log('[Persistence] Initialized with conversationId:', conversationId, 'storageKey:', storageKey);
+  }, []);
 
   // Salva conversation_id in localStorage
   const setConversationId = (id: string) => {
