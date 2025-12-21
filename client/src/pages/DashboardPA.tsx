@@ -505,6 +505,14 @@ export default function DashboardPA() {
   const { conversationId: zapierConversationId, setConversationId: setZapierConversationId } = useConversationPersistence('user-zapier-direct');
   const { conversationId: gptdevConversationId, setConversationId: setGptdevConversationId } = useConversationPersistence('user-gptdev-direct');
   
+  // 🔥 DEBUG: Log dei conversationId per Vista Singola
+  console.log('[DashboardPA] Vista Singola conversationIds:', {
+    gptdev: gptdevConversationId,
+    manus: manusConversationId,
+    abacus: abacusConversationId,
+    zapier: zapierConversationId
+  });
+  
   // 🔥 4 Conversazioni separate per MIO (una per ogni agente)
   const { conversationId: mioManusConversationId, setConversationId: setMioManusConversationId } = useConversationPersistence('mio-manus-coordination');
   const { conversationId: mioAbacusConversationId, setConversationId: setMioAbacusConversationId } = useConversationPersistence('mio-abacus-coordination');
