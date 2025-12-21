@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 export interface AgentLogMessage {
   id: string;
@@ -34,6 +34,17 @@ export function useAgentLogs({
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | undefined>();
   const wsConnectedRef = useRef<boolean>(false);
+  
+  // 🔥 FIX: Ref per la funzione load per poterla chiamare da refetch
+  const loadRef = useRef<(() => Promise<void>) | null>(null);
+
+  // 🔥 FIX: Funzione refetch per ricaricare i messaggi manualmente
+  const refetch = useCallback(async () => {
+    if (loadRef.current) {
+      console.log('[useAgentLogs] Manual refetch triggered');
+      await loadRef.current();
+    }
+  }, []);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -76,61 +87,27 @@ export function useAgentLogs({
         console.log('[useAgentLogs] Response data:', data);
 
         if (!cancelled) {
-          // 🔥 DEDUPLICAZIONE: Merge intelligente tra messaggi locali e server
-          setMessages(prev => {
-            // ✅ FIX: Backend direct-messages ritorna "messages"
-            const rawMessages = data.messages || data.data || data.logs || [];
-            
-            // ✅ Mappa "message" → "content" per compatibilità
-            const serverMessages = rawMessages.map((msg: any) => ({
-              id: msg.id,
-              conversation_id: msg.conversation_id,
-              agent_name: msg.agent_name || msg.agent,
-              role: msg.role,
-              content: msg.content || msg.message,
-              sender: msg.sender, // 🔥 FIX: Include sender per mostrare "Tu" invece di "da MIO"
-              created_at: msg.created_at,
-              pending: false
-            }));
-            
-            // Crea un Set di ID dei messaggi dal server
-            const serverIds = new Set(serverMessages.map((m: AgentLogMessage) => m.id));
-            
-            // Mantieni solo i messaggi locali che NON sono nel server (pending o temporanei)
-            const localOnly = prev.filter(msg => {
-              // Se il messaggio è nel server (per ID), rimuovilo
-              if (serverIds.has(msg.id)) return false;
-              
-              // Se il messaggio è pending, controlla se è un duplicato per contenuto
-              if (msg.pending) {
-                const hasDuplicate = serverMessages.some((serverMsg: AgentLogMessage) =>
-                  serverMsg.content === msg.content &&
-                  Math.abs(new Date(serverMsg.created_at).getTime() - new Date(msg.created_at).getTime()) < 2000
-                );
-                return !hasDuplicate; // Rimuovi se duplicato
-              }
-              
-              // Mantieni altri messaggi locali
-              return true;
-            });
-            
-            // Deduplica per contenuto + timestamp (per messaggi senza ID server)
-            const deduped = serverMessages.filter((serverMsg: AgentLogMessage) => {
-              // Se un messaggio locale ha stesso content e timestamp simile (±2 sec), è un duplicato
-              const isDuplicate = localOnly.some(localMsg => 
-                localMsg.content === serverMsg.content && 
-                Math.abs(new Date(localMsg.created_at).getTime() - new Date(serverMsg.created_at).getTime()) < 2000
-              );
-              return !isDuplicate;
-            });
-            
-            // Merge: messaggi locali pending + messaggi server dedupati
-            const merged = [...localOnly, ...deduped].sort((a, b) => 
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-            );
-            
-            return merged;
-          });
+          // 🔥 FIX: Sostituisci completamente i messaggi invece di fare merge
+          // Questo evita problemi di sincronizzazione dopo refetch
+          const rawMessages = data.messages || data.data || data.logs || [];
+          
+          const serverMessages = rawMessages.map((msg: any) => ({
+            id: msg.id,
+            conversation_id: msg.conversation_id,
+            agent_name: msg.agent_name || msg.agent,
+            role: msg.role,
+            content: msg.content || msg.message,
+            sender: msg.sender, // 🔥 FIX: Include sender per mostrare "Tu" invece di "da MIO"
+            created_at: msg.created_at,
+            pending: false
+          }));
+          
+          // Ordina per timestamp
+          const sorted = serverMessages.sort((a: AgentLogMessage, b: AgentLogMessage) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+          
+          setMessages(sorted);
           setError(null);
         }
       } catch (err: any) {
@@ -144,6 +121,9 @@ export function useAgentLogs({
         }
       }
     };
+
+    // 🔥 FIX: Salva la funzione load nel ref per poterla chiamare da refetch
+    loadRef.current = load;
 
     // WebSocket connection
     const connectWebSocket = () => {
@@ -241,6 +221,7 @@ export function useAgentLogs({
 
     return () => {
       cancelled = true;
+      loadRef.current = null;
       if (fallbackTimeout) window.clearTimeout(fallbackTimeout);
       if (intervalId) window.clearInterval(intervalId);
       if (reconnectTimeoutRef.current) window.clearTimeout(reconnectTimeoutRef.current);
@@ -251,5 +232,5 @@ export function useAgentLogs({
     };
   }, [conversationId, agentName, pollMs, useWebSocket]);
 
-  return { messages, setMessages, loading, error };
+  return { messages, setMessages, loading, error, refetch };
 }

@@ -570,6 +570,7 @@ export default function DashboardPA() {
     setMessages: setManusMessages,
     loading: manusLoading,
     error: manusError,
+    refetch: refetchManus,
   } = useAgentLogs({
     conversationId: manusConversationId,
     // 🔥 FIX: Rimosso agentName per caricare TUTTI i messaggi (user + assistant)
@@ -591,6 +592,7 @@ export default function DashboardPA() {
     setMessages: setAbacusMessages,
     loading: abacusLoading,
     error: abacusError,
+    refetch: refetchAbacus,
   } = useAgentLogs({
     conversationId: abacusConversationId,
     // 🔥 FIX: Rimosso agentName per caricare TUTTI i messaggi (user + assistant)
@@ -612,6 +614,7 @@ export default function DashboardPA() {
     setMessages: setZapierMessages,
     loading: zapierLoading,
     error: zapierError,
+    refetch: refetchZapier,
   } = useAgentLogs({
     conversationId: zapierConversationId,
     // 🔥 FIX: Rimosso agentName per caricare TUTTI i messaggi (user + assistant)
@@ -624,6 +627,7 @@ export default function DashboardPA() {
     setMessages: setGptdevMessages,
     loading: gptdevLoading,
     error: gptdevError,
+    refetch: refetchGptdev,
   } = useAgentLogs({
     conversationId: gptdevConversationId,
     // 🔥 FIX: Rimosso agentName per caricare TUTTI i messaggi (user + assistant)
@@ -806,9 +810,11 @@ export default function DashboardPA() {
         message: text,
         conversationId: gptdevConversationId,
         mode: 'direct',
-        onUpdateMessages: (messages) => setGptdevMessages(messages),
+        onUpdateMessages: () => {}, // 🔥 FIX: Non usare setMessages, usa refetch
         onUpdateConversationId: setGptdevConversationId,
       });
+      // 🔥 FIX: Ricarica messaggi dal database dopo la risposta
+      await refetchGptdev();
     } finally {
       setGptdevSending(false);
     }
@@ -826,9 +832,11 @@ export default function DashboardPA() {
         message: text,
         conversationId: manusConversationId,
         mode: 'direct',
-        onUpdateMessages: (messages) => setManusMessages(messages),
+        onUpdateMessages: () => {}, // 🔥 FIX: Non usare setMessages, usa refetch
         onUpdateConversationId: setManusConversationId,
       });
+      // 🔥 FIX: Ricarica messaggi dal database dopo la risposta
+      await refetchManus();
     } finally {
       setManusSending(false);
     }
@@ -846,9 +854,11 @@ export default function DashboardPA() {
         message: text,
         conversationId: abacusConversationId,
         mode: 'direct',
-        onUpdateMessages: (messages) => setAbacusMessages(messages),
+        onUpdateMessages: () => {}, // 🔥 FIX: Non usare setMessages, usa refetch
         onUpdateConversationId: setAbacusConversationId,
       });
+      // 🔥 FIX: Ricarica messaggi dal database dopo la risposta
+      await refetchAbacus();
     } finally {
       setAbacusSending(false);
     }
@@ -866,9 +876,11 @@ export default function DashboardPA() {
         message: text,
         conversationId: zapierConversationId,
         mode: 'direct',
-        onUpdateMessages: (messages) => setZapierMessages(messages),
+        onUpdateMessages: () => {}, // 🔥 FIX: Non usare setMessages, usa refetch
         onUpdateConversationId: setZapierConversationId,
       });
+      // 🔥 FIX: Ricarica messaggi dal database dopo la risposta
+      await refetchZapier();
     } finally {
       setZapierSending(false);
     }
