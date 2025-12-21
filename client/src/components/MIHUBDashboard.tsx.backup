@@ -7,11 +7,10 @@
  * - Zapier: Automazioni e integrazioni
  * 
  * Tutti vedono tutte le chat per auto-controllo e coordinamento
- * 
- * 🔧 FIX 21/12/2024: Sostituito TRPC con tubo diretto /api/mihub/get-messages
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
+import { trpc } from "../lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -26,10 +25,9 @@ import {
   Send,
   Eye,
   EyeOff,
+  Users,
   Activity
 } from "lucide-react";
-
-// 🔧 RIMOSSO: import { trpc } from "../lib/trpc";
 
 interface Agent {
   id: string;
@@ -37,57 +35,65 @@ interface Agent {
   icon: typeof Brain;
   color: string;
   description: string;
-  conversationId: string; // 🔧 AGGIUNTO: conversation_id fisso per ogni agente
 }
 
-// 🔧 MODIFICATO: Aggiunto conversationId fisso per ogni agente
 const AGENTS: Agent[] = [
   {
     id: "mio",
     name: "MIO",
     icon: Brain,
     color: "text-purple-500",
-    description: "GPT-5 Coordinatore",
-    conversationId: "mio-gptdev-coordination"
+    description: "GPT-5 Coordinatore"
   },
   {
     id: "manus",
     name: "Manus",
     icon: Wrench,
     color: "text-blue-500",
-    description: "Operatore Esecutivo",
-    conversationId: "mio-manus-coordination"
+    description: "Operatore Esecutivo"
   },
   {
     id: "abacus",
     name: "Abacus",
     icon: Calculator,
     color: "text-green-500",
-    description: "Analisi Dati",
-    conversationId: "mio-abacus-coordination"
+    description: "Analisi Dati"
   },
   {
     id: "zapier",
     name: "Zapier",
     icon: Zap,
     color: "text-orange-500",
-    description: "Automazioni",
-    conversationId: "mio-zapier-coordination"
+    description: "Automazioni"
   }
 ];
 
-// Interfaccia per i messaggi dal database
-interface Message {
-  id: number;
-  conversation_id: string;
-  sender: string;
-  message: string;
-  agent: string | null;
-  created_at: string;
-  metadata?: Record<string, unknown>;
-}
+// Helper: Valida UUID v4
+const isValidUUID = (uuid: string): boolean => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
+};
 
 export default function MIHUBDashboard() {
+  // ♾️ CHAT ETERNA: Un UUID generato UNA VOLTA e salvato PER SEMPRE
+  const [conversationId, setConversationId] = useState<string>('');
+
+  // Carica o genera l'ID FISSO al mount
+  useEffect(() => {
+    // 1. Cerca un ID esistente nel localStorage ("cassetto" del browser)
+    let storedId = localStorage.getItem('mihub_global_conversation_id');
+
+    // 2. Se non c'è (o è vecchio/invalido), ne crea uno NUOVO e lo salva PER SEMPRE
+    if (!storedId || !isValidUUID(storedId)) {
+      storedId = crypto.randomUUID(); // Genera UUID valido
+      localStorage.setItem('mihub_global_conversation_id', storedId);
+      console.log('♾️ [Chat Eterna] Nuovo conversation_id generato:', storedId);
+    } else {
+      console.log('♾️ [Chat Eterna] Conversation_id esistente caricato:', storedId);
+    }
+
+    // 3. Usa quell'ID. Punto.
+    setConversationId(storedId);
+  }, []);
   const [activeAgent, setActiveAgent] = useState<string>("mio");
   const [messageInputs, setMessageInputs] = useState<Record<string, string>>({
     mio: "",
@@ -97,69 +103,37 @@ export default function MIHUBDashboard() {
   });
   const [sharedView, setSharedView] = useState(true);
   
-  // 🔧 NUOVO: State per i messaggi (sostituisce TRPC)
-  const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({
-    mio: [],
-    manus: [],
-    abacus: [],
-    zapier: []
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  
   const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // 🔧 NUOVO: Funzione per caricare messaggi via tubo diretto
-  const fetchMessages = useCallback(async () => {
-    try {
-      const newMessagesMap: Record<string, Message[]> = {};
-      
-      for (const agent of AGENTS) {
-        const response = await fetch(
-          `/api/mihub/get-messages?conversation_id=${agent.conversationId}&limit=50`
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.messages) {
-            newMessagesMap[agent.id] = data.messages;
-          } else {
-            newMessagesMap[agent.id] = [];
-          }
-        } else {
-          console.warn(`[MIHUBDashboard] Failed to fetch messages for ${agent.id}:`, response.status);
-          newMessagesMap[agent.id] = [];
-        }
-      }
-      
-      setMessagesMap(newMessagesMap);
-    } catch (error) {
-      console.error('[MIHUBDashboard] Error fetching messages:', error);
-    }
-  }, []);
+  // Fetch messages
+  const { data: messages = [], refetch } = trpc.mihub.getMessages.useQuery({
+    conversationId,
+    limit: 100,
+  }, {
+    refetchInterval: 2000, // Poll ogni 2 secondi per simulare real-time
+  });
 
-  // 🔧 NUOVO: Carica messaggi al mount e polling ogni 2 secondi
-  useEffect(() => {
-    console.log('[MIHUBDashboard] 🔧 Usando tubo diretto /api/mihub/get-messages');
-    
-    // Carica subito
-    fetchMessages();
-    
-    // Polling ogni 2 secondi
-    const interval = setInterval(fetchMessages, 2000);
-    
-    return () => clearInterval(interval);
-  }, [fetchMessages]);
+  // Send message mutation
+  const sendMessage = trpc.mihub.sendMessage.useMutation({
+    onSuccess: () => {
+      refetch();
+    }
+  });
+
+  // Mark message as read mutation
+  const markAsRead = trpc.mihub.markMessageAsRead.useMutation();
 
   // Auto-scroll to bottom quando arrivano nuovi messaggi
   useEffect(() => {
+    // Aspetta che il DOM sia aggiornato prima di scrollare
     setTimeout(() => {
       Object.values(scrollRefs.current).forEach(ref => {
         if (ref) {
           ref.scrollTop = ref.scrollHeight;
         }
       });
-    }, 100);
-  }, [messagesMap]);
+    }, 100); // 100ms delay per assicurare rendering completo
+  }, [messages]);
 
   const handleSendMessage = async (agentId: string) => {
     const content = messageInputs[agentId]?.trim();
@@ -171,12 +145,8 @@ export default function MIHUBDashboard() {
       [agentId]: ""
     }));
 
-    // Trova il conversation_id per questo agente
-    const agent = AGENTS.find(a => a.id === agentId);
-    if (!agent) return;
-
     try {
-      // Chiama direttamente l'orchestrator (già funzionante)
+      // Chiama direttamente l'orchestrator invece di sendMessage
       const API_URL = import.meta.env.VITE_TRPC_URL || 'https://api.mio-hub.me';
       const response = await fetch(`${API_URL}/api/mihub/orchestrator`, {
         method: 'POST',
@@ -184,7 +154,7 @@ export default function MIHUBDashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          conversation_id: agent.conversationId,
+          conversation_id: conversationId,
           agent: agentId,
           message: content,
           mode: 'multi-agent',
@@ -193,37 +163,41 @@ export default function MIHUBDashboard() {
 
       const data = await response.json();
       
+      // 🔧 AUTO-RESET: Se conversazione non trovata (404), resetta localStorage e ricarica
+      if (!response.ok && (response.status === 404 || data.error?.statusCode === 404 || data.error?.message?.includes('Conversation not found'))) {
+        console.log('[MIHUBDashboard] 404 Conversation not found - Resetting localStorage...');
+        localStorage.removeItem('mio-conversation-id');
+        localStorage.removeItem('mio-thread-id');
+        window.location.reload();
+        return;
+      }
+      
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${data.error || 'Unknown error'}`);
+        throw new Error(`HTTP ${response.status}`);
       }
 
       console.log('[MIHUBDashboard] Orchestrator response:', data);
 
       // Aggiorna i messaggi dopo la risposta
-      fetchMessages();
+      refetch();
     } catch (error) {
       console.error('[MIHUBDashboard] Error calling orchestrator:', error);
+      // Mostra errore all'utente
       alert('Errore nell\'invio del messaggio. Riprova.');
     }
   };
 
-  const getMessagesForAgent = (agentId: string): Message[] => {
+  const getMessagesForAgent = (agentId: string) => {
     if (sharedView) {
-      // Tutti vedono tutti i messaggi (unisci tutti)
-      const allMessages: Message[] = [];
-      Object.values(messagesMap).forEach(msgs => {
-        allMessages.push(...msgs);
-      });
-      // Rimuovi duplicati per id e ordina per data
-      const uniqueMessages = Array.from(
-        new Map(allMessages.map(m => [m.id, m])).values()
-      );
-      return uniqueMessages.sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
+      // Tutti vedono tutti i messaggi
+      return messages;
     } else {
-      // Solo messaggi di questo agente
-      return messagesMap[agentId] || [];
+      // Solo messaggi inviati/ricevuti da questo agente
+      return messages.filter(m => 
+        m.sender === agentId || 
+        !m.recipients || 
+        m.recipients.includes(agentId)
+      );
     }
   };
 
@@ -232,17 +206,17 @@ export default function MIHUBDashboard() {
     const Icon = agent.icon;
 
     return (
-      <Card className="h-full flex flex-col bg-[#1a2332] border-[#8b5cf6]/30">
+      <Card className="h-full flex flex-col">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Icon className={`h-5 w-5 ${agent.color}`} />
               <div>
-                <CardTitle className="text-lg text-[#e8fbff]">{agent.name}</CardTitle>
-                <p className="text-xs text-[#e8fbff]/50">{agent.description}</p>
+                <CardTitle className="text-lg">{agent.name}</CardTitle>
+                <p className="text-xs text-muted-foreground">{agent.description}</p>
               </div>
             </div>
-            <Badge variant="outline" className="gap-1 border-[#8b5cf6]/30 text-[#e8fbff]/70">
+            <Badge variant="outline" className="gap-1">
               <Activity className="h-3 w-3" />
               {agentMessages.length}
             </Badge>
@@ -257,13 +231,13 @@ export default function MIHUBDashboard() {
           >
             <div className="space-y-3">
               {agentMessages.length === 0 ? (
-                <div className="text-center text-sm text-[#e8fbff]/50 py-8">
+                <div className="text-center text-sm text-muted-foreground py-8">
                   Nessun messaggio
                 </div>
               ) : (
                 agentMessages.map((msg) => {
-                  const isOwnMessage = msg.sender === agent.id || msg.agent === agent.id;
-                  const senderAgent = AGENTS.find(a => a.id === msg.sender || a.id === msg.agent);
+                  const isOwnMessage = msg.sender === agent.id;
+                  const senderAgent = AGENTS.find(a => a.id === msg.sender);
                   const SenderIcon = senderAgent?.icon || Brain;
 
                   return (
@@ -272,28 +246,28 @@ export default function MIHUBDashboard() {
                       className={`flex gap-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                     >
                       {!isOwnMessage && (
-                        <div className={`flex-shrink-0 ${senderAgent?.color || 'text-gray-400'}`}>
+                        <div className={`flex-shrink-0 ${senderAgent?.color}`}>
                           <SenderIcon className="h-4 w-4 mt-1" />
                         </div>
                       )}
                       
                       <div className={`flex flex-col gap-1 max-w-[80%]`}>
                         {!isOwnMessage && (
-                          <span className="text-xs font-medium text-[#e8fbff]/50">
-                            {senderAgent?.name || msg.sender}
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {senderAgent?.name}
                           </span>
                         )}
                         <div
                           className={`rounded-lg px-3 py-2 text-sm ${
                             isOwnMessage
-                              ? 'bg-[#8b5cf6] text-white'
-                              : 'bg-[#0a0f1a] text-[#e8fbff]'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted'
                           }`}
                         >
-                          {msg.message || '(messaggio vuoto)'}
+                          {msg.content}
                         </div>
-                        <span className="text-xs text-[#e8fbff]/40">
-                          {new Date(msg.created_at).toLocaleTimeString('it-IT', {
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(msg.createdAt).toLocaleTimeString('it-IT', {
                             hour: '2-digit',
                             minute: '2-digit'
                           })}
@@ -327,13 +301,12 @@ export default function MIHUBDashboard() {
                   handleSendMessage(agent.id);
                 }
               }}
-              className="flex-1 bg-[#0a0f1a] border-[#8b5cf6]/30 text-[#e8fbff] placeholder:text-[#e8fbff]/30"
+              className="flex-1"
             />
             <Button
               size="icon"
               onClick={() => handleSendMessage(agent.id)}
-              disabled={!messageInputs[agent.id]?.trim() || isLoading}
-              className="bg-[#8b5cf6] hover:bg-[#7c3aed]"
+              disabled={!messageInputs[agent.id]?.trim() || sendMessage.isPending}
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -351,7 +324,7 @@ export default function MIHUBDashboard() {
           variant={sharedView ? "default" : "outline"}
           size="sm"
           onClick={() => setSharedView(!sharedView)}
-          className={`gap-2 ${sharedView ? 'bg-[#8b5cf6] hover:bg-[#7c3aed]' : 'border-[#8b5cf6]/30 text-[#8b5cf6]'}`}
+          className="gap-2"
         >
           {sharedView ? (
             <>
@@ -370,11 +343,11 @@ export default function MIHUBDashboard() {
       {/* Tabs per Mobile */}
       <div className="lg:hidden">
         <Tabs value={activeAgent} onValueChange={setActiveAgent}>
-          <TabsList className="grid w-full grid-cols-4 bg-[#1a2332]">
+          <TabsList className="grid w-full grid-cols-4">
             {AGENTS.map(agent => {
               const Icon = agent.icon;
               return (
-                <TabsTrigger key={agent.id} value={agent.id} className="gap-2 data-[state=active]:bg-[#8b5cf6]">
+                <TabsTrigger key={agent.id} value={agent.id} className="gap-2">
                   <Icon className={`h-4 w-4 ${agent.color}`} />
                   {agent.name}
                 </TabsTrigger>

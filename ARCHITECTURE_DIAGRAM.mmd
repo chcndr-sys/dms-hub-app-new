@@ -1,0 +1,48 @@
+%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#8b5cf6', 'primaryTextColor': '#fff', 'primaryBorderColor': '#7c3aed', 'lineColor': '#F8B229', 'secondaryColor': '#006100', 'tertiaryColor': '#fff'}}}%%
+flowchart TB
+    subgraph FRONTEND["🖥️ FRONTEND (Vercel)"]
+        direction TB
+        DASH["📊 /dashboard-pa?tab=mio<br/>DashboardPA.tsx"]
+        MIHUB["🎛️ /mihub<br/>MIHUBDashboard.tsx"]
+        HOOK["🪝 useAgentLogs.ts"]
+    end
+
+    subgraph VERCEL_API["☁️ VERCEL API (Tubo Diretto)"]
+        direction TB
+        GET_MSG["📥 /api/mihub/get-messages"]
+    end
+
+    subgraph HETZNER["🖥️ BACKEND HETZNER"]
+        direction TB
+        ORCH["🎯 /api/mihub/orchestrator"]
+        TRPC["🔗 TRPC Router"]
+    end
+
+    subgraph DATABASE["🗄️ DATABASE"]
+        direction TB
+        DB[(PostgreSQL<br/>messages table)]
+    end
+
+    %% Flussi LETTURA
+    DASH -->|"✅ useAgentLogs"| HOOK
+    HOOK -->|"✅ fetch()"| GET_MSG
+    GET_MSG -->|"✅ SQL Query"| DB
+
+    MIHUB -->|"❌ TRPC (ATTUALE)"| TRPC
+    TRPC -->|"❌ 404 Error"| DB
+    
+    MIHUB -.->|"✅ fetch() (TARGET)"| GET_MSG
+
+    %% Flussi SCRITTURA
+    DASH -->|"✅ callOrchestrator()"| ORCH
+    MIHUB -->|"✅ handleSendMessage()"| ORCH
+    ORCH -->|"✅ INSERT"| DB
+
+    %% Stili
+    classDef working fill:#10b981,stroke:#059669,color:#fff
+    classDef broken fill:#ef4444,stroke:#dc2626,color:#fff
+    classDef target fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    
+    class DASH,HOOK,GET_MSG,ORCH working
+    class TRPC broken
+    class MIHUB target
