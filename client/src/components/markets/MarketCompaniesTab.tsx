@@ -1015,14 +1015,14 @@ function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Comune <span className="text-orange-500">*</span>
+                Comune {!company && <span className="text-orange-500">*</span>}
               </label>
               <input
                 type="text"
-                required
+                required={!company}
                 value={formData.comune}
                 onChange={(e) => setFormData({ ...formData, comune: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800 border border-orange-500/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={`w-full px-3 py-2 bg-gray-800 border ${!company ? 'border-orange-500/50' : 'border-gray-700'} rounded-lg text-white focus:outline-none focus:ring-2 ${!company ? 'focus:ring-orange-500' : 'focus:ring-blue-500'}`}
                 placeholder="es. Grosseto"
               />
             </div>
@@ -1036,14 +1036,14 @@ function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                PEC <span className="text-orange-500">*</span> <span className="text-xs text-gray-500">(Obbligatorio per PA)</span>
+                PEC {!company && <span className="text-orange-500">*</span>} <span className="text-xs text-gray-500">(Obbligatorio per PA)</span>
               </label>
               <input
                 type="email"
-                required
+                required={!company}
                 value={formData.pec}
                 onChange={(e) => setFormData({ ...formData, pec: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800 border border-orange-500/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={`w-full px-3 py-2 bg-gray-800 border ${!company ? 'border-orange-500/50' : 'border-gray-700'} rounded-lg text-white focus:outline-none focus:ring-2 ${!company ? 'focus:ring-orange-500' : 'focus:ring-blue-500'}`}
                 placeholder="es. impresa@pec.it"
               />
             </div>
