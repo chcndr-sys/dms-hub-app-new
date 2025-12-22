@@ -797,23 +797,20 @@ export const walletRouter = router({
       const dataFine = new Date(input.dataFine);
       dataFine.setHours(23, 59, 59, 999);
 
-      let query = db
-        .select()
-        .from(schema.walletTransazioni)
-        .where(
-          and(
-            gte(schema.walletTransazioni.dataOperazione, dataInizio),
-            lte(schema.walletTransazioni.dataOperazione, dataFine)
-          )
-        );
+      const conditions = [
+        gte(schema.walletTransazioni.dataOperazione, dataInizio),
+        lte(schema.walletTransazioni.dataOperazione, dataFine)
+      ];
 
       if (input.walletId) {
-        query = query.where(
-          eq(schema.walletTransazioni.walletId, input.walletId)
-        ) as any;
+        conditions.push(eq(schema.walletTransazioni.walletId, input.walletId));
       }
 
-      const transazioni = await query.orderBy(
+      const transazioni = await db
+        .select()
+        .from(schema.walletTransazioni)
+        .where(and(...conditions))
+        .orderBy(
         desc(schema.walletTransazioni.dataOperazione)
       );
 

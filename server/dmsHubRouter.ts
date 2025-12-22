@@ -851,7 +851,7 @@ export const dmsHubRouter = router({
             }
 
             // Ottieni tariffa posteggio
-            const tipoPosteggio = stall.type || "STANDARD";
+            const tipoPosteggio = (stall as any).type || "STANDARD";
             const [tariffa] = await db.select().from(schema.tariffePosteggio)
               .where(and(
                 eq(schema.tariffePosteggio.mercatoId, stall.marketId),
@@ -884,7 +884,7 @@ export const dmsHubRouter = router({
                 saldoSuccessivo,
                 mercatoId: stall.marketId,
                 posteggioId: stall.id,
-                descrizione: `Presenza mercato - Posteggio ${stall.code || stall.id}`,
+                descrizione: `Presenza mercato - Posteggio ${stall.number || stall.id}`,
                 operatoreId: "SYSTEM",
               });
 
