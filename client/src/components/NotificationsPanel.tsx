@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   Bell, Mail, MessageSquare, Send, RefreshCw, 
-  ArrowDownLeft, ArrowUpRight, Phone, Loader2
+  ArrowDownLeft, ArrowUpRight, Phone, Loader2, Search, Building2, X
 } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://orchestratore.mio-hub.me';
+const API_BASE_URL = 'http://157.90.29.66:3000';
 
 interface Notification {
   id: string;
@@ -29,6 +30,15 @@ interface NotificationStats {
   whatsapp: number;
 }
 
+interface Impresa {
+  id: number;
+  denominazione: string;
+  codice_fiscale: string;
+  email?: string;
+  telefono?: string;
+  stato_impresa?: string;
+}
+
 export function NotificationsPanel() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [stats, setStats] = useState<NotificationStats>({ received: 0, sent: 0, emails: 0, whatsapp: 0 });
@@ -42,6 +52,87 @@ export function NotificationsPanel() {
   const [sendSubject, setSendSubject] = useState('');
   const [sendBody, setSendBody] = useState('');
   const [sendStatus, setSendStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Ricerca imprese
+  const [imprese, setImprese] = useState<Impresa[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedImpresa, setSelectedImpresa] = useState<Impresa | null>(null);
+  const [loadingImprese, setLoadingImprese] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Carica lista imprese
+  useEffect(() => {
+    const fetchImprese = async () => {
+      setLoadingImprese(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/imprese`);
+        const data = await response.json();
+        if (data.success && data.data) {
+          setImprese(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching imprese:', error);
+      } finally {
+        setLoadingImprese(false);
+      }
+    };
+    fetchImprese();
+  }, []);
+
+  // Chiudi dropdown quando clicchi fuori
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filtra imprese in base alla ricerca
+  const filteredImprese = imprese.filter(imp => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      imp.denominazione?.toLowerCase().includes(query) ||
+      imp.codice_fiscale?.toLowerCase().includes(query) ||
+      imp.email?.toLowerCase().includes(query)
+    );
+  });
+
+  // Seleziona impresa
+  const handleSelectImpresa = (impresa: Impresa) => {
+    setSelectedImpresa(impresa);
+    setSearchQuery(impresa.denominazione);
+    setShowDropdown(false);
+    
+    // Auto-popola il campo destinatario
+    if (sendType === 'email' && impresa.email) {
+      setSendTo(impresa.email);
+    } else if (sendType === 'whatsapp' && impresa.telefono) {
+      setSendTo(impresa.telefono);
+    }
+  };
+
+  // Quando cambia il tipo di invio, aggiorna il destinatario
+  useEffect(() => {
+    if (selectedImpresa) {
+      if (sendType === 'email' && selectedImpresa.email) {
+        setSendTo(selectedImpresa.email);
+      } else if (sendType === 'whatsapp' && selectedImpresa.telefono) {
+        setSendTo(selectedImpresa.telefono);
+      }
+    }
+  }, [sendType, selectedImpresa]);
+
+  // Reset selezione
+  const handleClearSelection = () => {
+    setSelectedImpresa(null);
+    setSearchQuery('');
+    setSendTo('');
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -104,7 +195,7 @@ export function NotificationsPanel() {
       if (data.success) {
         setSendStatus({ type: 'success', message: `${sendType === 'email' ? 'Email' : 'WhatsApp'} inviato con successo!` });
         // Reset form
-        setSendTo('');
+        handleClearSelection();
         setSendSubject('');
         setSendBody('');
         // Refresh lista
@@ -302,6 +393,96 @@ export function NotificationsPanel() {
               </Button>
             </div>
 
+            {/* Ricerca Impresa */}
+            <div ref={dropdownRef} className="relative">
+              <label className="text-[#e8fbff]/70 text-sm mb-1 block flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Cerca Impresa
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#e8fbff]/50" />
+                <Input
+                  placeholder="Cerca per nome, CF o email..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowDropdown(true);
+                    if (!e.target.value) setSelectedImpresa(null);
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  className="bg-[#0b1220] border-[#14b8a6]/30 text-[#e8fbff] pl-10 pr-10"
+                />
+                {selectedImpresa && (
+                  <button
+                    onClick={handleClearSelection}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#e8fbff]/50 hover:text-[#e8fbff]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              
+              {/* Dropdown risultati */}
+              {showDropdown && searchQuery && (
+                <div className="absolute z-50 w-full mt-1 bg-[#1a2332] border border-[#14b8a6]/30 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                  {loadingImprese ? (
+                    <div className="p-4 text-center text-[#e8fbff]/50">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                    </div>
+                  ) : filteredImprese.length === 0 ? (
+                    <div className="p-4 text-center text-[#e8fbff]/50">
+                      Nessuna impresa trovata
+                    </div>
+                  ) : (
+                    filteredImprese.slice(0, 10).map((impresa) => (
+                      <div
+                        key={impresa.id}
+                        onClick={() => handleSelectImpresa(impresa)}
+                        className="p-3 hover:bg-[#14b8a6]/20 cursor-pointer border-b border-[#14b8a6]/10 last:border-b-0"
+                      >
+                        <div className="text-[#e8fbff] font-semibold">{impresa.denominazione}</div>
+                        <div className="text-[#e8fbff]/60 text-sm flex items-center gap-4 mt-1">
+                          <span>CF: {impresa.codice_fiscale}</span>
+                          {impresa.email && (
+                            <span className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" /> {impresa.email}
+                            </span>
+                          )}
+                          {impresa.telefono && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" /> {impresa.telefono}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Impresa selezionata */}
+            {selectedImpresa && (
+              <div className="p-3 bg-[#14b8a6]/10 border border-[#14b8a6]/30 rounded-lg">
+                <div className="flex items-center gap-2 text-[#14b8a6]">
+                  <Building2 className="h-4 w-4" />
+                  <span className="font-semibold">{selectedImpresa.denominazione}</span>
+                </div>
+                <div className="text-[#e8fbff]/70 text-sm mt-1 flex items-center gap-4">
+                  {selectedImpresa.email && (
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3 w-3" /> {selectedImpresa.email}
+                    </span>
+                  )}
+                  {selectedImpresa.telefono && (
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3 w-3" /> {selectedImpresa.telefono}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Destinatario */}
             <div>
               <label className="text-[#e8fbff]/70 text-sm mb-1 block">
@@ -313,6 +494,11 @@ export function NotificationsPanel() {
                 onChange={(e) => setSendTo(e.target.value)}
                 className="bg-[#0b1220] border-[#14b8a6]/30 text-[#e8fbff]"
               />
+              {!selectedImpresa && (
+                <p className="text-[#e8fbff]/40 text-xs mt-1">
+                  Puoi cercare un'impresa sopra o inserire manualmente il destinatario
+                </p>
+              )}
             </div>
 
             {/* Oggetto (solo per email) */}
