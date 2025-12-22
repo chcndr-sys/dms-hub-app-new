@@ -366,94 +366,44 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
 
   // Fetch qualificazioni (mock data per ora)
   const fetchQualificazioni = async () => {
-    // Mock data per le qualificazioni - in futuro collegare a API
-    const mockQualificazioni: QualificazioneRow[] = [
-      {
-        id: '101',
-        company_id: companies[0]?.id || '1',
-        company_name: 'Alimentari Rossi & C.',
-        tipo: 'CONCESSIONE MERCATO',
-        ente_rilascio: 'Comune di Grosseto',
-        data_rilascio: '2023-01-15',
-        data_scadenza: '2025-01-15',
-        stato: 'ATTIVA',
-        note: 'Concessione per area mercato coperto settore alimentare'
-      },
-      {
-        id: '102',
-        company_id: companies[0]?.id || '1',
-        company_name: 'Alimentari Rossi & C.',
-        tipo: 'DURC',
-        ente_rilascio: 'INPS',
-        data_rilascio: '2024-11-01',
-        data_scadenza: '2025-02-01',
-        stato: 'ATTIVA',
-        note: 'Documento Unico Regolarità Contributiva'
-      },
-      {
-        id: '103',
-        company_id: companies[0]?.id || '1',
-        company_name: 'Alimentari Rossi & C.',
-        tipo: 'ISO 9001',
-        ente_rilascio: 'Bureau Veritas',
-        data_rilascio: '2022-06-10',
-        data_scadenza: '2025-06-10',
-        stato: 'ATTIVA',
-        note: 'Certificazione qualità sistema gestione'
-      },
-      {
-        id: '201',
-        company_id: companies[1]?.id || '2',
-        company_name: 'Bio Market Italia',
-        tipo: 'HACCP',
-        ente_rilascio: 'ASL Grosseto',
-        data_rilascio: '2024-03-20',
-        data_scadenza: '2026-03-20',
-        stato: 'ATTIVA',
-        note: 'Certificazione igiene alimentare'
-      },
-      {
-        id: '202',
-        company_id: companies[1]?.id || '2',
-        company_name: 'Bio Market Italia',
-        tipo: 'DURC',
-        ente_rilascio: 'INPS',
-        data_rilascio: '2024-10-15',
-        data_scadenza: '2024-12-01',
-        stato: 'IN_VERIFICA',
-        note: 'In attesa di rinnovo'
-      },
-      {
-        id: '301',
-        company_id: companies[2]?.id || '3',
-        company_name: 'Distribuzione Emilia S.p.A.',
-        tipo: 'CONCESSIONE MERCATO',
-        ente_rilascio: 'Comune di Grosseto',
-        data_rilascio: '2021-05-10',
-        data_scadenza: '2024-11-30',
-        stato: 'SCADUTA',
-        note: 'Necessario rinnovo urgente'
-      },
-      {
-        id: '302',
-        company_id: companies[2]?.id || '3',
-        company_name: 'Distribuzione Emilia S.p.A.',
-        tipo: 'ISO 14001',
-        ente_rilascio: 'TÜV Italia',
-        data_rilascio: '2023-09-01',
-        data_scadenza: '2026-09-01',
-        stato: 'ATTIVA',
-        note: 'Certificazione ambientale'
-      },
+    // Genera qualificazioni mock per le prime 5 imprese caricate
+    const tipiQualificazione = [
+      { tipo: 'DURC', ente: 'INPS', note: 'Documento Unico Regolarità Contributiva' },
+      { tipo: 'HACCP', ente: 'ASL Grosseto', note: 'Certificazione igiene alimentare' },
+      { tipo: 'ISO 9001', ente: 'Bureau Veritas', note: 'Certificazione qualità sistema gestione' },
+      { tipo: 'ISO 14001', ente: 'TÜV Italia', note: 'Certificazione ambientale' },
+      { tipo: 'CONCESSIONE MERCATO', ente: 'Comune di Grosseto', note: 'Concessione area mercato' },
     ];
     
-    // Aggiorna i company_name con i dati reali se disponibili
-    const qualifWithNames = mockQualificazioni.map(q => {
-      const company = companies.find(c => c.denominazione === q.company_name);
-      return company ? { ...q, company_id: company.id } : q;
+    const stati: Array<'ATTIVA' | 'SCADUTA' | 'IN_VERIFICA'> = ['ATTIVA', 'ATTIVA', 'ATTIVA', 'SCADUTA', 'IN_VERIFICA'];
+    
+    const mockQualificazioni: QualificazioneRow[] = [];
+    let idCounter = 100;
+    
+    // Genera qualificazioni per le prime 5 imprese
+    companies.slice(0, 5).forEach((company, companyIndex) => {
+      // Ogni impresa ha 2-4 qualificazioni
+      const numQualif = 2 + (companyIndex % 3);
+      for (let i = 0; i < numQualif; i++) {
+        const tipoIndex = (companyIndex + i) % tipiQualificazione.length;
+        const tipoData = tipiQualificazione[tipoIndex];
+        const statoIndex = (companyIndex + i) % stati.length;
+        
+        mockQualificazioni.push({
+          id: String(idCounter++),
+          company_id: company.id,
+          company_name: company.denominazione || 'N/A',
+          tipo: tipoData.tipo,
+          ente_rilascio: tipoData.ente,
+          data_rilascio: '2023-01-15',
+          data_scadenza: statoIndex === 3 ? '2024-11-30' : '2025-06-15',
+          stato: stati[statoIndex],
+          note: tipoData.note
+        });
+      }
     });
     
-    setQualificazioni(qualifWithNames);
+    setQualificazioni(mockQualificazioni);
   };
 
   // Handlers
