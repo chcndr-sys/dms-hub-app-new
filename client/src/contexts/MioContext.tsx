@@ -136,7 +136,8 @@ export function MioProvider({ children }: { children: ReactNode }) {
       });
       console.log('🔥 [MioContext] SUCCESS! ✅');
 
-      // 🔥 POLLING TEMPORANEO: Ricarica messaggi dopo 3s per catturare eventuali risposte aggiuntive
+      // 🔥 POLLING TEMPORANEO: Ricarica messaggi dopo 5s per catturare eventuali risposte aggiuntive
+      // 🔧 FIX: Aumentato a 5s e usa merge intelligente invece di sovrascrivere
       setTimeout(async () => {
         try {
           console.log('🔄 [MioContext] Polling post-invio per nuove risposte...');
@@ -145,21 +146,34 @@ export function MioProvider({ children }: { children: ReactNode }) {
             const pollData = await response.json();
             const rawMessages = pollData.messages || pollData.logs || [];
             if (rawMessages.length > 0) {
-              const loadedMessages: MioMessage[] = rawMessages.map((log: any) => ({
+              const serverMessages: MioMessage[] = rawMessages.map((log: any) => ({
                 id: log.id,
                 role: log.role as 'user' | 'assistant' | 'system',
                 content: log.message || log.content || '',
                 createdAt: log.created_at,
                 agentName: log.agent_name || log.agent || log.sender,
               }));
-              setMessages(loadedMessages);
-              console.log('✅ [MioContext] Messaggi aggiornati dal polling:', loadedMessages.length);
+              
+              // 🔧 FIX: Merge intelligente - aggiungi solo messaggi nuovi, non sovrascrivere
+              setMessages(prev => {
+                const existingIds = new Set(prev.map(m => m.id));
+                const newMessages = serverMessages.filter(m => !existingIds.has(m.id));
+                if (newMessages.length > 0) {
+                  console.log('✅ [MioContext] Aggiunti', newMessages.length, 'nuovi messaggi dal polling');
+                  // Ordina per timestamp
+                  const merged = [...prev, ...newMessages].sort((a, b) => 
+                    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                  );
+                  return merged;
+                }
+                return prev; // Nessun nuovo messaggio, mantieni stato attuale
+              });
             }
           }
         } catch (err) {
           console.error('❌ [MioContext] Errore polling post-invio:', err);
         }
-      }, 3000);
+      }, 5000);
 
     } catch (err: any) {
       console.error('🔥 [MioContext] ERROR:', err);
