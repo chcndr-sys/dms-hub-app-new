@@ -4956,7 +4956,7 @@ export default function DashboardPA() {
               </CardHeader>
               <CardContent>
                 {gisMapData && gisStalls.length > 0 ? (
-                  <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden aspect-square max-w-4xl mx-auto" style={{ height: 'auto', minHeight: '800px' }}>
+                  <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden w-full" style={{ height: '600px' }}>
                     <MarketMapComponent
                       refreshKey={gisMapRefreshKey}
                       mapData={gisMapData}
@@ -5382,7 +5382,7 @@ function LogsSection() {
               </CardHeader>
               <CardContent>
                 {gisMapData && gisStalls.length > 0 ? (
-                  <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden aspect-square max-w-4xl mx-auto" style={{ height: 'auto', minHeight: '800px' }}>
+                  <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden w-full" style={{ height: '600px' }}>
                     <MarketMapComponent
                       refreshKey={gisMapRefreshKey}
                       mapData={gisMapData}
