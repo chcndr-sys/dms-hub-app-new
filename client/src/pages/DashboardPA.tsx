@@ -30,6 +30,7 @@ import GuardianLogsSection from '@/components/GuardianLogsSection';
 import ImpreseQualificazioniPanel from '@/components/ImpreseQualificazioniPanel';
 import { MultiAgentChatView } from '@/components/multi-agent/MultiAgentChatView';
 import { SharedWorkspace } from '@/components/SharedWorkspace';
+import NotificationsPanel from '@/components/NotificationsPanel';
 import { MessageContent } from '@/components/MessageContent';
 import { callOrchestrator } from '@/api/orchestratorClient';
 import { sendAgentMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient';
@@ -3551,70 +3552,9 @@ export default function DashboardPA() {
             </Card>
           </TabsContent>
 
-          {/* TAB 17: NOTIFICHE */}
+          {/* TAB 17: NOTIFICHE - Componente Dinamico */}
           <TabsContent value="notifications" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-[#ec4899]/20 to-[#ec4899]/5 border-[#ec4899]/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-[#e8fbff] text-sm">Inviate</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-[#ec4899]">{mockData.notifications.sent}</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-[#10b981]/20 to-[#10b981]/5 border-[#10b981]/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-[#e8fbff] text-sm">Consegnate</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-[#10b981]">{mockData.notifications.delivered}</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-[#06b6d4]/20 to-[#06b6d4]/5 border-[#06b6d4]/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-[#e8fbff] text-sm">Open Rate</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-[#06b6d4]">{mockData.notifications.openRate}%</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-[#e8fbff] text-sm">Click Rate</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-[#f59e0b]">{mockData.notifications.clickRate}%</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="bg-[#1a2332] border-[#ec4899]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff]">Notifiche Recenti</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {mockData.notifications.recent.map((notif) => (
-                    <div key={notif.id} className="p-4 bg-[#0b1220] rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-[#e8fbff] font-semibold">{notif.title}</div>
-                        <div className={`px-2 py-1 rounded text-xs ${
-                          notif.type === 'push' ? 'bg-[#ec4899]/20 text-[#ec4899]' :
-                          notif.type === 'email' ? 'bg-[#06b6d4]/20 text-[#06b6d4]' :
-                          'bg-[#10b981]/20 text-[#10b981]'
-                        }`}>
-                          {notif.type.toUpperCase()}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="text-[#e8fbff]/70">Inviate: {notif.sent} • Aperte: {notif.opened}</div>
-                        <div className="text-[#e8fbff]/50">{notif.date}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <NotificationsPanel />
           </TabsContent>
 
           {/* TAB 18: CENTRO MOBILITÀ */}
