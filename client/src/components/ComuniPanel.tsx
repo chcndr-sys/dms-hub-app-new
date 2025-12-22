@@ -276,8 +276,46 @@ export default function ComuniPanel() {
     );
   }
 
+  // Calcola statistiche
+  const totalSettori = comuni.reduce((acc, c) => acc + (c.num_settori || 0), 0);
+  const comuniConSettori = comuni.filter(c => (c.num_settori || 0) > 0).length;
+
   return (
     <div className="space-y-6">
+      {/* Statistiche */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+            <Building2 className="w-4 h-4" />
+            Comuni Totali
+          </div>
+          <div className="text-2xl font-bold text-cyan-400">{comuni.length}</div>
+        </div>
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+            <Users className="w-4 h-4" />
+            Settori Totali
+          </div>
+          <div className="text-2xl font-bold text-emerald-400">{totalSettori}</div>
+        </div>
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+            <Building2 className="w-4 h-4" />
+            Comuni Configurati
+          </div>
+          <div className="text-2xl font-bold text-purple-400">{comuniConSettori}</div>
+        </div>
+        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+          <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
+            <Mail className="w-4 h-4" />
+            Media Settori/Comune
+          </div>
+          <div className="text-2xl font-bold text-orange-400">
+            {comuni.length > 0 ? (totalSettori / comuni.length).toFixed(1) : '0'}
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

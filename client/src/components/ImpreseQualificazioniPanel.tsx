@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Building2, FileCheck, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Building2, FileCheck, AlertCircle, CheckCircle, Clock, Users, Search, X, TrendingUp } from 'lucide-react';
 
 // ============================================================================
 // INTERFACCE TYPESCRIPT
@@ -207,6 +207,7 @@ export default function ImpreseQualificazioniPanel() {
   const [selectedImpresa, setSelectedImpresa] = useState<ImpresaDTO | null>(null);
   const [qualificazioni, setQualificazioni] = useState<QualificazioneDTO[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Carica lista imprese da API
   useEffect(() => {
@@ -286,35 +287,118 @@ export default function ImpreseQualificazioniPanel() {
     }
   };
 
+  // Calcola statistiche
+  const totalQualificazioni = imprese.reduce((acc, i) => acc + (i.num_qualificazioni_attive || 0), 0);
+  const comuniUnici = [...new Set(imprese.map(i => i.comune))].length;
+  
+  // Filtra imprese in base alla ricerca
+  const filteredImprese = imprese.filter(impresa => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      impresa.ragione_sociale?.toLowerCase().includes(query) ||
+      impresa.piva?.toLowerCase().includes(query) ||
+      impresa.codice_fiscale?.toLowerCase().includes(query) ||
+      impresa.comune?.toLowerCase().includes(query) ||
+      impresa.settore?.toLowerCase().includes(query)
+    );
+  });
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-      {/* COLONNA SINISTRA: Lista Imprese */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="w-5 h-5" />
-            Imprese Registrate
-          </CardTitle>
-          <CardDescription>
-            Seleziona un'impresa per visualizzare le sue qualificazioni
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading && !selectedImpresa ? (
-            <div className="text-center py-8 text-gray-500">Caricamento...</div>
-          ) : (
-            <div className="overflow-auto max-h-[600px]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ragione Sociale</TableHead>
-                    <TableHead>P.IVA</TableHead>
-                    <TableHead>Comune</TableHead>
-                    <TableHead className="text-center">Qualif.</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {imprese.map((impresa) => (
+    <div className="space-y-6 p-6">
+      {/* Statistiche */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-cyan-400 text-sm mb-1">
+              <Building2 className="w-4 h-4" />
+              Imprese Totali
+            </div>
+            <div className="text-2xl font-bold text-white">{imprese.length}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-emerald-400 text-sm mb-1">
+              <FileCheck className="w-4 h-4" />
+              Qualificazioni Attive
+            </div>
+            <div className="text-2xl font-bold text-white">{totalQualificazioni}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-purple-400 text-sm mb-1">
+              <Users className="w-4 h-4" />
+              Comuni Coperti
+            </div>
+            <div className="text-2xl font-bold text-white">{comuniUnici}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-orange-400 text-sm mb-1">
+              <TrendingUp className="w-4 h-4" />
+              Media Qualif./Impresa
+            </div>
+            <div className="text-2xl font-bold text-white">
+              {imprese.length > 0 ? (totalQualificazioni / imprese.length).toFixed(1) : '0'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* COLONNA SINISTRA: Lista Imprese */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              Imprese Registrate
+            </CardTitle>
+            <CardDescription>
+              Seleziona un'impresa per visualizzare le sue qualificazioni
+            </CardDescription>
+            {/* Barra di ricerca */}
+            <div className="relative mt-3">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cerca per ragione sociale, P.IVA, comune..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-10 py-2 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loading && !selectedImpresa ? (
+              <div className="text-center py-8 text-gray-500">Caricamento...</div>
+            ) : filteredImprese.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                {searchQuery ? `Nessuna impresa trovata per "${searchQuery}"` : 'Nessuna impresa registrata'}
+              </div>
+            ) : (
+              <div className="overflow-auto max-h-[500px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ragione Sociale</TableHead>
+                      <TableHead>P.IVA</TableHead>
+                      <TableHead>Comune</TableHead>
+                      <TableHead className="text-center">Qualif.</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredImprese.map((impresa) => (
                     <TableRow
                       key={impresa.id_impresa}
                       className={`cursor-pointer hover:bg-gray-50 ${
@@ -417,6 +501,7 @@ export default function ImpreseQualificazioniPanel() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
