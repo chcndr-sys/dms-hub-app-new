@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://orchestratore.mio-hub.me';
-const API_BASE_URL = 'http://157.90.29.66:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://157.90.29.66:3000';
 
 interface Notification {
   id: string;
