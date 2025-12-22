@@ -1,4 +1,4 @@
-# 🔑 BLUEPRINT MIO HUB - AGGIORNATO 20 DICEMBRE 2024
+# 🔑 BLUEPRINT MIO HUB - AGGIORNATO 22 DICEMBRE 2024
 
 **DOCUMENTO DI CONTESTO PER NUOVE SESSIONI MANUS**
 
@@ -274,5 +274,62 @@ ssh -i /home/ubuntu/.ssh/manus_hetzner_key root@157.90.29.66 'pm2 logs mihub-bac
 
 ---
 
-*Documento creato il 20 Dicembre 2024 - Manus AI*
+## 💳 WALLET / PAGOPA (NEW)
+
+### Overview
+
+Sistema di borsellino elettronico prepagato per operatori mercatali con integrazione **E-FIL Plug&Pay** per pagamenti PagoPA. Mercato pilota: **Comune di Grosseto**.
+
+### Componenti
+
+| File | Descrizione |
+|------|-------------|
+| `server/walletRouter.ts` | API tRPC per gestione wallet |
+| `server/services/efilPagopaService.ts` | Integrazione SOAP E-FIL |
+| `client/src/components/WalletPanel.tsx` | UI gestione wallet |
+| `.env.efil.example` | Configurazione E-FIL |
+
+### Tabelle Database
+
+| Tabella | Descrizione |
+|---------|-------------|
+| `operatore_wallet` | Wallet per ogni impresa |
+| `wallet_transazioni` | Storico movimenti |
+| `tariffe_posteggio` | Tariffe per tipo posteggio |
+| `avvisi_pagopa` | Avvisi PagoPA generati |
+
+### Servizi E-FIL
+
+| Servizio | Funzione |
+|----------|----------|
+| WSPayment | Pagamento spontaneo + checkout |
+| WSFeed | Creazione avvisi PagoPA |
+| WSDeliver | Verifica stato pagamenti |
+| WSGeneratorPdf | PDF avviso/quietanza |
+| WSPaymentNotify | Notifica fuori nodo |
+
+### Flusso Check-in con Wallet
+
+```
+1. Operatore richiede check-in
+2. Sistema verifica stato wallet
+3. Sistema verifica saldo vs tariffa
+4. Se OK: decurta e crea presenza
+5. Se saldo < minimo: blocca wallet
+6. Se bloccato: rifiuta check-in
+```
+
+### Configurazione
+
+```bash
+EFIL_BASE_URL=https://test.plugnpay.efil.it/plugnpay
+EFIL_USERNAME=<user>
+EFIL_PASSWORD=<pass>
+EFIL_APPLICATION_CODE=<fornito da E-FIL>
+EFIL_ID_GESTIONALE=DMS-GROSSETO
+```
+
+---
+
+*Documento aggiornato il 22 Dicembre 2024 - Manus AI*
 *Da allegare all'inizio di ogni nuova sessione di lavoro*

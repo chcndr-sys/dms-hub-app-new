@@ -1,7 +1,8 @@
 # 📘 DMS Hub System Blueprint
 
-> **Auto-generated:** 22 dicembre 2025 alle ore 02:15  
-> **Generator:** `scripts/generate_blueprint.cjs`
+> **Auto-generated:** 22 dicembre 2024 alle ore 11:30  
+> **Generator:** `scripts/generate_blueprint.cjs`  
+> **Last Update:** Wallet/PagoPA Integration
 
 ---
 
@@ -9,10 +10,11 @@
 
 **DMS Hub** è il sistema centrale per la gestione della Rete Mercati Made in Italy, con:
 
-- **94 endpoint API** (TRPC + REST)
-- **68 tabelle database**
+- **109+ endpoint API** (TRPC + REST)
+- **72 tabelle database**
 - **Full Observability** con Guardian monitoring
 - **Multi-agent orchestration** (MIO, Guardian, Zapier, ecc.)
+- **💳 Wallet/PagoPA** - Borsellino elettronico operatori con integrazione E-FIL Plug&Pay
 
 ---
 
@@ -77,6 +79,10 @@
 | `imprese` | `imprese` |
 | `qualificazioni` | `qualificazioni` |
 | `qualification_types` | `qualification_types` |
+| `operatoreWallet` | `operatore_wallet` |
+| `walletTransazioni` | `wallet_transazioni` |
+| `tariffePosteggio` | `tariffe_posteggio` |
+| `avvisiPagopa` | `avvisi_pagopa` |
 
 ---
 
@@ -152,8 +158,10 @@ server/
   📁 services
     📄 apiInventoryService.ts
     📄 apiLogsService.ts
+    📄 efilPagopaService.ts    # 🆕 Integrazione E-FIL PagoPA
     📄 tperService.ts
   📄 storage.ts
+  📄 walletRouter.ts           # 🆕 API Wallet operatori
 ```
 
 ### Client
@@ -197,6 +205,7 @@ client/src/
     📄 MobilityMap.tsx
     📄 NotificationsPanel.tsx
     📄 PanicButton.tsx
+    📄 WalletPanel.tsx          # 🆕 Gestione Wallet operatori
     📄 RouteLayer.tsx
     📄 SharedWorkspace.tsx
     📄 SharedWorkspace_old.tsx
@@ -265,6 +274,90 @@ client/src/
 - `seed.js`
 - `sync_api_docs.cjs`
 - `test_agents_capabilities.cjs`
+
+---
+
+## 💳 Wallet/PagoPA System (NEW)
+
+### Architettura
+
+Il sistema Wallet/PagoPA permette la gestione del borsellino elettronico prepagato per gli operatori mercatali, con integrazione **E-FIL Plug&Pay** per i pagamenti PagoPA.
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Operatore     │────▶│   DMS Hub       │────▶│   E-FIL         │
+│   Mercatale     │     │   (Wallet API)  │     │   Plug&Pay      │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+        │                       │                       │
+        │  Ricarica Wallet      │  WSPayment/WSFeed     │
+        │──────────────────────▶│──────────────────────▶│
+        │                       │                       │
+        │  Check-in Mercato     │  Verifica Saldo       │
+        │──────────────────────▶│  + Decurtazione       │
+        │                       │                       │
+```
+
+### Tabelle Database
+
+| Tabella | Descrizione |
+|---------|-------------|
+| `operatore_wallet` | Wallet per ogni impresa/operatore |
+| `wallet_transazioni` | Storico ricariche e decurtazioni |
+| `tariffe_posteggio` | Tariffe giornaliere per tipo posteggio |
+| `avvisi_pagopa` | Avvisi PagoPA generati |
+
+### API Endpoints (`/api/wallet/...`)
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `stats` | GET | Statistiche dashboard wallet |
+| `list` | GET | Lista tutti i wallet |
+| `getById` | GET | Dettaglio wallet |
+| `create` | POST | Crea nuovo wallet |
+| `updateStatus` | POST | Blocca/sblocca wallet |
+| `ricarica` | POST | Effettua ricarica |
+| `decurtazione` | POST | Effettua decurtazione |
+| `generaAvvisoPagopa` | POST | Genera avviso PagoPA |
+| `avviaPagamentoPagopa` | POST | Avvia pagamento immediato |
+| `verificaPagamento` | GET | Verifica stato IUV |
+| `generaPdfAvviso` | GET | PDF avviso |
+| `generaPdfQuietanza` | GET | PDF quietanza |
+| `tariffe` | GET | Lista tariffe posteggio |
+| `verificaSaldoPresenza` | GET | Verifica saldo per check-in |
+
+### Integrazione E-FIL Plug&Pay
+
+| Servizio SOAP | Funzione |
+|---------------|----------|
+| **WSPayment** | Pagamento spontaneo + checkout |
+| **WSFeed** | Creazione posizione debitoria (avviso) |
+| **WSDeliver** | Verifica stato + ricerca giornaliera |
+| **WSGeneratorPdf** | Generazione PDF avviso/quietanza |
+| **WSPaymentNotify** | Notifica pagamento "Fuori Nodo" |
+
+### Configurazione
+
+Variabili ambiente richieste (vedi `.env.efil.example`):
+
+```bash
+EFIL_BASE_URL=https://test.plugnpay.efil.it/plugnpay
+EFIL_USERNAME=<user>
+EFIL_PASSWORD=<pass>
+EFIL_APPLICATION_CODE=<fornito da E-FIL>
+EFIL_ID_GESTIONALE=DMS-GROSSETO
+DMS_PAGOPA_RETURN_URL=https://miohub.app/payments/return
+DMS_PAGOPA_CALLBACK_URL=https://miohub.app/api/wallet/callback
+```
+
+### Flusso Check-in con Wallet
+
+1. Operatore richiede check-in al mercato
+2. Sistema verifica stato wallet (ATTIVO/BLOCCATO/SOSPESO)
+3. Sistema ottiene tariffa posteggio per tipo
+4. Sistema verifica saldo sufficiente
+5. Se OK: decurta importo e crea presenza
+6. Se saldo < minimo: blocca wallet automaticamente
+7. Se wallet bloccato: rifiuta check-in
 
 ---
 
