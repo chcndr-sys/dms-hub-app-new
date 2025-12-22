@@ -3,7 +3,8 @@ import {
   Wallet, Euro, AlertTriangle, XCircle, CheckCircle, Clock,
   Search, ArrowUpRight, ArrowDownRight, FileText, Briefcase,
   Building2, Calendar, User, CreditCard, RefreshCw, Download,
-  Plus, Filter, Eye, Edit, Trash2, Send, Bell, AlertCircle
+  Plus, Filter, Eye, Edit, Trash2, Send, Bell, AlertCircle,
+  ExternalLink, Copy, Loader2, QrCode
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { trpc } from '@/lib/trpc';
 
 // Tipi per il sistema Wallet
 interface WalletOperatore {
@@ -64,6 +66,7 @@ interface TariffaPosteggio {
 interface AvvisoPagoPA {
   id: number;
   iuv: string;
+  codiceAvviso?: string;
   impresaId: number;
   ragioneSociale: string;
   importo: number;
@@ -71,6 +74,7 @@ interface AvvisoPagoPA {
   dataScadenza: string;
   stato: 'EMESSO' | 'PAGATO' | 'SCADUTO' | 'ANNULLATO';
   causale: string;
+  redirectUrl?: string;
 }
 
 // Mock data per il wallet
@@ -247,52 +251,19 @@ const mockTariffe: TariffaPosteggio[] = [
   { id: 5, tipoPosteggio: 'Produttore Agricolo', tariffaGiornaliera: 18.00, descrizione: 'Posteggio riservato a produttori agricoli diretti' }
 ];
 
-const mockAvvisiPagoPA: AvvisoPagoPA[] = [
-  {
-    id: 1,
-    iuv: '0123456789012345678',
-    impresaId: 101,
-    ragioneSociale: 'Alimentari Rossi & C.',
-    importo: 500.00,
-    dataEmissione: '2025-12-18',
-    dataScadenza: '2025-12-28',
-    stato: 'PAGATO',
-    causale: 'Ricarica Wallet Operatore Mercatale'
-  },
-  {
-    id: 2,
-    iuv: '0123456789012345679',
-    impresaId: 102,
-    ragioneSociale: 'Bio Market Italia',
-    importo: 300.00,
-    dataEmissione: '2025-12-20',
-    dataScadenza: '2025-12-30',
-    stato: 'EMESSO',
-    causale: 'Ricarica Wallet Operatore Mercatale'
-  },
-  {
-    id: 3,
-    iuv: '0123456789012345680',
-    impresaId: 103,
-    ragioneSociale: 'Calzature Neri',
-    importo: 200.00,
-    dataEmissione: '2025-12-05',
-    dataScadenza: '2025-12-15',
-    stato: 'SCADUTO',
-    causale: 'Ricarica Wallet Operatore Mercatale'
-  },
-  {
-    id: 4,
-    iuv: '9876543210987654321',
-    impresaId: 104,
-    ragioneSociale: 'Frutta e Verdura Rossi',
-    importo: 1000.00,
-    dataEmissione: '2025-12-15',
-    dataScadenza: '2025-12-25',
-    stato: 'PAGATO',
-    causale: 'Ricarica Wallet Operatore Mercatale'
-  }
-];
+// Genera IUV mock realistico
+const generateMockIUV = () => {
+  const timestamp = Date.now().toString().slice(-10);
+  const random = Math.random().toString().slice(2, 9);
+  return `RF${timestamp}${random}`;
+};
+
+// Genera codice avviso mock
+const generateMockCodiceAvviso = () => {
+  const aux = '3'; // Cifra ausiliaria
+  const codiceIUV = Math.random().toString().slice(2, 19).padEnd(17, '0');
+  return `${aux}${codiceIUV}`;
+};
 
 export default function WalletPanel() {
   const [subTab, setSubTab] = useState<'wallet' | 'pagopa' | 'tariffe' | 'riconciliazione'>('wallet');
@@ -300,9 +271,72 @@ export default function WalletPanel() {
   const [selectedWallet, setSelectedWallet] = useState<WalletOperatore | null>(null);
   const [filterStato, setFilterStato] = useState<string>('tutti');
   const [filterMercato, setFilterMercato] = useState<string>('tutti');
+  
+  // Stati per dialog ricarica
   const [showRicaricaDialog, setShowRicaricaDialog] = useState(false);
   const [ricaricaImporto, setRicaricaImporto] = useState('');
+  const [isGeneratingAvviso, setIsGeneratingAvviso] = useState(false);
+  const [generatedAvviso, setGeneratedAvviso] = useState<AvvisoPagoPA | null>(null);
+  
+  // Stati per dialog pagamento immediato
+  const [showPagamentoDialog, setShowPagamentoDialog] = useState(false);
+  const [pagamentoImporto, setPagamentoImporto] = useState('');
+  const [isProcessingPagamento, setIsProcessingPagamento] = useState(false);
+  
+  // Stati per notifiche
   const [showNotificaDialog, setShowNotificaDialog] = useState(false);
+  
+  // Stati per avvisi PagoPA
+  const [avvisiPagoPA, setAvvisiPagoPA] = useState<AvvisoPagoPA[]>([
+    {
+      id: 1,
+      iuv: '0123456789012345678',
+      codiceAvviso: '301234567890123456',
+      impresaId: 101,
+      ragioneSociale: 'Alimentari Rossi & C.',
+      importo: 500.00,
+      dataEmissione: '2025-12-18',
+      dataScadenza: '2025-12-28',
+      stato: 'PAGATO',
+      causale: 'Ricarica Wallet Operatore Mercatale'
+    },
+    {
+      id: 2,
+      iuv: '0123456789012345679',
+      codiceAvviso: '301234567890123457',
+      impresaId: 102,
+      ragioneSociale: 'Bio Market Italia',
+      importo: 300.00,
+      dataEmissione: '2025-12-20',
+      dataScadenza: '2025-12-30',
+      stato: 'EMESSO',
+      causale: 'Ricarica Wallet Operatore Mercatale'
+    },
+    {
+      id: 3,
+      iuv: '0123456789012345680',
+      codiceAvviso: '301234567890123458',
+      impresaId: 103,
+      ragioneSociale: 'Calzature Neri',
+      importo: 200.00,
+      dataEmissione: '2025-12-05',
+      dataScadenza: '2025-12-15',
+      stato: 'SCADUTO',
+      causale: 'Ricarica Wallet Operatore Mercatale'
+    },
+    {
+      id: 4,
+      iuv: '9876543210987654321',
+      codiceAvviso: '309876543210987654',
+      impresaId: 104,
+      ragioneSociale: 'Frutta e Verdura Rossi',
+      importo: 1000.00,
+      dataEmissione: '2025-12-15',
+      dataScadenza: '2025-12-25',
+      stato: 'PAGATO',
+      causale: 'Ricarica Wallet Operatore Mercatale'
+    }
+  ]);
 
   // Filtra wallet in base a ricerca e filtri
   const filteredWallets = mockWallets.filter(wallet => {
@@ -324,10 +358,10 @@ export default function WalletPanel() {
     walletSaldoBasso: mockWallets.filter(w => w.stato === 'SALDO_BASSO').length,
     walletBloccati: mockWallets.filter(w => w.stato === 'BLOCCATO').length,
     saldoTotale: mockWallets.reduce((sum, w) => sum + w.saldo, 0),
-    avvisiInAttesa: mockAvvisiPagoPA.filter(a => a.stato === 'EMESSO').length,
-    avvisiPagati: mockAvvisiPagoPA.filter(a => a.stato === 'PAGATO').length,
-    avvisiScaduti: mockAvvisiPagoPA.filter(a => a.stato === 'SCADUTO').length,
-    totaleIncassato: mockAvvisiPagoPA.filter(a => a.stato === 'PAGATO').reduce((sum, a) => sum + a.importo, 0)
+    avvisiInAttesa: avvisiPagoPA.filter(a => a.stato === 'EMESSO').length,
+    avvisiPagati: avvisiPagoPA.filter(a => a.stato === 'PAGATO').length,
+    avvisiScaduti: avvisiPagoPA.filter(a => a.stato === 'SCADUTO').length,
+    totaleIncassato: avvisiPagoPA.filter(a => a.stato === 'PAGATO').reduce((sum, a) => sum + a.importo, 0)
   };
 
   // Ottieni transazioni per wallet selezionato
@@ -365,6 +399,94 @@ export default function WalletPanel() {
 
   // Lista mercati unici
   const mercatiUnici = [...new Set(mockWallets.map(w => w.mercato))];
+
+  // Genera avviso PagoPA (mock che simula chiamata API E-FIL)
+  const handleGeneraAvviso = async () => {
+    if (!selectedWallet || !ricaricaImporto) return;
+    
+    setIsGeneratingAvviso(true);
+    
+    // Simula chiamata API
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const importoNum = parseFloat(ricaricaImporto);
+    const iuv = generateMockIUV();
+    const codiceAvviso = generateMockCodiceAvviso();
+    const oggi = new Date();
+    const scadenza = new Date(oggi);
+    scadenza.setDate(scadenza.getDate() + 30);
+    
+    const nuovoAvviso: AvvisoPagoPA = {
+      id: avvisiPagoPA.length + 1,
+      iuv,
+      codiceAvviso,
+      impresaId: selectedWallet.impresaId,
+      ragioneSociale: selectedWallet.ragioneSociale,
+      importo: importoNum,
+      dataEmissione: oggi.toISOString().split('T')[0],
+      dataScadenza: scadenza.toISOString().split('T')[0],
+      stato: 'EMESSO',
+      causale: `Ricarica Wallet Operatore Mercatale - ${selectedWallet.ragioneSociale}`
+    };
+    
+    setAvvisiPagoPA(prev => [nuovoAvviso, ...prev]);
+    setGeneratedAvviso(nuovoAvviso);
+    setIsGeneratingAvviso(false);
+  };
+
+  // Avvia pagamento immediato (mock che simula redirect a checkout PagoPA)
+  const handlePagamentoImmediato = async () => {
+    if (!selectedWallet || !pagamentoImporto) return;
+    
+    setIsProcessingPagamento(true);
+    
+    // Simula chiamata API
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const importoNum = parseFloat(pagamentoImporto);
+    const iuv = generateMockIUV();
+    const codiceAvviso = generateMockCodiceAvviso();
+    const oggi = new Date();
+    const scadenza = new Date(oggi);
+    scadenza.setDate(scadenza.getDate() + 1);
+    
+    // URL checkout mock (in produzione sarebbe l'URL E-FIL)
+    const checkoutUrl = `https://checkout.pagopa.it/pay/${codiceAvviso}?amount=${importoNum * 100}`;
+    
+    const nuovoAvviso: AvvisoPagoPA = {
+      id: avvisiPagoPA.length + 1,
+      iuv,
+      codiceAvviso,
+      impresaId: selectedWallet.impresaId,
+      ragioneSociale: selectedWallet.ragioneSociale,
+      importo: importoNum,
+      dataEmissione: oggi.toISOString().split('T')[0],
+      dataScadenza: scadenza.toISOString().split('T')[0],
+      stato: 'EMESSO',
+      causale: `Ricarica Wallet - Pagamento Immediato - ${selectedWallet.ragioneSociale}`,
+      redirectUrl: checkoutUrl
+    };
+    
+    setAvvisiPagoPA(prev => [nuovoAvviso, ...prev]);
+    setIsProcessingPagamento(false);
+    setShowPagamentoDialog(false);
+    setPagamentoImporto('');
+    
+    // Apri checkout in nuova finestra
+    window.open(checkoutUrl, '_blank');
+  };
+
+  // Copia negli appunti
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  // Reset dialog ricarica
+  const resetRicaricaDialog = () => {
+    setShowRicaricaDialog(false);
+    setRicaricaImporto('');
+    setGeneratedAvviso(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -453,13 +575,13 @@ export default function WalletPanel() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+            <Card className="bg-[#1a2332] border-[#10b981]/30">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <Euro className="h-8 w-8 text-[#14b8a6]" />
+                  <Euro className="h-8 w-8 text-[#10b981]" />
                   <div>
                     <p className="text-sm text-[#e8fbff]/70">Saldo Totale</p>
-                    <p className="text-2xl font-bold text-[#14b8a6]">€ {stats.saldoTotale.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                    <p className="text-2xl font-bold text-[#10b981]">€ {stats.saldoTotale.toLocaleString('it-IT')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -469,16 +591,17 @@ export default function WalletPanel() {
           {/* Filtri e Ricerca */}
           <Card className="bg-[#1a2332] border-[#3b82f6]/30">
             <CardContent className="pt-6">
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="relative flex-1 min-w-[250px]">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#e8fbff]/50" />
-                  <input
-                    type="text"
-                    placeholder="Cerca per ragione sociale, P.IVA, n° posteggio..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-[#0b1220] border border-[#3b82f6]/30 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/50 focus:outline-none focus:border-[#3b82f6]"
-                  />
+              <div className="flex flex-wrap gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#e8fbff]/50" />
+                    <Input
+                      placeholder="Cerca per ragione sociale, P.IVA o posteggio..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 bg-[#0b1220] border-[#3b82f6]/30 text-[#e8fbff]"
+                    />
+                  </div>
                 </div>
                 <Select value={filterStato} onValueChange={setFilterStato}>
                   <SelectTrigger className="w-[180px] bg-[#0b1220] border-[#3b82f6]/30 text-[#e8fbff]">
@@ -511,39 +634,32 @@ export default function WalletPanel() {
             {/* Lista Wallet */}
             <Card className="bg-[#1a2332] border-[#3b82f6]/30">
               <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Wallet className="h-5 w-5 text-[#3b82f6]" />
-                    Wallet Operatori ({filteredWallets.length})
-                  </span>
-                  <Button size="sm" className="bg-[#10b981] hover:bg-[#10b981]/80">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Nuovo
-                  </Button>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-[#3b82f6]" />
+                  Wallet Operatori ({filteredWallets.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                <div className="space-y-2 max-h-[500px] overflow-y-auto">
                   {filteredWallets.map(wallet => (
                     <div 
                       key={wallet.id}
-                      className={`p-4 bg-[#0b1220] rounded-lg border cursor-pointer transition-all ${
+                      className={`p-3 bg-[#0b1220] rounded-lg border cursor-pointer transition-all ${
                         selectedWallet?.id === wallet.id 
                           ? 'border-[#3b82f6] ring-1 ring-[#3b82f6]' 
-                          : `${getStatoColor(wallet.stato).split(' ')[2]} hover:border-[#3b82f6]/50`
+                          : 'border-[#3b82f6]/20 hover:border-[#3b82f6]/50'
                       }`}
                       onClick={() => setSelectedWallet(wallet)}
                     >
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-[#e8fbff] font-semibold">{wallet.ragioneSociale}</p>
-                          <p className="text-sm text-[#e8fbff]/70">P.IVA: {wallet.partitaIva}</p>
-                          <p className="text-xs text-[#e8fbff]/50 mt-1">
-                            Post. {wallet.numeroPosteggio} - {wallet.mercato}
+                        <div className="flex-1">
+                          <p className="text-[#e8fbff] font-medium">{wallet.ragioneSociale}</p>
+                          <p className="text-xs text-[#e8fbff]/50">
+                            Post. {wallet.numeroPosteggio} • {wallet.mercato}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className={`font-bold text-xl ${
+                          <p className={`font-bold ${
                             wallet.stato === 'ATTIVO' ? 'text-[#10b981]' :
                             wallet.stato === 'SALDO_BASSO' ? 'text-[#f59e0b]' : 'text-[#ef4444]'
                           }`}>
@@ -611,19 +727,211 @@ export default function WalletPanel() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Dialog open={showRicaricaDialog} onOpenChange={setShowRicaricaDialog}>
+                      
+                      {/* Pulsanti Azione */}
+                      <div className="flex gap-2 flex-wrap">
+                        {/* Dialog Genera Avviso PagoPA */}
+                        <Dialog open={showRicaricaDialog} onOpenChange={(open) => {
+                          if (!open) resetRicaricaDialog();
+                          else setShowRicaricaDialog(true);
+                        }}>
                           <DialogTrigger asChild>
                             <Button className="flex-1 bg-[#10b981] hover:bg-[#10b981]/80">
-                              <Euro className="h-4 w-4 mr-2" />
-                              Genera Avviso PagoPA
+                              <FileText className="h-4 w-4 mr-2" />
+                              Genera Avviso
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="bg-[#1a2332] border-[#3b82f6]/30">
+                          <DialogContent className="bg-[#1a2332] border-[#3b82f6]/30 max-w-md">
                             <DialogHeader>
-                              <DialogTitle className="text-[#e8fbff]">Genera Avviso PagoPA</DialogTitle>
+                              <DialogTitle className="text-[#e8fbff]">
+                                {generatedAvviso ? '✅ Avviso Generato' : 'Genera Avviso PagoPA'}
+                              </DialogTitle>
                               <DialogDescription className="text-[#e8fbff]/70">
-                                Genera un avviso di pagamento PagoPA per la ricarica del wallet di {selectedWallet.ragioneSociale}
+                                {generatedAvviso 
+                                  ? 'Avviso di pagamento generato con successo'
+                                  : `Genera un avviso di pagamento PagoPA per ${selectedWallet.ragioneSociale}`
+                                }
+                              </DialogDescription>
+                            </DialogHeader>
+                            
+                            {!generatedAvviso ? (
+                              <>
+                                <div className="space-y-4 py-4">
+                                  <div className="space-y-2">
+                                    <Label className="text-[#e8fbff]">Importo ricarica (€)</Label>
+                                    <Input
+                                      type="number"
+                                      placeholder="Es. 500.00"
+                                      value={ricaricaImporto}
+                                      onChange={(e) => setRicaricaImporto(e.target.value)}
+                                      className="bg-[#0b1220] border-[#3b82f6]/30 text-[#e8fbff] text-lg"
+                                      min="1"
+                                      step="0.01"
+                                    />
+                                  </div>
+                                  <div className="p-3 bg-[#0b1220] rounded-lg border border-[#3b82f6]/30">
+                                    <p className="text-sm text-[#e8fbff]/70 mb-2">Importi suggeriti:</p>
+                                    <div className="flex gap-2 flex-wrap">
+                                      {[50, 100, 250, 500, 1000].map(importo => (
+                                        <Button
+                                          key={importo}
+                                          size="sm"
+                                          variant="outline"
+                                          className={`border-[#3b82f6]/30 ${
+                                            ricaricaImporto === importo.toString() 
+                                              ? 'bg-[#3b82f6] text-white' 
+                                              : 'text-[#e8fbff]'
+                                          }`}
+                                          onClick={() => setRicaricaImporto(importo.toString())}
+                                        >
+                                          € {importo}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  {ricaricaImporto && (
+                                    <div className="p-3 bg-[#10b981]/10 rounded-lg border border-[#10b981]/30">
+                                      <p className="text-sm text-[#10b981]">
+                                        Nuovo saldo dopo ricarica: <strong>€ {(selectedWallet.saldo + parseFloat(ricaricaImporto || '0')).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong>
+                                      </p>
+                                      <p className="text-xs text-[#10b981]/70 mt-1">
+                                        Giorni coperti: {calcolaGiorniCoperti(selectedWallet.saldo + parseFloat(ricaricaImporto || '0'), selectedWallet.tariffaGiornaliera)}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                                <DialogFooter>
+                                  <Button 
+                                    variant="outline" 
+                                    onClick={resetRicaricaDialog} 
+                                    className="border-[#3b82f6]/30 text-[#e8fbff]"
+                                  >
+                                    Annulla
+                                  </Button>
+                                  <Button 
+                                    className="bg-[#10b981] hover:bg-[#10b981]/80" 
+                                    onClick={handleGeneraAvviso}
+                                    disabled={!ricaricaImporto || parseFloat(ricaricaImporto) <= 0 || isGeneratingAvviso}
+                                  >
+                                    {isGeneratingAvviso ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Generazione...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        Genera Avviso
+                                      </>
+                                    )}
+                                  </Button>
+                                </DialogFooter>
+                              </>
+                            ) : (
+                              <>
+                                <div className="space-y-4 py-4">
+                                  {/* Riepilogo Avviso Generato */}
+                                  <div className="p-4 bg-[#10b981]/10 rounded-lg border border-[#10b981]/30">
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <CheckCircle className="h-5 w-5 text-[#10b981]" />
+                                      <span className="text-[#10b981] font-semibold">Avviso PagoPA Generato</span>
+                                    </div>
+                                    <div className="space-y-2 text-sm">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#e8fbff]/70">Importo:</span>
+                                        <span className="text-[#e8fbff] font-bold text-lg">€ {generatedAvviso.importo.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[#e8fbff]/70">Scadenza:</span>
+                                        <span className="text-[#e8fbff]">{generatedAvviso.dataScadenza}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* IUV */}
+                                  <div className="p-3 bg-[#0b1220] rounded-lg border border-[#3b82f6]/30">
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className="text-xs text-[#e8fbff]/70">IUV (Identificativo Univoco Versamento)</span>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost" 
+                                        className="h-6 px-2 text-[#3b82f6]"
+                                        onClick={() => copyToClipboard(generatedAvviso.iuv)}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                    <p className="text-[#e8fbff] font-mono text-sm">{generatedAvviso.iuv}</p>
+                                  </div>
+                                  
+                                  {/* Codice Avviso */}
+                                  <div className="p-3 bg-[#0b1220] rounded-lg border border-[#3b82f6]/30">
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className="text-xs text-[#e8fbff]/70">Codice Avviso (18 cifre)</span>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost" 
+                                        className="h-6 px-2 text-[#3b82f6]"
+                                        onClick={() => copyToClipboard(generatedAvviso.codiceAvviso || '')}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                    <p className="text-[#e8fbff] font-mono text-lg tracking-wider">{generatedAvviso.codiceAvviso}</p>
+                                  </div>
+                                  
+                                  {/* Azioni */}
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      className="flex-1 bg-[#3b82f6] hover:bg-[#3b82f6]/80"
+                                      onClick={() => {
+                                        // In produzione: chiamata API per PDF
+                                        alert('Download PDF avviso (mock)');
+                                      }}
+                                    >
+                                      <Download className="h-4 w-4 mr-2" />
+                                      Scarica PDF
+                                    </Button>
+                                    <Button 
+                                      variant="outline"
+                                      className="flex-1 border-[#10b981]/30 text-[#10b981]"
+                                      onClick={() => {
+                                        // In produzione: redirect a checkout
+                                        const checkoutUrl = `https://checkout.pagopa.it/pay/${generatedAvviso.codiceAvviso}`;
+                                        window.open(checkoutUrl, '_blank');
+                                      }}
+                                    >
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      Paga Ora
+                                    </Button>
+                                  </div>
+                                </div>
+                                <DialogFooter>
+                                  <Button 
+                                    onClick={resetRicaricaDialog}
+                                    className="w-full bg-[#1a2332] border border-[#3b82f6]/30 text-[#e8fbff] hover:bg-[#0b1220]"
+                                  >
+                                    Chiudi
+                                  </Button>
+                                </DialogFooter>
+                              </>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
+                        {/* Dialog Pagamento Immediato */}
+                        <Dialog open={showPagamentoDialog} onOpenChange={setShowPagamentoDialog}>
+                          <DialogTrigger asChild>
+                            <Button className="flex-1 bg-[#3b82f6] hover:bg-[#3b82f6]/80">
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              Paga Ora
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="bg-[#1a2332] border-[#3b82f6]/30 max-w-md">
+                            <DialogHeader>
+                              <DialogTitle className="text-[#e8fbff]">Pagamento Immediato PagoPA</DialogTitle>
+                              <DialogDescription className="text-[#e8fbff]/70">
+                                Verrai reindirizzato al checkout PagoPA per completare il pagamento
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
@@ -631,50 +939,78 @@ export default function WalletPanel() {
                                 <Label className="text-[#e8fbff]">Importo ricarica (€)</Label>
                                 <Input
                                   type="number"
-                                  placeholder="Es. 500.00"
-                                  value={ricaricaImporto}
-                                  onChange={(e) => setRicaricaImporto(e.target.value)}
-                                  className="bg-[#0b1220] border-[#3b82f6]/30 text-[#e8fbff]"
+                                  placeholder="Es. 100.00"
+                                  value={pagamentoImporto}
+                                  onChange={(e) => setPagamentoImporto(e.target.value)}
+                                  className="bg-[#0b1220] border-[#3b82f6]/30 text-[#e8fbff] text-lg"
+                                  min="1"
+                                  step="0.01"
                                 />
                               </div>
                               <div className="p-3 bg-[#0b1220] rounded-lg border border-[#3b82f6]/30">
-                                <p className="text-sm text-[#e8fbff]/70">Importi suggeriti:</p>
-                                <div className="flex gap-2 mt-2">
-                                  {[100, 250, 500, 1000].map(importo => (
+                                <p className="text-sm text-[#e8fbff]/70 mb-2">Importi rapidi:</p>
+                                <div className="flex gap-2 flex-wrap">
+                                  {[25, 50, 100, 200].map(importo => (
                                     <Button
                                       key={importo}
                                       size="sm"
                                       variant="outline"
-                                      className="border-[#3b82f6]/30 text-[#e8fbff]"
-                                      onClick={() => setRicaricaImporto(importo.toString())}
+                                      className={`border-[#3b82f6]/30 ${
+                                        pagamentoImporto === importo.toString() 
+                                          ? 'bg-[#3b82f6] text-white' 
+                                          : 'text-[#e8fbff]'
+                                      }`}
+                                      onClick={() => setPagamentoImporto(importo.toString())}
                                     >
                                       € {importo}
                                     </Button>
                                   ))}
                                 </div>
                               </div>
+                              <div className="p-3 bg-[#f59e0b]/10 rounded-lg border border-[#f59e0b]/30">
+                                <p className="text-xs text-[#f59e0b]">
+                                  ⚠️ Verrai reindirizzato al portale PagoPA per completare il pagamento con carta, conto corrente o altri metodi.
+                                </p>
+                              </div>
                             </div>
                             <DialogFooter>
-                              <Button variant="outline" onClick={() => setShowRicaricaDialog(false)} className="border-[#3b82f6]/30 text-[#e8fbff]">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => {
+                                  setShowPagamentoDialog(false);
+                                  setPagamentoImporto('');
+                                }} 
+                                className="border-[#3b82f6]/30 text-[#e8fbff]"
+                              >
                                 Annulla
                               </Button>
-                              <Button className="bg-[#10b981] hover:bg-[#10b981]/80" onClick={() => {
-                                alert(`Avviso PagoPA generato per € ${ricaricaImporto}`);
-                                setShowRicaricaDialog(false);
-                                setRicaricaImporto('');
-                              }}>
-                                Genera Avviso
+                              <Button 
+                                className="bg-[#3b82f6] hover:bg-[#3b82f6]/80" 
+                                onClick={handlePagamentoImmediato}
+                                disabled={!pagamentoImporto || parseFloat(pagamentoImporto) <= 0 || isProcessingPagamento}
+                              >
+                                {isProcessingPagamento ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Elaborazione...
+                                  </>
+                                ) : (
+                                  <>
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    Vai al Pagamento
+                                  </>
+                                )}
                               </Button>
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
+
                         <Button 
                           variant="outline" 
                           className="border-[#f59e0b]/30 text-[#f59e0b]"
                           onClick={() => setShowNotificaDialog(true)}
                         >
-                          <Bell className="h-4 w-4 mr-2" />
-                          Notifica
+                          <Bell className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -752,16 +1088,16 @@ export default function WalletPanel() {
                     <AlertTriangle className="h-5 w-5 text-[#f59e0b]" />
                     <span className="text-[#f59e0b] font-semibold">SALDO BASSO</span>
                   </div>
-                  <p className="text-sm text-[#e8fbff]/70">Saldo {'<'} Tariffa × 3 ma ≥ Tariffa</p>
-                  <p className="text-sm text-[#e8fbff]/70">Notifica di ricarica inviata</p>
+                  <p className="text-sm text-[#e8fbff]/70">Saldo &lt; Tariffa giornaliera × 3</p>
+                  <p className="text-sm text-[#e8fbff]/70">Notifica automatica inviata</p>
                 </div>
                 <div className="p-4 bg-[#0b1220] rounded-lg border border-[#ef4444]/30">
                   <div className="flex items-center gap-2 mb-2">
                     <XCircle className="h-5 w-5 text-[#ef4444]" />
                     <span className="text-[#ef4444] font-semibold">BLOCCATO</span>
                   </div>
-                  <p className="text-sm text-[#e8fbff]/70">Saldo {'<'} Tariffa giornaliera</p>
-                  <p className="text-sm text-[#e8fbff]/70">Presenza NON consentita - Posteggio in spunta</p>
+                  <p className="text-sm text-[#e8fbff]/70">Saldo &lt; Tariffa giornaliera</p>
+                  <p className="text-sm text-[#e8fbff]/70">Presenza non consentita</p>
                 </div>
               </div>
             </CardContent>
@@ -826,27 +1162,38 @@ export default function WalletPanel() {
               <CardTitle className="text-[#e8fbff] flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Euro className="h-5 w-5 text-[#10b981]" />
-                  Avvisi PagoPA
+                  Avvisi PagoPA ({avvisiPagoPA.length})
                 </span>
-                <Button size="sm" className="bg-[#10b981] hover:bg-[#10b981]/80">
-                  <Download className="h-4 w-4 mr-1" />
-                  Esporta
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="border-[#3b82f6]/30 text-[#e8fbff]">
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Verifica Pagamenti
+                  </Button>
+                  <Button size="sm" className="bg-[#10b981] hover:bg-[#10b981]/80">
+                    <Download className="h-4 w-4 mr-1" />
+                    Esporta
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mockAvvisiPagoPA.map(avviso => (
+                {avvisiPagoPA.map(avviso => (
                   <div key={avviso.id} className={`p-4 bg-[#0b1220] rounded-lg border ${getAvvisoColor(avviso.stato)}`}>
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <p className="text-[#e8fbff] font-semibold">{avviso.causale}</p>
                         <p className="text-sm text-[#e8fbff]/70">{avviso.ragioneSociale}</p>
-                        <p className="text-xs text-[#e8fbff]/50 mt-1">
-                          IUV: {avviso.iuv} | Emesso: {avviso.dataEmissione} | Scadenza: {avviso.dataScadenza}
-                        </p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-[#e8fbff]/50">
+                          <span className="flex items-center gap-1">
+                            <QrCode className="h-3 w-3" />
+                            IUV: {avviso.iuv.slice(0, 10)}...
+                          </span>
+                          <span>Emesso: {avviso.dataEmissione}</span>
+                          <span>Scadenza: {avviso.dataScadenza}</span>
+                        </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end gap-2">
                         <p className={`font-bold text-xl ${
                           avviso.stato === 'PAGATO' ? 'text-[#10b981]' :
                           avviso.stato === 'EMESSO' ? 'text-[#f59e0b]' : 'text-[#ef4444]'
@@ -860,13 +1207,32 @@ export default function WalletPanel() {
                         }`}>
                           {avviso.stato}
                         </span>
+                        {avviso.stato === 'EMESSO' && (
+                          <div className="flex gap-1 mt-1">
+                            <Button size="sm" variant="outline" className="h-7 px-2 border-[#3b82f6]/30 text-[#3b82f6]">
+                              <Download className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 px-2 border-[#10b981]/30 text-[#10b981]">
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                        {avviso.stato === 'PAGATO' && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 border-[#10b981]/30 text-[#10b981]">
+                            <FileText className="h-3 w-3 mr-1" />
+                            Quietanza
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 text-center">
-                <p className="text-sm text-[#e8fbff]/50">Integrazione PagoPA in fase di configurazione</p>
+              <div className="mt-4 p-3 bg-[#0b1220] rounded-lg border border-[#3b82f6]/30">
+                <p className="text-sm text-[#e8fbff]/70 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-[#3b82f6]" />
+                  Integrazione E-FIL Plug&Pay attiva in modalità <strong className="text-[#f59e0b]">MOCK</strong> - Configurare credenziali per produzione
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -931,7 +1297,7 @@ export default function WalletPanel() {
                   <ArrowUpRight className="h-8 w-8 text-[#10b981]" />
                   <div>
                     <p className="text-sm text-[#e8fbff]/70">Totale Ricariche</p>
-                    <p className="text-2xl font-bold text-[#10b981]">€ 2.000,00</p>
+                    <p className="text-2xl font-bold text-[#10b981]">€ {stats.totaleIncassato.toLocaleString('it-IT')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -942,7 +1308,7 @@ export default function WalletPanel() {
                   <ArrowDownRight className="h-8 w-8 text-[#ef4444]" />
                   <div>
                     <p className="text-sm text-[#e8fbff]/70">Totale Decurtazioni</p>
-                    <p className="text-2xl font-bold text-[#ef4444]">€ 105,00</p>
+                    <p className="text-2xl font-bold text-[#ef4444]">€ {mockTransazioni.filter(t => t.tipo === 'DECURTAZIONE').reduce((sum, t) => sum + t.importo, 0).toLocaleString('it-IT')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -953,7 +1319,7 @@ export default function WalletPanel() {
                   <Wallet className="h-8 w-8 text-[#3b82f6]" />
                   <div>
                     <p className="text-sm text-[#e8fbff]/70">Saldo Complessivo</p>
-                    <p className="text-2xl font-bold text-[#3b82f6]">€ {stats.saldoTotale.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                    <p className="text-2xl font-bold text-[#3b82f6]">€ {stats.saldoTotale.toLocaleString('it-IT')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -965,58 +1331,27 @@ export default function WalletPanel() {
               <CardTitle className="text-[#e8fbff] flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-[#f59e0b]" />
-                  Report Riconciliazione
+                  Riconciliazione Giornaliera
                 </span>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="border-[#f59e0b]/30 text-[#e8fbff]">
+                  <Button size="sm" variant="outline" className="border-[#3b82f6]/30 text-[#e8fbff]">
                     <Calendar className="h-4 w-4 mr-1" />
-                    Periodo
+                    Seleziona Data
                   </Button>
                   <Button size="sm" className="bg-[#f59e0b] hover:bg-[#f59e0b]/80">
-                    <Download className="h-4 w-4 mr-1" />
-                    Esporta Excel
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Sincronizza E-FIL
                   </Button>
                 </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[#f59e0b]/30">
-                      <th className="text-left py-3 px-4 text-[#e8fbff]/70">Data</th>
-                      <th className="text-left py-3 px-4 text-[#e8fbff]/70">Operatore</th>
-                      <th className="text-left py-3 px-4 text-[#e8fbff]/70">Tipo</th>
-                      <th className="text-left py-3 px-4 text-[#e8fbff]/70">Riferimento</th>
-                      <th className="text-right py-3 px-4 text-[#e8fbff]/70">Importo</th>
-                      <th className="text-right py-3 px-4 text-[#e8fbff]/70">Saldo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockTransazioni.slice(0, 5).map(t => (
-                      <tr key={t.id} className="border-b border-[#f59e0b]/10">
-                        <td className="py-3 px-4 text-[#e8fbff]">{new Date(t.data).toLocaleDateString('it-IT')}</td>
-                        <td className="py-3 px-4 text-[#e8fbff]">
-                          {mockWallets.find(w => w.impresaId === t.impresaId)?.ragioneSociale || '-'}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            t.tipo === 'RICARICA' ? 'bg-[#10b981]/20 text-[#10b981]' : 'bg-[#ef4444]/20 text-[#ef4444]'
-                          }`}>
-                            {t.tipo}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-[#e8fbff]/70 text-xs">{t.riferimento}</td>
-                        <td className={`py-3 px-4 text-right font-semibold ${
-                          t.tipo === 'RICARICA' ? 'text-[#10b981]' : 'text-[#ef4444]'
-                        }`}>
-                          {t.tipo === 'RICARICA' ? '+' : '-'}€ {t.importo.toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4 text-right text-[#e8fbff]">€ {t.saldoSuccessivo.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="p-4 bg-[#0b1220] rounded-lg border border-[#f59e0b]/30 text-center">
+                <FileText className="h-12 w-12 text-[#f59e0b]/50 mx-auto mb-3" />
+                <p className="text-[#e8fbff]/70">Seleziona una data per visualizzare i pagamenti ricevuti</p>
+                <p className="text-sm text-[#e8fbff]/50 mt-2">
+                  La riconciliazione sincronizza automaticamente i pagamenti PagoPA con i wallet degli operatori
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -1025,42 +1360,27 @@ export default function WalletPanel() {
 
       {/* Dialog Notifica */}
       <Dialog open={showNotificaDialog} onOpenChange={setShowNotificaDialog}>
-        <DialogContent className="bg-[#1a2332] border-[#f59e0b]/30">
+        <DialogContent className="bg-[#1a2332] border-[#3b82f6]/30">
           <DialogHeader>
             <DialogTitle className="text-[#e8fbff]">Invia Notifica</DialogTitle>
             <DialogDescription className="text-[#e8fbff]/70">
-              Invia una notifica di sollecito ricarica a {selectedWallet?.ragioneSociale}
+              Invia una notifica all'operatore per ricordargli di ricaricare il wallet
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="p-3 bg-[#0b1220] rounded-lg border border-[#f59e0b]/30">
-              <p className="text-sm text-[#e8fbff]">
-                <strong>Oggetto:</strong> Sollecito ricarica wallet operatore mercatale
-              </p>
-              <p className="text-sm text-[#e8fbff]/70 mt-2">
-                Il saldo del wallet è insufficiente per coprire le prossime presenze al mercato. 
-                Si prega di effettuare una ricarica tramite PagoPA per evitare il blocco delle presenze.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 border-[#3b82f6]/30 text-[#e8fbff]">
-                <Send className="h-4 w-4 mr-2" />
-                Email
-              </Button>
-              <Button variant="outline" className="flex-1 border-[#10b981]/30 text-[#10b981]">
-                <Send className="h-4 w-4 mr-2" />
-                WhatsApp
-              </Button>
-            </div>
+          <div className="py-4">
+            <p className="text-[#e8fbff]">
+              Vuoi inviare una notifica a <strong>{selectedWallet?.ragioneSociale}</strong> per ricordargli di ricaricare il wallet?
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNotificaDialog(false)} className="border-[#3b82f6]/30 text-[#e8fbff]">
               Annulla
             </Button>
             <Button className="bg-[#f59e0b] hover:bg-[#f59e0b]/80" onClick={() => {
-              alert('Notifica inviata!');
+              alert('Notifica inviata (mock)');
               setShowNotificaDialog(false);
             }}>
+              <Send className="h-4 w-4 mr-2" />
               Invia Notifica
             </Button>
           </DialogFooter>
