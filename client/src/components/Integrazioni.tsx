@@ -25,7 +25,17 @@ import {
   Code,
   Play,
   FileJson,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Shield,
+  Eye,
+  EyeOff,
+  Save,
+  Zap,
+  Github,
+  Cloud,
+  Building2,
+  Server,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -47,7 +57,7 @@ export default function Integrazioni() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 bg-[#0a1628]">
+        <TabsList className="grid w-full grid-cols-6 bg-[#0a1628]">
           <TabsTrigger value="api-dashboard">
             <Code className="h-4 w-4 mr-2" />
             API Dashboard
@@ -59,6 +69,10 @@ export default function Integrazioni() {
           <TabsTrigger value="api-keys">
             <Key className="h-4 w-4 mr-2" />
             API Keys
+          </TabsTrigger>
+          <TabsTrigger value="secrets">
+            <Shield className="h-4 w-4 mr-2" />
+            Secrets
           </TabsTrigger>
           <TabsTrigger value="webhooks">
             <Webhook className="h-4 w-4 mr-2" />
@@ -85,12 +99,17 @@ export default function Integrazioni() {
           <APIKeysManager />
         </TabsContent>
 
-        {/* TAB 4: WEBHOOK */}
+        {/* TAB 4: SECRETS */}
+        <TabsContent value="secrets" className="space-y-6">
+          <SecretsManager />
+        </TabsContent>
+
+        {/* TAB 5: WEBHOOK */}
         <TabsContent value="webhooks" className="space-y-6">
           <WebhookManager />
         </TabsContent>
 
-        {/* TAB 5: SYNC STATUS */}
+        {/* TAB 6: SYNC STATUS */}
         <TabsContent value="sync-status" className="space-y-6">
           <SyncStatus />
         </TabsContent>
@@ -197,78 +216,131 @@ function APIDashboard() {
       
       // Mappa endpoint → chiamata TRPC
       switch (endpointPath) {
-        // MERCATI
+        // ============================================
+        // DMSHUB - MERCATI (path tRPC)
+        // ============================================
+        case '/api/trpc/dmsHub.markets.importAuto':
         case '/api/dmsHub/markets/importAuto':
           data = await utils.client.dmsHub.markets.importAuto.mutate(parsedBody);
           break;
+        case '/api/trpc/dmsHub.markets.list':
         case '/api/dmsHub/markets/list':
           data = await utils.client.dmsHub.markets.list.query();
           break;
+        case '/api/trpc/dmsHub.markets.getById':
         case '/api/dmsHub/markets/getById':
           data = await utils.client.dmsHub.markets.getById.query(parsedBody);
           break;
           
-        // POSTEGGI
+        // ============================================
+        // DMSHUB - POSTEGGI (path tRPC)
+        // ============================================
+        case '/api/trpc/dmsHub.stalls.listByMarket':
         case '/api/dmsHub/stalls/listByMarket':
           data = await utils.client.dmsHub.stalls.listByMarket.query(parsedBody);
           break;
+        case '/api/trpc/dmsHub.stalls.updateStatus':
         case '/api/dmsHub/stalls/updateStatus':
           data = await utils.client.dmsHub.stalls.updateStatus.mutate(parsedBody);
           break;
+        case '/api/trpc/dmsHub.stalls.getStatuses':
         case '/api/dmsHub/stalls/getStatuses':
           data = await utils.client.dmsHub.stalls.getStatuses.query(parsedBody);
           break;
           
-        // OPERATORI
+        // ============================================
+        // DMSHUB - OPERATORI (path tRPC)
+        // ============================================
+        case '/api/trpc/dmsHub.vendors.list':
         case '/api/dmsHub/vendors/list':
           data = await utils.client.dmsHub.vendors.list.query();
           break;
+        case '/api/trpc/dmsHub.vendors.create':
         case '/api/dmsHub/vendors/create':
           data = await utils.client.dmsHub.vendors.create.mutate(parsedBody);
           break;
+        case '/api/trpc/dmsHub.vendors.update':
         case '/api/dmsHub/vendors/update':
           data = await utils.client.dmsHub.vendors.update.mutate(parsedBody);
           break;
+        case '/api/trpc/dmsHub.vendors.getFullDetails':
         case '/api/dmsHub/vendors/getFullDetails':
           data = await utils.client.dmsHub.vendors.getFullDetails.query(parsedBody);
           break;
           
-        // PRENOTAZIONI
+        // ============================================
+        // DMSHUB - PRENOTAZIONI (path tRPC)
+        // ============================================
+        case '/api/trpc/dmsHub.bookings.create':
         case '/api/dmsHub/bookings/create':
           data = await utils.client.dmsHub.bookings.create.mutate(parsedBody);
           break;
+        case '/api/trpc/dmsHub.bookings.listActive':
         case '/api/dmsHub/bookings/listActive':
           data = await utils.client.dmsHub.bookings.listActive.query(parsedBody);
           break;
+        case '/api/trpc/dmsHub.bookings.confirmCheckin':
         case '/api/dmsHub/bookings/confirmCheckin':
           data = await utils.client.dmsHub.bookings.confirmCheckin.mutate(parsedBody);
           break;
+        case '/api/trpc/dmsHub.bookings.cancel':
         case '/api/dmsHub/bookings/cancel':
           data = await utils.client.dmsHub.bookings.cancel.mutate(parsedBody);
           break;
           
-        // PRESENZE
+        // ============================================
+        // DMSHUB - PRESENZE (path tRPC)
+        // ============================================
+        case '/api/trpc/dmsHub.presences.checkout':
         case '/api/dmsHub/presences/checkout':
           data = await utils.client.dmsHub.presences.checkout.mutate(parsedBody);
           break;
+        case '/api/trpc/dmsHub.presences.getTodayByMarket':
         case '/api/dmsHub/presences/getTodayByMarket':
           data = await utils.client.dmsHub.presences.getTodayByMarket.query(parsedBody);
           break;
           
-        // CONTROLLI
+        // ============================================
+        // DMSHUB - CONTROLLI (path tRPC)
+        // ============================================
+        case '/api/trpc/dmsHub.inspections.create':
         case '/api/dmsHub/inspections/create':
           data = await utils.client.dmsHub.inspections.create.mutate(parsedBody);
           break;
+        case '/api/trpc/dmsHub.inspections.list':
         case '/api/dmsHub/inspections/list':
           data = await utils.client.dmsHub.inspections.list.query();
           break;
           
-        // VERBALI
+        // ============================================
+        // DMSHUB - VERBALI (path tRPC)
+        // ============================================
+        case '/api/trpc/dmsHub.violations.create':
         case '/api/dmsHub/violations/create':
           data = await utils.client.dmsHub.violations.create.mutate(parsedBody);
           break;
+        case '/api/trpc/dmsHub.violations.list':
         case '/api/dmsHub/violations/list':
           data = await utils.client.dmsHub.violations.list.query();
+          break;
+          
+        // ============================================
+        // DMSHUB - LOCATIONS (path tRPC)
+        // ============================================
+        case '/api/trpc/dmsHub.locations.list':
+          data = await utils.client.dmsHub.locations.list.query();
+          break;
+        case '/api/trpc/dmsHub.locations.getById':
+          data = await utils.client.dmsHub.locations.getById.query(parsedBody);
+          break;
+        case '/api/trpc/dmsHub.locations.create':
+          data = await utils.client.dmsHub.locations.create.mutate(parsedBody);
+          break;
+        case '/api/trpc/dmsHub.locations.update':
+          data = await utils.client.dmsHub.locations.update.mutate(parsedBody);
+          break;
+        case '/api/trpc/dmsHub.locations.delete':
+          data = await utils.client.dmsHub.locations.delete.mutate(parsedBody);
           break;
           
         // MIO AGENT - chiamate REST dirette
@@ -1151,25 +1223,111 @@ function WebhookManager() {
 }
 
 // ============================================================================
-// TAB 5: SYNC STATUS (Gestionale Heroku)
+// TAB 5: SYNC STATUS (Gestionale Heroku) - COLLEGATO AD API REALI
 // ============================================================================
 function SyncStatus() {
-  const syncStats = {
-    lastSync: '5 minuti fa',
-    nextSync: 'Tra 10 minuti',
-    status: 'active',
-    totalSynced: 1247,
-    errors: 3,
-    pending: 12
+  // Query per stato sincronizzazione
+  const { data: syncStatus, isLoading: statusLoading, refetch: refetchStatus } = trpc.integrations.sync.status.useQuery();
+  
+  // Query per job recenti
+  const { data: syncJobs, isLoading: jobsLoading, refetch: refetchJobs } = trpc.integrations.sync.jobs.useQuery({ limit: 10 });
+  
+  // Query per configurazione
+  const { data: syncConfig, refetch: refetchConfig } = trpc.integrations.sync.getConfig.useQuery();
+  
+  // Mutation per trigger sync
+  const triggerSync = trpc.integrations.sync.trigger.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Sincronizzazione completata${data.simulated ? ' (simulata)' : ''}`, {
+        description: `${data.results.length} entità processate`,
+      });
+      refetchStatus();
+      refetchJobs();
+    },
+    onError: (error) => {
+      toast.error('Errore sincronizzazione', { description: error.message });
+    },
+  });
+  
+  // Mutation per aggiornare config
+  const updateConfig = trpc.integrations.sync.updateConfig.useMutation({
+    onSuccess: () => {
+      toast.success('Configurazione salvata');
+      refetchConfig();
+      refetchStatus();
+    },
+    onError: (error) => {
+      toast.error('Errore salvataggio', { description: error.message });
+    },
+  });
+  
+  // State per form configurazione
+  const [frequency, setFrequency] = useState(syncConfig?.frequency || 300);
+  const [mode, setMode] = useState(syncConfig?.mode || 'bidirectional');
+  const [entities, setEntities] = useState<string[]>(syncConfig?.entities || ['operatori', 'presenze', 'concessioni', 'pagamenti', 'documenti']);
+  
+  // Aggiorna state quando config cambia
+  useEffect(() => {
+    if (syncConfig) {
+      setFrequency(syncConfig.frequency || 300);
+      setMode(syncConfig.mode || 'bidirectional');
+      setEntities(syncConfig.entities || ['operatori', 'presenze', 'concessioni', 'pagamenti', 'documenti']);
+    }
+  }, [syncConfig]);
+  
+  // Formatta tempo relativo
+  const formatRelativeTime = (date: Date | string | null) => {
+    if (!date) return 'Mai';
+    const d = new Date(date);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Adesso';
+    if (diffMins < 60) return `${diffMins} minuti fa`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} ore fa`;
+    return d.toLocaleDateString('it-IT');
   };
-
-  const syncLog = [
-    { time: '14:25', entity: 'Operatori', action: 'Sync anagrafica', status: 'success', records: 45 },
-    { time: '14:20', entity: 'Presenze', action: 'Check-in real-time', status: 'success', records: 8 },
-    { time: '14:15', entity: 'Concessioni', action: 'Aggiornamento scadenze', status: 'success', records: 23 },
-    { time: '14:10', entity: 'Pagamenti', action: 'Sync pagamenti', status: 'error', records: 0 },
-    { time: '14:05', entity: 'Documenti', action: 'Verifica scadenze', status: 'success', records: 156 },
-  ];
+  
+  const formatFutureTime = (date: Date | string | null) => {
+    if (!date) return 'Non programmato';
+    const d = new Date(date);
+    const now = new Date();
+    const diffMs = d.getTime() - now.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Imminente';
+    if (diffMins < 60) return `Tra ${diffMins} minuti`;
+    const diffHours = Math.floor(diffMins / 60);
+    return `Tra ${diffHours} ore`;
+  };
+  
+  const handleSaveConfig = () => {
+    updateConfig.mutate({
+      frequency,
+      mode: mode as 'unidirectional' | 'bidirectional',
+      entities,
+    });
+  };
+  
+  const toggleEntity = (entity: string) => {
+    setEntities(prev => 
+      prev.includes(entity) 
+        ? prev.filter(e => e !== entity)
+        : [...prev, entity]
+    );
+  };
+  
+  const entityLabels: Record<string, string> = {
+    operatori: 'Operatori',
+    presenze: 'Presenze',
+    concessioni: 'Concessioni',
+    pagamenti: 'Pagamenti',
+    documenti: 'Documenti',
+    mercati: 'Mercati',
+    posteggi: 'Posteggi',
+  };
 
   return (
     <div className="space-y-6">
@@ -1181,10 +1339,17 @@ function SyncStatus() {
               <Database className="h-5 w-5 text-[#14b8a6]" />
               Sincronizzazione Gestionale Heroku
             </CardTitle>
-            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Attiva
-            </Badge>
+            {syncStatus?.enabled ? (
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Attiva
+              </Badge>
+            ) : (
+              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Non Configurata
+              </Badge>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -1192,33 +1357,69 @@ function SyncStatus() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-[#0a1628] p-4 rounded-lg border border-[#14b8a6]/20">
               <p className="text-[#e8fbff]/60 text-sm">Ultimo Sync</p>
-              <p className="text-lg font-bold text-[#14b8a6]">{syncStats.lastSync}</p>
+              <p className="text-lg font-bold text-[#14b8a6]">
+                {statusLoading ? '...' : formatRelativeTime(syncStatus?.lastSync)}
+              </p>
             </div>
             <div className="bg-[#0a1628] p-4 rounded-lg border border-[#14b8a6]/20">
               <p className="text-[#e8fbff]/60 text-sm">Prossimo Sync</p>
-              <p className="text-lg font-bold text-[#14b8a6]">{syncStats.nextSync}</p>
+              <p className="text-lg font-bold text-[#14b8a6]">
+                {statusLoading ? '...' : formatFutureTime(syncStatus?.nextSync)}
+              </p>
             </div>
             <div className="bg-[#0a1628] p-4 rounded-lg border border-green-500/20">
               <p className="text-[#e8fbff]/60 text-sm">Totale Sincronizzati</p>
-              <p className="text-lg font-bold text-green-400">{syncStats.totalSynced}</p>
+              <p className="text-lg font-bold text-green-400">
+                {statusLoading ? '...' : syncStatus?.totalSynced || 0}
+              </p>
             </div>
             <div className="bg-[#0a1628] p-4 rounded-lg border border-red-500/20">
               <p className="text-[#e8fbff]/60 text-sm">Errori</p>
-              <p className="text-lg font-bold text-red-400">{syncStats.errors}</p>
+              <p className="text-lg font-bold text-red-400">
+                {statusLoading ? '...' : syncStatus?.errors || 0}
+              </p>
             </div>
           </div>
 
           {/* Azioni */}
           <div className="flex gap-2">
-            <Button className="bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Sincronizza Ora
+            <Button 
+              className="bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white"
+              onClick={() => triggerSync.mutate({})}
+              disabled={triggerSync.isPending}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${triggerSync.isPending ? 'animate-spin' : ''}`} />
+              {triggerSync.isPending ? 'Sincronizzazione...' : 'Sincronizza Ora'}
             </Button>
-            <Button variant="outline" className="border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/10">
+            <Button 
+              variant="outline" 
+              className="border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/10"
+              onClick={() => {
+                if (syncConfig?.externalUrl) {
+                  window.open(syncConfig.externalUrl, '_blank');
+                } else {
+                  toast.info('URL gestionale non configurato');
+                }
+              }}
+            >
               <ExternalLink className="h-4 w-4 mr-2" />
               Apri Gestionale
             </Button>
           </div>
+          
+          {/* Info se non configurato */}
+          {!syncStatus?.config?.externalUrl && (
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <div className="flex items-center gap-2 text-yellow-400">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="font-medium">Modalità Simulazione</span>
+              </div>
+              <p className="text-sm text-[#e8fbff]/60 mt-1">
+                Il gestionale Heroku non è ancora configurato. Le sincronizzazioni verranno simulate.
+                Configura l'URL del gestionale nella sezione sottostante quando sarà disponibile.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1231,32 +1432,59 @@ function SyncStatus() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {syncLog.map((log, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-4 p-3 bg-[#0a1628] rounded-lg border border-[#14b8a6]/20"
-              >
-                <span className="text-sm text-[#e8fbff]/60 font-mono">{log.time}</span>
-                <Badge variant="outline" className="bg-[#0a1628] border-[#14b8a6]/30 text-[#14b8a6]">
-                  {log.entity}
-                </Badge>
-                <span className="text-sm text-[#e8fbff]/80 flex-1">{log.action}</span>
-                {log.status === 'success' ? (
-                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Success
+          {jobsLoading ? (
+            <div className="text-center py-8 text-[#e8fbff]/60">
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+              Caricamento log...
+            </div>
+          ) : syncJobs && syncJobs.length > 0 ? (
+            <div className="space-y-2">
+              {syncJobs.map((job) => (
+                <div
+                  key={job.id}
+                  className="flex items-center gap-4 p-3 bg-[#0a1628] rounded-lg border border-[#14b8a6]/20"
+                >
+                  <span className="text-sm text-[#e8fbff]/60 font-mono">
+                    {new Date(job.createdAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <Badge variant="outline" className="bg-[#0a1628] border-[#14b8a6]/30 text-[#14b8a6]">
+                    {entityLabels[job.entity] || job.entity}
                   </Badge>
-                ) : (
-                  <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-                    <XCircle className="h-3 w-3 mr-1" />
-                    Error
-                  </Badge>
-                )}
-                <span className="text-sm text-[#e8fbff]/60">{log.records} record</span>
-              </div>
-            ))}
-          </div>
+                  <span className="text-sm text-[#e8fbff]/80 flex-1">
+                    Sync {job.direction === 'pull' ? 'ricezione' : job.direction === 'push' ? 'invio' : 'bidirezionale'}
+                  </span>
+                  {job.status === 'success' ? (
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Success
+                    </Badge>
+                  ) : job.status === 'partial' ? (
+                    <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      Parziale
+                    </Badge>
+                  ) : job.status === 'running' ? (
+                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                      <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                      In corso
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Error
+                    </Badge>
+                  )}
+                  <span className="text-sm text-[#e8fbff]/60">{job.recordsSuccess} record</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-[#e8fbff]/60">
+              <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>Nessuna sincronizzazione effettuata</p>
+              <p className="text-sm">Clicca "Sincronizza Ora" per avviare la prima sync</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1272,19 +1500,26 @@ function SyncStatus() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-[#e8fbff]/70">Frequenza Sync</Label>
-              <select className="w-full mt-2 bg-[#0a1628] border border-[#14b8a6]/30 rounded-md p-2 text-[#e8fbff]">
-                <option>Ogni 5 minuti</option>
-                <option>Ogni 15 minuti</option>
-                <option>Ogni 30 minuti</option>
-                <option>Ogni ora</option>
+              <select 
+                className="w-full mt-2 bg-[#0a1628] border border-[#14b8a6]/30 rounded-md p-2 text-[#e8fbff]"
+                value={frequency}
+                onChange={(e) => setFrequency(Number(e.target.value))}
+              >
+                <option value={300}>Ogni 5 minuti</option>
+                <option value={900}>Ogni 15 minuti</option>
+                <option value={1800}>Ogni 30 minuti</option>
+                <option value={3600}>Ogni ora</option>
               </select>
             </div>
             <div>
               <Label className="text-[#e8fbff]/70">Modalità</Label>
-              <select className="w-full mt-2 bg-[#0a1628] border border-[#14b8a6]/30 rounded-md p-2 text-[#e8fbff]">
-                <option>Bidirezionale</option>
-                <option>Solo Ricezione</option>
-                <option>Solo Invio</option>
+              <select 
+                className="w-full mt-2 bg-[#0a1628] border border-[#14b8a6]/30 rounded-md p-2 text-[#e8fbff]"
+                value={mode}
+                onChange={(e) => setMode(e.target.value)}
+              >
+                <option value="bidirectional">Bidirezionale</option>
+                <option value="unidirectional">Solo Ricezione</option>
               </select>
             </div>
           </div>
@@ -1292,20 +1527,366 @@ function SyncStatus() {
           <div>
             <Label className="text-[#e8fbff]/70">Entità da Sincronizzare</Label>
             <div className="grid grid-cols-2 gap-2 mt-2">
-              {['Operatori', 'Concessioni', 'Presenze', 'Pagamenti', 'Documenti', 'Verbali'].map((entity) => (
-                <label key={entity} className="flex items-center gap-2 p-2 bg-[#0a1628] rounded border border-[#14b8a6]/20 cursor-pointer hover:border-[#14b8a6]/40">
-                  <input type="checkbox" defaultChecked className="text-[#14b8a6]" />
-                  <span className="text-sm text-[#e8fbff]">{entity}</span>
+              {Object.entries(entityLabels).map(([key, label]) => (
+                <label 
+                  key={key} 
+                  className="flex items-center gap-2 p-2 bg-[#0a1628] rounded border border-[#14b8a6]/20 cursor-pointer hover:border-[#14b8a6]/40"
+                >
+                  <input 
+                    type="checkbox" 
+                    checked={entities.includes(key)}
+                    onChange={() => toggleEntity(key)}
+                    className="text-[#14b8a6]" 
+                  />
+                  <span className="text-sm text-[#e8fbff]">{label}</span>
                 </label>
               ))}
             </div>
           </div>
 
-          <Button className="w-full bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white">
-            Salva Configurazione
+          <Button 
+            className="w-full bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white"
+            onClick={handleSaveConfig}
+            disabled={updateConfig.isPending}
+          >
+            {updateConfig.isPending ? 'Salvataggio...' : 'Salva Configurazione'}
           </Button>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+
+// ============================================
+// SECRETS MANAGER COMPONENT
+// ============================================
+interface SecretMeta {
+  id: string;
+  label: string;
+  category: string;
+  envVar: string;
+  env: string;
+  present: boolean;
+  lastUpdated: string | null;
+  notes: string;
+  deprecated: boolean;
+}
+
+const CATEGORY_ICONS: Record<string, any> = {
+  'LLM': Zap,
+  'GitHub': Github,
+  'Database': Database,
+  'Cloud': Cloud,
+  'Auth': Key,
+  'Payment': Building2,
+  'Deploy': Server,
+  'Mobility': Activity,
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'LLM': 'text-yellow-500',
+  'GitHub': 'text-purple-500',
+  'Database': 'text-blue-500',
+  'Cloud': 'text-sky-500',
+  'Auth': 'text-green-500',
+  'Payment': 'text-orange-500',
+  'Deploy': 'text-cyan-500',
+  'Mobility': 'text-teal-500',
+};
+
+function SecretsManager() {
+  const [secrets, setSecrets] = useState<SecretMeta[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editingSecret, setEditingSecret] = useState<string | null>(null);
+  const [secretValues, setSecretValues] = useState<Record<string, string>>({});
+  const [showValues, setShowValues] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadSecretsMetadata();
+  }, []);
+
+  const loadSecretsMetadata = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/mihub/secrets-meta');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        const mappedSecrets = data.secrets.map((secret: any) => ({
+          ...secret,
+          envVar: secret.envvar || secret.envVar
+        }));
+        setSecrets(mappedSecrets);
+      } else {
+        throw new Error('Failed to load secrets metadata');
+      }
+    } catch (err) {
+      console.error('Error loading secrets metadata:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveSecret = async (envVar: string) => {
+    const value = secretValues[envVar] || '';
+    if (!value.trim()) {
+      toast.error('Il valore del secret non può essere vuoto');
+      return;
+    }
+
+    setSaving(true);
+    
+    try {
+      const response = await fetch(`/admin/secrets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          key: envVar,
+          value: value.trim()
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSecretValues(prev => ({ ...prev, [envVar]: '' }));
+        setEditingSecret(null);
+        setShowValues(prev => ({ ...prev, [envVar]: false }));
+        await loadSecretsMetadata();
+        toast.success(`Secret ${envVar} salvato con successo!`);
+      } else {
+        throw new Error(data.error || 'Failed to save secret');
+      }
+    } catch (err) {
+      console.error(`Error saving secret ${envVar}:`, err);
+      toast.error(`Errore nel salvataggio: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (editingSecret) {
+      setSecretValues(prev => ({ ...prev, [editingSecret]: '' }));
+      setShowValues(prev => ({ ...prev, [editingSecret]: false }));
+    }
+    setEditingSecret(null);
+  };
+
+  const groupedSecrets = secrets.reduce((acc, secret) => {
+    if (!acc[secret.category]) {
+      acc[secret.category] = [];
+    }
+    acc[secret.category].push(secret);
+    return acc;
+  }, {} as Record<string, SecretMeta[]>);
+
+  const stats = {
+    total: secrets.length,
+    present: secrets.filter(s => s.present).length,
+    missing: secrets.filter(s => !s.present).length,
+    deprecated: secrets.filter(s => s.deprecated).length,
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin text-[#14b8a6]" />
+        <span className="ml-3 text-lg text-[#e8fbff]">Caricamento secrets...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-[#1a2332] border-red-500/30">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 text-red-400">
+            <AlertCircle className="h-5 w-5" />
+            <span>Errore: {error}</span>
+          </div>
+          <Button onClick={loadSecretsMetadata} className="mt-4">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Riprova
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-semibold text-[#e8fbff]">Gestione Secrets</h3>
+          <p className="text-[#e8fbff]/60 text-sm">Credenziali e variabili d'ambiente per servizi esterni</p>
+        </div>
+        <Button onClick={loadSecretsMetadata} variant="outline" className="border-[#14b8a6]/30 text-[#14b8a6]">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Aggiorna
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+          <CardContent className="p-4">
+            <p className="text-[#e8fbff]/60 text-sm">Totale Secrets</p>
+            <p className="text-2xl font-bold text-[#14b8a6]">{stats.total}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-[#1a2332] border-green-500/30">
+          <CardContent className="p-4">
+            <p className="text-[#e8fbff]/60 text-sm">Configurati</p>
+            <p className="text-2xl font-bold text-green-400">{stats.present}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-[#1a2332] border-orange-500/30">
+          <CardContent className="p-4">
+            <p className="text-[#e8fbff]/60 text-sm">Mancanti</p>
+            <p className="text-2xl font-bold text-orange-400">{stats.missing}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-[#1a2332] border-red-500/30">
+          <CardContent className="p-4">
+            <p className="text-[#e8fbff]/60 text-sm">Deprecati</p>
+            <p className="text-2xl font-bold text-red-400">{stats.deprecated}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Secrets by Category */}
+      {Object.entries(groupedSecrets).map(([category, categorySecrets]) => {
+        const Icon = CATEGORY_ICONS[category] || Key;
+        const colorClass = CATEGORY_COLORS[category] || 'text-gray-500';
+        
+        return (
+          <Card key={category} className="bg-[#1a2332] border-[#14b8a6]/30">
+            <CardHeader>
+              <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                <Icon className={`h-5 w-5 ${colorClass}`} />
+                {category}
+                <Badge variant="outline" className="ml-2 border-[#14b8a6]/30 text-[#14b8a6]">
+                  {categorySecrets.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {categorySecrets.map((secret) => (
+                <div
+                  key={secret.id}
+                  className={`p-4 bg-[#0a1628] rounded-lg border ${
+                    secret.deprecated ? 'border-red-500/30 opacity-60' : 'border-[#14b8a6]/20'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-[#e8fbff]">{secret.label}</span>
+                        {secret.present ? (
+                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Configurato
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Non configurato
+                          </Badge>
+                        )}
+                        {secret.deprecated && (
+                          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            DEPRECATED
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-[#e8fbff]/60 mb-2">{secret.notes}</p>
+                      <code className="text-xs px-2 py-1 bg-[#1a2332] rounded text-[#14b8a6]">
+                        {secret.envVar}
+                      </code>
+                    </div>
+                    
+                    {!secret.deprecated && (
+                      <Button
+                        variant={editingSecret === secret.envVar ? "secondary" : "outline"}
+                        size="sm"
+                        className="border-[#14b8a6]/30 text-[#14b8a6]"
+                        onClick={() => {
+                          if (editingSecret === secret.envVar) {
+                            handleCancelEdit();
+                          } else {
+                            setEditingSecret(secret.envVar);
+                            setSecretValues(prev => ({ ...prev, [secret.envVar]: '' }));
+                            setShowValues(prev => ({ ...prev, [secret.envVar]: false }));
+                          }
+                        }}
+                      >
+                        <Key className="h-4 w-4 mr-2" />
+                        {editingSecret === secret.envVar ? 'Annulla' : (secret.present ? 'Aggiorna' : 'Configura')}
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Form di inserimento */}
+                  {editingSecret === secret.envVar && (
+                    <div className="mt-4 pt-4 border-t border-[#14b8a6]/20">
+                      <Label className="text-[#e8fbff]/70 mb-2 block">Inserisci il valore del secret</Label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            value={secretValues[secret.envVar] || ''}
+                            onChange={(e) => setSecretValues(prev => ({ ...prev, [secret.envVar]: e.target.value }))}
+                            placeholder={`Incolla qui il valore di ${secret.envVar}`}
+                            className="font-mono text-sm bg-[#0a1628] border-[#14b8a6]/30 text-[#e8fbff] pr-10"
+                            type={showValues[secret.envVar] ? 'text' : 'password'}
+                            autoComplete="off"
+                            spellCheck={false}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute top-1 right-1 h-8 w-8 p-0"
+                            onClick={() => setShowValues(prev => ({ ...prev, [secret.envVar]: !prev[secret.envVar] }))}
+                          >
+                            {showValues[secret.envVar] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                        <Button
+                          onClick={() => handleSaveSecret(secret.envVar)}
+                          disabled={saving || !(secretValues[secret.envVar] || '').trim()}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {saving ? (
+                            <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Save className="h-4 w-4 mr-2" />
+                          )}
+                          Salva
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

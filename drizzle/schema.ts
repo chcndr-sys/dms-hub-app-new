@@ -928,3 +928,72 @@ export type InsertTariffaPosteggio = typeof tariffePosteggio.$inferInsert;
 
 export type AvvisoPagopa = typeof avvisiPagopa.$inferSelect;
 export type InsertAvvisoPagopa = typeof avvisiPagopa.$inferInsert;
+
+
+// ============================================================================
+// SYNC STATUS - Sistema di sincronizzazione con gestionale esterno
+// ============================================================================
+
+// Enum per stato sincronizzazione
+export const syncStatusEnum = pgEnum("sync_status", ["pending", "running", "success", "error", "partial"]);
+export const syncEntityEnum = pgEnum("sync_entity", ["operatori", "presenze", "concessioni", "pagamenti", "documenti", "mercati", "posteggi"]);
+
+// Configurazione sincronizzazione
+export const syncConfig = pgTable("sync_config", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  enabled: integer("enabled").default(1).notNull(), // 1=attivo, 0=disattivo
+  frequency: integer("frequency").default(300).notNull(), // Secondi tra sync (default 5 min)
+  mode: varchar("mode", { length: 50 }).default("bidirectional").notNull(), // unidirectional, bidirectional
+  externalUrl: varchar("external_url", { length: 500 }), // URL gestionale esterno (Heroku)
+  externalApiKey: varchar("external_api_key", { length: 255 }), // API key per autenticazione
+  entities: text("entities"), // JSON array entità da sincronizzare
+  lastModified: timestamp("last_modified").defaultNow().notNull(),
+  modifiedBy: varchar("modified_by", { length: 255 }),
+});
+
+// Job di sincronizzazione
+export const syncJobs = pgTable("sync_jobs", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  entity: syncEntityEnum("entity").notNull(), // Entità sincronizzata
+  direction: varchar("direction", { length: 50 }).default("pull").notNull(), // pull, push, bidirectional
+  status: syncStatusEnum("status").default("pending").notNull(),
+  recordsProcessed: integer("records_processed").default(0).notNull(),
+  recordsSuccess: integer("records_success").default(0).notNull(),
+  recordsError: integer("records_error").default(0).notNull(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  errorMessage: text("error_message"),
+  details: text("details"), // JSON con dettagli aggiuntivi
+  triggeredBy: varchar("triggered_by", { length: 100 }).default("system").notNull(), // system, manual, webhook
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  entityIdx: index("sync_jobs_entity_idx").on(table.entity),
+  statusIdx: index("sync_jobs_status_idx").on(table.status),
+  createdAtIdx: index("sync_jobs_created_at_idx").on(table.createdAt),
+}));
+
+// Log dettagliato sincronizzazione
+export const syncLogs = pgTable("sync_logs", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  jobId: integer("job_id").references(() => syncJobs.id).notNull(),
+  entity: syncEntityEnum("entity").notNull(),
+  recordId: varchar("record_id", { length: 100 }), // ID record nel sistema esterno
+  localId: integer("local_id"), // ID record locale
+  action: varchar("action", { length: 50 }).notNull(), // create, update, delete, skip
+  status: varchar("status", { length: 50 }).notNull(), // success, error, skipped
+  changes: text("changes"), // JSON con campi modificati
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  jobIdx: index("sync_logs_job_idx").on(table.jobId),
+}));
+
+// Export types for Sync tables
+export type SyncConfig = typeof syncConfig.$inferSelect;
+export type InsertSyncConfig = typeof syncConfig.$inferInsert;
+
+export type SyncJob = typeof syncJobs.$inferSelect;
+export type InsertSyncJob = typeof syncJobs.$inferInsert;
+
+export type SyncLog = typeof syncLogs.$inferSelect;
+export type InsertSyncLog = typeof syncLogs.$inferInsert;

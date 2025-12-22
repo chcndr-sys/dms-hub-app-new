@@ -407,4 +407,235 @@ export const integrationsRouter = router({
       return results;
     }),
   }),
+  
+  // ============================================
+  // SYNC STATUS - Sincronizzazione Gestionale
+  // ============================================
+  
+  sync: router({
+    // Stato attuale sincronizzazione
+    status: publicProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return {
+        enabled: false,
+        lastSync: null,
+        nextSync: null,
+        totalSynced: 0,
+        errors: 0,
+        config: null,
+      };
+      
+      // Ottieni configurazione
+      const [config] = await db.select().from(schema.syncConfig).limit(1);
+      
+      // Ottieni ultimo job completato
+      const [lastJob] = await db.select()
+        .from(schema.syncJobs)
+        .where(eq(schema.syncJobs.status, "success"))
+        .orderBy(desc(schema.syncJobs.completedAt))
+        .limit(1);
+      
+      // Conta totale record sincronizzati oggi
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const [stats] = await db.select({
+        totalSynced: sql<number>`COALESCE(SUM(${schema.syncJobs.recordsSuccess}), 0)`,
+        errors: sql<number>`COALESCE(SUM(${schema.syncJobs.recordsError}), 0)`,
+      })
+      .from(schema.syncJobs)
+      .where(gte(schema.syncJobs.createdAt, today));
+      
+      // Calcola prossimo sync
+      let nextSync = null;
+      if (config?.enabled && lastJob?.completedAt) {
+        const nextSyncTime = new Date(lastJob.completedAt);
+        nextSyncTime.setSeconds(nextSyncTime.getSeconds() + (config.frequency || 300));
+        nextSync = nextSyncTime;
+      }
+      
+      return {
+        enabled: config?.enabled === 1,
+        lastSync: lastJob?.completedAt || null,
+        nextSync,
+        totalSynced: stats?.totalSynced || 0,
+        errors: stats?.errors || 0,
+        config: config ? {
+          frequency: config.frequency,
+          mode: config.mode,
+          externalUrl: config.externalUrl,
+          entities: config.entities ? JSON.parse(config.entities) : [],
+        } : null,
+      };
+    }),
+    
+    // Lista job di sincronizzazione recenti
+    jobs: publicProcedure
+      .input(z.object({ limit: z.number().default(20) }).optional())
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        
+        return await db.select()
+          .from(schema.syncJobs)
+          .orderBy(desc(schema.syncJobs.createdAt))
+          .limit(input?.limit || 20);
+      }),
+    
+    // Log dettagliati per un job
+    logs: publicProcedure
+      .input(z.object({ jobId: z.number(), limit: z.number().default(100) }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        
+        return await db.select()
+          .from(schema.syncLogs)
+          .where(eq(schema.syncLogs.jobId, input.jobId))
+          .orderBy(desc(schema.syncLogs.createdAt))
+          .limit(input.limit);
+      }),
+    
+    // Avvia sincronizzazione manuale
+    trigger: publicProcedure
+      .input(z.object({
+        entity: z.enum(["operatori", "presenze", "concessioni", "pagamenti", "documenti", "mercati", "posteggi"]).optional(),
+        direction: z.enum(["pull", "push", "bidirectional"]).default("bidirectional"),
+      }).optional())
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database non disponibile");
+        
+        // Ottieni configurazione
+        const [config] = await db.select().from(schema.syncConfig).limit(1);
+        
+        // Se non c'è URL esterno, simula sync
+        const isSimulated = !config?.externalUrl;
+        
+        // Entità da sincronizzare
+        const entities = input?.entity 
+          ? [input.entity] 
+          : (config?.entities ? JSON.parse(config.entities) : ["operatori", "presenze", "concessioni", "pagamenti", "documenti"]);
+        
+        const results = [];
+        
+        for (const entity of entities) {
+          // Crea job
+          const [job] = await db.insert(schema.syncJobs).values({
+            entity: entity as any,
+            direction: input?.direction || "bidirectional",
+            status: "running",
+            startedAt: new Date(),
+            triggeredBy: "manual",
+          }).returning();
+          
+          // Simula sincronizzazione (o esegui reale se configurato)
+          let recordsProcessed = 0;
+          let recordsSuccess = 0;
+          let recordsError = 0;
+          let errorMessage = null;
+          
+          if (isSimulated) {
+            // Simulazione: genera numeri casuali realistici
+            recordsProcessed = Math.floor(Math.random() * 100) + 10;
+            recordsSuccess = Math.floor(recordsProcessed * (0.9 + Math.random() * 0.1));
+            recordsError = recordsProcessed - recordsSuccess;
+            
+            // Simula tempo di elaborazione
+            await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+          } else {
+            // TODO: Implementare sync reale con gestionale Heroku
+            // Per ora restituisce errore se URL configurato ma non implementato
+            errorMessage = "Sync reale non ancora implementato. Configurare endpoint Heroku.";
+            recordsError = 1;
+          }
+          
+          // Aggiorna job
+          await db.update(schema.syncJobs)
+            .set({
+              status: recordsError > 0 && recordsSuccess === 0 ? "error" : recordsError > 0 ? "partial" : "success",
+              recordsProcessed,
+              recordsSuccess,
+              recordsError,
+              completedAt: new Date(),
+              errorMessage,
+            })
+            .where(eq(schema.syncJobs.id, job.id));
+          
+          results.push({
+            entity,
+            jobId: job.id,
+            recordsProcessed,
+            recordsSuccess,
+            recordsError,
+            status: recordsError > 0 && recordsSuccess === 0 ? "error" : recordsError > 0 ? "partial" : "success",
+          });
+        }
+        
+        return {
+          success: true,
+          simulated: isSimulated,
+          results,
+        };
+      }),
+    
+    // Aggiorna configurazione sync
+    updateConfig: publicProcedure
+      .input(z.object({
+        enabled: z.boolean().optional(),
+        frequency: z.number().min(60).max(86400).optional(), // Min 1 min, max 24 ore
+        mode: z.enum(["unidirectional", "bidirectional"]).optional(),
+        externalUrl: z.string().url().optional().nullable(),
+        externalApiKey: z.string().optional().nullable(),
+        entities: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database non disponibile");
+        
+        // Verifica se esiste già una configurazione
+        const [existing] = await db.select().from(schema.syncConfig).limit(1);
+        
+        const updateData: any = {
+          lastModified: new Date(),
+          modifiedBy: "admin", // TODO: prendere da ctx.user
+        };
+        
+        if (input.enabled !== undefined) updateData.enabled = input.enabled ? 1 : 0;
+        if (input.frequency !== undefined) updateData.frequency = input.frequency;
+        if (input.mode !== undefined) updateData.mode = input.mode;
+        if (input.externalUrl !== undefined) updateData.externalUrl = input.externalUrl;
+        if (input.externalApiKey !== undefined) updateData.externalApiKey = input.externalApiKey;
+        if (input.entities !== undefined) updateData.entities = JSON.stringify(input.entities);
+        
+        if (existing) {
+          await db.update(schema.syncConfig)
+            .set(updateData)
+            .where(eq(schema.syncConfig.id, existing.id));
+        } else {
+          await db.insert(schema.syncConfig).values(updateData);
+        }
+        
+        return { success: true };
+      }),
+    
+    // Ottieni configurazione
+    getConfig: publicProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return null;
+      
+      const [config] = await db.select().from(schema.syncConfig).limit(1);
+      
+      if (!config) return null;
+      
+      return {
+        enabled: config.enabled === 1,
+        frequency: config.frequency,
+        mode: config.mode,
+        externalUrl: config.externalUrl,
+        entities: config.entities ? JSON.parse(config.entities) : [],
+        lastModified: config.lastModified,
+      };
+    }),
+  }),
 });
