@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   Bell, Mail, MessageSquare, Send, RefreshCw, 
-  ArrowDownLeft, ArrowUpRight, Phone, Loader2, Search, Building2, X
+  ArrowDownLeft, ArrowUpRight, Phone, Loader2, Search, Building2, X, Landmark
 } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://orchestratore.mio-hub.me';
@@ -39,6 +39,40 @@ interface Impresa {
   stato_impresa?: string;
 }
 
+interface SettoreComune {
+  id: number;
+  comune_id: number;
+  comune_nome?: string;
+  tipo_settore: string;
+  nome_settore?: string;
+  responsabile_nome?: string;
+  responsabile_cognome?: string;
+  email?: string;
+  pec?: string;
+  telefono?: string;
+}
+
+interface Comune {
+  id: number;
+  nome: string;
+  provincia: string;
+}
+
+// Mappa tipi settore per label leggibili
+const TIPI_SETTORE_LABELS: { [key: string]: string } = {
+  'SUAP': 'SUAP - Sportello Unico Attività Produttive',
+  'POLIZIA_LOCALE': 'Polizia Locale / Municipale',
+  'TRIBUTI': 'Ufficio Tributi',
+  'DEMOGRAFICI': 'Servizi Demografici (SED)',
+  'COMMERCIO': 'Ufficio Commercio',
+  'TECNICO': 'Ufficio Tecnico',
+  'RAGIONERIA': 'Ragioneria / Bilancio',
+  'AMBIENTE': 'Ambiente / Ecologia',
+  'SEGRETERIA': 'Segreteria Generale',
+  'URP': 'URP - Relazioni con il Pubblico',
+  'PROTEZIONE_CIVILE': 'Protezione Civile',
+};
+
 export function NotificationsPanel() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [stats, setStats] = useState<NotificationStats>({ received: 0, sent: 0, emails: 0, whatsapp: 0 });
@@ -53,6 +87,9 @@ export function NotificationsPanel() {
   const [sendBody, setSendBody] = useState('');
   const [sendStatus, setSendStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Tipo di ricerca: imprese o comuni
+  const [searchEntityType, setSearchEntityType] = useState<'imprese' | 'comuni'>('imprese');
+
   // Ricerca imprese
   const [imprese, setImprese] = useState<Impresa[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,6 +97,12 @@ export function NotificationsPanel() {
   const [selectedImpresa, setSelectedImpresa] = useState<Impresa | null>(null);
   const [loadingImprese, setLoadingImprese] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Ricerca settori comunali
+  const [settoriComuni, setSettoriComuni] = useState<SettoreComune[]>([]);
+  const [comuni, setComuni] = useState<Comune[]>([]);
+  const [selectedSettore, setSelectedSettore] = useState<SettoreComune | null>(null);
+  const [loadingSettori, setLoadingSettori] = useState(false);
 
   // Carica lista imprese
   useEffect(() => {
@@ -78,6 +121,46 @@ export function NotificationsPanel() {
       }
     };
     fetchImprese();
+  }, []);
+
+  // Carica lista comuni e settori
+  useEffect(() => {
+    const fetchComuniAndSettori = async () => {
+      setLoadingSettori(true);
+      try {
+        // Carica comuni
+        const comuniRes = await fetch(`${API_BASE_URL}/api/comuni`);
+        const comuniData = await comuniRes.json();
+        if (comuniData.success && comuniData.data) {
+          setComuni(comuniData.data);
+          
+          // Carica settori per ogni comune
+          const allSettori: SettoreComune[] = [];
+          for (const comune of comuniData.data) {
+            try {
+              const settoriRes = await fetch(`${API_BASE_URL}/api/comuni/${comune.id}/settori`);
+              const settoriData = await settoriRes.json();
+              if (settoriData.success && settoriData.data) {
+                // Aggiungi il nome del comune a ogni settore
+                const settoriWithComune = settoriData.data.map((s: SettoreComune) => ({
+                  ...s,
+                  comune_nome: comune.nome
+                }));
+                allSettori.push(...settoriWithComune);
+              }
+            } catch (err) {
+              console.error(`Error fetching settori for comune ${comune.id}:`, err);
+            }
+          }
+          setSettoriComuni(allSettori);
+        }
+      } catch (error) {
+        console.error('Error fetching comuni:', error);
+      } finally {
+        setLoadingSettori(false);
+      }
+    };
+    fetchComuniAndSettori();
   }, []);
 
   // Chiudi dropdown quando clicchi fuori
@@ -102,9 +185,25 @@ export function NotificationsPanel() {
     );
   });
 
+  // Filtra settori comunali in base alla ricerca
+  const filteredSettori = settoriComuni.filter(settore => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    const tipoLabel = TIPI_SETTORE_LABELS[settore.tipo_settore] || settore.tipo_settore;
+    return (
+      settore.comune_nome?.toLowerCase().includes(query) ||
+      tipoLabel.toLowerCase().includes(query) ||
+      settore.responsabile_nome?.toLowerCase().includes(query) ||
+      settore.responsabile_cognome?.toLowerCase().includes(query) ||
+      settore.email?.toLowerCase().includes(query) ||
+      settore.pec?.toLowerCase().includes(query)
+    );
+  });
+
   // Seleziona impresa
   const handleSelectImpresa = (impresa: Impresa) => {
     setSelectedImpresa(impresa);
+    setSelectedSettore(null);
     setSearchQuery(impresa.denominazione);
     setShowDropdown(false);
     
@@ -116,6 +215,22 @@ export function NotificationsPanel() {
     }
   };
 
+  // Seleziona settore comunale
+  const handleSelectSettore = (settore: SettoreComune) => {
+    setSelectedSettore(settore);
+    setSelectedImpresa(null);
+    const tipoLabel = TIPI_SETTORE_LABELS[settore.tipo_settore] || settore.tipo_settore;
+    setSearchQuery(`${settore.comune_nome} - ${tipoLabel}`);
+    setShowDropdown(false);
+    
+    // Auto-popola il campo destinatario (preferisci PEC per i comuni)
+    if (sendType === 'email') {
+      setSendTo(settore.pec || settore.email || '');
+    } else if (sendType === 'whatsapp' && settore.telefono) {
+      setSendTo(settore.telefono);
+    }
+  };
+
   // Quando cambia il tipo di invio, aggiorna il destinatario
   useEffect(() => {
     if (selectedImpresa) {
@@ -124,14 +239,27 @@ export function NotificationsPanel() {
       } else if (sendType === 'whatsapp' && selectedImpresa.telefono) {
         setSendTo(selectedImpresa.telefono);
       }
+    } else if (selectedSettore) {
+      if (sendType === 'email') {
+        setSendTo(selectedSettore.pec || selectedSettore.email || '');
+      } else if (sendType === 'whatsapp' && selectedSettore.telefono) {
+        setSendTo(selectedSettore.telefono);
+      }
     }
-  }, [sendType, selectedImpresa]);
+  }, [sendType, selectedImpresa, selectedSettore]);
 
   // Reset selezione
   const handleClearSelection = () => {
     setSelectedImpresa(null);
+    setSelectedSettore(null);
     setSearchQuery('');
     setSendTo('');
+  };
+
+  // Quando cambia il tipo di entità, resetta la ricerca
+  const handleEntityTypeChange = (type: 'imprese' | 'comuni') => {
+    setSearchEntityType(type);
+    handleClearSelection();
   };
 
   const fetchNotifications = async () => {
@@ -295,8 +423,7 @@ export function NotificationsPanel() {
           disabled={loading}
           className="ml-auto"
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Aggiorna
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </Button>
       </div>
 
@@ -393,26 +520,57 @@ export function NotificationsPanel() {
               </Button>
             </div>
 
-            {/* Ricerca Impresa */}
+            {/* Selezione tipo entità: Imprese o Comuni */}
+            <div className="flex gap-2">
+              <Button
+                variant={searchEntityType === 'imprese' ? 'default' : 'outline'}
+                onClick={() => handleEntityTypeChange('imprese')}
+                className={searchEntityType === 'imprese' ? 'bg-[#14b8a6] hover:bg-[#14b8a6]/80' : ''}
+                size="sm"
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                Cerca Impresa
+              </Button>
+              <Button
+                variant={searchEntityType === 'comuni' ? 'default' : 'outline'}
+                onClick={() => handleEntityTypeChange('comuni')}
+                className={searchEntityType === 'comuni' ? 'bg-[#8b5cf6] hover:bg-[#8b5cf6]/80' : ''}
+                size="sm"
+              >
+                <Landmark className="h-4 w-4 mr-2" />
+                Cerca Comune/Settore
+              </Button>
+            </div>
+
+            {/* Ricerca */}
             <div ref={dropdownRef} className="relative">
               <label className="text-[#e8fbff]/70 text-sm mb-1 block flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Cerca Impresa
+                {searchEntityType === 'imprese' ? (
+                  <><Building2 className="h-4 w-4" /> Cerca Impresa</>
+                ) : (
+                  <><Landmark className="h-4 w-4" /> Cerca Settore Comunale</>
+                )}
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#e8fbff]/50" />
                 <Input
-                  placeholder="Cerca per nome, CF o email..."
+                  placeholder={searchEntityType === 'imprese' 
+                    ? "Cerca per nome, CF o email..." 
+                    : "Cerca per comune, settore o responsabile..."
+                  }
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     setShowDropdown(true);
-                    if (!e.target.value) setSelectedImpresa(null);
+                    if (!e.target.value) {
+                      setSelectedImpresa(null);
+                      setSelectedSettore(null);
+                    }
                   }}
                   onFocus={() => setShowDropdown(true)}
                   className="bg-[#0b1220] border-[#14b8a6]/30 text-[#e8fbff] pl-10 pr-10"
                 />
-                {selectedImpresa && (
+                {(selectedImpresa || selectedSettore) && (
                   <button
                     onClick={handleClearSelection}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#e8fbff]/50 hover:text-[#e8fbff]"
@@ -425,37 +583,86 @@ export function NotificationsPanel() {
               {/* Dropdown risultati */}
               {showDropdown && searchQuery && (
                 <div className="absolute z-50 w-full mt-1 bg-[#1a2332] border border-[#14b8a6]/30 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                  {loadingImprese ? (
-                    <div className="p-4 text-center text-[#e8fbff]/50">
-                      <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                    </div>
-                  ) : filteredImprese.length === 0 ? (
-                    <div className="p-4 text-center text-[#e8fbff]/50">
-                      Nessuna impresa trovata
-                    </div>
-                  ) : (
-                    filteredImprese.slice(0, 10).map((impresa) => (
-                      <div
-                        key={impresa.id}
-                        onClick={() => handleSelectImpresa(impresa)}
-                        className="p-3 hover:bg-[#14b8a6]/20 cursor-pointer border-b border-[#14b8a6]/10 last:border-b-0"
-                      >
-                        <div className="text-[#e8fbff] font-semibold">{impresa.denominazione}</div>
-                        <div className="text-[#e8fbff]/60 text-sm flex items-center gap-4 mt-1">
-                          <span>CF: {impresa.codice_fiscale}</span>
-                          {impresa.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" /> {impresa.email}
-                            </span>
-                          )}
-                          {impresa.telefono && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3" /> {impresa.telefono}
-                            </span>
-                          )}
-                        </div>
+                  {searchEntityType === 'imprese' ? (
+                    // Risultati Imprese
+                    loadingImprese ? (
+                      <div className="p-4 text-center text-[#e8fbff]/50">
+                        <Loader2 className="h-5 w-5 animate-spin mx-auto" />
                       </div>
-                    ))
+                    ) : filteredImprese.length === 0 ? (
+                      <div className="p-4 text-center text-[#e8fbff]/50">
+                        Nessuna impresa trovata
+                      </div>
+                    ) : (
+                      filteredImprese.slice(0, 10).map((impresa) => (
+                        <div
+                          key={impresa.id}
+                          onClick={() => handleSelectImpresa(impresa)}
+                          className="p-3 hover:bg-[#14b8a6]/20 cursor-pointer border-b border-[#14b8a6]/10 last:border-b-0"
+                        >
+                          <div className="text-[#e8fbff] font-semibold">{impresa.denominazione}</div>
+                          <div className="text-[#e8fbff]/60 text-sm flex items-center gap-4 mt-1">
+                            <span>CF: {impresa.codice_fiscale}</span>
+                            {impresa.email && (
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" /> {impresa.email}
+                              </span>
+                            )}
+                            {impresa.telefono && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" /> {impresa.telefono}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )
+                  ) : (
+                    // Risultati Settori Comunali
+                    loadingSettori ? (
+                      <div className="p-4 text-center text-[#e8fbff]/50">
+                        <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                      </div>
+                    ) : filteredSettori.length === 0 ? (
+                      <div className="p-4 text-center text-[#e8fbff]/50">
+                        Nessun settore comunale trovato
+                      </div>
+                    ) : (
+                      filteredSettori.slice(0, 10).map((settore) => (
+                        <div
+                          key={settore.id}
+                          onClick={() => handleSelectSettore(settore)}
+                          className="p-3 hover:bg-[#8b5cf6]/20 cursor-pointer border-b border-[#8b5cf6]/10 last:border-b-0"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Landmark className="h-4 w-4 text-[#8b5cf6]" />
+                            <span className="text-[#e8fbff] font-semibold">{settore.comune_nome}</span>
+                            <span className="text-[#8b5cf6]">-</span>
+                            <span className="text-[#8b5cf6]">{TIPI_SETTORE_LABELS[settore.tipo_settore] || settore.tipo_settore}</span>
+                          </div>
+                          <div className="text-[#e8fbff]/60 text-sm flex flex-wrap items-center gap-4 mt-1 ml-6">
+                            {settore.responsabile_nome && (
+                              <span>Resp: {settore.responsabile_nome} {settore.responsabile_cognome}</span>
+                            )}
+                            {settore.pec && (
+                              <span className="flex items-center gap-1 text-[#f59e0b]">
+                                <Mail className="h-3 w-3" /> PEC: {settore.pec}
+                              </span>
+                            )}
+                            {settore.email && !settore.pec && (
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" /> {settore.email}
+                              </span>
+                            )}
+                            {settore.telefono && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" /> {settore.telefono}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )
                   )}
                 </div>
               )}
@@ -483,6 +690,38 @@ export function NotificationsPanel() {
               </div>
             )}
 
+            {/* Settore comunale selezionato */}
+            {selectedSettore && (
+              <div className="p-3 bg-[#8b5cf6]/10 border border-[#8b5cf6]/30 rounded-lg">
+                <div className="flex items-center gap-2 text-[#8b5cf6]">
+                  <Landmark className="h-4 w-4" />
+                  <span className="font-semibold">{selectedSettore.comune_nome}</span>
+                  <span>-</span>
+                  <span>{TIPI_SETTORE_LABELS[selectedSettore.tipo_settore] || selectedSettore.tipo_settore}</span>
+                </div>
+                <div className="text-[#e8fbff]/70 text-sm mt-1 flex flex-wrap items-center gap-4">
+                  {selectedSettore.responsabile_nome && (
+                    <span>Responsabile: {selectedSettore.responsabile_nome} {selectedSettore.responsabile_cognome}</span>
+                  )}
+                  {selectedSettore.pec && (
+                    <span className="flex items-center gap-1 text-[#f59e0b]">
+                      <Mail className="h-3 w-3" /> PEC: {selectedSettore.pec}
+                    </span>
+                  )}
+                  {selectedSettore.email && (
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3 w-3" /> {selectedSettore.email}
+                    </span>
+                  )}
+                  {selectedSettore.telefono && (
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3 w-3" /> {selectedSettore.telefono}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Destinatario */}
             <div>
               <label className="text-[#e8fbff]/70 text-sm mb-1 block">
@@ -494,9 +733,9 @@ export function NotificationsPanel() {
                 onChange={(e) => setSendTo(e.target.value)}
                 className="bg-[#0b1220] border-[#14b8a6]/30 text-[#e8fbff]"
               />
-              {!selectedImpresa && (
+              {!selectedImpresa && !selectedSettore && (
                 <p className="text-[#e8fbff]/40 text-xs mt-1">
-                  Puoi cercare un'impresa sopra o inserire manualmente il destinatario
+                  Puoi cercare un'impresa o un settore comunale sopra, oppure inserire manualmente il destinatario
                 </p>
               )}
             </div>
