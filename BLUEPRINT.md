@@ -1,6 +1,6 @@
 # 📘 DMS Hub System Blueprint
 
-> **Auto-generated:** 17 dicembre 2025 alle ore 22:24  
+> **Auto-generated:** 22 dicembre 2025 alle ore 02:15  
 > **Generator:** `scripts/generate_blueprint.cjs`
 
 ---
@@ -10,7 +10,7 @@
 **DMS Hub** è il sistema centrale per la gestione della Rete Mercati Made in Italy, con:
 
 - **94 endpoint API** (TRPC + REST)
-- **50 tabelle database**
+- **68 tabelle database**
 - **Full Observability** con Guardian monitoring
 - **Multi-agent orchestration** (MIO, Guardian, Zapier, ecc.)
 
@@ -18,7 +18,7 @@
 
 ## 🗄️ Database Schema
 
-### Tables (50)
+### Tables (68)
 
 | Variable Name | Table Name |
 |---------------|------------|
@@ -72,6 +72,11 @@
 | `dataBag` | `data_bag` |
 | `agentMessages` | `agent_messages` |
 | `agentContext` | `agent_context` |
+| `comuni` | `comuni` |
+| `settori_comune` | `settori_comune` |
+| `imprese` | `imprese` |
+| `qualificazioni` | `qualificazioni` |
+| `qualification_types` | `qualification_types` |
 
 ---
 
@@ -166,6 +171,7 @@ client/src/
     📄 APIDashboardV2.tsx
     📄 BottomNav.tsx
     📄 ChatWidget.tsx
+    📄 ComuniPanel.tsx
     📄 ConnessioniV2.tsx
     📄 DashboardLayout.tsx
     📄 DashboardLayoutSkeleton.tsx
@@ -177,7 +183,6 @@ client/src/
     📄 GuardianIntegrations.tsx
     📄 GuardianLogsSection.tsx
     📄 HomeButtons.tsx
-    📄 ImpreseQualificazioniPanel.tsx
     📄 Integrazioni.tsx
     📄 LogDebug.tsx
     📄 LogsDebugReal.tsx
@@ -190,6 +195,7 @@ client/src/
     📄 MarketMapComponent.tsx
     📄 MessageContent.tsx
     📄 MobilityMap.tsx
+    📄 NotificationsPanel.tsx
     📄 PanicButton.tsx
     📄 RouteLayer.tsx
     📄 SharedWorkspace.tsx
