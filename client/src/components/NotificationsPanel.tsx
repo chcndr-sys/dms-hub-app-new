@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   Bell, Mail, MessageSquare, Send, RefreshCw, 
-  ArrowDownLeft, ArrowUpRight, Phone, Loader2, Search, Building2, X, Landmark
+  ArrowDownLeft, ArrowUpRight, Phone, Loader2, Search, Building2, X, Landmark,
+  Filter, Eye, Calendar, ChevronDown
 } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://orchestratore.mio-hub.me';
@@ -86,6 +87,15 @@ export function NotificationsPanel() {
   const [sendSubject, setSendSubject] = useState('');
   const [sendBody, setSendBody] = useState('');
   const [sendStatus, setSendStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Filtri notifiche
+  const [notifSearchQuery, setNotifSearchQuery] = useState('');
+  const [notifFilterType, setNotifFilterType] = useState<'all' | 'email' | 'whatsapp'>('all');
+  const [notifFilterDirection, setNotifFilterDirection] = useState<'all' | 'received' | 'sent'>('all');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Modal visualizzazione notifica
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   // Tipo di ricerca: imprese o comuni
   const [searchEntityType, setSearchEntityType] = useState<'imprese' | 'comuni'>('imprese');
@@ -349,6 +359,24 @@ export function NotificationsPanel() {
     });
   };
 
+  // Filtra notifiche
+  const filteredNotifications = notifications.filter(notif => {
+    // Filtro per tipo
+    if (notifFilterType !== 'all' && notif.type !== notifFilterType) return false;
+    // Filtro per direzione
+    if (notifFilterDirection !== 'all' && notif.direction !== notifFilterDirection) return false;
+    // Filtro per ricerca testuale
+    if (notifSearchQuery) {
+      const query = notifSearchQuery.toLowerCase();
+      const matchFrom = notif.from?.toLowerCase().includes(query);
+      const matchTo = notif.to?.toLowerCase().includes(query);
+      const matchSubject = notif.subject?.toLowerCase().includes(query);
+      const matchMessage = notif.message?.toLowerCase().includes(query);
+      if (!matchFrom && !matchTo && !matchSubject && !matchMessage) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -427,25 +455,197 @@ export function NotificationsPanel() {
         </Button>
       </div>
 
+      {/* Modal Visualizzazione Notifica */}
+      {selectedNotification && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a2332] border border-[#ec4899]/30 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b border-[#ec4899]/20 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {selectedNotification.type === 'email' ? (
+                  <Mail className="h-5 w-5 text-[#06b6d4]" />
+                ) : (
+                  <MessageSquare className="h-5 w-5 text-[#22c55e]" />
+                )}
+                <span className="text-[#e8fbff] font-semibold">
+                  {selectedNotification.type === 'email' ? 'Email' : 'WhatsApp'}
+                </span>
+                <span className={`px-2 py-0.5 rounded text-xs ${
+                  selectedNotification.direction === 'received' 
+                    ? 'bg-[#ec4899]/20 text-[#ec4899]' 
+                    : 'bg-[#10b981]/20 text-[#10b981]'
+                }`}>
+                  {selectedNotification.direction === 'received' ? 'RICEVUTA' : 'INVIATA'}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedNotification(null)}
+                className="text-[#e8fbff]/70 hover:text-[#e8fbff]"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="p-4 space-y-3 overflow-y-auto max-h-[60vh]">
+              <div className="flex items-center gap-2 text-sm">
+                {selectedNotification.direction === 'received' ? (
+                  <><ArrowDownLeft className="h-4 w-4 text-[#ec4899]" /><span className="text-[#e8fbff]/70">Da:</span></>
+                ) : (
+                  <><ArrowUpRight className="h-4 w-4 text-[#10b981]" /><span className="text-[#e8fbff]/70">A:</span></>
+                )}
+                <span className="text-[#e8fbff] font-medium">
+                  {selectedNotification.direction === 'received' 
+                    ? selectedNotification.from || 'Sconosciuto'
+                    : selectedNotification.to || 'Sconosciuto'
+                  }
+                </span>
+              </div>
+              {selectedNotification.subject && (
+                <div className="text-sm">
+                  <span className="text-[#e8fbff]/70">Oggetto: </span>
+                  <span className="text-[#e8fbff] font-medium">{selectedNotification.subject}</span>
+                </div>
+              )}
+              <div className="text-sm text-[#e8fbff]/70 flex items-center gap-1">
+                <Calendar className="h-4 w-4" />
+                {formatDate(selectedNotification.date)}
+              </div>
+              <div className="border-t border-[#ec4899]/20 pt-3">
+                <div className="text-[#e8fbff]/70 text-sm mb-2">Messaggio:</div>
+                <div className="text-[#e8fbff] bg-[#0b1220] p-4 rounded-lg whitespace-pre-wrap">
+                  {selectedNotification.message}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       {activeTab === 'all' ? (
         <Card className="bg-[#1a2332] border-[#ec4899]/30">
-          <CardHeader>
-            <CardTitle className="text-[#e8fbff]">Notifiche Recenti</CardTitle>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-[#e8fbff]">Notifiche Recenti</CardTitle>
+              <div className="text-sm text-[#e8fbff]/50">
+                {filteredNotifications.length} di {notifications.length} notifiche
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
+            {/* Barra di ricerca e filtri */}
+            <div className="mb-4 space-y-3">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#e8fbff]/50" />
+                  <Input
+                    placeholder="Cerca per mittente, destinatario, oggetto o messaggio..."
+                    value={notifSearchQuery}
+                    onChange={(e) => setNotifSearchQuery(e.target.value)}
+                    className="pl-10 bg-[#0b1220] border-[#ec4899]/30 text-[#e8fbff]"
+                  />
+                  {notifSearchQuery && (
+                    <button
+                      onClick={() => setNotifSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#e8fbff]/50 hover:text-[#e8fbff]"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={showFilters ? 'bg-[#ec4899]/20 border-[#ec4899]' : ''}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtri
+                  <ChevronDown className={`h-4 w-4 ml-1 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                </Button>
+              </div>
+
+              {/* Filtri espandibili */}
+              {showFilters && (
+                <div className="flex flex-wrap gap-2 p-3 bg-[#0b1220] rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#e8fbff]/70 text-sm">Tipo:</span>
+                    <Button
+                      size="sm"
+                      variant={notifFilterType === 'all' ? 'default' : 'outline'}
+                      onClick={() => setNotifFilterType('all')}
+                      className={notifFilterType === 'all' ? 'bg-[#ec4899] hover:bg-[#ec4899]/80' : ''}
+                    >
+                      Tutti
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={notifFilterType === 'email' ? 'default' : 'outline'}
+                      onClick={() => setNotifFilterType('email')}
+                      className={notifFilterType === 'email' ? 'bg-[#06b6d4] hover:bg-[#06b6d4]/80' : ''}
+                    >
+                      <Mail className="h-3 w-3 mr-1" />
+                      Email
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={notifFilterType === 'whatsapp' ? 'default' : 'outline'}
+                      onClick={() => setNotifFilterType('whatsapp')}
+                      className={notifFilterType === 'whatsapp' ? 'bg-[#22c55e] hover:bg-[#22c55e]/80' : ''}
+                    >
+                      <MessageSquare className="h-3 w-3 mr-1" />
+                      WhatsApp
+                    </Button>
+                  </div>
+                  <div className="w-px bg-[#e8fbff]/20 mx-2" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#e8fbff]/70 text-sm">Direzione:</span>
+                    <Button
+                      size="sm"
+                      variant={notifFilterDirection === 'all' ? 'default' : 'outline'}
+                      onClick={() => setNotifFilterDirection('all')}
+                      className={notifFilterDirection === 'all' ? 'bg-[#ec4899] hover:bg-[#ec4899]/80' : ''}
+                    >
+                      Tutte
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={notifFilterDirection === 'received' ? 'default' : 'outline'}
+                      onClick={() => setNotifFilterDirection('received')}
+                      className={notifFilterDirection === 'received' ? 'bg-[#ec4899] hover:bg-[#ec4899]/80' : ''}
+                    >
+                      <ArrowDownLeft className="h-3 w-3 mr-1" />
+                      Ricevute
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={notifFilterDirection === 'sent' ? 'default' : 'outline'}
+                      onClick={() => setNotifFilterDirection('sent')}
+                      className={notifFilterDirection === 'sent' ? 'bg-[#10b981] hover:bg-[#10b981]/80' : ''}
+                    >
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                      Inviate
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-[#ec4899]" />
               </div>
-            ) : notifications.length === 0 ? (
+            ) : filteredNotifications.length === 0 ? (
               <div className="text-center py-8 text-[#e8fbff]/50">
-                Nessuna notifica trovata
+                {notifications.length === 0 ? 'Nessuna notifica trovata' : 'Nessuna notifica corrisponde ai filtri'}
               </div>
             ) : (
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                {notifications.map((notif) => (
-                  <div key={notif.id} className="p-4 bg-[#0b1220] rounded-lg">
+                {filteredNotifications.map((notif) => (
+                  <div 
+                    key={notif.id} 
+                    className="p-4 bg-[#0b1220] rounded-lg cursor-pointer hover:bg-[#0b1220]/80 hover:border-[#ec4899]/50 border border-transparent transition-all"
+                    onClick={() => setSelectedNotification(notif)}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         {notif.direction === 'received' ? (
@@ -475,6 +675,7 @@ export function NotificationsPanel() {
                         }`}>
                           {notif.direction === 'received' ? 'RICEVUTA' : 'INVIATA'}
                         </div>
+                        <Eye className="h-4 w-4 text-[#e8fbff]/30" />
                       </div>
                     </div>
                     {notif.subject && (
