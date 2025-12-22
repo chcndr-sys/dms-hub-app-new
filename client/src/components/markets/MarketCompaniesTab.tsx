@@ -247,17 +247,25 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
     setLoading(true);
     setError(null);
     try {
+      // Prima carichiamo companies e concessions
       await Promise.all([
         fetchCompanies(),
         fetchConcessions(),
-        fetchQualificazioni(),
       ]);
+      // fetchQualificazioni viene chiamata separatamente dopo che companies è stato aggiornato
     } catch (err: any) {
       setError(err.message || 'Errore durante il caricamento dei dati');
     } finally {
       setLoading(false);
     }
   };
+  
+  // Effetto separato per caricare le qualificazioni quando companies cambia
+  useEffect(() => {
+    if (companies.length > 0) {
+      fetchQualificazioni();
+    }
+  }, [companies]);
 
   const fetchCompanies = async () => {
     try {
