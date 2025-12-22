@@ -47,14 +47,15 @@ async function logAction(
 
 /**
  * Converti formato Slot Editor v3 GeoJSON in formato database
+ * Supporta sia il formato originale che il nuovo formato BusHubEditor
  */
 function convertSlotEditorV3Format(data: any) {
-  // Se è già nel formato corretto, ritorna così
-  if (data.stalls && data.center) {
+  // Se è già nel formato corretto (vecchio formato), ritorna così
+  if (data.stalls && data.center && !data.stalls_geojson) {
     return data;
   }
 
-  // Altrimenti converti da GeoJSON v3
+  // Altrimenti converti da GeoJSON v3 (nuovo formato BusHubEditor)
   const result: any = {
     container: data.container || [],
     stalls: [],
@@ -64,8 +65,10 @@ function convertSlotEditorV3Format(data: any) {
     png: { url: "", metadata: {} },
   };
 
-  // Calcola centro dal container
-  if (data.container && data.container.length > 0) {
+  // Usa centro fornito o calcola dal container
+  if (data.center) {
+    result.center = data.center;
+  } else if (data.container && data.container.length > 0) {
     const lats = data.container.map((p: any) => p[0]);
     const lngs = data.container.map((p: any) => p[1]);
     result.center = {
@@ -80,7 +83,20 @@ function convertSlotEditorV3Format(data: any) {
   if (data.stalls_geojson?.features) {
     result.stalls = data.stalls_geojson.features.map((f: any) => {
       const props = f.properties || {};
-      const coords = f.geometry.coordinates;
+      const geom = f.geometry;
+      
+      // Calcola centro del poligono per lat/lng
+      let lat = 0, lng = 0;
+      if (geom.type === 'Polygon' && geom.coordinates?.[0]) {
+        const coords = geom.coordinates[0];
+        const lats = coords.map((c: any) => c[1]);
+        const lngs = coords.map((c: any) => c[0]);
+        lat = lats.reduce((a: number, b: number) => a + b, 0) / lats.length;
+        lng = lngs.reduce((a: number, b: number) => a + b, 0) / lngs.length;
+      } else if (geom.type === 'Point') {
+        lng = geom.coordinates[0];
+        lat = geom.coordinates[1];
+      }
       
       // Estrai area da dimensions (es. "4m × 8m")
       let areaMq = null;
@@ -93,8 +109,8 @@ function convertSlotEditorV3Format(data: any) {
 
       return {
         number: String(props.number || props.id || 0),
-        lat: coords[1],
-        lng: coords[0],
+        lat,
+        lng,
         areaMq,
         category: props.kind || props.category || null,
       };
@@ -310,10 +326,12 @@ export const dmsHubRouter = router({
         };
       }),
 
-    // Import automatico da Slot Editor v3 (senza richiedere nome/città)
+    // Import automatico da Slot Editor v3 / BusHubEditor
     importAuto: publicProcedure
       .input(z.object({
         slotEditorData: z.any(), // JSON grezzo da Slot Editor v3
+        name: z.string().optional(), // Nome mercato (opzionale, da BusHubEditor)
+        location: z.string().optional(), // Località (opzionale, da BusHubEditor)
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -322,11 +340,11 @@ export const dmsHubRouter = router({
         // Converti formato Slot Editor v3 se necessario
         const convertedData = convertSlotEditorV3Format(input.slotEditorData);
 
-        // Genera nome automatico dal timestamp
+        // Usa nome fornito o genera automatico dal timestamp
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-        const marketName = `Mercato_${timestamp}`;
-        const city = "Da specificare";
-        const address = "Da specificare";
+        const marketName = input.name || `Mercato_${timestamp}`;
+        const city = input.location || "Da specificare";
+        const address = input.location || "Da specificare";
 
         // 1. Crea mercato
         const [market] = await db.insert(schema.markets).values({

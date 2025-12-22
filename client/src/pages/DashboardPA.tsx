@@ -12,7 +12,7 @@ import {
   Radio, CloudRain, Wind, UserCog, ClipboardCheck, Scale, Bell, BellRing,
   Navigation, Train, ParkingCircle, TrafficCone, FileBarChart, Plug, SettingsIcon, Euro, Newspaper, Rocket,
   XCircle, Lightbulb, MessageSquare, Brain, Calculator, ExternalLink, StopCircle,
-  Search, Filter
+  Search, Filter, Plus
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,6 +34,7 @@ import { SharedWorkspace } from '@/components/SharedWorkspace';
 import NotificationsPanel from '@/components/NotificationsPanel';
 import ComuniPanel from '@/components/ComuniPanel';
 import WalletPanel from '@/components/WalletPanel';
+import { BusHubEditor } from '@/components/bus-hub';
 import { MessageContent } from '@/components/MessageContent';
 import { callOrchestrator } from '@/api/orchestratorClient';
 import { sendAgentMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient';
@@ -736,6 +737,7 @@ export default function DashboardPA() {
   
   // GIS Map filters
   const [gisSearchQuery, setGisSearchQuery] = useState('');
+  const [showBusHubEditor, setShowBusHubEditor] = useState(false);
   const [gisStatusFilter, setGisStatusFilter] = useState<string>('all');
   const gisMarketId = 1; // Mercato Grosseto ID=1 (default)
   
@@ -4824,7 +4826,23 @@ export default function DashboardPA() {
 
           {/* TAB: MAPPA GIS */}
           <TabsContent value="mappa" className="space-y-6">
-            {/* Barra Ricerca e Filtri */}
+            {/* BUS HUB Editor Modal */}
+            {showBusHubEditor && (
+              <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+                <div className="bg-[#0b1220] rounded-xl border border-[#14b8a6]/30 w-full max-w-7xl h-[90vh] overflow-hidden">
+                  <BusHubEditor
+                    onClose={() => setShowBusHubEditor(false)}
+                    onSaveComplete={(marketId) => {
+                      console.log('Mercato salvato con ID:', marketId);
+                      setGisMapRefreshKey(prev => prev + 1);
+                      setShowBusHubEditor(false);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Barra Ricerca, Filtri e Pulsante Crea Mercato */}
             <Card className="bg-[#1a2332] border-[#14b8a6]/30">
               <CardContent className="pt-6">
                 <div className="flex flex-col md:flex-row gap-4">
@@ -4860,6 +4878,15 @@ export default function DashboardPA() {
                       Riservati
                     </button>
                   </div>
+
+                  {/* Pulsante Crea Nuovo Mercato */}
+                  <Button
+                    onClick={() => setShowBusHubEditor(true)}
+                    className="bg-[#10b981] hover:bg-[#059669] text-white font-medium px-6"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crea Nuovo Mercato
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -5224,7 +5251,23 @@ function LogsSection() {
         </TabsContent>
           {/* TAB: MAPPA GIS */}
           <TabsContent value="mappa" className="space-y-6">
-            {/* Barra Ricerca e Filtri */}
+            {/* BUS HUB Editor Modal */}
+            {showBusHubEditor && (
+              <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+                <div className="bg-[#0b1220] rounded-xl border border-[#14b8a6]/30 w-full max-w-7xl h-[90vh] overflow-hidden">
+                  <BusHubEditor
+                    onClose={() => setShowBusHubEditor(false)}
+                    onSaveComplete={(marketId) => {
+                      console.log('Mercato salvato con ID:', marketId);
+                      setGisMapRefreshKey(prev => prev + 1);
+                      setShowBusHubEditor(false);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Barra Ricerca, Filtri e Pulsante Crea Mercato */}
             <Card className="bg-[#1a2332] border-[#14b8a6]/30">
               <CardContent className="pt-6">
                 <div className="flex flex-col md:flex-row gap-4">
@@ -5260,6 +5303,15 @@ function LogsSection() {
                       Riservati
                     </button>
                   </div>
+
+                  {/* Pulsante Crea Nuovo Mercato */}
+                  <Button
+                    onClick={() => setShowBusHubEditor(true)}
+                    className="bg-[#10b981] hover:bg-[#059669] text-white font-medium px-6"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crea Nuovo Mercato
+                  </Button>
                 </div>
               </CardContent>
             </Card>
