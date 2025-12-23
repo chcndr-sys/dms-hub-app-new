@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, LayersControl,
 import { ZoomFontUpdater } from '../components/ZoomFontUpdater';
 import L from 'leaflet';
 import { Button } from '@/components/ui/button';
-import { MapPin, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { MapPin, Loader2, AlertCircle, RefreshCw, Search, ChevronDown } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 // Fix per icone marker Leaflet
@@ -54,20 +54,57 @@ interface ApiResponse {
   };
 }
 
+interface Market {
+  id: number;
+  code: string;
+  name: string;
+  municipality: string;
+  total_stalls: number;
+  latitude: string;
+  longitude: string;
+}
+
 export default function MarketGISPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mapData, setMapData] = useState<MarketMapData | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  
+  // Stati per selettore mercati
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
 
-  const loadMarketMap = async () => {
+  // Carica lista mercati all'avvio
+  const loadMarkets = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_MIHUB_API_URL || 'https://orchestratore.mio-hub.me';
+      const response = await fetch(`${apiUrl}/api/markets`);
+      const result = await response.json();
+      if (result.success && result.data) {
+        setMarkets(result.data);
+        // Seleziona il primo mercato di default
+        if (result.data.length > 0 && !selectedMarket) {
+          setSelectedMarket(result.data[0]);
+        }
+      }
+    } catch (err) {
+      console.error('Errore caricamento mercati:', err);
+    }
+  };
+
+  const loadMarketMap = async (marketId?: number) => {
+    const targetMarketId = marketId || selectedMarket?.id;
+    if (!targetMarketId) return;
+    
     setLoading(true);
     setError(null);
     
     try {
-      // Chiamata all'endpoint backend
-      const apiUrl = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io/api';
-      const response = await fetch(`${apiUrl}/api/gis/market-map`);
+      // Chiamata all'endpoint backend con marketId dinamico
+      const apiUrl = import.meta.env.VITE_MIHUB_API_URL || 'https://orchestratore.mio-hub.me';
+      const response = await fetch(`${apiUrl}/api/gis/market-map/${targetMarketId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -90,9 +127,31 @@ export default function MarketGISPage() {
     }
   };
 
+  // Carica mercati all'avvio
   useEffect(() => {
-    loadMarketMap();
+    loadMarkets();
   }, []);
+  
+  // Carica mappa quando cambia il mercato selezionato
+  useEffect(() => {
+    if (selectedMarket) {
+      loadMarketMap(selectedMarket.id);
+    }
+  }, [selectedMarket]);
+  
+  // Filtra mercati in base alla ricerca
+  const filteredMarkets = markets.filter(m => 
+    m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.municipality.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  // Gestisce selezione mercato
+  const handleSelectMarket = (market: Market) => {
+    setSelectedMarket(market);
+    setSearchQuery('');
+    setShowDropdown(false);
+  };
 
   // Converti container in formato Leaflet [[lat, lng], ...]
   const containerPolygon = mapData?.container.map(([lat, lng]) => [lat, lng] as [number, number]) || [];
@@ -117,30 +176,91 @@ export default function MarketGISPage() {
         }
       `}</style>
       <div className="h-screen flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <MapPin className="w-6 h-6 text-emerald-600" />
-          <div>
-            <h1 className="text-lg font-semibold">Mappa GIS Mercato</h1>
-            <p className="text-xs text-gray-500">
-              Integrazione Editor v3 - Pepe GIS
-            </p>
+      {/* Header con Selettore Mercati */}
+      <div className="bg-white border-b px-4 py-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-6 h-6 text-emerald-600" />
+            <div>
+              <h1 className="text-lg font-semibold">Pepe GIS - Mappa Mercato</h1>
+              <p className="text-xs text-gray-500">
+                {selectedMarket ? `${selectedMarket.name} (${selectedMarket.code})` : 'Seleziona un mercato'}
+              </p>
+            </div>
           </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadMarketMap()}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+          </Button>
         </div>
         
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={loadMarketMap}
-          disabled={loading}
-        >
-          {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4" />
+        {/* Barra di Ricerca Mercati */}
+        <div className="relative">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Cerca mercato per nome, città o codice..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowDropdown(true);
+                }}
+                onFocus={() => setShowDropdown(true)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex items-center gap-1"
+            >
+              <ChevronDown className={`w-4 h-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+            </Button>
+          </div>
+          
+          {/* Dropdown Lista Mercati */}
+          {showDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+              {filteredMarkets.length === 0 ? (
+                <div className="p-3 text-center text-gray-500 text-sm">
+                  Nessun mercato trovato
+                </div>
+              ) : (
+                filteredMarkets.map((market) => (
+                  <div
+                    key={market.id}
+                    onClick={() => handleSelectMarket(market)}
+                    className={`p-3 cursor-pointer hover:bg-emerald-50 border-b border-gray-100 last:border-b-0 ${
+                      selectedMarket?.id === market.id ? 'bg-emerald-100' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-gray-900">{market.name}</div>
+                        <div className="text-xs text-gray-500">{market.municipality} • {market.code}</div>
+                      </div>
+                      <div className="text-sm text-emerald-600 font-medium">
+                        {market.total_stalls} posteggi
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           )}
-        </Button>
+        </div>
       </div>
 
       {/* Contenuto */}
