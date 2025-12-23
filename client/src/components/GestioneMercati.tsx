@@ -446,8 +446,28 @@ function AnagraficaTab({ market }: { market: Market }) {
   );
 }
 
+// Costanti per i select del form impresa
+const FORMA_GIURIDICA_OPTIONS = [
+  { value: '', label: 'Seleziona...' },
+  { value: 'SRL', label: 'S.R.L.' },
+  { value: 'SPA', label: 'S.P.A.' },
+  { value: 'SNC', label: 'S.N.C.' },
+  { value: 'SAS', label: 'S.A.S.' },
+  { value: 'DI', label: 'Ditta Individuale' },
+  { value: 'COOP', label: 'Cooperativa' },
+  { value: 'ALTRO', label: 'Altro' },
+];
+
+const STATO_IMPRESA_OPTIONS = [
+  { value: 'Attiva', label: 'Attiva' },
+  { value: 'Cessata', label: 'Cessata' },
+  { value: 'In Liquidazione', label: 'In Liquidazione' },
+  { value: 'Sospesa', label: 'Sospesa' },
+];
+
 /**
- * Componente Scheda Impresa - mostra i dettagli dell'impresa selezionata
+ * Componente Scheda Impresa - mostra il form completo di modifica impresa
+ * come nel tab Imprese/Concessioni
  */
 function CompanyDetailCard({ 
   stall, 
@@ -458,6 +478,97 @@ function CompanyDetailCard({
   concessionData: any;
   onClose: () => void;
 }) {
+  const [companyData, setCompanyData] = useState<CompanyDetails | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    denominazione: '',
+    codice_fiscale: '',
+    partita_iva: '',
+    numero_rea: '',
+    cciaa_sigla: '',
+    forma_giuridica: '',
+    stato_impresa: 'Attiva',
+    indirizzo_via: '',
+    indirizzo_civico: '',
+    indirizzo_cap: '',
+    indirizzo_provincia: '',
+    comune: '',
+    pec: '',
+    referente: '',
+    telefono: '',
+    codice_ateco: '',
+    descrizione_ateco: '',
+  });
+
+  // Carica i dati dell'impresa quando cambia il posteggio selezionato
+  useEffect(() => {
+    if (stall?.vendor_id) {
+      fetchCompanyData(stall.vendor_id);
+    } else if (concessionData?.companyId) {
+      fetchCompanyData(concessionData.companyId);
+    } else {
+      setCompanyData(null);
+    }
+  }, [stall?.vendor_id, concessionData?.companyId]);
+
+  const fetchCompanyData = async (companyId: number | string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/imprese/${companyId}`);
+      const data = await response.json();
+      if (data.success && data.data) {
+        setCompanyData(data.data);
+        setFormData({
+          denominazione: data.data.denominazione || '',
+          codice_fiscale: data.data.codice_fiscale || '',
+          partita_iva: data.data.partita_iva || '',
+          numero_rea: data.data.numero_rea || '',
+          cciaa_sigla: data.data.cciaa_sigla || '',
+          forma_giuridica: data.data.forma_giuridica || '',
+          stato_impresa: data.data.stato_impresa || 'Attiva',
+          indirizzo_via: data.data.indirizzo_via || '',
+          indirizzo_civico: data.data.indirizzo_civico || '',
+          indirizzo_cap: data.data.indirizzo_cap || '',
+          indirizzo_provincia: data.data.indirizzo_provincia || '',
+          comune: data.data.comune || '',
+          pec: data.data.pec || '',
+          referente: data.data.email || data.data.referente || '',
+          telefono: data.data.telefono || '',
+          codice_ateco: data.data.codice_ateco || '',
+          descrizione_ateco: data.data.descrizione_ateco || '',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching company data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!companyData?.id) return;
+    setSaving(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/imprese/${companyData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Impresa aggiornata con successo');
+      } else {
+        toast.error('Errore durante il salvataggio');
+      }
+    } catch (error) {
+      console.error('Error saving company:', error);
+      toast.error('Errore durante il salvataggio');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!stall) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-[#0b1220]/30 rounded-lg border border-[#14b8a6]/10">
@@ -495,115 +606,222 @@ function CompanyDetailCard({
     );
   }
 
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-[#0b1220]/30 rounded-lg border border-[#14b8a6]/10">
+        <Loader2 className="h-8 w-8 animate-spin text-[#14b8a6]" />
+        <p className="text-[#e8fbff]/50 text-sm mt-2">Caricamento dati impresa...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col bg-[#0b1220]/30 rounded-lg border border-[#14b8a6]/10 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[#14b8a6]/20 bg-[#14b8a6]/5">
+      <div className="flex items-center justify-between p-3 border-b border-[#14b8a6]/20 bg-[#14b8a6]/5">
         <div>
           <h3 className="text-sm font-semibold text-[#e8fbff]">
-            Posteggio {stall.number}
+            Modifica Impresa
           </h3>
-          <Badge className={`${getStallStatusClasses(stall.status)} text-xs mt-1`}>
-            {getStallStatusLabel(stall.status)}
-          </Badge>
         </div>
         <button onClick={onClose} className="text-[#e8fbff]/50 hover:text-[#e8fbff]">
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Content - scrollabile */}
+      {/* Form Content - scrollabile */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Nome Impresa */}
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Building2 className="h-4 w-4 text-[#14b8a6]" />
-            <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Impresa</span>
+        {/* IDENTITÀ */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold text-[#e8fbff]/50 uppercase tracking-wide border-b border-[#14b8a6]/20 pb-1">
+            Identità
+          </h4>
+          
+          <div>
+            <label className="block text-xs text-[#e8fbff]/70 mb-1">Denominazione *</label>
+            <input
+              type="text"
+              value={formData.denominazione}
+              onChange={(e) => setFormData({ ...formData, denominazione: e.target.value })}
+              className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+            />
           </div>
-          <p className="text-[#e8fbff] font-semibold">
-            {concessionData?.companyName || stall.vendor_business_name || 'N/A'}
-          </p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">Codice Fiscale *</label>
+              <input
+                type="text"
+                value={formData.codice_fiscale}
+                onChange={(e) => setFormData({ ...formData, codice_fiscale: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">Partita IVA *</label>
+              <input
+                type="text"
+                value={formData.partita_iva}
+                onChange={(e) => setFormData({ ...formData, partita_iva: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">Numero REA</label>
+              <input
+                type="text"
+                value={formData.numero_rea}
+                onChange={(e) => setFormData({ ...formData, numero_rea: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+                placeholder="es. GR-123456"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">CCIAA</label>
+              <input
+                type="text"
+                value={formData.cciaa_sigla}
+                onChange={(e) => setFormData({ ...formData, cciaa_sigla: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+                placeholder="es. GR"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">Forma Giuridica</label>
+              <select
+                value={formData.forma_giuridica}
+                onChange={(e) => setFormData({ ...formData, forma_giuridica: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+              >
+                {FORMA_GIURIDICA_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">Stato Impresa</label>
+              <select
+                value={formData.stato_impresa}
+                onChange={(e) => setFormData({ ...formData, stato_impresa: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+              >
+                {STATO_IMPRESA_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
-        {/* Tipo Concessione */}
-        {concessionData?.tipoConcessione && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-4 w-4 text-[#8b5cf6]" />
-              <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Concessione</span>
-            </div>
-            <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
-              {concessionData.tipoConcessione}
-            </Badge>
-          </div>
-        )}
+        {/* SEDE LEGALE */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold text-[#e8fbff]/50 uppercase tracking-wide border-b border-[#14b8a6]/20 pb-1">
+            Sede Legale
+          </h4>
 
-        {/* Referente */}
-        {stall.vendor_contact_name && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <User className="h-4 w-4 text-[#f59e0b]" />
-              <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Referente</span>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">Via</label>
+              <input
+                type="text"
+                value={formData.indirizzo_via}
+                onChange={(e) => setFormData({ ...formData, indirizzo_via: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+              />
             </div>
-            <p className="text-[#e8fbff] text-sm">{stall.vendor_contact_name}</p>
-          </div>
-        )}
-
-        {/* Validità Concessione */}
-        {concessionData?.validaDal && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-4 w-4 text-[#14b8a6]" />
-              <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Validità</span>
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">Civico</label>
+              <input
+                type="text"
+                value={formData.indirizzo_civico}
+                onChange={(e) => setFormData({ ...formData, indirizzo_civico: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+              />
             </div>
-            <p className="text-[#e8fbff] text-sm">
-              Dal: {new Date(concessionData.validaDal).toLocaleDateString('it-IT')}
-              {concessionData.validaAl && (
-                <> - Al: {new Date(concessionData.validaAl).toLocaleDateString('it-IT')}</>
-              )}
-            </p>
           </div>
-        )}
 
-        {/* Stato Concessione */}
-        {concessionData?.stato && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Stato Concessione</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">CAP</label>
+              <input
+                type="text"
+                value={formData.indirizzo_cap}
+                onChange={(e) => setFormData({ ...formData, indirizzo_cap: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+                maxLength={5}
+              />
             </div>
-            <Badge className={
-              concessionData.stato === 'ATTIVA' 
-                ? 'bg-[#10b981]/20 text-[#10b981] border-[#10b981]/30'
-                : concessionData.stato === 'SOSPESA'
-                ? 'bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/30'
-                : 'bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/30'
-            }>
-              {concessionData.stato}
-            </Badge>
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">Provincia</label>
+              <input
+                type="text"
+                value={formData.indirizzo_provincia}
+                onChange={(e) => setFormData({ ...formData, indirizzo_provincia: e.target.value.toUpperCase() })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+                maxLength={2}
+              />
+            </div>
           </div>
-        )}
 
-        {/* Tipo Posteggio */}
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <MapPin className="h-4 w-4 text-[#8b5cf6]" />
-            <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Tipo Posteggio</span>
+          <div>
+            <label className="block text-xs text-[#e8fbff]/70 mb-1">Comune</label>
+            <input
+              type="text"
+              value={formData.comune}
+              onChange={(e) => setFormData({ ...formData, comune: e.target.value })}
+              className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+            />
           </div>
-          <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
-            {stall.type}
-          </Badge>
         </div>
 
-        {/* Note */}
-        {stall.notes && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-4 w-4 text-[#e8fbff]/50" />
-              <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Note</span>
+        {/* CONTATTI & ATTIVITÀ */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold text-[#e8fbff]/50 uppercase tracking-wide border-b border-[#14b8a6]/20 pb-1">
+            Contatti & Attività
+          </h4>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">Email/Referente</label>
+              <input
+                type="email"
+                value={formData.referente}
+                onChange={(e) => setFormData({ ...formData, referente: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+              />
             </div>
-            <p className="text-[#e8fbff]/70 text-sm">{stall.notes}</p>
+            <div>
+              <label className="block text-xs text-[#e8fbff]/70 mb-1">Telefono</label>
+              <input
+                type="tel"
+                value={formData.telefono}
+                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                className="w-full px-3 py-2 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] text-sm focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+              />
+            </div>
           </div>
-        )}
+        </div>
+      </div>
+
+      {/* Footer con pulsante Salva */}
+      <div className="p-3 border-t border-[#14b8a6]/20 bg-[#0b1220]/50">
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white"
+        >
+          {saving ? (
+            <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Salvataggio...</>
+          ) : (
+            <><Save className="h-4 w-4 mr-2" /> Salva Modifiche</>
+          )}
+        </Button>
       </div>
     </div>
   );
@@ -883,7 +1101,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
       )}
 
       {/* NUOVO LAYOUT: Mappa in alto (rettangolare) */}
-      <div className={`relative border border-[#14b8a6]/20 rounded-lg overflow-hidden ${isMapExpanded ? 'h-[600px]' : 'h-[350px]'}`}>
+      <div className={`relative border border-[#14b8a6]/20 rounded-lg overflow-hidden ${isMapExpanded ? 'h-[700px]' : 'h-[450px]'}`}>
         <Button
           size="sm"
           variant="outline"
