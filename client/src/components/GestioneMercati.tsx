@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +15,11 @@ import {
   X,
   Maximize2,
   Minimize2,
-  Send
+  Send,
+  Phone,
+  Mail,
+  User,
+  ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -121,21 +125,28 @@ interface MarketMapData {
   };
 }
 
-/**
- * Componente per centrare la mappa su un posteggio
- */
-function MapCenterController({ center, zoom }: { center: [number, number] | null; zoom?: number }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (center) {
-      map.flyTo(center, zoom || 19, {
-        duration: 1.0
-      });
-    }
-  }, [center, zoom, map]);
-  
-  return null;
+// Interfaccia per i dati completi dell'impresa
+interface CompanyDetails {
+  id: string;
+  code: string;
+  denominazione: string;
+  partita_iva?: string;
+  codice_fiscale?: string;
+  numero_rea?: string;
+  cciaa_sigla?: string;
+  forma_giuridica?: string;
+  stato_impresa?: string;
+  indirizzo_via?: string;
+  indirizzo_civico?: string;
+  indirizzo_cap?: string;
+  indirizzo_provincia?: string;
+  comune?: string;
+  pec?: string;
+  referente?: string;
+  telefono?: string;
+  codice_ateco?: string;
+  descrizione_ateco?: string;
+  stato?: string;
 }
 
 /**
@@ -436,7 +447,172 @@ function AnagraficaTab({ market }: { market: Market }) {
 }
 
 /**
- * Tab Posteggi con tabella modificabile E MAPPA GIS
+ * Componente Scheda Impresa - mostra i dettagli dell'impresa selezionata
+ */
+function CompanyDetailCard({ 
+  stall, 
+  concessionData,
+  onClose 
+}: { 
+  stall: Stall | null;
+  concessionData: any;
+  onClose: () => void;
+}) {
+  if (!stall) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-[#0b1220]/30 rounded-lg border border-[#14b8a6]/10">
+        <MapPin className="h-12 w-12 text-[#14b8a6]/30 mb-4" />
+        <p className="text-[#e8fbff]/50 text-sm">
+          Seleziona un posteggio dalla lista per visualizzare i dettagli dell'impresa
+        </p>
+      </div>
+    );
+  }
+
+  const hasCompany = stall.vendor_business_name || concessionData;
+
+  if (!hasCompany) {
+    return (
+      <div className="h-full flex flex-col bg-[#0b1220]/30 rounded-lg border border-[#14b8a6]/10">
+        <div className="flex items-center justify-between p-4 border-b border-[#14b8a6]/20">
+          <h3 className="text-sm font-semibold text-[#e8fbff]">
+            Posteggio {stall.number}
+          </h3>
+          <button onClick={onClose} className="text-[#e8fbff]/50 hover:text-[#e8fbff]">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+          <Building2 className="h-12 w-12 text-[#10b981]/30 mb-4" />
+          <Badge className="bg-[#10b981]/20 text-[#10b981] border-[#10b981]/30 mb-2">
+            {getStallStatusLabel(stall.status)}
+          </Badge>
+          <p className="text-[#e8fbff]/50 text-sm">
+            Nessuna impresa associata a questo posteggio
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col bg-[#0b1220]/30 rounded-lg border border-[#14b8a6]/10 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-[#14b8a6]/20 bg-[#14b8a6]/5">
+        <div>
+          <h3 className="text-sm font-semibold text-[#e8fbff]">
+            Posteggio {stall.number}
+          </h3>
+          <Badge className={`${getStallStatusClasses(stall.status)} text-xs mt-1`}>
+            {getStallStatusLabel(stall.status)}
+          </Badge>
+        </div>
+        <button onClick={onClose} className="text-[#e8fbff]/50 hover:text-[#e8fbff]">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Content - scrollabile */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Nome Impresa */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Building2 className="h-4 w-4 text-[#14b8a6]" />
+            <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Impresa</span>
+          </div>
+          <p className="text-[#e8fbff] font-semibold">
+            {concessionData?.companyName || stall.vendor_business_name || 'N/A'}
+          </p>
+        </div>
+
+        {/* Tipo Concessione */}
+        {concessionData?.tipoConcessione && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-4 w-4 text-[#8b5cf6]" />
+              <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Concessione</span>
+            </div>
+            <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
+              {concessionData.tipoConcessione}
+            </Badge>
+          </div>
+        )}
+
+        {/* Referente */}
+        {stall.vendor_contact_name && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <User className="h-4 w-4 text-[#f59e0b]" />
+              <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Referente</span>
+            </div>
+            <p className="text-[#e8fbff] text-sm">{stall.vendor_contact_name}</p>
+          </div>
+        )}
+
+        {/* Validità Concessione */}
+        {concessionData?.validaDal && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-4 w-4 text-[#14b8a6]" />
+              <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Validità</span>
+            </div>
+            <p className="text-[#e8fbff] text-sm">
+              Dal: {new Date(concessionData.validaDal).toLocaleDateString('it-IT')}
+              {concessionData.validaAl && (
+                <> - Al: {new Date(concessionData.validaAl).toLocaleDateString('it-IT')}</>
+              )}
+            </p>
+          </div>
+        )}
+
+        {/* Stato Concessione */}
+        {concessionData?.stato && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Stato Concessione</span>
+            </div>
+            <Badge className={
+              concessionData.stato === 'ATTIVA' 
+                ? 'bg-[#10b981]/20 text-[#10b981] border-[#10b981]/30'
+                : concessionData.stato === 'SOSPESA'
+                ? 'bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/30'
+                : 'bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/30'
+            }>
+              {concessionData.stato}
+            </Badge>
+          </div>
+        )}
+
+        {/* Tipo Posteggio */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <MapPin className="h-4 w-4 text-[#8b5cf6]" />
+            <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Tipo Posteggio</span>
+          </div>
+          <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
+            {stall.type}
+          </Badge>
+        </div>
+
+        {/* Note */}
+        {stall.notes && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-4 w-4 text-[#e8fbff]/50" />
+              <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Note</span>
+            </div>
+            <p className="text-[#e8fbff]/70 text-sm">{stall.notes}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Tab Posteggi con NUOVO LAYOUT:
+ * - Mappa rettangolare in alto (full width)
+ * - Sotto: Lista posteggi a sinistra (con scroll) + Scheda impresa a destra
  */
 function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: { marketId: number; marketCode: string; marketCenter: [number, number]; stalls: Stall[]; setStalls: React.Dispatch<React.SetStateAction<Stall[]>> }) {
   const [mapData, setMapData] = useState<MarketMapData | null>(null);
@@ -600,11 +776,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
       const centerLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
       
       setMapCenter([centerLat, centerLng]);
-      toast.success(`Centrato su posteggio ${stall.number}`);
     }
   };
-
-  // Funzioni di mappatura stati spostate in @/lib/stallStatus
 
   if (loading) {
     return (
@@ -620,6 +793,9 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
 
   // Crea una mappa per lookup veloce stall by number
   const stallsByNumber = new Map(stalls.map(s => [s.number, s]));
+
+  // Trova il posteggio selezionato
+  const selectedStall = stalls.find(s => s.id === selectedStallId) || null;
 
   return (
     <div className="space-y-4">
@@ -706,191 +882,182 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
         </div>
       )}
 
-      {/* Layout Tabella + Mappa */}
-      <div className={`grid ${isMapExpanded ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
-        {/* Tabella Posteggi */}
-        {!isMapExpanded && (
-          <div className="border border-[#14b8a6]/20 rounded-lg">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-[#0b1220]/95 z-10">
-                  <TableRow className="border-[#14b8a6]/20 hover:bg-[#0b1220]/50">
-                    <TableHead className="text-[#e8fbff]/70">N°</TableHead>
-                    <TableHead className="text-[#e8fbff]/70">Tipo</TableHead>
-                    <TableHead className="text-[#e8fbff]/70">Stato</TableHead>
-                    <TableHead className="text-[#e8fbff]/70">Intestatario</TableHead>
-                    <TableHead className="text-[#e8fbff]/70">Impresa / Concessione</TableHead>
-                    <TableHead className="text-right text-[#e8fbff]/70">Azioni</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stalls.map((stall) => (
-                    <TableRow 
-                      key={stall.id}
-                      className={`cursor-pointer hover:bg-[#14b8a6]/10 border-[#14b8a6]/10 ${
-                        selectedStallId === stall.id ? 'bg-[#14b8a6]/20' : ''
-                      }`}
-                      onClick={() => handleRowClick(stall)}
-                    >
-                      <TableCell className="font-medium text-[#e8fbff]">{stall.number}</TableCell>
-                      <TableCell>
-                        {editingId === stall.id ? (
-                          <Select
-                            value={editData.type}
-                            onValueChange={(value) => setEditData({ ...editData, type: value })}
-                          >
-                            <SelectTrigger className="w-[100px] bg-[#0b1220] border-[#14b8a6]/30">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="fisso">Fisso</SelectItem>
-                              <SelectItem value="spunta">Spunta</SelectItem>
-                              <SelectItem value="libero">Libero</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge variant="outline" className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30 text-xs">
-                            {stall.type}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {editingId === stall.id ? (
-                          <Select
-                            value={editData.status}
-                            onValueChange={(value) => setEditData({ ...editData, status: value })}
-                          >
-                            <SelectTrigger className="w-[100px] bg-[#0b1220] border-[#14b8a6]/30">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STALL_STATUS_OPTIONS.map(option => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge variant="default" className={`${getStallStatusClasses(stall.status)} text-xs`}>
-                            {getStallStatusLabel(stall.status)}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {stall.vendor_business_name ? (
-                          <div>
-                            <p className="font-medium text-[#e8fbff] text-xs">{stall.vendor_business_name}</p>
-                          </div>
-                        ) : (
-                          <span className="text-[#e8fbff]/50 text-xs">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {concessionsByStallId[stall.number] ? (
-                          <div>
-                            <p className="font-medium text-[#e8fbff] text-xs">{concessionsByStallId[stall.number].companyName}</p>
-                            <p className="text-[#e8fbff]/60 text-xs">{concessionsByStallId[stall.number].tipoConcessione}</p>
-                          </div>
-                        ) : (
-                          <span className="text-[#e8fbff]/50 text-xs">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {editingId === stall.id ? (
-                          <div className="flex justify-end gap-1">
-                            <Button 
-                              size="sm" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSave(stall.id);
-                              }}
-                              className="bg-[#10b981]/20 hover:bg-[#10b981]/30 text-[#10b981] border-[#10b981]/30 h-7 w-7 p-0"
-                            >
-                              <Save className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCancel();
-                              }}
-                              className="bg-[#ef4444]/20 hover:bg-[#ef4444]/30 text-[#ef4444] border-[#ef4444]/30 h-7 w-7 p-0"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ) : (
+      {/* NUOVO LAYOUT: Mappa in alto (rettangolare) */}
+      <div className={`relative border border-[#14b8a6]/20 rounded-lg overflow-hidden ${isMapExpanded ? 'h-[600px]' : 'h-[350px]'}`}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="absolute top-2 right-2 z-[1000] bg-[#0b1220]/90 border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/20"
+          onClick={() => setIsMapExpanded(!isMapExpanded)}
+        >
+          {isMapExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
+
+        {mapData && (() => {
+          const stallsDataForMap = stalls.map(s => ({
+            id: s.id,
+            number: s.number,
+            status: s.status,
+            type: s.type,
+            vendor_name: s.vendor_business_name || undefined
+          }));
+          return (
+            <MarketMapComponent
+              refreshKey={mapRefreshKey}
+              mapData={mapData}
+              center={mapCenter}
+              zoom={19}
+              height="100%"
+              isSpuntaMode={isSpuntaMode}
+              onConfirmAssignment={handleConfirmAssignment}
+              onStallClick={(stallNumber) => {
+                const dbStall = stallsByNumber.get(stallNumber);
+                if (dbStall) {
+                  setSelectedStallId(dbStall.id);
+                }
+              }}
+              selectedStallNumber={stalls.find(s => s.id === selectedStallId)?.number}
+              stallsData={stallsDataForMap}
+            />
+          );
+        })()}
+      </div>
+
+      {/* NUOVO LAYOUT: Lista posteggi (sinistra) + Scheda impresa (destra) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Lista Posteggi con scroll interno */}
+        <div className="border border-[#14b8a6]/20 rounded-lg overflow-hidden">
+          <div className="bg-[#0b1220]/50 px-4 py-2 border-b border-[#14b8a6]/20">
+            <h3 className="text-sm font-semibold text-[#e8fbff]">Lista Posteggi</h3>
+          </div>
+          <div className="max-h-[400px] overflow-y-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-[#0b1220]/95 z-10">
+                <TableRow className="border-[#14b8a6]/20 hover:bg-[#0b1220]/50">
+                  <TableHead className="text-[#e8fbff]/70 text-xs">N°</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs">Tipo</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs">Stato</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs">Intestatario</TableHead>
+                  <TableHead className="text-right text-[#e8fbff]/70 text-xs">Azioni</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stalls.map((stall) => (
+                  <TableRow 
+                    key={stall.id}
+                    data-stall-id={stall.id}
+                    className={`cursor-pointer hover:bg-[#14b8a6]/10 border-[#14b8a6]/10 ${
+                      selectedStallId === stall.id ? 'bg-[#14b8a6]/20' : ''
+                    }`}
+                    onClick={() => handleRowClick(stall)}
+                  >
+                    <TableCell className="font-medium text-[#e8fbff] text-sm">{stall.number}</TableCell>
+                    <TableCell>
+                      {editingId === stall.id ? (
+                        <Select
+                          value={editData.type}
+                          onValueChange={(value) => setEditData({ ...editData, type: value })}
+                        >
+                          <SelectTrigger className="w-[80px] bg-[#0b1220] border-[#14b8a6]/30 h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fisso">Fisso</SelectItem>
+                            <SelectItem value="spunta">Spunta</SelectItem>
+                            <SelectItem value="libero">Libero</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant="outline" className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30 text-xs">
+                          {stall.type}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingId === stall.id ? (
+                        <Select
+                          value={editData.status}
+                          onValueChange={(value) => setEditData({ ...editData, status: value })}
+                        >
+                          <SelectTrigger className="w-[100px] bg-[#0b1220] border-[#14b8a6]/30 h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STALL_STATUS_OPTIONS.map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant="default" className={`${getStallStatusClasses(stall.status)} text-xs`}>
+                          {getStallStatusLabel(stall.status)}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {stall.vendor_business_name ? (
+                        <p className="font-medium text-[#e8fbff] text-xs truncate max-w-[120px]">{stall.vendor_business_name}</p>
+                      ) : concessionsByStallId[stall.number] ? (
+                        <p className="font-medium text-[#e8fbff] text-xs truncate max-w-[120px]">{concessionsByStallId[stall.number].companyName}</p>
+                      ) : (
+                        <span className="text-[#e8fbff]/50 text-xs">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {editingId === stall.id ? (
+                        <div className="flex justify-end gap-1">
                           <Button 
                             size="sm" 
-                            variant="ghost" 
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleEdit(stall);
+                              handleSave(stall.id);
                             }}
-                            className="hover:bg-[#14b8a6]/20 text-[#14b8a6] h-7 w-7 p-0"
+                            className="bg-[#10b981]/20 hover:bg-[#10b981]/30 text-[#10b981] border-[#10b981]/30 h-6 w-6 p-0"
                           >
-                            <Edit className="h-3 w-3" />
+                            <Save className="h-3 w-3" />
                           </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancel();
+                            }}
+                            className="bg-[#ef4444]/20 hover:bg-[#ef4444]/30 text-[#ef4444] border-[#ef4444]/30 h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(stall);
+                          }}
+                          className="hover:bg-[#14b8a6]/20 text-[#14b8a6] h-6 w-6 p-0"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-        )}
+        </div>
 
-        {/* Mappa GIS */}
-        <div className={`relative border border-[#14b8a6]/20 rounded-lg overflow-hidden ${isMapExpanded ? 'h-[800px]' : 'h-[600px]'}`}>
-          <Button
-            size="sm"
-            variant="outline"
-            className="absolute top-2 right-2 z-[1000] bg-[#0b1220]/90 border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/20"
-            onClick={() => setIsMapExpanded(!isMapExpanded)}
-          >
-            {isMapExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
-
-          {mapData && (() => {
-            const stallsDataForMap = stalls.map(s => ({
-              id: s.id,
-              number: s.number,
-              status: s.status,
-              type: s.type,
-              vendor_name: s.vendor_business_name || undefined
-            }));
-            console.log('[DEBUG render] Passando a MarketMapComponent:', {
-              refreshKey: mapRefreshKey,
-              stallsDataLength: stallsDataForMap.length,
-              firstStall: stallsDataForMap[0],
-              mapDataExists: !!mapData
-            });
-            return (
-              <MarketMapComponent
-                refreshKey={mapRefreshKey}
-                mapData={mapData}
-                center={mapCenter}
-                zoom={19}
-                height="100%"
-                isSpuntaMode={isSpuntaMode}
-                onConfirmAssignment={handleConfirmAssignment}
-                onStallClick={(stallNumber) => {
-                  const dbStall = stallsByNumber.get(stallNumber);
-                  if (dbStall) {
-                    setSelectedStallId(dbStall.id);
-                    // Scroll alla riga nella tabella
-                    const row = document.querySelector(`[data-stall-id="${dbStall.id}"]`);
-                    row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }
-                }}
-                selectedStallNumber={stalls.find(s => s.id === selectedStallId)?.number}
-                stallsData={stallsDataForMap}
-              />
-            );
-          })()}
+        {/* Scheda Impresa */}
+        <div className="h-[450px]">
+          <CompanyDetailCard 
+            stall={selectedStall}
+            concessionData={selectedStall ? concessionsByStallId[selectedStall.number] : null}
+            onClose={() => setSelectedStallId(null)}
+          />
         </div>
       </div>
     </div>
