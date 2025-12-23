@@ -1105,7 +1105,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
       )}
 
       {/* NUOVO LAYOUT: Mappa in alto (rettangolare) */}
-      <div className={`relative border border-[#14b8a6]/20 rounded-lg overflow-hidden ${isMapExpanded ? 'h-[800px]' : 'h-[550px]'}`}>
+      <div className={`relative border border-[#14b8a6]/20 rounded-lg overflow-hidden ${isMapExpanded ? 'h-[850px]' : 'h-[600px]'}`}>
         <Button
           size="sm"
           variant="outline"
