@@ -35,7 +35,7 @@ export interface MarketCompaniesTabProps {
   stalls: { id: string; code: string }[]; // lista posteggi già caricata dalla pagina
 }
 
-type CompanyRow = {
+export type CompanyRow = {
   id: string;
   code: string;          // es. "12345678901" (CF)
   denominazione: string;
@@ -57,7 +57,7 @@ type ConcessionRow = {
   stato?: string;            // ATTIVA/SCADUTA/SOSPESA
 };
 
-type CompanyFormData = {
+export type CompanyFormData = {
   // Identità
   denominazione: string;
   codice_fiscale: string;
@@ -902,14 +902,14 @@ function ConcessionRow({ concession, onEdit }: ConcessionRowProps) {
 // COMPANY MODAL
 // ============================================================================
 
-interface CompanyModalProps {
+export interface CompanyModalProps {
   marketId: string;
   company: CompanyRow | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
-function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps) {
+export function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps) {
   const [formData, setFormData] = useState<CompanyFormData>({
     // Identità
     denominazione: company?.denominazione || '',

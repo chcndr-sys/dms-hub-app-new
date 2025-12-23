@@ -19,13 +19,14 @@ import {
   Phone,
   Mail,
   User,
-  ExternalLink
+  ExternalLink,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarketMapComponent } from './MarketMapComponent';
-import { MarketCompaniesTab } from './markets/MarketCompaniesTab';
+import { MarketCompaniesTab, CompanyModal, CompanyRow } from './markets/MarketCompaniesTab';
 import { getStallStatusLabel, getStallStatusClasses, getStallMapFillColor, STALL_STATUS_OPTIONS } from '@/lib/stallStatus';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -843,6 +844,9 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [mapRefreshKey, setMapRefreshKey] = useState(0);
   const [isSpuntaMode, setIsSpuntaMode] = useState(false);
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
+  const [selectedCompanyForModal, setSelectedCompanyForModal] = useState<CompanyRow | null>(null);
+  const listContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchData();
@@ -1101,7 +1105,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
       )}
 
       {/* NUOVO LAYOUT: Mappa in alto (rettangolare) */}
-      <div className={`relative border border-[#14b8a6]/20 rounded-lg overflow-hidden ${isMapExpanded ? 'h-[700px]' : 'h-[450px]'}`}>
+      <div className={`relative border border-[#14b8a6]/20 rounded-lg overflow-hidden ${isMapExpanded ? 'h-[800px]' : 'h-[550px]'}`}>
         <Button
           size="sm"
           variant="outline"
@@ -1132,6 +1136,13 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
                 const dbStall = stallsByNumber.get(stallNumber);
                 if (dbStall) {
                   setSelectedStallId(dbStall.id);
+                  // Scroll alla riga nella lista
+                  setTimeout(() => {
+                    const row = document.querySelector(`[data-stall-id="${dbStall.id}"]`);
+                    if (row && listContainerRef.current) {
+                      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }, 100);
                 }
               }}
               selectedStallNumber={stalls.find(s => s.id === selectedStallId)?.number}
@@ -1148,7 +1159,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
           <div className="bg-[#0b1220]/50 px-4 py-2 border-b border-[#14b8a6]/20">
             <h3 className="text-sm font-semibold text-[#e8fbff]">Lista Posteggi</h3>
           </div>
-          <div className="max-h-[400px] overflow-y-auto">
+          <div ref={listContainerRef} className="max-h-[400px] overflow-y-auto">
             <Table>
               <TableHeader className="sticky top-0 bg-[#0b1220]/95 z-10">
                 <TableRow className="border-[#14b8a6]/20 hover:bg-[#0b1220]/50">
@@ -1269,15 +1280,155 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
           </div>
         </div>
 
-        {/* Scheda Impresa */}
-        <div className="h-[450px]">
-          <CompanyDetailCard 
-            stall={selectedStall}
-            concessionData={selectedStall ? concessionsByStallId[selectedStall.number] : null}
-            onClose={() => setSelectedStallId(null)}
-          />
+        {/* Scheda Impresa - Pulsante per aprire il modal completo */}
+        <div className="h-[450px] flex flex-col bg-[#0b1220]/30 rounded-lg border border-[#14b8a6]/10 overflow-hidden">
+          {!selectedStall ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6">
+              <MapPin className="h-12 w-12 text-[#14b8a6]/30 mb-4" />
+              <p className="text-[#e8fbff]/50 text-sm">
+                Seleziona un posteggio dalla lista o dalla mappa per visualizzare i dettagli dell'impresa
+              </p>
+            </div>
+          ) : !selectedStall.vendor_business_name && !concessionsByStallId[selectedStall.number] ? (
+            <div className="h-full flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-[#14b8a6]/20">
+                <h3 className="text-sm font-semibold text-[#e8fbff]">
+                  Posteggio {selectedStall.number}
+                </h3>
+                <button onClick={() => setSelectedStallId(null)} className="text-[#e8fbff]/50 hover:text-[#e8fbff]">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+                <Building2 className="h-12 w-12 text-[#10b981]/30 mb-4" />
+                <Badge className="bg-[#10b981]/20 text-[#10b981] border-[#10b981]/30 mb-2">
+                  {getStallStatusLabel(selectedStall.status)}
+                </Badge>
+                <p className="text-[#e8fbff]/50 text-sm">
+                  Nessuna impresa associata a questo posteggio
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-[#14b8a6]/20 bg-[#14b8a6]/5">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#e8fbff]">
+                    Posteggio {selectedStall.number}
+                  </h3>
+                  <Badge className={`${getStallStatusClasses(selectedStall.status)} text-xs mt-1`}>
+                    {getStallStatusLabel(selectedStall.status)}
+                  </Badge>
+                </div>
+                <button onClick={() => setSelectedStallId(null)} className="text-[#e8fbff]/50 hover:text-[#e8fbff]">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Nome Impresa */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="h-4 w-4 text-[#14b8a6]" />
+                    <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Impresa</span>
+                  </div>
+                  <p className="text-[#e8fbff] font-semibold">
+                    {concessionsByStallId[selectedStall.number]?.companyName || selectedStall.vendor_business_name || 'N/A'}
+                  </p>
+                </div>
+
+                {/* Tipo Concessione */}
+                {concessionsByStallId[selectedStall.number]?.tipoConcessione && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="h-4 w-4 text-[#8b5cf6]" />
+                      <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Concessione</span>
+                    </div>
+                    <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
+                      {concessionsByStallId[selectedStall.number].tipoConcessione}
+                    </Badge>
+                  </div>
+                )}
+
+                {/* Referente */}
+                {selectedStall.vendor_contact_name && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <User className="h-4 w-4 text-[#f59e0b]" />
+                      <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Referente</span>
+                    </div>
+                    <p className="text-[#e8fbff] text-sm">{selectedStall.vendor_contact_name}</p>
+                  </div>
+                )}
+
+                {/* Tipo Posteggio */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="h-4 w-4 text-[#8b5cf6]" />
+                    <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Tipo Posteggio</span>
+                  </div>
+                  <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
+                    {selectedStall.type}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Pulsante per aprire il modal completo */}
+              <div className="p-4 border-t border-[#14b8a6]/20 bg-[#0b1220]/50">
+                <Button
+                  onClick={async () => {
+                    // Carica i dati completi dell'impresa e apri il modal
+                    const companyId = selectedStall.vendor_id || concessionsByStallId[selectedStall.number]?.companyId;
+                    if (companyId) {
+                      try {
+                        const response = await fetch(`${API_BASE_URL}/api/imprese/${companyId}`);
+                        const data = await response.json();
+                        if (data.success && data.data) {
+                          setSelectedCompanyForModal({
+                            id: data.data.id,
+                            code: data.data.codice_fiscale || data.data.code,
+                            denominazione: data.data.denominazione,
+                            partita_iva: data.data.partita_iva,
+                            referente: data.data.referente || data.data.email,
+                            telefono: data.data.telefono,
+                            stato: data.data.stato || 'active',
+                            ...data.data
+                          });
+                          setShowCompanyModal(true);
+                        }
+                      } catch (error) {
+                        console.error('Error loading company:', error);
+                        toast.error('Errore nel caricamento dell\'impresa');
+                      }
+                    }
+                  }}
+                  className="w-full bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white"
+                >
+                  <Edit className="h-4 w-4 mr-2" /> Modifica Impresa (38 campi)
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Modal Modifica Impresa (completo con 38 campi) */}
+      {showCompanyModal && (
+        <CompanyModal
+          marketId={marketCode}
+          company={selectedCompanyForModal}
+          onClose={() => {
+            setShowCompanyModal(false);
+            setSelectedCompanyForModal(null);
+          }}
+          onSaved={() => {
+            setShowCompanyModal(false);
+            setSelectedCompanyForModal(null);
+            fetchData(); // Ricarica i dati
+            toast.success('Impresa aggiornata con successo');
+          }}
+        />
+      )}
     </div>
   );
 }
