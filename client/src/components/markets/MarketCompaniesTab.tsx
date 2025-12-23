@@ -907,9 +907,10 @@ export interface CompanyModalProps {
   company: CompanyRow | null;
   onClose: () => void;
   onSaved: () => void;
+  inline?: boolean; // Se true, usa posizionamento inline invece di fixed
 }
 
-export function CompanyModal({ marketId, company, onClose, onSaved }: CompanyModalProps) {
+export function CompanyModal({ marketId, company, onClose, onSaved, inline = false }: CompanyModalProps) {
   const [formData, setFormData] = useState<CompanyFormData>({
     // Identità
     denominazione: company?.denominazione || '',
@@ -1047,22 +1048,55 @@ export function CompanyModal({ marketId, company, onClose, onSaved }: CompanyMod
     }
   };
 
+  // Stili condizionali per modalità inline vs modal
+  const containerClass = inline 
+    ? "absolute inset-0 z-10 flex flex-col bg-[#0b1220]"
+    : "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4";
+  
+  const modalClass = inline
+    ? "flex-1 flex flex-col overflow-hidden"
+    : "bg-gray-900 border border-gray-700 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto";
+  
+  const headerClass = inline
+    ? "sticky top-0 bg-[#0b1220] border-b border-[#14b8a6]/20 px-4 py-3 flex items-center justify-between"
+    : "sticky top-0 bg-gray-900 border-b border-gray-700 px-6 py-4 flex items-center justify-between";
+  
+  const formClass = inline
+    ? "flex-1 overflow-y-auto p-3 space-y-3"
+    : "p-6 space-y-6";
+  
+  const titleClass = inline
+    ? "text-sm font-semibold text-[#e8fbff]"
+    : "text-lg font-semibold text-white";
+  
+  const labelClass = inline
+    ? "block text-[10px] font-medium text-[#e8fbff]/70 mb-1"
+    : "block text-sm font-medium text-gray-300 mb-2";
+  
+  const inputClass = inline
+    ? "w-full px-2 py-1.5 text-xs bg-[#1a2332] border border-[#14b8a6]/30 rounded text-[#e8fbff] focus:outline-none focus:ring-1 focus:ring-[#14b8a6]"
+    : "w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
+  
+  const sectionClass = inline
+    ? "text-[10px] font-semibold text-[#14b8a6] uppercase tracking-wide border-b border-[#14b8a6]/20 pb-1 mb-2"
+    : "text-sm font-semibold text-gray-400 uppercase tracking-wide border-b border-gray-700 pb-2";
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gray-900 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white">
+    <div className={containerClass}>
+      <div className={modalClass}>
+        <div className={headerClass}>
+          <h3 className={titleClass}>
             {company ? 'Modifica Impresa' : 'Nuova Impresa'}
           </h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className={inline ? "w-4 h-4" : "w-5 h-5"} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className={formClass}>
           {error && (
             <div className="bg-red-500/10 border border-red-500 rounded-lg p-3 flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />

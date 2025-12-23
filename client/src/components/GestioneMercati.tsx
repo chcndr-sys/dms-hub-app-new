@@ -1584,36 +1584,21 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
         <div className="h-[450px] flex flex-col bg-[#0b1220]/30 rounded-lg border border-[#14b8a6]/10 overflow-hidden relative">
           {/* Modal inline per modifica impresa */}
           {showCompanyModal && selectedCompanyForModal && (
-            <div className="absolute inset-0 z-10 bg-[#0b1220] flex flex-col">
-              <div className="sticky top-0 bg-[#0b1220] border-b border-[#14b8a6]/20 px-4 py-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[#e8fbff]">Modifica Impresa</h3>
-                <button
-                  onClick={() => {
-                    setShowCompanyModal(false);
-                    setSelectedCompanyForModal(null);
-                  }}
-                  className="text-[#e8fbff]/50 hover:text-[#e8fbff]"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-3">
-                <CompanyInlineForm
-                  company={selectedCompanyForModal}
-                  marketId={marketCode}
-                  onClose={() => {
-                    setShowCompanyModal(false);
-                    setSelectedCompanyForModal(null);
-                  }}
-                  onSaved={() => {
-                    setShowCompanyModal(false);
-                    setSelectedCompanyForModal(null);
-                    fetchData();
-                    toast.success('Impresa aggiornata con successo');
-                  }}
-                />
-              </div>
-            </div>
+            <CompanyModal
+              marketId={marketCode}
+              company={selectedCompanyForModal}
+              inline={true}
+              onClose={() => {
+                setShowCompanyModal(false);
+                setSelectedCompanyForModal(null);
+              }}
+              onSaved={() => {
+                setShowCompanyModal(false);
+                setSelectedCompanyForModal(null);
+                fetchData();
+                toast.success('Impresa aggiornata con successo');
+              }}
+            />
           )}
           
           {!selectedStall ? (
