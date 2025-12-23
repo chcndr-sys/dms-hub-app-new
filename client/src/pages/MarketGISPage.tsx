@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, LayersControl, Tooltip, useMap } from 'react-leaflet';
 import { ZoomFontUpdater } from '../components/ZoomFontUpdater';
 import L from 'leaflet';
 import { Button } from '@/components/ui/button';
-import { MapPin, Loader2, AlertCircle, RefreshCw, Search, ChevronDown } from 'lucide-react';
+import { MapPin, Loader2, AlertCircle, RefreshCw, Search, ChevronDown, Globe, ArrowLeft } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 // Fix per icone marker Leaflet
@@ -18,6 +18,11 @@ const DefaultIcon = L.icon({
 });
 
 L.Marker.prototype.options.icon = DefaultIcon;
+
+// Coordinate centro Italia per vista iniziale
+const ITALY_CENTER: [number, number] = [42.5, 12.5];
+const ITALY_ZOOM = 6;
+const MARKET_ZOOM = 17;
 
 interface MarketMapData {
   container: [number, number][];
@@ -64,19 +69,94 @@ interface Market {
   longitude: string;
 }
 
-// Componente per centrare la mappa quando cambiano le coordinate
-function SetViewOnChange({ center }: { center: [number, number] }) {
+// Componente per zoom animato sulla mappa
+function AnimatedZoom({ 
+  target, 
+  zoom, 
+  onComplete 
+}: { 
+  target: [number, number] | null; 
+  zoom: number;
+  onComplete?: () => void;
+}) {
   const map = useMap();
+  const hasAnimated = useRef(false);
+  
   useEffect(() => {
-    if (center) {
-      map.setView(center, map.getZoom());
+    if (target && !hasAnimated.current) {
+      hasAnimated.current = true;
+      map.flyTo(target, zoom, {
+        duration: 1.5,
+        easeLinearity: 0.25
+      });
+      
+      // Callback dopo animazione
+      if (onComplete) {
+        setTimeout(onComplete, 1600);
+      }
     }
-  }, [center, map]);
+  }, [target, zoom, map, onComplete]);
+  
+  // Reset quando target cambia
+  useEffect(() => {
+    hasAnimated.current = false;
+  }, [target?.[0], target?.[1]]);
+  
   return null;
 }
 
+// Componente per tornare alla vista Italia
+function BackToItaly({ onClick }: { onClick: () => void }) {
+  const map = useMap();
+  
+  const handleClick = () => {
+    map.flyTo(ITALY_CENTER, ITALY_ZOOM, {
+      duration: 1.5,
+      easeLinearity: 0.25
+    });
+    onClick();
+  };
+  
+  return (
+    <div className="leaflet-top leaflet-left" style={{ marginTop: '80px', marginLeft: '10px' }}>
+      <div className="leaflet-control">
+        <button
+          onClick={handleClick}
+          className="bg-white hover:bg-gray-100 text-gray-700 font-medium py-2 px-3 rounded-lg shadow-lg border border-gray-300 flex items-center gap-2 text-sm"
+          title="Torna alla vista Italia"
+        >
+          <Globe className="w-4 h-4" />
+          Italia
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Icona marker mercato personalizzata
+const createMarketIcon = (isSelected: boolean = false) => L.divIcon({
+  className: 'market-marker',
+  html: `<div style="
+    background: ${isSelected ? '#ef4444' : '#10b981'};
+    color: white;
+    width: ${isSelected ? '36px' : '28px'};
+    height: ${isSelected ? '36px' : '28px'};
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: ${isSelected ? '16px' : '14px'};
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    border: 3px solid white;
+    transition: all 0.3s ease;
+  ">M</div>`,
+  iconSize: [isSelected ? 36 : 28, isSelected ? 36 : 28],
+  iconAnchor: [isSelected ? 18 : 14, isSelected ? 18 : 14],
+});
+
 export default function MarketGISPage() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mapData, setMapData] = useState<MarketMapData | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
@@ -86,6 +166,12 @@ export default function MarketGISPage() {
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  
+  // Stato per vista: 'italy' o 'market'
+  const [viewMode, setViewMode] = useState<'italy' | 'market'>('italy');
+  const [zoomTarget, setZoomTarget] = useState<[number, number] | null>(null);
+  const [targetZoom, setTargetZoom] = useState<number>(ITALY_ZOOM);
+  const [selectedStall, setSelectedStall] = useState<any>(null);
 
   // Carica lista mercati all'avvio
   const loadMarkets = async () => {
@@ -95,27 +181,19 @@ export default function MarketGISPage() {
       const result = await response.json();
       if (result.success && result.data) {
         setMarkets(result.data);
-        // Seleziona il primo mercato di default
-        if (result.data.length > 0 && !selectedMarket) {
-          setSelectedMarket(result.data[0]);
-        }
       }
     } catch (err) {
       console.error('Errore caricamento mercati:', err);
     }
   };
 
-  const loadMarketMap = async (marketId?: number) => {
-    const targetMarketId = marketId || selectedMarket?.id;
-    if (!targetMarketId) return;
-    
+  const loadMarketMap = async (marketId: number) => {
     setLoading(true);
     setError(null);
     
     try {
-      // Chiamata all'endpoint backend con marketId dinamico
       const apiUrl = import.meta.env.VITE_MIHUB_API_URL || 'https://orchestratore.mio-hub.me';
-      const response = await fetch(`${apiUrl}/api/gis/market-map/${targetMarketId}`);
+      const response = await fetch(`${apiUrl}/api/gis/market-map/${marketId}`);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -143,13 +221,6 @@ export default function MarketGISPage() {
     loadMarkets();
   }, []);
   
-  // Carica mappa quando cambia il mercato selezionato
-  useEffect(() => {
-    if (selectedMarket) {
-      loadMarketMap(selectedMarket.id);
-    }
-  }, [selectedMarket]);
-  
   // Filtra mercati in base alla ricerca
   const filteredMarkets = markets.filter(m => 
     m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -157,15 +228,37 @@ export default function MarketGISPage() {
     m.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Gestisce selezione mercato
-  const handleSelectMarket = (market: Market) => {
+  // Gestisce selezione mercato (da dropdown o click su marker)
+  const handleSelectMarket = async (market: Market) => {
     setSelectedMarket(market);
     setSearchQuery('');
     setShowDropdown(false);
+    
+    // Zoom animato verso il mercato
+    const lat = parseFloat(market.latitude);
+    const lng = parseFloat(market.longitude);
+    setZoomTarget([lat, lng]);
+    setTargetZoom(MARKET_ZOOM);
+    setViewMode('market');
+    
+    // Carica i dati del mercato
+    await loadMarketMap(market.id);
   };
-
-  // Converti container in formato Leaflet [[lat, lng], ...]
-  const containerPolygon = mapData?.container.map(([lat, lng]) => [lat, lng] as [number, number]) || [];
+  
+  // Gestisce ricerca con Enter
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && filteredMarkets.length > 0) {
+      handleSelectMarket(filteredMarkets[0]);
+    }
+  };
+  
+  // Torna alla vista Italia
+  const handleBackToItaly = () => {
+    setSelectedMarket(null);
+    setMapData(null);
+    setViewMode('italy');
+    setZoomTarget(null);
+  };
 
   return (
     <>
@@ -185,33 +278,59 @@ export default function MarketGISPage() {
         .stall-number-tooltip.leaflet-tooltip-right:before {
           display: none !important;
         }
+        .market-marker {
+          transition: transform 0.3s ease;
+        }
+        .market-marker:hover {
+          transform: scale(1.2);
+        }
       `}</style>
       <div className="h-screen flex flex-col">
       {/* Header con Selettore Mercati */}
       <div className="bg-white border-b px-4 py-3">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
+            {viewMode === 'market' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToItaly}
+                className="mr-2"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                Italia
+              </Button>
+            )}
             <MapPin className="w-6 h-6 text-emerald-600" />
             <div>
-              <h1 className="text-lg font-semibold">Pepe GIS - Mappa Mercato</h1>
+              <h1 className="text-lg font-semibold">
+                {viewMode === 'italy' ? 'Gemello Digitale - Rete Mercati Italia' : 'Pepe GIS - Mappa Mercato'}
+              </h1>
               <p className="text-xs text-gray-500">
-                {selectedMarket ? `${selectedMarket.name} (${selectedMarket.code})` : 'Seleziona un mercato'}
+                {viewMode === 'italy' 
+                  ? `${markets.length} mercati disponibili - Clicca su un marker o cerca`
+                  : selectedMarket 
+                    ? `${selectedMarket.name} (${selectedMarket.code}) - ${selectedMarket.municipality}`
+                    : 'Seleziona un mercato'
+                }
               </p>
             </div>
           </div>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => loadMarketMap()}
-            disabled={loading}
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-          </Button>
+          {viewMode === 'market' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => selectedMarket && loadMarketMap(selectedMarket.id)}
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+            </Button>
+          )}
         </div>
         
         {/* Barra di Ricerca Mercati */}
@@ -221,13 +340,14 @@ export default function MarketGISPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Cerca mercato per nome, città o codice..."
+                placeholder="Cerca mercato per nome, città o codice... (premi Invio)"
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setShowDropdown(true);
                 }}
                 onFocus={() => setShowDropdown(true)}
+                onKeyDown={handleSearchKeyDown}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
             </div>
@@ -274,10 +394,10 @@ export default function MarketGISPage() {
         </div>
       </div>
 
-      {/* Contenuto */}
+      {/* Contenuto Mappa */}
       <div className="flex-1 relative">
-        {loading && !mapData && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-20">
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-emerald-600 mx-auto mb-3" />
               <p className="text-gray-600">Caricamento mappa mercato...</p>
@@ -293,72 +413,205 @@ export default function MarketGISPage() {
                 Errore caricamento mappa
               </h2>
               <p className="text-sm text-gray-600 mb-4">{error}</p>
-              <Button onClick={loadMarketMap} variant="outline">
+              <Button onClick={() => selectedMarket && loadMarketMap(selectedMarket.id)} variant="outline">
                 Riprova
               </Button>
             </div>
           </div>
         )}
 
-        {mapData && (
-          <MapContainer
-            center={[mapData.center.lat, mapData.center.lng]}
-            zoom={17}
-            className="h-full w-full"
-          >
-            {/* Componente per centrare la mappa quando cambia il mercato */}
-            <SetViewOnChange center={[mapData.center.lat, mapData.center.lng]} />
-            <LayersControl position="topright">
-              <LayersControl.BaseLayer checked name="🗺️ Stradale">
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  maxZoom={21}
-                />
-              </LayersControl.BaseLayer>
-              
-              <LayersControl.BaseLayer name="🛰️ Satellite">
-                <TileLayer
-                  attribution='&copy; <a href="https://www.esri.com">Esri</a>'
-                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                  maxZoom={21}
-                />
-              </LayersControl.BaseLayer>
-              
-              <LayersControl.BaseLayer name="🏞️ Topografica">
-                <TileLayer
-                  attribution='&copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
-                  url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
-                  maxZoom={17}
-                />
-              </LayersControl.BaseLayer>
-              
-              <LayersControl.BaseLayer name="🌙 Dark Mode">
-                <TileLayer
-                  attribution='&copy; <a href="https://carto.com">CARTO</a>'
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                  maxZoom={21}
-                />
-              </LayersControl.BaseLayer>
-            </LayersControl>
-            
-            {/* Componente per aggiornare font size dinamicamente con zoom */}
-            <ZoomFontUpdater minZoom={18} baseFontSize={8} scaleFactor={1.5} />
-
-            {/* Contorno mercato - RIMOSSO come da richiesta utente */}
-            {/* {containerPolygon.length > 0 && (
-              <Polygon
-                positions={containerPolygon}
-                pathOptions={{
-                  color: '#10b981',
-                  fillColor: '#10b981',
-                  fillOpacity: 0.1,
-                  weight: 2,
-                }}
+        <MapContainer
+          center={ITALY_CENTER}
+          zoom={ITALY_ZOOM}
+          className="h-full w-full"
+        >
+          {/* Componente per zoom animato */}
+          {zoomTarget && (
+            <AnimatedZoom 
+              target={zoomTarget} 
+              zoom={targetZoom}
+            />
+          )}
+          
+          {/* Pulsante torna a Italia (visibile solo in vista mercato) */}
+          {viewMode === 'market' && (
+            <BackToItaly onClick={handleBackToItaly} />
+          )}
+          
+          <LayersControl position="topright">
+            <LayersControl.BaseLayer checked name="🗺️ Stradale">
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maxZoom={21}
               />
-            )} */}
+            </LayersControl.BaseLayer>
+            
+            <LayersControl.BaseLayer name="🛰️ Satellite">
+              <TileLayer
+                attribution='&copy; <a href="https://www.esri.com">Esri</a>'
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={21}
+              />
+            </LayersControl.BaseLayer>
+            
+            <LayersControl.BaseLayer name="🏞️ Topografica">
+              <TileLayer
+                attribution='&copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+                url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+                maxZoom={17}
+              />
+            </LayersControl.BaseLayer>
+            
+            <LayersControl.BaseLayer name="🌙 Dark Mode">
+              <TileLayer
+                attribution='&copy; <a href="https://carto.com">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                maxZoom={21}
+              />
+            </LayersControl.BaseLayer>
+          </LayersControl>
+          
+          {/* Componente per aggiornare font size dinamicamente con zoom */}
+          <ZoomFontUpdater minZoom={18} baseFontSize={8} scaleFactor={1.5} />
 
-            {/* Marker rosso "M" al centro del mercato */}
+          {/* Marker mercati sulla mappa Italia */}
+          {markets.map((market) => {
+            const lat = parseFloat(market.latitude);
+            const lng = parseFloat(market.longitude);
+            const isSelected = selectedMarket?.id === market.id;
+            
+            return (
+              <Marker
+                key={`market-${market.id}`}
+                position={[lat, lng]}
+                icon={createMarketIcon(isSelected)}
+                eventHandlers={{
+                  click: () => handleSelectMarket(market)
+                }}
+              >
+                <Popup>
+                  <div className="text-sm min-w-[200px]">
+                    <div className="font-semibold text-base mb-2 text-emerald-700">
+                      📍 {market.name}
+                    </div>
+                    <div className="text-gray-600 mb-1">
+                      🏙️ {market.municipality}
+                    </div>
+                    <div className="text-gray-600 mb-1">
+                      🏷️ Codice: {market.code}
+                    </div>
+                    <div className="text-gray-600 mb-3">
+                      📊 {market.total_stalls} posteggi
+                    </div>
+                    <button
+                      onClick={() => handleSelectMarket(market)}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Apri Mappa Mercato →
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+
+          {/* Piazzole (stalls) - visibili solo quando c'è mapData */}
+          {mapData && mapData.stalls_geojson.features.map((feature, idx) => {
+            const props = feature.properties;
+            
+            // Converti coordinate Polygon in formato Leaflet [lat, lng][]
+            let positions: [number, number][] = [];
+            
+            if (feature.geometry.type === 'Polygon') {
+              const coords = feature.geometry.coordinates as [number, number][][];
+              positions = coords[0].map(
+                ([lng, lat]: [number, number]) => [lat, lng]
+              );
+            } else if (feature.geometry.type === 'Point') {
+              const [lng, lat] = feature.geometry.coordinates;
+              return (
+                <Circle
+                  key={`stall-${idx}`}
+                  center={[lat, lng]}
+                  radius={3}
+                  pathOptions={{
+                    color: props.status === 'occupied' ? '#ef4444' : '#10b981',
+                    fillColor: props.status === 'occupied' ? '#ef4444' : '#10b981',
+                    fillOpacity: 0.6,
+                    weight: 2,
+                  }}
+                >
+                  <Popup>
+                    <div className="text-sm">
+                      <div className="font-semibold text-base mb-1">
+                        Piazzola #{props.number}
+                      </div>
+                      {props.dimensions && (
+                        <div className="text-gray-600">📏 {props.dimensions}</div>
+                      )}
+                      {props.status && (
+                        <div className="text-gray-600">
+                          🏷️ {props.status === 'free' ? 'Libera' : 'Occupata'}
+                        </div>
+                      )}
+                    </div>
+                  </Popup>
+                </Circle>
+              );
+            }
+            
+            return (
+              <React.Fragment key={`stall-${idx}`}>
+                <Polygon
+                  positions={positions}
+                  pathOptions={{
+                    color: props.status === 'occupied' ? '#ef4444' : '#10b981',
+                    fillColor: props.status === 'occupied' ? '#ef4444' : '#10b981',
+                    fillOpacity: 0.7,
+                    weight: 2,
+                  }}
+                  eventHandlers={{
+                    click: () => setSelectedStall(props),
+                  }}
+                >
+                  <Tooltip 
+                    permanent 
+                    direction="center" 
+                    className="stall-number-tooltip"
+                    opacity={1}
+                  >
+                    {props.number}
+                  </Tooltip>
+                  <Popup>
+                    <div className="text-sm">
+                      <div className="font-semibold text-base mb-1">
+                        Piazzola #{props.number}
+                      </div>
+                      {props.dimensions && (
+                        <div className="text-gray-600">
+                          📏 {props.dimensions}
+                        </div>
+                      )}
+                      {props.status && (
+                        <div className="text-gray-600">
+                          🏷️ {props.status === 'free' ? 'Libera' : 'Occupata'}
+                        </div>
+                      )}
+                      {props.kind && (
+                        <div className="text-gray-600 text-xs mt-1">
+                          Tipo: {props.kind}
+                        </div>
+                      )}
+                    </div>
+                  </Popup>
+                </Polygon>
+              </React.Fragment>
+            );
+          })}
+
+          {/* Marker centro mercato (visibile solo in vista mercato) */}
+          {mapData && viewMode === 'market' && (
             <Marker
               position={[mapData.center.lat, mapData.center.lng]}
               icon={L.divIcon({
@@ -395,147 +648,35 @@ export default function MarketGISPage() {
                 </div>
               </Popup>
             </Marker>
+          )}
 
-            {/* Piazzole (stalls) */}
-            {mapData.stalls_geojson.features.map((feature, idx) => {
-              const props = feature.properties;
-              
-              // Debug: log primo posteggio
-              if (idx === 0) {
-                console.log('🔍 Primo posteggio:', {
-                  type: feature.geometry.type,
-                  number: props.number,
-                  orientation: props.orientation,
-                  coordinates: feature.geometry.coordinates
-                });
-              }
-              
-              // Converti coordinate Polygon in formato Leaflet [lat, lng][]
-              let positions: [number, number][] = [];
-              
-              if (feature.geometry.type === 'Polygon') {
-                // Polygon: array di array di coordinate [[lng, lat], ...]
-                const coords = feature.geometry.coordinates as [number, number][][];
-                positions = coords[0].map(
-                  ([lng, lat]: [number, number]) => [lat, lng]
-                );
-              } else if (feature.geometry.type === 'Point') {
-                // Fallback per Point: crea un piccolo cerchio
-                const [lng, lat] = feature.geometry.coordinates;
-                return (
-                  <Circle
-                    key={`stall-${idx}`}
-                    center={[lat, lng]}
-                    radius={3}
-                    pathOptions={{
-                      color: props.status === 'occupied' ? '#ef4444' : '#10b981',
-                      fillColor: props.status === 'occupied' ? '#ef4444' : '#10b981',
-                      fillOpacity: 0.6,
-                      weight: 2,
-                    }}
-                  >
-                    <Popup>
-                      <div className="text-sm">
-                        <div className="font-semibold text-base mb-1">
-                          Piazzola #{props.number}
-                        </div>
-                        {props.dimensions && (
-                          <div className="text-gray-600">📏 {props.dimensions}</div>
-                        )}
-                        {props.status && (
-                          <div className="text-gray-600">
-                            🏷️ {props.status === 'free' ? 'Libera' : 'Occupata'}
-                          </div>
-                        )}
-                      </div>
-                    </Popup>
-                  </Circle>
-                );
-              }
-              
-              // Nessun DivIcon - usiamo Tooltip che scala con zoom
-              
-              return (
-                <React.Fragment key={`stall-${idx}`}>
-                  <Polygon
-                    positions={positions}
-                    pathOptions={{
-                      color: props.status === 'occupied' ? '#ef4444' : '#10b981',
-                      fillColor: props.status === 'occupied' ? '#ef4444' : '#10b981',
-                      fillOpacity: 0.7,
-                      weight: 2,
-                    }}
-                    eventHandlers={{
-                      click: () => setSelectedStall(props),
-                    }}
-                  >
-                    <Tooltip 
-                      permanent 
-                      direction="center" 
-                      className="stall-number-tooltip"
-                      opacity={1}
-                    >
-                      {props.number}
-                    </Tooltip>
-                    <Popup>
-                      <div className="text-sm">
-                        <div className="font-semibold text-base mb-1">
-                          Piazzola #{props.number}
-                        </div>
-                        {props.dimensions && (
-                          <div className="text-gray-600">
-                            📏 {props.dimensions}
-                          </div>
-                        )}
-                        {props.status && (
-                          <div className="text-gray-600">
-                            🏷️ {props.status === 'free' ? 'Libera' : 'Occupata'}
-                          </div>
-                        )}
-                        {props.kind && (
-                          <div className="text-gray-600 text-xs mt-1">
-                            Tipo: {props.kind}
-                          </div>
-                        )}
-                      </div>
-                    </Popup>
-                  </Polygon>
-                </React.Fragment>
-              );
-            })}
-
-
-          </MapContainer>
-        )}
-        
-        {/* Pannello Debug */}
-        {mapData && debugInfo.length > 0 && (
-          <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm border-2 border-blue-500 rounded-lg shadow-lg p-3 max-w-xs z-[1000]">
-            <div className="text-xs font-bold text-blue-700 mb-2 flex items-center gap-1">
-              🔍 Debug Info - Numeri Posteggi
-            </div>
-            <div className="space-y-1 text-xs font-mono">
-              {debugInfo.map((info, idx) => (
-                <div key={idx} className="text-gray-700">{info}</div>
-              ))}
-            </div>
-          </div>
-        )}
+        </MapContainer>
       </div>
 
       {/* Info footer */}
-      {mapData && (
-        <div className="bg-white border-t px-4 py-2 text-xs text-gray-600">
-          <div className="flex items-center justify-between">
-            <span>
-              📍 Piazzole: {mapData.stalls_geojson.features.length}
-            </span>
-            <span className="text-emerald-600">
-              ✓ Dati caricati da Editor v3
-            </span>
-          </div>
+      <div className="bg-white border-t px-4 py-2 text-xs text-gray-600">
+        <div className="flex items-center justify-between">
+          {viewMode === 'italy' ? (
+            <>
+              <span>
+                🇮🇹 Rete Mercati Made in Italy
+              </span>
+              <span className="text-emerald-600">
+                {markets.length} mercati • Clicca su un marker per esplorare
+              </span>
+            </>
+          ) : (
+            <>
+              <span>
+                📍 Piazzole: {mapData?.stalls_geojson.features.length || 0}
+              </span>
+              <span className="text-emerald-600">
+                ✓ Dati caricati da Editor v3
+              </span>
+            </>
+          )}
         </div>
-      )}
+      </div>
       </div>
     </>
   );
