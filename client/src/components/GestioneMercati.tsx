@@ -77,6 +77,7 @@ interface Stall {
   concession_type: string | null;
   vendor_business_name: string | null;
   vendor_contact_name: string | null;
+  impresa_id: number | null;
 }
 
 interface Vendor {
@@ -1697,7 +1698,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
                 <Button
                   onClick={async () => {
                     // Carica i dati completi dell'impresa e apri il modal
-                    const companyId = selectedStall.vendor_id || concessionsByStallId[selectedStall.number]?.companyId;
+                    const companyId = selectedStall.impresa_id || concessionsByStallId[selectedStall.number]?.companyId;
                     if (companyId) {
                       try {
                         const response = await fetch(`${API_BASE_URL}/api/imprese/${companyId}`);
