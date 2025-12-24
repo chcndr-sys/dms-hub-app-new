@@ -458,15 +458,15 @@ export function MarketMapComponent({
           {mapData && mapData.stalls_geojson.features.map((feature, idx) => {
             const props = feature.properties;
             
-            // SKIP: Renderizza SOLO i posteggi (kind='slot' con numero)
-            // Filtra via tutti gli altri poligoni (area mercato, confini, ecc.)
-            // Questo elimina la macchia verde/gialla/rosa
-            const isValidStall = props.kind === 'slot' && props.number;
-            if (!isValidStall) {
-              // Log solo se ha proprietà interessanti (non loggare ogni feature vuota)
-              if (props.kind || props.type || props.number) {
-                console.log('[DEBUG] Skipping non-slot feature:', props.kind, props.type, props.number);
-              }
+            // SKIP: Escludi solo i poligoni "area" del mercato (macchia verde)
+            // Renderizza tutto ciò che ha un numero posteggio
+            if (props.kind === 'area' || props.type === 'mercato') {
+              console.log('[DEBUG] Skipping area/mercato feature:', props.kind, props.type);
+              return null;
+            }
+            
+            // Se non ha numero, salta (non è un posteggio valido)
+            if (!props.number) {
               return null;
             }
             
