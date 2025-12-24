@@ -70,6 +70,10 @@ interface MarketMapComponentProps {
     destination: { lat: number; lng: number };
     mode: 'walking' | 'cycling' | 'driving';
   };
+  // Props per Vista Italia (Gemello Digitale)
+  allMarkets?: Array<{ id: number; name: string; latitude: number; longitude: number }>;
+  onMarketClick?: (marketId: number) => void;
+  showItalyView?: boolean;
 }
 
 // Controller per centrare la mappa programmaticamente
