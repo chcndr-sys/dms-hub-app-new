@@ -84,7 +84,7 @@ function MapCenterController({ center, zoom, trigger }: { center: [number, numbe
   useEffect(() => {
     if (center) {
       map.flyTo(center, zoom || map.getZoom(), {
-        duration: 2,
+        duration: 3.5,
         easeLinearity: 0.1
       });
     }
