@@ -1446,7 +1446,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               refreshKey={mapRefreshKey}
               mapData={viewMode === 'mercato' ? mapData : null}
               center={viewMode === 'mercato' ? (mapCenter || marketCenter) : [42.5, 12.5] as [number, number]}
-              zoom={viewMode === 'mercato' ? 19 : 6}
+              zoom={viewMode === 'mercato' ? 17 : 6}
               height="100%"
               isSpuntaMode={isSpuntaMode}
               onConfirmAssignment={handleConfirmAssignment}

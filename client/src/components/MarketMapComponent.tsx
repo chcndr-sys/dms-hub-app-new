@@ -80,14 +80,47 @@ interface MarketMapComponentProps {
 // Controller per centrare la mappa programmaticamente
 function MapCenterController({ center, zoom, trigger }: { center: [number, number]; zoom?: number; trigger?: number }) {
   const map = useMap();
+  const lastTriggerRef = React.useRef<number | undefined>(undefined);
+  const isAnimatingRef = React.useRef(false);
   
   useEffect(() => {
-    if (center) {
+    // Esegui flyTo solo quando trigger cambia (e non è il primo mount)
+    // Il primo mount ha lastTriggerRef.current = undefined
+    if (lastTriggerRef.current !== undefined && 
+        trigger !== lastTriggerRef.current && 
+        center && 
+        !isAnimatingRef.current) {
+      
+      isAnimatingRef.current = true;
+      console.log('[MapCenterController] Avvio flyTo verso:', center, 'zoom:', zoom);
+      
+      // Animazione molto lenta e fluida (6 secondi)
       map.flyTo(center, zoom || map.getZoom(), {
-        duration: 3.5,
-        easeLinearity: 0.1
+        duration: 6,
+        easeLinearity: 0.25
       });
+      
+      // Listener per quando l'animazione finisce
+      const onMoveEnd = () => {
+        console.log('[MapCenterController] Animazione completata, mappa stabile');
+        isAnimatingRef.current = false;
+        map.off('moveend', onMoveEnd);
+      };
+      
+      // Aspetta un po' prima di aggiungere il listener (per evitare trigger immediato)
+      setTimeout(() => {
+        map.on('moveend', onMoveEnd);
+      }, 100);
+      
+      // Fallback timeout nel caso moveend non si triggeri
+      setTimeout(() => {
+        isAnimatingRef.current = false;
+        map.off('moveend', onMoveEnd);
+      }, 7000);
     }
+    
+    // Aggiorna sempre il ref del trigger
+    lastTriggerRef.current = trigger;
   }, [center, zoom, trigger, map]);
   
   return null;
