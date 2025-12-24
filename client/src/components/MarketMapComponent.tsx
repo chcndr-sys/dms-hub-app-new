@@ -78,27 +78,44 @@ interface MarketMapComponentProps {
 }
 
 // Controller per centrare la mappa programmaticamente
-function MapCenterController({ center, zoom, trigger }: { center: [number, number]; zoom?: number; trigger?: number }) {
+interface MapControllerProps {
+  center: [number, number];
+  zoom?: number;
+  trigger?: number;
+  bounds?: L.LatLngBoundsExpression; // Bounds per fitBounds dinamico
+  isMarketView?: boolean; // true = vista mercato, false = vista Italia
+}
+
+function MapCenterController({ center, zoom, trigger, bounds, isMarketView }: MapControllerProps) {
   const map = useMap();
   const lastTriggerRef = React.useRef<number | undefined>(undefined);
   const isAnimatingRef = React.useRef(false);
   
   useEffect(() => {
-    // Esegui flyTo solo quando trigger cambia (e non è il primo mount)
-    // Il primo mount ha lastTriggerRef.current = undefined
+    // Esegui flyTo/fitBounds solo quando trigger cambia (e non è il primo mount)
     if (lastTriggerRef.current !== undefined && 
         trigger !== lastTriggerRef.current && 
-        center && 
         !isAnimatingRef.current) {
       
       isAnimatingRef.current = true;
-      console.log('[MapCenterController] Avvio flyTo verso:', center, 'zoom:', zoom);
       
-      // Animazione molto lenta e fluida (6 secondi)
-      map.flyTo(center, zoom || map.getZoom(), {
-        duration: 6,
-        easeLinearity: 0.25
-      });
+      if (isMarketView && bounds) {
+        // Vista Mercato: usa fitBounds con i corner del mercato
+        console.log('[MapCenterController] Avvio flyToBounds verso bounds mercato');
+        map.flyToBounds(bounds, {
+          duration: 6,
+          easeLinearity: 0.25,
+          padding: [30, 30], // Padding per non tagliare i bordi
+          maxZoom: 19 // Limite massimo zoom
+        });
+      } else if (center) {
+        // Vista Italia: usa flyTo con centro e zoom fisso
+        console.log('[MapCenterController] Avvio flyTo verso Italia:', center, 'zoom:', zoom);
+        map.flyTo(center, zoom || 6, {
+          duration: 6,
+          easeLinearity: 0.25
+        });
+      }
       
       // Listener per quando l'animazione finisce
       const onMoveEnd = () => {
@@ -121,7 +138,7 @@ function MapCenterController({ center, zoom, trigger }: { center: [number, numbe
     
     // Aggiorna sempre il ref del trigger
     lastTriggerRef.current = trigger;
-  }, [center, zoom, trigger, map]);
+  }, [center, zoom, trigger, bounds, isMarketView, map]);
   
   return null;
 }
@@ -166,6 +183,41 @@ export function MarketMapComponent({
   // Se showItalyView è true e non c'è un center specifico, usa coordinate Italia
   // Se mapData è null (vista Italia), usa coordinate Italia come fallback
   const mapCenter: [number, number] = center || (showItalyView || !mapData ? [42.5, 12.5] : [mapData.center.lat, mapData.center.lng]);
+  
+  // Calcola bounds dinamici dal GeoJSON (area mercato o tutti i posteggi)
+  const marketBounds = React.useMemo(() => {
+    if (!mapData?.stalls_geojson?.features?.length) return null;
+    
+    // Cerca prima il feature "area" del mercato (ha i confini completi)
+    const areaFeature = mapData.stalls_geojson.features.find(
+      (f: any) => f.properties?.kind === 'area' && f.geometry?.type === 'Polygon'
+    );
+    
+    let allCoords: [number, number][] = [];
+    
+    if (areaFeature && areaFeature.geometry.coordinates?.[0]) {
+      // Usa le coordinate del poligono area
+      allCoords = areaFeature.geometry.coordinates[0].map((c: number[]) => [c[1], c[0]] as [number, number]);
+      console.log('[DEBUG] Bounds calcolati da area mercato, punti:', allCoords.length);
+    } else {
+      // Fallback: calcola bounds da tutti i posteggi
+      mapData.stalls_geojson.features.forEach((feature: any) => {
+        if (feature.geometry?.type === 'Polygon' && feature.geometry.coordinates?.[0]) {
+          feature.geometry.coordinates[0].forEach((coord: number[]) => {
+            allCoords.push([coord[1], coord[0]]);
+          });
+        }
+      });
+      console.log('[DEBUG] Bounds calcolati da posteggi, punti:', allCoords.length);
+    }
+    
+    if (allCoords.length === 0) return null;
+    
+    // Crea LatLngBounds da tutte le coordinate
+    const bounds = L.latLngBounds(allCoords);
+    console.log('[DEBUG] Bounds mercato:', bounds.toBBoxString());
+    return bounds;
+  }, [mapData]);
   
   console.log('[DEBUG MarketMapComponent] RICEVUTO:', {
     refreshKey,
@@ -263,7 +315,13 @@ export function MarketMapComponent({
           <ZoomFontUpdater minZoom={18} baseFontSize={8} scaleFactor={1.5} />
           
           {/* Controller per centrare mappa programmaticamente */}
-          {center && <MapCenterController center={center} zoom={zoom} trigger={viewTrigger} />}
+          <MapCenterController 
+            center={mapCenter} 
+            zoom={zoom} 
+            trigger={viewTrigger}
+            bounds={marketBounds || undefined}
+            isMarketView={!showItalyView}
+          />
           
           {/* Routing layer (opzionale) */}
           {routeConfig?.enabled && (
