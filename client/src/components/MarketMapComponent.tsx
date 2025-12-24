@@ -75,6 +75,7 @@ interface MarketMapComponentProps {
   onMarketClick?: (marketId: number) => void;
   showItalyView?: boolean;
   viewTrigger?: number; // Trigger per forzare flyTo quando cambia vista
+  marketCenterFixed?: [number, number]; // Centro fisso del mercato per marker M (non si sposta con selezione posteggio)
 }
 
 // Controller per centrare la mappa programmaticamente
@@ -177,7 +178,8 @@ export function MarketMapComponent({
   allMarkets = [],
   onMarketClick,
   showItalyView = false,
-  viewTrigger = 0
+  viewTrigger = 0,
+  marketCenterFixed
 }: MarketMapComponentProps) {
   
   // Se showItalyView è true e non c'è un center specifico, usa coordinate Italia
@@ -333,44 +335,49 @@ export function MarketMapComponent({
           )}
 
           {/* Marker rosso "M" al centro mercato (nascosto in modalità routing e in vista Italia) */}
-          {!routeConfig?.enabled && !showItalyView && (
-            <Marker
-              position={mapCenter}
-              icon={L.divIcon({
-              className: 'market-center-marker',
-              html: `<div style="
-                background: #ef4444;
-                color: white;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-                font-weight: bold;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                border: 3px solid white;
-              ">M</div>`,
-              iconSize: [32, 32],
-              iconAnchor: [16, 16],
-            })}
-          >
-            <Popup>
-              <div className="text-sm">
-                <div className="font-semibold text-base mb-1">
-                  📍 Centro Mercato
-                </div>
-                <div className="text-gray-600">
-                  Lat: {mapCenter[0].toFixed(6)}
-                </div>
-                <div className="text-gray-600">
-                  Lng: {mapCenter[1].toFixed(6)}
-                </div>
-              </div>
-            </Popup>
-            </Marker>
-          )}
+          {/* Usa marketCenterFixed se disponibile, altrimenti fallback a mapData.center */}
+          {!routeConfig?.enabled && !showItalyView && mapData && (() => {
+            const fixedCenter = marketCenterFixed || (mapData.center ? [mapData.center.lat, mapData.center.lng] as [number, number] : null);
+            if (!fixedCenter) return null;
+            return (
+              <Marker
+                position={fixedCenter}
+                icon={L.divIcon({
+                  className: 'market-center-marker',
+                  html: `<div style="
+                    background: #ef4444;
+                    color: white;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
+                    font-weight: bold;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                    border: 3px solid white;
+                  ">M</div>`,
+                  iconSize: [32, 32],
+                  iconAnchor: [16, 16],
+                })}
+              >
+                <Popup>
+                  <div className="text-sm">
+                    <div className="font-semibold text-base mb-1">
+                      📍 Centro Mercato
+                    </div>
+                    <div className="text-gray-600">
+                      Lat: {fixedCenter[0].toFixed(6)}
+                    </div>
+                    <div className="text-gray-600">
+                      Lng: {fixedCenter[1].toFixed(6)}
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })()}
 
           {/* Marker "M" per tutti i mercati (Vista Italia) */}
           {allMarkets.length > 0 && allMarkets.map((market) => (
@@ -421,7 +428,9 @@ export function MarketMapComponent({
             
             // SKIP: Non renderizzare il poligono "area" del mercato (macchia verde)
             // Serve solo per calcolare i bounds, non deve essere visualizzato
-            if (props.kind === 'area') {
+            // Filtra per kind='area' OPPURE se non ha numero posteggio (probabilmente è un'area)
+            if (props.kind === 'area' || props.type === 'mercato' || !props.number) {
+              console.log('[DEBUG] Skipping non-stall feature:', props);
               return null;
             }
             

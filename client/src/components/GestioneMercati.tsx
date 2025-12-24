@@ -1444,7 +1444,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
           return (
             <MarketMapComponent
               refreshKey={mapRefreshKey}
-              mapData={viewMode === 'mercato' ? mapData : null}
+              mapData={mapData}  // Passa sempre mapData così i posteggi sono visibili durante l'animazione
               center={viewMode === 'mercato' ? (mapCenter || marketCenter) : [42.5, 12.5] as [number, number]}
               zoom={viewMode === 'mercato' ? 17 : 6}
               height="100%"
@@ -1473,6 +1473,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               }))}
               showItalyView={viewMode === 'italia'}
               viewTrigger={viewTrigger}
+              marketCenterFixed={marketCenter}
               onMarketClick={(clickedMarketId) => {
                 // Quando clicchi su un marker, passa a vista mercato e triggera flyTo
                 setViewMode('mercato');
