@@ -129,13 +129,15 @@ export function MarketMapComponent({
 }: MarketMapComponentProps) {
   
   // Se showItalyView è true e non c'è un center specifico, usa coordinate Italia
-  const mapCenter: [number, number] = center || (showItalyView ? [42.5, 12.5] : [mapData.center.lat, mapData.center.lng]);
+  // Se mapData è null (vista Italia), usa coordinate Italia come fallback
+  const mapCenter: [number, number] = center || (showItalyView || !mapData ? [42.5, 12.5] : [mapData.center.lat, mapData.center.lng]);
   
   console.log('[DEBUG MarketMapComponent] RICEVUTO:', {
     refreshKey,
     stallsDataLength: stallsData.length,
     firstStall: stallsData[0],
-    mapDataFeaturesCount: mapData.stalls_geojson.features.length
+    mapDataFeaturesCount: mapData?.stalls_geojson?.features?.length ?? 0,
+    showItalyView
   });
   
   // Mappa stallsData per accesso rapido
@@ -314,12 +316,12 @@ export function MarketMapComponent({
             </Marker>
           ))}
 
-          {/* Piazzole (stalls) */}
-          {(() => {
+          {/* Piazzole (stalls) - solo se mapData esiste */}
+          {mapData && (() => {
             console.log('[VERCEL DEBUG] MarketMapComponent - Rendering', mapData.stalls_geojson.features.length, 'stalls');
             return null;
           })()}
-          {mapData.stalls_geojson.features.map((feature, idx) => {
+          {mapData && mapData.stalls_geojson.features.map((feature, idx) => {
             const props = feature.properties;
             
             if (idx === 0) {
