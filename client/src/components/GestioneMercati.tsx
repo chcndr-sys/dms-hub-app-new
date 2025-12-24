@@ -313,7 +313,7 @@ export default function GestioneMercati() {
 
       {/* Dettaglio Mercato Selezionato */}
       {selectedMarket && (
-        <MarketDetail market={selectedMarket} />
+        <MarketDetail market={selectedMarket} allMarkets={markets} />
       )}
     </div>
   );
@@ -322,7 +322,7 @@ export default function GestioneMercati() {
 /**
  * Dettaglio mercato con tab
  */
-function MarketDetail({ market }: { market: Market }) {
+function MarketDetail({ market, allMarkets }: { market: Market; allMarkets: Market[] }) {
   const [activeTab, setActiveTab] = useState("anagrafica");
   const [stalls, setStalls] = useState<Stall[]>([]);
 
@@ -381,7 +381,7 @@ function MarketDetail({ market }: { market: Market }) {
           </TabsContent>
 
           <TabsContent value="posteggi" className="space-y-4">
-            <PosteggiTab marketId={market.id} marketCode={market.code} marketCenter={[parseFloat(market.latitude), parseFloat(market.longitude)]} stalls={stalls} setStalls={setStalls} />
+            <PosteggiTab marketId={market.id} marketCode={market.code} marketCenter={[parseFloat(market.latitude), parseFloat(market.longitude)]} stalls={stalls} setStalls={setStalls} allMarkets={allMarkets} />
           </TabsContent>
 
           <TabsContent value="concessioni" className="space-y-4">
@@ -1134,7 +1134,7 @@ function CompanyInlineForm({ company, marketId, onClose, onSaved }: {
  * - Mappa rettangolare in alto (full width)
  * - Sotto: Lista posteggi a sinistra (con scroll) + Scheda impresa a destra
  */
-function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: { marketId: number; marketCode: string; marketCenter: [number, number]; stalls: Stall[]; setStalls: React.Dispatch<React.SetStateAction<Stall[]>> }) {
+function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, allMarkets }: { marketId: number; marketCode: string; marketCenter: [number, number]; stalls: Stall[]; setStalls: React.Dispatch<React.SetStateAction<Stall[]>>; allMarkets: Market[] }) {
   const [mapData, setMapData] = useState<MarketMapData | null>(null);
   const [concessionsByStallId, setConcessionsByStallId] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
@@ -1448,6 +1448,12 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls }: 
               }}
               selectedStallNumber={stalls.find(s => s.id === selectedStallId)?.number}
               stallsData={stallsDataForMap}
+              allMarkets={allMarkets.map(m => ({
+                id: m.id,
+                name: m.name,
+                latitude: parseFloat(m.latitude),
+                longitude: parseFloat(m.longitude)
+              }))}
             />
           );
         })()}
