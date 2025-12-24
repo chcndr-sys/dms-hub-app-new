@@ -455,13 +455,13 @@ export function MarketMapComponent({
             console.log('[VERCEL DEBUG] MarketMapComponent - Rendering', mapData.stalls_geojson.features.length, 'stalls');
             return null;
           })()}
-          {mapData && mapData.stalls_geojson.features.map((feature, idx) => {
+          {/* Renderizza posteggi SOLO quando NON siamo in vista Italia */}
+          {mapData && !showItalyView && mapData.stalls_geojson.features.map((feature, idx) => {
             const props = feature.properties;
             
             // SKIP: Escludi solo i poligoni "area" del mercato (macchia verde)
             // Renderizza tutto ciò che ha un numero posteggio
             if (props.kind === 'area' || props.type === 'mercato') {
-              console.log('[DEBUG] Skipping area/mercato feature:', props.kind, props.type);
               return null;
             }
             
@@ -514,10 +514,10 @@ export function MarketMapComponent({
               console.log('[VERCEL DEBUG] First polygon color:', fillColor);
             }
             
-            // Colore blu ciano per posteggio selezionato
-            const selectedColor = '#00bcd4'; // Ciano
+            // Colore magenta flash per posteggio selezionato (massima visibilità)
+            const selectedColor = '#ff00ff'; // Magenta/Fucsia
             const actualFillColor = isSelected ? selectedColor : fillColor;
-            const actualBorderColor = isSelected ? '#0097a7' : fillColor; // Bordo più scuro se selezionato
+            const actualBorderColor = isSelected ? '#cc00cc' : fillColor; // Bordo magenta scuro se selezionato
             
             return (
               <React.Fragment key={`stall-${props.number}-${dbStall?.status || props.status}`}>

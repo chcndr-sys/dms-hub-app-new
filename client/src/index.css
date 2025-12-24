@@ -265,31 +265,29 @@ body.modal-open, body.widget-open {
 
 
 /* ===== ANIMAZIONE POSTEGGIO SELEZIONATO ===== */
-/* Effetto pulsante per il posteggio selezionato sulla mappa */
-@keyframes stall-pulse {
+/* Effetto pulsante lampeggiante per il posteggio selezionato sulla mappa */
+/* Colore: Magenta/Fucsia flash (#ff00ff) per massima visibilità */
+@keyframes stall-flash {
   0%, 100% {
-    stroke-width: 4;
+    stroke-width: 5;
     stroke-opacity: 1;
-    fill-opacity: 0.9;
+    fill-opacity: 1;
+    filter: drop-shadow(0 0 10px #ff00ff) drop-shadow(0 0 20px #ff00ff);
   }
   50% {
-    stroke-width: 6;
-    stroke-opacity: 0.8;
-    fill-opacity: 0.7;
+    stroke-width: 8;
+    stroke-opacity: 1;
+    fill-opacity: 0.6;
+    filter: drop-shadow(0 0 20px #ff00ff) drop-shadow(0 0 40px #ff00ff) drop-shadow(0 0 60px #ff00ff);
   }
 }
 
 .selected-stall-pulse {
-  animation: stall-pulse 1.5s ease-in-out infinite;
+  animation: stall-flash 0.8s ease-in-out infinite !important;
 }
 
-/* Effetto glow per il posteggio selezionato */
-.selected-stall-pulse path {
-  filter: drop-shadow(0 0 8px #00bcd4) drop-shadow(0 0 16px #00bcd4);
-}
-
-/* Leaflet polygon con classe selected */
+/* Leaflet polygon con classe selected - forza animazione */
 .leaflet-interactive.selected-stall-pulse {
-  animation: stall-pulse 1.5s ease-in-out infinite;
-  filter: drop-shadow(0 0 6px #00bcd4) drop-shadow(0 0 12px rgba(0, 188, 212, 0.5));
+  animation: stall-flash 0.8s ease-in-out infinite !important;
+  filter: drop-shadow(0 0 15px #ff00ff) drop-shadow(0 0 30px rgba(255, 0, 255, 0.7)) !important;
 }

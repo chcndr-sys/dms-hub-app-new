@@ -373,8 +373,10 @@ function MarketDetail({ market, allMarkets }: { market: Market; allMarkets: Mark
                   setViewMode(viewMode === 'italia' ? 'mercato' : 'italia');
                   setViewTrigger(prev => prev + 1); // Forza flyTo
                 } else {
-                  // Primo click: vai al tab posteggi con vista Italia
+                  // Primo click da altro tab: vai al tab posteggi con vista Italia
                   setViewMode('italia');
+                  // Forza flyTo anche quando si arriva da un altro tab
+                  setTimeout(() => setViewTrigger(prev => prev + 1), 100);
                 }
               }}
             >
@@ -1299,7 +1301,15 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
     setEditData({});
   };
 
+  // Ref per il timeout di reset selezione
+  const selectionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  
   const handleRowClick = (stall: Stall) => {
+    // Cancella eventuale timeout precedente
+    if (selectionTimeoutRef.current) {
+      clearTimeout(selectionTimeoutRef.current);
+    }
+    
     setSelectedStallId(stall.id);
     
     // Trova il posteggio nella mappa tramite gis_slot_id
@@ -1317,6 +1327,12 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       
       setSelectedStallCenter([centerLat, centerLng]);
     }
+    
+    // Reset selezione dopo 5 secondi (il posteggio torna al colore originale)
+    selectionTimeoutRef.current = setTimeout(() => {
+      setSelectedStallId(null);
+      setSelectedStallCenter(null);
+    }, 5000);
   };
 
   if (loading) {
@@ -1454,11 +1470,18 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 const dbStall = stallsByNumber.get(stallNumber);
                 if (dbStall) {
                   setSelectedStallId(dbStall.id);
-                  // Scroll alla riga nella lista
+                  // Scroll alla riga nella lista (solo dentro il container, non la pagina)
                   setTimeout(() => {
-                    const row = document.querySelector(`[data-stall-id="${dbStall.id}"]`);
+                    const row = document.querySelector(`[data-stall-id="${dbStall.id}"]`) as HTMLElement;
                     if (row && listContainerRef.current) {
-                      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      // Calcola la posizione relativa al container
+                      const container = listContainerRef.current;
+                      const rowTop = row.offsetTop;
+                      const containerHeight = container.clientHeight;
+                      const rowHeight = row.clientHeight;
+                      // Centra la riga nel container
+                      const scrollTo = rowTop - (containerHeight / 2) + (rowHeight / 2);
+                      container.scrollTo({ top: scrollTo, behavior: 'smooth' });
                     }
                   }, 100);
                 }
