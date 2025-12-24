@@ -359,6 +359,11 @@ function MarketDetail({ market, allMarkets }: { market: Market; allMarkets: Mark
             <TabsTrigger 
               value="anagrafica"
               className="data-[state=active]:bg-[#14b8a6]/20 data-[state=active]:text-[#14b8a6]"
+              onClick={() => {
+                // Reset selezione posteggio quando si cambia tab
+                setSelectedStallId(null);
+                setSelectedStallCenter(null);
+              }}
             >
               <FileText className="mr-2 h-4 w-4" />
               Anagrafica
@@ -389,6 +394,11 @@ function MarketDetail({ market, allMarkets }: { market: Market; allMarkets: Mark
             <TabsTrigger 
               value="concessioni"
               className="data-[state=active]:bg-[#14b8a6]/20 data-[state=active]:text-[#14b8a6]"
+              onClick={() => {
+                // Reset selezione posteggio quando si cambia tab
+                setSelectedStallId(null);
+                setSelectedStallCenter(null);
+              }}
             >
               <Users className="mr-2 h-4 w-4" />
               Imprese / Concessioni
@@ -1301,13 +1311,14 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
     setEditData({});
   };
 
-  // Ref per il timeout di reset selezione
-  const selectionTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  
   const handleRowClick = (stall: Stall) => {
-    // Cancella eventuale timeout precedente
-    if (selectionTimeoutRef.current) {
-      clearTimeout(selectionTimeoutRef.current);
+    // Se clicco la stessa riga già selezionata, resetta e torna alla vista mercato originale
+    if (selectedStallId === stall.id) {
+      setSelectedStallId(null);
+      setSelectedStallCenter(null);
+      // Forza ritorno alla vista mercato originale (fitBounds)
+      setViewTrigger(prev => prev + 1);
+      return;
     }
     
     setSelectedStallId(stall.id);
@@ -1327,12 +1338,6 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       
       setSelectedStallCenter([centerLat, centerLng]);
     }
-    
-    // Reset selezione dopo 5 secondi (il posteggio torna al colore originale)
-    selectionTimeoutRef.current = setTimeout(() => {
-      setSelectedStallId(null);
-      setSelectedStallCenter(null);
-    }, 5000);
   };
 
   if (loading) {
@@ -1527,7 +1532,13 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {stalls.map((stall) => (
+                {[...stalls].sort((a, b) => {
+                  // Ordina per numero crescente (gestisce sia numeri che stringhe)
+                  const numA = parseInt(a.number, 10);
+                  const numB = parseInt(b.number, 10);
+                  if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                  return a.number.localeCompare(b.number);
+                }).map((stall) => (
                   <TableRow 
                     key={stall.id}
                     data-stall-id={stall.id}
