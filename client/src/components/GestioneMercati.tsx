@@ -354,18 +354,30 @@ function MarketDetail({ market, allMarkets }: { market: Market; allMarkets: Mark
         <CardDescription className="text-[#e8fbff]/70">Gestisci anagrafica, posteggi e concessioni</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs 
+          value={activeTab} 
+          onValueChange={(value) => {
+            setActiveTab(value);
+            
+            // Gestione reset vista quando si cambia tab
+            if (value === 'posteggi') {
+              // Quando si entra nel tab posteggi, forza sempre Vista Italia
+              setViewMode('italia');
+              // Trigger per assicurare che la mappa si posizioni correttamente
+              setTimeout(() => setViewTrigger(prev => prev + 1), 100);
+            } else {
+              // Quando si esce dal tab posteggi, resetta selezioni
+              setSelectedStallId(null);
+              setSelectedStallCenter(null);
+              // Resetta anche viewMode per sicurezza
+              setViewMode('italia');
+            }
+          }}
+        >
           <TabsList className="grid w-full grid-cols-3 bg-[#0b1220]/50">
             <TabsTrigger 
               value="anagrafica"
               className="data-[state=active]:bg-[#14b8a6]/20 data-[state=active]:text-[#14b8a6]"
-              onClick={() => {
-                // Reset selezione posteggio e viewMode quando si cambia tab
-                setSelectedStallId(null);
-                setSelectedStallCenter(null);
-                // Reset viewMode a 'italia' così quando torni al tab posteggi parte da Vista Italia
-                setViewMode('italia');
-              }}
             >
               <FileText className="mr-2 h-4 w-4" />
               Anagrafica
@@ -377,13 +389,8 @@ function MarketDetail({ market, allMarkets }: { market: Market; allMarkets: Mark
                 // Se siamo già nel tab posteggi, toggle tra vista Italia e vista Mercato
                 if (activeTab === 'posteggi') {
                   e.preventDefault();
-                  setViewMode(viewMode === 'italia' ? 'mercato' : 'italia');
+                  setViewMode(prev => prev === 'italia' ? 'mercato' : 'italia');
                   setViewTrigger(prev => prev + 1); // Forza flyTo
-                } else {
-                  // Primo click da altro tab: vai al tab posteggi con vista Italia
-                  setViewMode('italia');
-                  // Forza flyTo anche quando si arriva da un altro tab
-                  setTimeout(() => setViewTrigger(prev => prev + 1), 100);
                 }
               }}
             >
@@ -396,13 +403,6 @@ function MarketDetail({ market, allMarkets }: { market: Market; allMarkets: Mark
             <TabsTrigger 
               value="concessioni"
               className="data-[state=active]:bg-[#14b8a6]/20 data-[state=active]:text-[#14b8a6]"
-              onClick={() => {
-                // Reset selezione posteggio e viewMode quando si cambia tab
-                setSelectedStallId(null);
-                setSelectedStallCenter(null);
-                // Reset viewMode a 'italia' così quando torni al tab posteggi parte da Vista Italia
-                setViewMode('italia');
-              }}
             >
               <Users className="mr-2 h-4 w-4" />
               Imprese / Concessioni
