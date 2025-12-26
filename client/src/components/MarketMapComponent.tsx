@@ -107,11 +107,10 @@ function MapCenterController({ center, zoom, trigger, bounds, isMarketView }: Ma
       if (isMarketView && bounds) {
         // Vista Mercato: usa fitBounds con i corner del mercato
         console.log('[MapCenterController] Avvio flyToBounds verso bounds mercato');
-        // Calcola il livello di zoom ottimale per i bounds
-        const targetZoom = map.getBoundsZoom(bounds, false, [30, 30]);
-        // Forza uno zoom leggermente maggiore (+1) per garantire visibilità numeri
-        // ma non superare maxZoom 19
-        const forcedZoom = Math.min(targetZoom, 19);
+        // Calcola il livello di zoom ottimale per i bounds con padding minimo
+        const targetZoom = map.getBoundsZoom(bounds, false, [10, 10]);
+        // Aggiunge mezzo scatto di zoom per avvicinare Modena senza rompere Grosseto
+        const forcedZoom = Math.min(targetZoom + 0.5, 19);
         
         console.log('[MapCenterController] Zoom calcolato:', targetZoom, 'Zoom forzato:', forcedZoom);
 
