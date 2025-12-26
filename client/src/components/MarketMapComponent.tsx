@@ -28,9 +28,12 @@ interface StallFeature {
   properties: {
     number: number;
     dimensions?: string;
+    rotation?: number;
     status?: string;
     kind?: string;
     vendor_name?: string;
+    vendor_business_name?: string;
+    vendor_contact_name?: string;
     [key: string]: any;
   };
 }
@@ -556,7 +559,7 @@ export function MarketMapComponent({
                   </Tooltip>
                   
                   {/* Popup informativo */}
-                  <Popup className="stall-popup" minWidth={250}>
+                  <Popup className="stall-popup" minWidth={280}>
                     {isSpuntaMode && displayStatus === 'riservato' ? (
                       /* Popup Spunta per posteggi riservati */
                       <div className="p-3">
@@ -582,10 +585,10 @@ export function MarketMapComponent({
                         
                         {/* Dimensioni dettagliate */}
                         {props.dimensions && (() => {
-                          const match = props.dimensions.match(/([\d.]+)m\s*×\s*([\d.]+)m/);
+                          // Supporta sia 'x' che '×'
+                          const match = props.dimensions.match(/([\d.]+)\s*m?\s*[x×]\s*([\d.]+)\s*m?/i);
                           const width = match ? parseFloat(match[1]).toFixed(2) : '-';
                           const length = match ? parseFloat(match[2]).toFixed(2) : '-';
-                          const area = match ? (parseFloat(match[1]) * parseFloat(match[2])).toFixed(2) : '-';
                           
                           return (
                             <div className="mb-3 bg-gray-50 p-3 rounded border border-gray-200">
@@ -670,13 +673,36 @@ export function MarketMapComponent({
                           </div>
                         )}
                         
-                        {/* Dimensioni */}
-                        {props.dimensions && (
-                          <div className="mb-2 flex items-center gap-2">
-                            <span className="text-gray-600 font-medium">Dimensioni:</span>
-                            <span className="text-gray-800">{props.dimensions}</span>
-                          </div>
-                        )}
+                        {/* Dimensioni Ricche */}
+                        {props.dimensions && (() => {
+                          // Supporta sia 'x' che '×'
+                          const match = props.dimensions.match(/([\d.]+)\s*m?\s*[x×]\s*([\d.]+)\s*m?/i);
+                          const width = match ? parseFloat(match[1]).toFixed(2) : '-';
+                          const length = match ? parseFloat(match[2]).toFixed(2) : '-';
+                          const area = match ? (parseFloat(match[1]) * parseFloat(match[2])).toFixed(2) : '-';
+                          
+                          return (
+                            <div className="mb-3 bg-gray-50 p-3 rounded border border-gray-200">
+                              <div className="text-sm font-semibold text-gray-700 mb-2">📏 Dati Tecnici:</div>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Dimensioni:</span>
+                                  <span className="font-medium text-gray-800">{width}m x {length}m</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Superficie:</span>
+                                  <span className="font-medium text-gray-800">{area} m²</span>
+                                </div>
+                                {props.rotation !== undefined && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Rotazione:</span>
+                                    <span className="font-medium text-gray-800">{props.rotation.toFixed(1)}°</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
                         
                         {/* Intestatario */}
                         {displayVendor !== '-' && (
@@ -692,9 +718,21 @@ export function MarketMapComponent({
                             href={dbStall?.impresa_id ? `/vetrine/${dbStall.impresa_id}` : '/vetrine'}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block w-full text-center bg-[#14b8a6] hover:bg-[#0d9488] text-white font-medium py-2 px-4 rounded transition-colors"
+                            className="block w-full text-center bg-[#14b8a6] hover:bg-[#0d9488] text-white font-medium py-2 px-4 rounded transition-colors mb-2"
                           >
                             🏪 Visita Vetrina
+                          </a>
+                        )}
+
+                        {/* Pulsante Vai a Vetrina Editor (Sempre visibile se c'è ID) */}
+                        {props.id && (
+                          <a 
+                            href={`https://editor.mihub.it/stall/${props.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-full text-center bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-medium py-2 px-4 rounded transition-colors"
+                          >
+                            ✏️ Vai a Vetrina Editor
                           </a>
                         )}
                       </div>
