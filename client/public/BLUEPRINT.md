@@ -25,7 +25,7 @@ Il sistema è composto da:
 *   **Moduli Principali**:
     *   **Mappa GIS**: Visualizzazione mercati, posteggi e layer geografici.
     *   **Gestione Mercati**: CRUD mercati, posteggi, concessioni e operatori.
-    *   **Reportistica**: Tab integrato con documentazione e link al Blueprint.
+    *   **Reportistica**: Tab integrato con **Report Interattivo** (sito statico embedded) e documentazione tecnica.
     *   **AI Chat**: Interfaccia per interagire con gli agenti MIO.
 
 ### 2. Backend (MIO Hub API)
@@ -63,10 +63,10 @@ Il sistema è composto da:
 *   **Bug**: La creazione di una concessione falliva inviando il codice posteggio invece dell'ID.
 *   **Fix**: Corretto il form in `MarketCompaniesTab.tsx` per usare `stall.id` come value della select.
 
-### ✅ Integrazione Blueprint
-*   **Feature**: Il tab "Report" della Dashboard ora funge da hub di documentazione.
-*   **Contenuto**: Include card per accedere al Blueprint, allo stato del progetto e al resoconto dell'ecosistema.
-*   **Accesso**: Link diretto a questo file (`BLUEPRINT.md`) e al repository GitHub.
+### ✅ Integrazione Report Interattivo & Blueprint
+*   **Feature**: Il tab "Report" ora ospita il sito di analisi avanzata (`miohub-analysis-report`) direttamente integrato via iframe.
+*   **Documentazione**: Mantenuto l'accesso al System Blueprint e allo stato del progetto nella sezione inferiore.
+*   **Accesso**: Il report è accessibile a `/report/index.html` o navigando nel tab Report della dashboard.
 
 ---
 
