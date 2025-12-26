@@ -1654,17 +1654,6 @@ export default function DashboardPA() {
               <span className="text-xs font-medium">Integrazioni</span>
             </button>
             <button
-              onClick={() => setActiveTab('docs')}
-              className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                activeTab === 'docs'
-                  ? 'bg-[#06b6d4] border-[#06b6d4] text-white shadow-lg'
-                  : 'bg-[#06b6d4]/10 border-[#06b6d4]/30 hover:bg-[#06b6d4]/20 text-[#06b6d4]'
-              }`}
-            >
-              <FileText className="h-6 w-6" />
-              <span className="text-xs font-medium">Documentazione</span>
-            </button>
-            <button
               onClick={() => setActiveTab('settings')}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 activeTab === 'settings'
@@ -3891,20 +3880,125 @@ export default function DashboardPA() {
             )}
           </TabsContent>
 
-          {/* TAB 19: REPORT */}
+          {/* TAB 19: REPORT & DOCUMENTAZIONE */}
           <TabsContent value="reports" className="space-y-6">
             <Card className="bg-[#1a2332] border-[#a855f7]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                   <FileBarChart className="h-5 w-5 text-[#a855f7]" />
-                  Report & Export
+                  Report & Documentazione Sistema
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <FileBarChart className="h-16 w-16 text-[#a855f7] mx-auto mb-4" />
-                  <p className="text-[#e8fbff]/70 text-lg">Sezione Report in sviluppo</p>
-                  <p className="text-[#e8fbff]/50 text-sm mt-2">Generazione report PDF/CSV, export dati, analytics avanzati</p>
+                <div className="space-y-6">
+                  {/* Indice Documenti */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card className="bg-[#0b1220] border-[#06b6d4]/30">
+                      <CardHeader>
+                        <CardTitle className="text-[#e8fbff] text-lg">📘 System Blueprint</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-[#e8fbff]/70 text-sm mb-4">
+                          Blueprint completo del sistema: architettura, API, database e guide operative.
+                        </p>
+                        <div className="text-xs text-[#e8fbff]/50 mb-4">
+                          🤖 Repo: dms-system-blueprint
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            className="flex-1 bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
+                            onClick={() => window.open('https://github.com/Chcndr/dms-system-blueprint', '_blank')}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Apri Repo
+                          </Button>
+                          <Button 
+                            className="flex-1 bg-[#8b5cf6] hover:bg-[#8b5cf6]/80 text-white"
+                            onClick={() => window.open('https://github.com/Chcndr/dms-system-blueprint/blob/master/01_architettura/MASTER_SYSTEM_PLAN.md', '_blank')}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Master Plan
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-[#0b1220] border-[#06b6d4]/30">
+                      <CardHeader>
+                        <CardTitle className="text-[#e8fbff] text-lg">📋 Stato Progetto</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-[#e8fbff]/70 text-sm mb-4">
+                          Documento completo con stato attuale, architettura, funzionalità operative e TODO.
+                        </p>
+                        <div className="text-xs text-[#e8fbff]/50 mb-4">
+                          📅 Aggiornato in tempo reale
+                        </div>
+                        <Button 
+                          className="w-full bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
+                          onClick={() => openDocModal('stato_progetto')}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Visualizza Documento
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-[#0b1220] border-[#06b6d4]/30">
+                      <CardHeader>
+                        <CardTitle className="text-[#e8fbff] text-lg">📊 Resoconto Ecosistema</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-[#e8fbff]/70 text-sm mb-4">
+                          Resoconto originale completo dell'ecosistema DMS Hub con tutte le 8 applicazioni web.
+                        </p>
+                        <div className="text-xs text-[#e8fbff]/50 mb-4">
+                          📅 Data: 9 Novembre 2025
+                        </div>
+                        <Button 
+                          className="w-full bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
+                          onClick={() => openDocModal('resoconto_ecosistema')}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Visualizza Documento
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Sezioni Principali */}
+                  <Card className="bg-[#0b1220] border-[#06b6d4]/30">
+                    <CardHeader>
+                      <CardTitle className="text-[#e8fbff] text-lg">📚 Documentazione Tecnica</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div onClick={() => openDocModal('executive_summary')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
+                          <div className="text-[#06b6d4] font-semibold mb-2">🎯 Executive Summary</div>
+                          <p className="text-[#e8fbff]/60 text-sm">Panoramica generale ecosistema DMS Hub</p>
+                        </div>
+                        <div onClick={() => openDocModal('architettura_tecnica')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
+                          <div className="text-[#06b6d4] font-semibold mb-2">🏭 Architettura Tecnica</div>
+                          <p className="text-[#e8fbff]/60 text-sm">Stack, Database, API e Servizi</p>
+                        </div>
+                        <div onClick={() => openDocModal('applicazioni_web')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
+                          <div className="text-[#06b6d4] font-semibold mb-2">📱 Applicazioni Web</div>
+                          <p className="text-[#e8fbff]/60 text-sm">Stato e features di ogni app</p>
+                        </div>
+                        <div onClick={() => openDocModal('integrazioni')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
+                          <div className="text-[#06b6d4] font-semibold mb-2">⭐ Sistema Integrazioni</div>
+                          <p className="text-[#e8fbff]/60 text-sm">LLM Council, GitHub, Zapier, Neon</p>
+                        </div>
+                        <div onClick={() => openDocModal('funzionalita_operative')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
+                          <div className="text-[#06b6d4] font-semibold mb-2">✅ Funzionalità Operative</div>
+                          <p className="text-[#e8fbff]/60 text-sm">Stato attuale delle funzionalità</p>
+                        </div>
+                        <div onClick={() => openDocModal('todo_prioritizzati')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2322]/80">
+                          <div className="text-[#06b6d4] font-semibold mb-2">📅 TODO Prioritizzati</div>
+                          <p className="text-[#e8fbff]/60 text-sm">Roadmap e prossimi passi</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
@@ -4015,155 +4109,7 @@ export default function DashboardPA() {
             <MarketCompaniesTab marketId="ALL" stalls={[]} />
           </TabsContent>
 
-          {/* TAB 24: DOCUMENTAZIONE */}
-          <TabsContent value="docs" className="space-y-6">
-            <Card className="bg-[#1a2332] border-[#06b6d4]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-[#06b6d4]" />
-                  Documentazione Progetto DMS Hub
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* Indice Documenti */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Card className="bg-[#0b1220] border-[#06b6d4]/30">
-                      <CardHeader>
-                        <CardTitle className="text-[#e8fbff] text-lg">📘 System Blueprint (Auto-generato)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-[#e8fbff]/70 text-sm mb-4">
-                          Blueprint auto-generato del sistema: 94 endpoint API, 50 tabelle DB, struttura progetto completa. Sempre aggiornato!
-                        </p>
-                        <div className="text-xs text-[#e8fbff]/50 mb-4">
-                          🤖 Auto-generato: {new Date().toLocaleDateString('it-IT')}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            className="flex-1 bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
-                            onClick={() => window.open('/BLUEPRINT.md', '_blank')}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Apri Blueprint
-                          </Button>
-                          <Button 
-                            className="flex-1 bg-[#8b5cf6] hover:bg-[#8b5cf6]/80 text-white"
-                            onClick={() => window.open('https://github.com/Chcndr/dms-hub-app-new/blob/master/BLUEPRINT.md', '_blank')}
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            GitHub
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-[#0b1220] border-[#06b6d4]/30">
-                      <CardHeader>
-                        <CardTitle className="text-[#e8fbff] text-lg">📋 Stato Progetto Aggiornato</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-[#e8fbff]/70 text-sm mb-4">
-                          Documento completo con stato attuale, architettura, funzionalità operative, TODO prioritizzati e guide.
-                        </p>
-                        <div className="text-xs text-[#e8fbff]/50 mb-4">
-                          📅 Ultimo aggiornamento: 10 Novembre 2025, ore 21:30
-                        </div>
-                        <Button 
-                          className="w-full bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
-                          onClick={() => openDocModal('stato_progetto')}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Visualizza Documento
-                        </Button>
-                      </CardContent>
-                    </Card>
 
-                    <Card className="bg-[#0b1220] border-[#06b6d4]/30">
-                      <CardHeader>
-                        <CardTitle className="text-[#e8fbff] text-lg">📊 Resoconto Completo Ecosistema</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-[#e8fbff]/70 text-sm mb-4">
-                          Resoconto originale completo dell'ecosistema DMS Hub con tutte le 8 applicazioni web integrate.
-                        </p>
-                        <div className="text-xs text-[#e8fbff]/50 mb-4">
-                          📅 Data: 9 Novembre 2025
-                        </div>
-                        <Button 
-                          className="w-full bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
-                          onClick={() => openDocModal('resoconto_ecosistema')}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Visualizza Documento
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Sezioni Principali */}
-                  <Card className="bg-[#0b1220] border-[#06b6d4]/30">
-                    <CardHeader>
-                      <CardTitle className="text-[#e8fbff] text-lg">📚 Documentazione Tecnica</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div onClick={() => openDocModal('executive_summary')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
-                          <div className="text-[#06b6d4] font-semibold mb-2">🎯 Executive Summary</div>
-                          <p className="text-[#e8fbff]/60 text-sm">Panoramica generale ecosistema DMS Hub</p>
-                        </div>
-                        <div onClick={() => openDocModal('architettura_tecnica')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
-                          <div className="text-[#06b6d4] font-semibold mb-2">🏭 Architettura Tecnica</div>
-                          <p className="text-[#e8fbff]/60 text-sm">Stack, Database, API e Servizi</p>
-                        </div>
-                        <div onClick={() => openDocModal('applicazioni_web')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
-                          <div className="text-[#06b6d4] font-semibold mb-2">📱 Applicazioni Web</div>
-                          <p className="text-[#e8fbff]/60 text-sm">Stato e features di ogni app</p>
-                        </div>
-                        <div onClick={() => openDocModal('integrazioni')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
-                          <div className="text-[#06b6d4] font-semibold mb-2">⭐ Sistema Integrazioni</div>
-                          <p className="text-[#e8fbff]/60 text-sm">LLM Council, GitHub, Zapier, Neon</p>
-                        </div>
-                        <div onClick={() => openDocModal('funzionalita_operative')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2332]/80">
-                          <div className="text-[#06b6d4] font-semibold mb-2">✅ Funzionalità Operative</div>
-                          <p className="text-[#e8fbff]/60 text-sm">Stato attuale delle funzionalità</p>
-                        </div>
-                        <div onClick={() => openDocModal('todo_prioritizzati')} className="p-4 bg-[#1a2332] rounded-lg border border-[#06b6d4]/20 cursor-pointer hover:bg-[#1a2322]/80">
-                          <div className="text-[#06b6d4] font-semibold mb-2">📅 TODO Prioritizzati</div>
-                          <p className="text-[#e8fbff]/60 text-sm">Roadmap e prossimi passi</p>
-                        </div>
-                        
-                        
-                        
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Info Scala Nazionale */}
-                  <Card className="bg-[#0b1220] border-[#10b981]/30">
-                    <CardHeader>
-                      <CardTitle className="text-[#e8fbff] text-lg">🌍 Scala Nazionale</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg">
-                          <div className="text-sm text-[#e8fbff]/70 mb-1">Mercati Target</div>
-                          <div className="text-3xl font-bold text-[#10b981]">8.000</div>
-                        </div>
-                        <div className="p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg">
-                          <div className="text-sm text-[#e8fbff]/70 mb-1">Posteggi Gestiti</div>
-                          <div className="text-3xl font-bold text-[#10b981]">400.000</div>
-                        </div>
-                        <div className="p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg">
-                          <div className="text-sm text-[#e8fbff]/70 mb-1">Imprese Registrate</div>
-                          <div className="text-3xl font-bold text-[#10b981]">160.000</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* TAB 24: MIO AGENT */}
           <TabsContent value="mio" className="space-y-6">
