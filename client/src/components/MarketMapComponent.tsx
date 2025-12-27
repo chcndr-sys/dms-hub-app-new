@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polygon, LayersControl, Tooltip
 import { ZoomFontUpdater } from './ZoomFontUpdater';
 import { RouteLayer } from './RouteLayer';
 import { getStallMapFillColor, getStallStatusLabel } from '@/lib/stallStatus';
+import { useAnimation } from '@/contexts/AnimationContext';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -95,6 +96,7 @@ function MapCenterController({ center, zoom, trigger, bounds, isMarketView }: Ma
   const map = useMap();
   const lastTriggerRef = React.useRef<number | undefined>(undefined);
   const isAnimatingRef = React.useRef(false);
+  const { setAnimating } = useAnimation(); // Usa direttamente il context qui
   
   useEffect(() => {
     // Esegui flyTo/fitBounds solo quando trigger cambia (e non è il primo mount)
@@ -103,6 +105,7 @@ function MapCenterController({ center, zoom, trigger, bounds, isMarketView }: Ma
         !isAnimatingRef.current) {
       
       isAnimatingRef.current = true;
+      setAnimating(true); // Notifica inizio animazione
       
       if (isMarketView && bounds) {
         // Vista Mercato: usa fitBounds con i corner del mercato
@@ -149,6 +152,7 @@ function MapCenterController({ center, zoom, trigger, bounds, isMarketView }: Ma
       const onMoveEnd = () => {
         console.log('[MapCenterController] Animazione completata, mappa stabile');
         isAnimatingRef.current = false;
+        setAnimating(false); // Notifica fine animazione
         map.off('moveend', onMoveEnd);
       };
       
@@ -157,16 +161,19 @@ function MapCenterController({ center, zoom, trigger, bounds, isMarketView }: Ma
         map.on('moveend', onMoveEnd);
       }, 100);
       
-      // Fallback timeout nel caso moveend non si triggeri
+      // Fallback timeout nel caso moveend non si triggeri (aumentato a 7s per coprire animazione lunga)
       setTimeout(() => {
-        isAnimatingRef.current = false;
-        map.off('moveend', onMoveEnd);
-      }, 2000);
+        if (isAnimatingRef.current) {
+          isAnimatingRef.current = false;
+          setAnimating(false); // Notifica fine animazione (fallback)
+          map.off('moveend', onMoveEnd);
+        }
+      }, 7000);
     }
     
     // Aggiorna sempre il ref del trigger
     lastTriggerRef.current = trigger;
-  }, [center, zoom, trigger, bounds, isMarketView, map]);
+  }, [center, zoom, trigger, bounds, isMarketView, map, setAnimating]);
   
   return null;
 }
@@ -241,14 +248,8 @@ export function MarketMapComponent({
   // Se mapData è null (vista Italia), usa coordinate Italia come fallback
   const mapCenter: [number, number] = center || (showItalyView || !mapData ? [42.5, 12.5] : [mapData.center.lat, mapData.center.lng]);
   
-  // Stato locale per tracciare se l'animazione è in corso
-  const [isMapAnimating, setIsMapAnimating] = React.useState(false);
-  const { setAnimating } = useAnimation();
-
-  // Sincronizza stato locale con contesto globale
-  React.useEffect(() => {
-    setAnimating(isMapAnimating);
-  }, [isMapAnimating, setAnimating]);
+  // Rimosso stato locale ridondante che causava loop
+  // L'animazione è gestita direttamente da MapCenterController tramite useAnimation
 
   // Calcola bounds dinamici dal GeoJSON (area mercato o tutti i posteggi)
   const marketBounds = React.useMemo(() => {
