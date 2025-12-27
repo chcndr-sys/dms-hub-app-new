@@ -485,14 +485,60 @@ export function MarketMapComponent({
                 iconAnchor: [16, 16],
               })}
               eventHandlers={{
-                click: () => onMarketClick?.(market.id)
+                click: (e) => {
+                  // Se il popup è già aperto, il click lo chiude e attiva lo zoom (gestito da onMarketClick)
+                  // Se è chiuso, il click apre il popup (comportamento default di Leaflet)
+                  const marker = e.target;
+                  if (marker.isPopupOpen()) {
+                    marker.closePopup();
+                    onMarketClick?.(market.id);
+                  }
+                }
               }}
             >
-              <Popup>
-                <div className="text-sm">
-                  <div className="font-semibold text-base mb-1">📍 {market.name}</div>
-                  <div className="text-gray-600">Lat: {market.latitude.toFixed(6)}</div>
-                  <div className="text-gray-600">Lng: {market.longitude.toFixed(6)}</div>
+              <Popup className="market-popup" minWidth={280}>
+                <div className="p-0 bg-[#0b1220] text-gray-100 rounded-md overflow-hidden" style={{ minWidth: '280px' }}>
+                  {/* Header Scuro */}
+                  <div className="bg-[#ef4444] p-3 border-b border-red-800 flex justify-between items-center">
+                    <div className="font-bold text-lg text-white flex items-center gap-2">
+                      <span className="bg-white text-[#ef4444] rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold border border-red-800">M</span>
+                      {market.name}
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 space-y-3 text-sm">
+                    {/* Comune */}
+                    <div className="flex justify-between items-center border-b border-gray-800 pb-2">
+                      <span className="text-gray-400">Comune:</span>
+                      <span className="font-medium text-white">{market.comune || 'Non specificato'}</span>
+                    </div>
+                    
+                    {/* Giorno */}
+                    <div className="flex justify-between items-center border-b border-gray-800 pb-2">
+                      <span className="text-gray-400">Giorno:</span>
+                      <span className="font-medium text-white capitalize">{market.giorno || 'Settimanale'}</span>
+                    </div>
+                    
+                    {/* Posteggi */}
+                    <div className="flex justify-between items-center border-b border-gray-800 pb-2">
+                      <span className="text-gray-400">Posteggi Totali:</span>
+                      <span className="font-bold text-[#14b8a6]">{market.posteggi_totali || '-'}</span>
+                    </div>
+                    
+                    {/* Coordinate */}
+                    <div className="bg-[#1e293b] p-2 rounded border border-gray-700 mt-2">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Coordinate GPS</div>
+                      <div className="font-mono text-xs text-gray-300 flex justify-between">
+                        <span>Lat: {market.latitude.toFixed(6)}</span>
+                        <span>Lng: {market.longitude.toFixed(6)}</span>
+                      </div>
+                    </div>
+                    
+                    {/* CTA */}
+                    <div className="pt-2 text-center text-xs text-gray-500 italic">
+                      Clicca di nuovo per entrare nel mercato
+                    </div>
+                  </div>
                 </div>
               </Popup>
             </Marker>
@@ -658,7 +704,11 @@ export function MarketMapComponent({
                             let isEstimated = true;
 
                             if (props.dimensions) {
-                              const match = props.dimensions.match(/([\d.]+)\s*m?\s*[x×]\s*([\d.]+)\s*m?/i);
+                              // Regex migliorata: supporta virgole, punti, spazi extra e formati vari (es. "4,00 x 3,00", "4x3", "4.00 X 3.00")
+                              // Sostituisce virgole con punti prima del parsing
+                              const normalized = props.dimensions.replace(/,/g, '.');
+                              const match = normalized.match(/([\d.]+)\s*m?\s*[x×*]\s*([\d.]+)\s*m?/i);
+                              
                               if (match) {
                                 widthStr = parseFloat(match[1]).toFixed(2);
                                 lengthStr = parseFloat(match[2]).toFixed(2);
