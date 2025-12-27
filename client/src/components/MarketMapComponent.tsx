@@ -565,19 +565,20 @@ export function MarketMapComponent({
             
             // Se selezionato, forza colori molto evidenti
             const actualFillColor = isSelected ? selectedColor : fillColor;
-            const actualBorderColor = isSelected ? '#ffffff' : fillColor; // Bordo bianco se selezionato per contrasto
+            // NESSUN BORDO se selezionato, solo colore di riempimento che pulsa
+            const actualBorderColor = isSelected ? 'transparent' : fillColor; 
             
             return (
               <React.Fragment key={`stall-${props.number}-${dbStall?.status || props.status}`}>
                 <Polygon
                   positions={positions}
-                  className={isSelected ? 'selected-stall-pulse' : ''}
+                  className={isSelected ? 'selected-stall-glow' : ''}
                   pathOptions={{
                     color: actualBorderColor,
                     fillColor: actualFillColor,
-                    fillOpacity: isSelected ? 0.8 : 0.7,
-                    weight: isSelected ? 4 : 2,
-                    // Forza dashArray nullo se selezionato per bordo solido
+                    fillOpacity: isSelected ? 0.9 : 0.7,
+                    weight: isSelected ? 0 : 2, // Peso 0 per rimuovere bordo
+                    // Forza dashArray nullo se selezionato
                     dashArray: isSelected ? undefined : undefined 
                   }}
                   eventHandlers={{

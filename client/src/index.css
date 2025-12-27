@@ -264,30 +264,29 @@ body.modal-open, body.widget-open {
 }
 
 
-/* ===== ANIMAZIONE POSTEGGIO SELEZIONATO ===== */
-/* Effetto pulsante lampeggiante per il posteggio selezionato sulla mappa */
-/* Colore: Magenta/Fucsia flash (#ff00ff) per massima visibilità */
-@keyframes stall-flash {
+/* ===== ANIMAZIONE POSTEGGIO SELEZIONATO (NEON GLOW) ===== */
+/* Effetto retroilluminato fuxia senza bordi */
+@keyframes stall-neon-glow {
   0%, 100% {
-    stroke: #ff00ff;
-    stroke-width: 4px;
-    stroke-opacity: 1;
     fill-opacity: 0.9;
+    filter: drop-shadow(0 0 8px #ff00ff) drop-shadow(0 0 15px #ff00ff);
   }
   50% {
-    stroke: #ffffff;
-    stroke-width: 6px;
-    stroke-opacity: 1;
-    fill-opacity: 0.4;
+    fill-opacity: 0.5;
+    filter: drop-shadow(0 0 4px #ff00ff) drop-shadow(0 0 8px #ff00ff);
   }
 }
 
-.selected-stall-pulse {
-  animation: stall-flash 0.8s ease-in-out infinite !important;
+.selected-stall-glow {
+  animation: stall-neon-glow 1.2s ease-in-out infinite !important;
+  stroke: none !important; /* Assicura nessun bordo */
+  stroke-width: 0 !important;
 }
 
 /* Leaflet polygon con classe selected - forza animazione */
-.leaflet-interactive.selected-stall-pulse {
-  animation: stall-flash 0.8s ease-in-out infinite !important;
-  /* Rimosso filter pesante per performance su iPad */
+.leaflet-interactive.selected-stall-glow {
+  animation: stall-neon-glow 1.2s ease-in-out infinite !important;
+  stroke: none !important;
+  stroke-width: 0 !important;
+  vector-effect: non-scaling-stroke; /* Ottimizzazione rendering */
 }
