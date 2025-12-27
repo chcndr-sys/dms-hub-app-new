@@ -115,15 +115,32 @@ function MapCenterController({ center, zoom, trigger, bounds, isMarketView }: Ma
         console.log('[MapCenterController] Zoom calcolato:', targetZoom, 'Zoom forzato:', forcedZoom);
 
         // Usa flyTo al centro dei bounds con lo zoom forzato
+        // Calcola la distanza di zoom per decidere la durata
+        const currentZoom = map.getZoom();
+        const zoomDiff = Math.abs(forcedZoom - currentZoom);
+        
+        // Se la differenza di zoom è grande (es. da Italia a Mercato), usa animazione lenta (6s)
+        // Se è piccola (es. reset da posteggio), usa animazione veloce (1.5s)
+        const dynamicDuration = zoomDiff > 4 ? 6 : 1.5;
+        
+        console.log('[MapCenterController] Zoom diff:', zoomDiff, 'Duration:', dynamicDuration);
+
         map.flyTo(bounds.getCenter(), forcedZoom, {
-          duration: 1.5,
+          duration: dynamicDuration,
           easeLinearity: 0.25
         });
       } else if (center) {
         // Vista Italia: usa flyTo con centro e zoom fisso
         console.log('[MapCenterController] Avvio flyTo verso Italia:', center, 'zoom:', zoom);
-        map.flyTo(center, zoom || 6, {
-          duration: 1.5,
+        
+        // Anche per tornare all'Italia, se siamo vicini (mercato) ci mettiamo 6s, se siamo già lontani meno
+        const currentZoom = map.getZoom();
+        const targetZoom = zoom || 6;
+        const zoomDiff = Math.abs(targetZoom - currentZoom);
+        const dynamicDuration = zoomDiff > 4 ? 6 : 2;
+
+        map.flyTo(center, targetZoom, {
+          duration: dynamicDuration,
           easeLinearity: 0.25
         });
       }
@@ -545,8 +562,10 @@ export function MarketMapComponent({
             
             // Colore magenta flash per posteggio selezionato (massima visibilità)
             const selectedColor = '#ff00ff'; // Magenta/Fucsia
+            
+            // Se selezionato, forza colori molto evidenti
             const actualFillColor = isSelected ? selectedColor : fillColor;
-            const actualBorderColor = isSelected ? '#cc00cc' : fillColor; // Bordo magenta scuro se selezionato
+            const actualBorderColor = isSelected ? '#ffffff' : fillColor; // Bordo bianco se selezionato per contrasto
             
             return (
               <React.Fragment key={`stall-${props.number}-${dbStall?.status || props.status}`}>
@@ -556,8 +575,10 @@ export function MarketMapComponent({
                   pathOptions={{
                     color: actualBorderColor,
                     fillColor: actualFillColor,
-                    fillOpacity: isSelected ? 0.9 : 0.7,
+                    fillOpacity: isSelected ? 0.8 : 0.7,
                     weight: isSelected ? 4 : 2,
+                    // Forza dashArray nullo se selezionato per bordo solido
+                    dashArray: isSelected ? undefined : undefined 
                   }}
                   eventHandlers={{
                     click: () => {
