@@ -80,6 +80,14 @@ Questo piano è suddiviso in fasi prioritarie per affrontare prima le criticità
 
 L'obiettivo è rendere operative le integrazioni che bloccano le funzionalità principali.
 
+#### 1.0 [COMPLETATO] Modulo Autorizzazioni e Spunta
+**Problema:** Mancanza di gestione delle autorizzazioni per il commercio itinerante, propedeutiche alla gestione della spunta.
+
+**Soluzione:** Implementato modulo completo per la gestione delle autorizzazioni.
+- **Database:** Nuova tabella `autorizzazioni` collegata a `imprese`.
+- **Backend:** API REST CRUD `/api/autorizzazioni` su server Hetzner.
+- **Frontend:** Nuova tab "Autorizzazioni" in Gestione Mercati con modale di inserimento/modifica.
+
 #### 1.1 Attivazione Integrazione BUS HUB → DMS Hub
 
 **Problema:** Il BUS HUB non invia automaticamente i dati a DMS Hub.

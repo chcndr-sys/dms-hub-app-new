@@ -129,7 +129,27 @@ Posteggi dei mercati.
 
 ---
 
-### 6. `concessions` (112 kB)
+### 6. `autorizzazioni` (Nuova)
+Autorizzazioni per il commercio itinerante (propedeutiche alla spunta).
+
+| Campo | Tipo | Nullable | Default | Note |
+|-------|------|----------|---------|------|
+| id | serial | NO | auto | PK |
+| vendor_id | integer | NO | - | FK → imprese |
+| numero_autorizzazione | varchar(255) | NO | - | Numero documento |
+| ente_rilascio | varchar(255) | NO | - | Comune/Ente |
+| data_rilascio | date | NO | - | Data rilascio |
+| data_scadenza | date | YES | - | Data scadenza |
+| stato | varchar(50) | YES | 'ATTIVA' | ATTIVA, SCADUTA, SOSPESA, REVOCATA |
+| note | text | YES | - | - |
+| created_at | timestamp | YES | now() | - |
+| updated_at | timestamp | YES | now() | - |
+
+**Endpoint API**: `/api/autorizzazioni`
+
+---
+
+### 7. `concessions` (112 kB)
 Concessioni posteggi.
 
 | Campo | Tipo | Nullable | Default | Note |
