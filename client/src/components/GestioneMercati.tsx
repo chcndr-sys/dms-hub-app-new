@@ -1471,7 +1471,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
             number: s.number,
             status: s.status,
             type: s.type,
-            vendor_name: s.vendor_business_name || undefined
+            vendor_name: s.vendor_business_name || undefined,
+            dimensions: s.dimensions // Passa le dimensioni dal DB alla mappa
           }));
           return (
             <MarketMapComponent
