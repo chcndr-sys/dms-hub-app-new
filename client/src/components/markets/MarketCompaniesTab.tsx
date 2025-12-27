@@ -281,12 +281,12 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
     }
   };
   
-  // Effetto separato per caricare le qualificazioni quando companies cambia
+  // Effetto per caricare le qualificazioni quando si seleziona un'impresa
   useEffect(() => {
-    if (companies.length > 0) {
+    if (selectedCompanyForQualif) {
       fetchQualificazioni();
     }
-  }, [companies]);
+  }, [selectedCompanyForQualif]);
 
   const fetchCompanies = async () => {
     try {
@@ -425,44 +425,33 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
 
   // Fetch qualificazioni (mock data per ora)
   const fetchQualificazioni = async () => {
-    // Genera qualificazioni mock per le prime 5 imprese caricate
-    const tipiQualificazione = [
-      { tipo: 'DURC', ente: 'INPS', note: 'Documento Unico Regolarità Contributiva' },
-      { tipo: 'HACCP', ente: 'ASL Grosseto', note: 'Certificazione igiene alimentare' },
-      { tipo: 'ISO 9001', ente: 'Bureau Veritas', note: 'Certificazione qualità sistema gestione' },
-      { tipo: 'ISO 14001', ente: 'TÜV Italia', note: 'Certificazione ambientale' },
-      { tipo: 'CONCESSIONE MERCATO', ente: 'Comune di Grosseto', note: 'Concessione area mercato' },
-    ];
-    
-    const stati: Array<'ATTIVA' | 'SCADUTA' | 'IN_VERIFICA'> = ['ATTIVA', 'ATTIVA', 'ATTIVA', 'SCADUTA', 'IN_VERIFICA'];
-    
-    const mockQualificazioni: QualificazioneRow[] = [];
-    let idCounter = 100;
-    
-    // Genera qualificazioni per le prime 5 imprese
-    companies.slice(0, 5).forEach((company, companyIndex) => {
-      // Ogni impresa ha 2-4 qualificazioni
-      const numQualif = 2 + (companyIndex % 3);
-      for (let i = 0; i < numQualif; i++) {
-        const tipoIndex = (companyIndex + i) % tipiQualificazione.length;
-        const tipoData = tipiQualificazione[tipoIndex];
-        const statoIndex = (companyIndex + i) % stati.length;
-        
-        mockQualificazioni.push({
-          id: String(idCounter++),
-          company_id: company.id,
-          company_name: company.denominazione || 'N/A',
-          tipo: tipoData.tipo,
-          ente_rilascio: tipoData.ente,
-          data_rilascio: '2023-01-15',
-          data_scadenza: statoIndex === 3 ? '2024-11-30' : '2025-06-15',
-          stato: stati[statoIndex],
-          note: tipoData.note
-        });
+    try {
+      if (selectedCompanyForQualif) {
+        const response = await fetch(`${API_BASE_URL}/api/imprese/${selectedCompanyForQualif.id}/qualificazioni`);
+        if (response.ok) {
+          const json = await response.json();
+          if (json.success) {
+            setQualificazioni(prev => {
+              const others = prev.filter(q => q.company_id !== selectedCompanyForQualif.id);
+              const newQualificazioni = json.data.map((q: any) => ({
+                id: q.id.toString(),
+                company_id: selectedCompanyForQualif.id,
+                company_name: selectedCompanyForQualif.denominazione,
+                tipo: q.tipo,
+                ente_rilascio: q.ente_rilascio,
+                data_rilascio: q.data_rilascio ? q.data_rilascio.split('T')[0] : '',
+                data_scadenza: q.data_scadenza ? q.data_scadenza.split('T')[0] : '',
+                stato: q.stato,
+                note: q.note
+              }));
+              return [...others, ...newQualificazioni];
+            });
+          }
+        }
       }
-    });
-    
-    setQualificazioni(mockQualificazioni);
+    } catch (err) {
+      console.error('Error fetching qualificazioni:', err);
+    }
   };
 
   // Handlers
@@ -889,12 +878,26 @@ function QualificazioneModal({ company, qualificazione, onClose, onSaved }: Qual
     setError(null);
 
     try {
-      // Simulazione salvataggio (dato che l'API qualificazioni non è ancora implementata completamente)
-      // In produzione, qui ci sarebbe una chiamata fetch POST/PUT
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // TODO: Implementare chiamata API reale
-      console.log('Salvataggio qualificazione:', { ...formData, company_id: company.id });
+      const url = qualificazione
+        ? `${API_BASE_URL}/api/imprese/${company.id}/qualificazioni/${qualificazione.id}`
+        : `${API_BASE_URL}/api/imprese/${company.id}/qualificazioni`;
+
+      const method = qualificazione ? 'PUT' : 'POST';
+
+      if (method === 'PUT') {
+        throw new Error('Modifica non ancora supportata');
+      }
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Errore durante il salvataggio');
+      }
       
       onSaved();
     } catch (err: any) {
