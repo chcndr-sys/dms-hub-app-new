@@ -698,84 +698,95 @@ export function MarketMapComponent({
                       </div>
                     ) : (
                       /* Popup normale */
-                      <div className="p-2">
-                        {/* Header */}
-                        <div className="font-bold text-lg mb-3 text-[#0b1220] border-b border-gray-200 pb-2">
-                          Posteggio #{props.number}
-                        </div>
-                        
-                        {/* Stato con badge colorato */}
-                        <div className="mb-2 flex items-center gap-2">
-                          <span className="text-gray-600 font-medium">Stato:</span>
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            displayStatus === 'libero' ? 'bg-green-100 text-green-700' :
-                            displayStatus === 'occupato' ? 'bg-red-100 text-red-700' :
-                            'bg-orange-100 text-orange-700'
+                      <div className="p-0 bg-[#0b1220] text-gray-100 rounded-md overflow-hidden" style={{ minWidth: '280px' }}>
+                        {/* Header Scuro */}
+                        <div className="bg-[#1e293b] p-3 border-b border-gray-700 flex justify-between items-center">
+                          <div className="font-bold text-lg text-white">
+                            Posteggio #{props.number}
+                          </div>
+                          <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold ${
+                            displayStatus === 'libero' ? 'bg-green-900/50 text-green-400 border border-green-800' :
+                            displayStatus === 'occupato' ? 'bg-red-900/50 text-red-400 border border-red-800' :
+                            'bg-orange-900/50 text-orange-400 border border-orange-800'
                           }`}>
                             {getStallStatusLabel(displayStatus)}
                           </span>
                         </div>
                         
-                        {/* Tipo posteggio */}
-                        {dbStall?.type && (
-                          <div className="mb-2 flex items-center gap-2">
-                            <span className="text-gray-600 font-medium">Tipo:</span>
-                            <span className="text-gray-800 capitalize">{dbStall.type}</span>
-                          </div>
-                        )}
-                        
-                        {/* Dimensioni Ricche */}
-                        {props.dimensions && (() => {
-                          // Supporta sia 'x' che '×'
-                          const match = props.dimensions.match(/([\d.]+)\s*m?\s*[x×]\s*([\d.]+)\s*m?/i);
-                          const width = match ? parseFloat(match[1]).toFixed(2) : '-';
-                          const length = match ? parseFloat(match[2]).toFixed(2) : '-';
-                          const area = match ? (parseFloat(match[1]) * parseFloat(match[2])).toFixed(2) : '-';
-                          
-                          return (
-                            <div className="mb-3 bg-gray-50 p-3 rounded border border-gray-200">
-                              <div className="text-sm font-semibold text-gray-700 mb-2">📏 Dati Tecnici:</div>
-                              <div className="space-y-1 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Dimensioni:</span>
-                                  <span className="font-medium text-gray-800">{width}m x {length}m</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Superficie:</span>
-                                  <span className="font-medium text-gray-800">{area} m²</span>
-                                </div>
-                                {props.rotation !== undefined && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-600">Rotazione:</span>
-                                    <span className="font-medium text-gray-800">{props.rotation.toFixed(1)}°</span>
-                                  </div>
-                                )}
+                        <div className="p-4 space-y-4">
+                          {/* Tipo e Coordinate */}
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-[#1e293b] p-2 rounded border border-gray-700">
+                              <div className="text-gray-400 mb-1">TIPO</div>
+                              <div className="font-medium text-white capitalize">
+                                {dbStall?.type || 'Standard'}
                               </div>
                             </div>
-                          );
-                        })()}
-                        
-                        {/* Intestatario */}
-                        {displayVendor !== '-' && (
-                          <div className="mb-3 flex items-center gap-2">
-                            <span className="text-gray-600 font-medium">Intestatario:</span>
-                            <span className="text-gray-800 font-semibold">{displayVendor}</span>
+                            <div className="bg-[#1e293b] p-2 rounded border border-gray-700">
+                              <div className="text-gray-400 mb-1">COORDINATE</div>
+                              <div className="font-medium text-white truncate" title={`${positions[0]?.[0].toFixed(5)}, ${positions[0]?.[1].toFixed(5)}`}>
+                                {positions[0] ? `${positions[0][0].toFixed(4)}, ${positions[0][1].toFixed(4)}` : '-'}
+                              </div>
+                            </div>
                           </div>
-                        )}
-                        
-                        {/* Pulsante Visita Vetrina */}
-                        {dbStall?.vendor_name && (
-                          <a 
-                            href={dbStall?.impresa_id ? `/vetrine/${dbStall.impresa_id}` : '/vetrine'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block w-full text-center bg-[#14b8a6] hover:bg-[#0d9488] text-white font-medium py-2 px-4 rounded transition-colors mb-2"
-                          >
-                            🏪 Visita Vetrina
-                          </a>
-                        )}
 
-
+                          {/* Dimensioni Ricche */}
+                          {props.dimensions && (() => {
+                            // Supporta sia 'x' che '×'
+                            const match = props.dimensions.match(/([\d.]+)\s*m?\s*[x×]\s*([\d.]+)\s*m?/i);
+                            const width = match ? parseFloat(match[1]).toFixed(2) : '-';
+                            const length = match ? parseFloat(match[2]).toFixed(2) : '-';
+                            const area = match ? (parseFloat(match[1]) * parseFloat(match[2])).toFixed(2) : '-';
+                            
+                            return (
+                              <div className="bg-[#1e293b] p-3 rounded border border-gray-700">
+                                <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+                                  <span>📏 Dimensioni</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <div className="text-[10px] text-gray-500">LARGHEZZA</div>
+                                    <div className="text-sm font-medium text-white">{width} m</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[10px] text-gray-500">LUNGHEZZA</div>
+                                    <div className="text-sm font-medium text-white">{length} m</div>
+                                  </div>
+                                  <div className="col-span-2 border-t border-gray-700 pt-2 mt-1 flex justify-between items-center">
+                                    <div className="text-[10px] text-gray-500">SUPERFICIE TOTALE</div>
+                                    <div className="text-sm font-bold text-[#14b8a6]">{area} m²</div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                          
+                          {/* Intestatario */}
+                          {displayVendor !== '-' && (
+                            <div className="bg-[#1e293b] p-3 rounded border border-gray-700">
+                              <div className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider">IMPRESA INTESTATARIA</div>
+                              <div className="font-medium text-white flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-indigo-900/50 flex items-center justify-center text-indigo-400 text-xs border border-indigo-800">
+                                  {displayVendor.charAt(0)}
+                                </div>
+                                <span className="truncate">{displayVendor}</span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Pulsante Visita Vetrina */}
+                          {dbStall?.vendor_name && (
+                            <a 
+                              href={dbStall?.impresa_id ? `/vetrine/${dbStall.impresa_id}` : '/vetrine'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-2 w-full bg-[#14b8a6] hover:bg-[#0d9488] text-white font-medium py-2.5 px-4 rounded transition-all hover:shadow-[0_0_15px_rgba(20,184,166,0.3)] text-sm"
+                            >
+                              <span>🏪</span>
+                              <span>Visita Vetrina</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
                     )}
                   </Popup>
