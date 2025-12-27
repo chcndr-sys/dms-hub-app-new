@@ -585,8 +585,10 @@ export function MarketMapComponent({
             const selectedColor = '#ff00ff'; // Magenta/Fucsia
             
             // Se selezionato, forza colori molto evidenti
-            // FIX: Assicura che isSelected sia booleano puro per evitare flickering
-            const isTrulySelected = Number(selectedStallNumber) === Number(props.number);
+            // FIX: Confronto stringhe per supportare posteggi alfanumerici (es. "41 A")
+            // Normalizza rimuovendo spazi e convertendo a stringa
+            const normalizeStall = (val: any) => String(val || '').replace(/\s+/g, '').toUpperCase();
+            const isTrulySelected = normalizeStall(selectedStallNumber) === normalizeStall(props.number);
             const actualFillColor = isTrulySelected ? selectedColor : fillColor;
             // BORDO DELLO STESSO COLORE se selezionato, per mantenere dimensioni
             const actualBorderColor = isTrulySelected ? selectedColor : fillColor; 
@@ -845,7 +847,13 @@ export function MarketMapComponent({
                           {/* Pulsante Visita Vetrina */}
                           {dbStall?.vendor_name && (
                             <a 
-                              href={dbStall?.impresa_id ? `/vetrine/${dbStall.impresa_id}` : '/vetrine'}
+                              href={(() => {
+                                // DEBUG: Log per capire perché non trova l'ID
+                                if (!dbStall?.impresa_id) {
+                                  console.warn(`[DEBUG] Impresa ID mancante per posteggio ${props.number}`, dbStall);
+                                }
+                                return dbStall?.impresa_id ? `/vetrine/${dbStall.impresa_id}` : '/vetrine';
+                              })()}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center justify-center gap-2 w-full bg-[#14b8a6] hover:bg-[#0d9488] text-white font-medium py-2.5 px-4 rounded transition-all hover:shadow-[0_0_15px_rgba(20,184,166,0.3)] text-sm"
