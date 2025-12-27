@@ -1301,12 +1301,12 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
           )
         );
         
-        // NON disattivare modalità spunta per permettere assegnazioni multiple
-        // setIsSpuntaMode(false); 
+        // Deseleziona il posteggio per fermare il lampeggiamento e chiudere il popup
+        setSelectedStallId(null);
+        setSelectedStallCenter(null);
         
-        // NON ricaricare tutta la mappa per mantenere zoom e posizione
-        // await fetchData();
-        // setMapRefreshKey(prev => prev + 1);
+        // NON disattivare modalità spunta per permettere assegnazioni multiple
+        // setIsSpuntaMode(false);
       } else {
         toast.error('Errore nell\'assegnazione del posteggio');
       }

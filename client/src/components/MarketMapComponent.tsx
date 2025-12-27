@@ -628,72 +628,95 @@ export function MarketMapComponent({
                   {/* Popup informativo */}
                   <Popup className="stall-popup" minWidth={280}>
                     {isSpuntaMode && displayStatus === 'riservato' ? (
-                      /* Popup Spunta per posteggi riservati */
-                      <div className="p-3">
-                        <div className="font-bold text-lg mb-3 text-[#0b1220] border-b border-gray-200 pb-2">
-                          ✓ Spunta Posteggio #{props.number}
-                        </div>
-                        
-                        {/* Stato */}
-                        <div className="mb-2 flex items-center gap-2">
-                          <span className="text-gray-600 font-medium">Stato:</span>
-                          <span className="px-2 py-1 rounded text-xs font-semibold bg-orange-100 text-orange-700">
+                      /* Popup Spunta per posteggi riservati - DARK MODE */
+                      <div className="p-0 bg-[#0b1220] text-gray-100 rounded-md overflow-hidden" style={{ minWidth: '280px' }}>
+                        {/* Header Scuro */}
+                        <div className="bg-[#1e293b] p-3 border-b border-gray-700 flex justify-between items-center">
+                          <div className="font-bold text-lg text-white">
+                            ✓ Spunta #{props.number}
+                          </div>
+                          <span className="px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold bg-orange-900/50 text-orange-400 border border-orange-800">
                             {getStallStatusLabel(displayStatus)}
                           </span>
                         </div>
                         
-                        {/* Tipo */}
-                        {dbStall?.type && (
-                          <div className="mb-2 flex items-center gap-2">
-                            <span className="text-gray-600 font-medium">Tipo:</span>
-                            <span className="text-gray-800 capitalize">{dbStall.type}</span>
-                          </div>
-                        )}
-                        
-                        {/* Dimensioni dettagliate (Calcolate Geodeticamente) */}
-                        {(() => {
-                          // Calcola dimensioni reali dai punti del poligono
-                          const dims = calculatePolygonDimensions(positions);
+                        <div className="p-4 space-y-4">
+                          {/* Tipo */}
+                          {dbStall?.type && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-400">Tipo:</span>
+                              <span className="text-gray-200 capitalize font-medium">{dbStall.type}</span>
+                            </div>
+                          )}
                           
-                          return (
-                            <div className="mb-3 bg-gray-50 p-3 rounded border border-gray-200">
-                              <div className="text-sm font-semibold text-gray-700 mb-2">📏 Dimensioni (Stimate):</div>
-                              <div className="space-y-1 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Larghezza:</span>
-                                  <span className="font-medium text-gray-800">{dims.width} m</span>
+                          {/* Dimensioni (Priorità DB, poi Geometria) */}
+                          {(() => {
+                            // 1. Prova a parsare le dimensioni dal DB (es. "4x3")
+                            let widthStr = '-';
+                            let lengthStr = '-';
+                            let areaStr = '-';
+                            let isEstimated = true;
+
+                            if (props.dimensions) {
+                              const match = props.dimensions.match(/([\d.]+)\s*m?\s*[x×]\s*([\d.]+)\s*m?/i);
+                              if (match) {
+                                widthStr = parseFloat(match[1]).toFixed(2);
+                                lengthStr = parseFloat(match[2]).toFixed(2);
+                                areaStr = (parseFloat(widthStr) * parseFloat(lengthStr)).toFixed(2);
+                                isEstimated = false; // Dimensioni ufficiali da DB
+                              }
+                            }
+
+                            // 2. Se mancano nel DB, usa calcolo geometrico
+                            if (isEstimated) {
+                              const dims = calculatePolygonDimensions(positions);
+                              widthStr = dims.width.toFixed(2);
+                              lengthStr = dims.height.toFixed(2);
+                              areaStr = dims.area.toFixed(2);
+                            }
+                            
+                            return (
+                              <div className="bg-[#1e293b] p-3 rounded border border-gray-700">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-sm font-semibold text-gray-300">📏 Dimensioni</span>
+                                  {isEstimated && <span className="text-[10px] bg-gray-700 text-gray-400 px-1 rounded">STIMATE</span>}
                                 </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Lunghezza:</span>
-                                  <span className="font-medium text-gray-800">{dims.height} m</span>
-                                </div>
-                                <div className="flex justify-between border-t border-gray-300 pt-1 mt-1">
-                                  <span className="text-gray-700 font-medium">Superficie:</span>
-                                  <span className="font-bold text-gray-900">{dims.area} m²</span>
+                                <div className="space-y-1 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">Larghezza:</span>
+                                    <span className="font-medium text-gray-200">{widthStr} m</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">Lunghezza:</span>
+                                    <span className="font-medium text-gray-200">{lengthStr} m</span>
+                                  </div>
+                                  <div className="flex justify-between border-t border-gray-700 pt-1 mt-1">
+                                    <span className="text-gray-400 font-medium">Superficie:</span>
+                                    <span className="font-bold text-white">{areaStr} m²</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          );
-                        })()}
-                        
-                        {/* Canone di occupazione */}
-                        <div className="mb-3 bg-blue-50 p-3 rounded border border-blue-200">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-semibold text-blue-700">💶 Canone:</span>
-                            <div className="flex items-center bg-white px-2 py-1 rounded border border-blue-300">
-                              <span className="text-gray-500 mr-1">€</span>
-                              <input 
-                                type="text" 
-                                defaultValue="15,00"
-                                className="w-16 text-right font-bold text-blue-900 outline-none bg-transparent"
-                              />
+                            );
+                          })()}
+                          
+                          {/* Canone di occupazione */}
+                          <div className="bg-[#1e3a8a]/20 p-3 rounded border border-[#1e3a8a]/50">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-semibold text-blue-400">💶 Canone:</span>
+                              <div className="flex items-center bg-[#0b1220] px-2 py-1 rounded border border-blue-500/30">
+                                <span className="text-gray-500 mr-1">€</span>
+                                <input 
+                                  type="text" 
+                                  defaultValue="15,00"
+                                  className="w-16 text-right font-bold text-blue-400 outline-none bg-transparent"
+                                />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        
-                        {/* Pulsante Conferma Assegnazione */}
-                        <button
-                          className="w-full bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white font-semibold py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          
+                          {/* Pulsante Conferma Assegnazione */}
+                          <button
+                            className="w-full bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white font-bold py-3 px-4 rounded transition-colors shadow-lg shadow-orange-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                           onClick={async () => {
                             if (!onConfirmAssignment) {
                               alert('Funzione "Conferma Assegnazione" non configurata!');
