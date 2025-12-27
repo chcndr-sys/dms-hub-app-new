@@ -25,9 +25,16 @@ import {
 
 export default function GestioneHubNegozi() {
   const [selectedTab, setSelectedTab] = useState('anagrafica');
+  
+  // MAP STATE - Unified Logic
+  const [viewMode, setViewMode] = useState<'italia' | 'mercato'>('italia');
+  const [selectedMarketId, setSelectedMarketId] = useState<number | null>(null);
   const [mapData, setMapData] = useState<any>(null);
   const [stallsData, setStallsData] = useState<any[]>([]);
-  const [selectedHubId, setSelectedHubId] = useState(1); // Default HUB Grosseto
+  const [mapRefreshKey, setMapRefreshKey] = useState(0);
+  
+  // Default HUB selection (kept for backward compatibility with tabs)
+  const [selectedHubId, setSelectedHubId] = useState(1); 
   
   // Dialog states
   const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
@@ -237,26 +244,30 @@ export default function GestioneHubNegozi() {
     });
   };
 
-  // Load map data
+  // Load map data dynamically based on view mode and selection
   useEffect(() => {
     const loadMapData = async () => {
       try {
-        const selectedMarketId = 1; // HUB Grosseto
-        
-        const [mapRes, stallsRes] = await Promise.all([
-          fetch('https://mihub.157-90-29-66.nip.io/api/gis/market-map'),
-          fetch(`https://mihub.157-90-29-66.nip.io/api/markets/${selectedMarketId}/stalls`)
-        ]);
-
+        // 1. Load Base Map (Italy View or Specific Market)
+        const mapRes = await fetch('https://mihub.157-90-29-66.nip.io/api/gis/market-map');
         const mapJson = await mapRes.json();
-        const stallsJson = await stallsRes.json();
-
+        
         if (mapJson.success && mapJson.data) {
           setMapData(mapJson.data);
         }
 
-        if (stallsJson.success && Array.isArray(stallsJson.data)) {
-          setStallsData(stallsJson.data);
+        // 2. Load Stalls only if a market is selected
+        if (selectedMarketId) {
+          const stallsRes = await fetch(`https://mihub.157-90-29-66.nip.io/api/markets/${selectedMarketId}/stalls`);
+          const stallsJson = await stallsRes.json();
+          
+          if (stallsJson.success && Array.isArray(stallsJson.data)) {
+            setStallsData(stallsJson.data);
+          } else {
+            setStallsData([]);
+          }
+        } else {
+          setStallsData([]);
         }
       } catch (error) {
         console.error('Error loading map data:', error);
@@ -264,7 +275,22 @@ export default function GestioneHubNegozi() {
     };
 
     loadMapData();
-  }, []);
+  }, [selectedMarketId]); // Reload when market changes
+
+  // Handle Market Selection from Map
+  const handleMarketSelect = (marketId: number) => {
+    setSelectedMarketId(marketId);
+    setViewMode('mercato');
+    setMapRefreshKey(prev => prev + 1);
+  };
+
+  // Handle Back to Italy View
+  const handleBackToItaly = () => {
+    setViewMode('italia');
+    setSelectedMarketId(null);
+    setStallsData([]);
+    setMapRefreshKey(prev => prev + 1);
+  };
 
   const getStatusBadge = (status: string) => {
     const colors = {
@@ -1020,25 +1046,85 @@ export default function GestioneHubNegozi() {
         </TabsContent>
       </Tabs>
 
-      {/* Mappa HUB e Negozi */}
+      {/* Mappa HUB e Negozi - UNIFIED MAP COMPONENT */}
       <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-        <CardHeader>
-          <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Mappa HUB Grosseto (Dati Reali)
-          </CardTitle>
-          <CardDescription className="text-[#e8fbff]/70">
-            Visualizzazione geografica dell'HUB e dei negozi/servizi collegati
-          </CardDescription>
+        <CardHeader className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                {viewMode === 'italia' ? 'Pianta Mercati - Vista Italia' : `Pianta Mercato ${selectedMarketId === 1 ? 'Grosseto' : 'Modena'} - GIS Interattiva`}
+              </CardTitle>
+              <CardDescription className="text-[#e8fbff]/70">
+                {viewMode === 'italia' 
+                  ? 'Seleziona un mercato dalla mappa per visualizzare i dettagli' 
+                  : 'Visualizzazione geografica dei posteggi e delle concessioni'}
+              </CardDescription>
+            </div>
+            
+            {/* Pulsante Torna alla Vista Italia */}
+            {viewMode === 'mercato' && (
+              <Button 
+                variant="outline" 
+                className="border-[#14b8a6]/50 text-[#14b8a6] hover:bg-[#14b8a6]/10"
+                onClick={handleBackToItaly}
+              >
+                🌍 Torna alla Vista Italia
+              </Button>
+            )}
+          </div>
+
+          {/* BARRA DI RICERCA INTEGRATA */}
+          <div className="relative w-full max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <Input
+              type="text"
+              placeholder="Cerca mercato (es. Modena, Grosseto)..."
+              className="pl-10 bg-[#0b1220] border-[#14b8a6]/30 text-white placeholder:text-gray-500 focus:ring-[#14b8a6]"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const val = e.currentTarget.value.toLowerCase();
+                  if (val.includes('modena') || val.includes('novi sad')) {
+                    handleMarketSelect(2); // ID Modena
+                  } else if (val.includes('grosseto')) {
+                    handleMarketSelect(1); // ID Grosseto
+                  } else {
+                    // TODO: Implementare ricerca posteggio
+                    alert('Mercato non trovato. Prova "Modena" o "Grosseto".');
+                  }
+                }
+              }}
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          {mapData && stallsData.length > 0 ? (
-            <div className="h-[600px] rounded-lg overflow-hidden">
+          {mapData ? (
+            <div className="h-[600px] rounded-lg overflow-hidden relative">
               <MarketMapComponent
+                refreshKey={mapRefreshKey}
                 mapData={mapData}
                 stallsData={stallsData}
-                zoom={19}
+                // Se siamo in vista Italia, usa zoom basso e centro Italia. Se mercato, zoom alto e centro mercato.
+                center={viewMode === 'mercato' ? undefined : [42.5, 12.5]} 
+                zoom={viewMode === 'mercato' ? 18 : 6}
+                showItalyView={viewMode === 'italia'}
+                onMarketClick={handleMarketSelect}
+                height="100%"
               />
+              
+              {/* Overlay caricamento se stiamo cambiando mercato */}
+              {viewMode === 'mercato' && stallsData.length === 0 && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[1000]">
+                  <div className="bg-[#1e293b] p-4 rounded-lg shadow-xl flex items-center gap-3 border border-[#14b8a6]/30">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#14b8a6]" />
+                    <span className="text-white font-medium">Caricamento mercato...</span>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="h-[600px] flex items-center justify-center bg-[#0b1220] rounded-lg">
