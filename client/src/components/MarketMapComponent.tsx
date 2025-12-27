@@ -740,6 +740,7 @@ export function MarketMapComponent({
                           ✓ Conferma Assegnazione
                         </button>
                       </div>
+                    </div>
                     ) : (
                       /* Popup normale */
                       <div className="p-0 bg-[#0b1220] text-gray-100 rounded-md overflow-hidden" style={{ minWidth: '280px' }}>
