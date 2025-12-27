@@ -621,7 +621,13 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                   <CompanyCard
                     key={company.id}
                     company={company}
+                    qualificazioni={qualificazioni.filter(q => q.company_id === company.id)}
                     onEdit={() => handleOpenCompanyModal(company)}
+                    onViewQualificazioni={() => {
+                      setSearchType('qualificazione');
+                      setSelectedCompanyForQualif(company);
+                      // Scroll to qualifications section if needed, or just switch tab
+                    }}
                   />
                 ))}
               </div>
@@ -823,10 +829,12 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
 
 interface CompanyCardProps {
   company: CompanyRow;
+  qualificazioni?: QualificazioneRow[];
   onEdit: () => void;
+  onViewQualificazioni?: () => void;
 }
 
-function CompanyCard({ company, onEdit }: CompanyCardProps) {
+function CompanyCard({ company, qualificazioni = [], onEdit, onViewQualificazioni }: CompanyCardProps) {
   const getStatoBadge = (stato?: string) => {
     switch (stato) {
       case 'active':
@@ -876,8 +884,33 @@ function CompanyCard({ company, onEdit }: CompanyCardProps) {
           </div>
         )}
         
-        {/* Badge Concessioni e Autorizzazioni */}
+        {/* Badge Concessioni, Autorizzazioni e Qualificazioni */}
         <div className="flex flex-wrap gap-2 pt-2">
+          {/* Semaforo Qualificazioni */}
+          {onViewQualificazioni && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewQualificazioni();
+              }}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium border rounded-md transition-colors ${
+                qualificazioni.length === 0
+                  ? 'text-gray-400 bg-gray-400/10 border-gray-400/20 hover:bg-gray-400/20'
+                  : qualificazioni.some(q => q.stato === 'SCADUTA')
+                    ? 'text-red-400 bg-red-400/10 border-red-400/20 hover:bg-red-400/20'
+                    : qualificazioni.some(q => q.stato === 'IN_VERIFICA')
+                      ? 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20 hover:bg-yellow-400/20'
+                      : 'text-green-400 bg-green-400/10 border-green-400/20 hover:bg-green-400/20'
+              }`}
+              title="Clicca per gestire le qualificazioni"
+            >
+              <FileCheck className="w-3 h-3" />
+              {qualificazioni.length === 0 ? 'No Qualifiche' : 
+               qualificazioni.some(q => q.stato === 'SCADUTA') ? 'Qualifiche Scadute' :
+               qualificazioni.some(q => q.stato === 'IN_VERIFICA') ? 'In Verifica' : 'Qualificato'}
+            </button>
+          )}
+
           {company.autorizzazioni && company.autorizzazioni.length > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-md">
               <FileBadge className="w-3 h-3" />
