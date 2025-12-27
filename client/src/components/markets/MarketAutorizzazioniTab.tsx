@@ -86,16 +86,16 @@ export function MarketAutorizzazioniTab({ companies, searchQuery }: MarketAutori
       // Visto che ho aggiunto il router in integrationsRouter, userò il client TRPC se possibile.
       // Ma per ora, per non rompere nulla, uso fetch e assumo che ci sia un adattatore o uso la chiamata diretta.
       
-      // In alternativa, possiamo usare window.trpcClient se esposto, o fare una chiamata fetch all'endpoint trpc.
-      const response = await fetch(`${MIHUB_API_BASE_URL}/api/trpc/integrations.autorizzazioni.list`);
+      // Use REST API endpoint
+      const response = await fetch(`${MIHUB_API_BASE_URL}/api/autorizzazioni`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const json = await response.json();
       
-      if (json.result && json.result.data) {
-        // Mappa i dati se necessario
-        const data = json.result.data.map((item: any) => ({
+      if (json.success && json.data) {
+        // Map data if necessary
+        const data = json.data.map((item: any) => ({
           ...item,
-          // Assicurati che le date siano stringhe ISO
+          // Ensure dates are ISO strings
           data_rilascio: item.data_rilascio ? new Date(item.data_rilascio).toISOString() : null,
           data_scadenza: item.data_scadenza ? new Date(item.data_scadenza).toISOString() : null,
         }));
@@ -119,10 +119,8 @@ export function MarketAutorizzazioniTab({ companies, searchQuery }: MarketAutori
     if (!confirm('Sei sicuro di voler eliminare questa autorizzazione?')) return;
     
     try {
-      const response = await fetch(`${MIHUB_API_BASE_URL}/api/trpc/integrations.autorizzazioni.delete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+      const response = await fetch(`${MIHUB_API_BASE_URL}/api/autorizzazioni/${id}`, {
+        method: 'DELETE',
       });
       
       if (!response.ok) throw new Error('Errore durante l\'eliminazione');
@@ -325,9 +323,11 @@ function AutorizzazioneModal({ autorizzazione, companies, onClose, onSaved }: Au
     setError(null);
 
     try {
-      const endpoint = autorizzazione 
-        ? 'integrations.autorizzazioni.update' 
-        : 'integrations.autorizzazioni.create';
+      const url = autorizzazione 
+        ? `${MIHUB_API_BASE_URL}/api/autorizzazioni/${autorizzazione.id}`
+        : `${MIHUB_API_BASE_URL}/api/autorizzazioni`;
+      
+      const method = autorizzazione ? 'PUT' : 'POST';
       
       const payload: any = {
         vendor_id: parseInt(formData.vendor_id),
@@ -339,20 +339,16 @@ function AutorizzazioneModal({ autorizzazione, companies, onClose, onSaved }: Au
         note: formData.note,
       };
 
-      if (autorizzazione) {
-        payload.id = autorizzazione.id;
-      }
-
-      // TRPC call via fetch wrapper
-      const response = await fetch(`${MIHUB_API_BASE_URL}/api/trpc/${endpoint}`, {
-        method: 'POST',
+      // REST API call
+      const response = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error?.message || 'Errore durante il salvataggio');
+        throw new Error(data.error || 'Errore durante il salvataggio');
       }
 
       onSaved();
