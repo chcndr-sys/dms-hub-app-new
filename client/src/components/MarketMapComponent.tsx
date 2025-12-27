@@ -464,6 +464,25 @@ export function MarketMapComponent({
             console.log('[VERCEL DEBUG] MarketMapComponent - Rendering', mapData.stalls_geojson.features.length, 'stalls');
             return null;
           })()}
+          {/* Layer Macchia Verde (Area Mercato) - Renderizza PRIMA dei posteggi */}
+          {mapData && !showItalyView && mapData.stalls_geojson.features
+            .filter(f => (f.properties?.kind === 'area' || f.properties?.type === 'mercato') && f.geometry.type === 'Polygon')
+            .map((feature, idx) => (
+              <Polygon
+                key={`area-${idx}`}
+                positions={(feature.geometry.coordinates[0] as number[][]).map(c => [c[1], c[0]] as [number, number])}
+                pathOptions={{
+                  color: '#14b8a6',
+                  fillColor: '#14b8a6',
+                  fillOpacity: 0.15,
+                  weight: 2,
+                  dashArray: '5, 10'
+                }}
+                interactive={false}
+              />
+            ))
+          }
+
           {/* Renderizza posteggi SOLO quando NON siamo in vista Italia */}
           {mapData && !showItalyView && mapData.stalls_geojson.features.map((feature, idx) => {
             const props = feature.properties;
@@ -501,7 +520,8 @@ export function MarketMapComponent({
             }
             
             const fillColor = getStallColor(props.number); // USA SOLO stallsData!
-            const isSelected = selectedStallNumber === props.number;
+            // Confronto robusto (gestisce stringhe e numeri)
+            const isSelected = String(selectedStallNumber) === String(props.number);
             
             // Recupera dati aggiornati dal database
             const dbStall = stallsByNumber.get(props.number);
