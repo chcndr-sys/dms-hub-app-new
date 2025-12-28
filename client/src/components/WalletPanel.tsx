@@ -101,7 +101,7 @@ export default function WalletPanel() {
   useEffect(() => {
     const fetchWallets = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://mihub-backend.manus.space';
+        const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
         const response = await fetch(`${API_URL}/api/wallets`);
         const data = await response.json();
         if (data.success) {
@@ -224,7 +224,7 @@ export default function WalletPanel() {
     setIsGeneratingAvviso(true);
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://mihub-backend.manus.space';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
       const response = await fetch(`${API_URL}/api/wallets/deposit`, {
         method: 'POST',
         headers: {
