@@ -472,10 +472,19 @@ export default function WalletPanel() {
                       {transactions.map((tx, idx) => (
                         <tr key={tx.id || idx} className="hover:bg-slate-800/50">
                           <td className="px-4 py-3">
-                            {tx.created_at ? new Date(tx.created_at).toLocaleDateString('it-IT', {
-                              day: '2-digit', month: '2-digit', year: 'numeric',
-                              hour: '2-digit', minute: '2-digit'
-                            }) : '-'}
+                            {(() => {
+                              try {
+                                if (!tx.created_at) return '-';
+                                const d = new Date(tx.created_at);
+                                if (isNaN(d.getTime())) return 'Data non valida';
+                                return d.toLocaleDateString('it-IT', {
+                                  day: '2-digit', month: '2-digit', year: 'numeric',
+                                  hour: '2-digit', minute: '2-digit'
+                                });
+                              } catch (e) {
+                                return 'Errore Data';
+                              }
+                            })()}
                           </td>
                           <td className="px-4 py-3 font-medium text-white">
                             {tx.description || 'Movimento Wallet'}
