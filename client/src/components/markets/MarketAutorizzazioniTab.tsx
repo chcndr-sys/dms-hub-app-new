@@ -50,19 +50,21 @@ type AutorizzazioneFormData = {
 interface MarketAutorizzazioniTabProps {
   companies: CompanyRow[];
   searchQuery: string;
+  marketId: number;
 }
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-export function MarketAutorizzazioniTab({ companies, searchQuery }: MarketAutorizzazioniTabProps) {
+export function MarketAutorizzazioniTab({ companies, searchQuery, marketId }: MarketAutorizzazioniTabProps) {
   const [autorizzazioni, setAutorizzazioni] = useState<AutorizzazioneRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Modal state
   const [showModal, setShowModal] = useState(false);
+  const [showSpuntaModal, setShowSpuntaModal] = useState(false);
   const [selectedAutorizzazione, setSelectedAutorizzazione] = useState<AutorizzazioneRow | null>(null);
 
   // Fetch data
@@ -148,16 +150,25 @@ export function MarketAutorizzazioniTab({ companies, searchQuery }: MarketAutori
           <FileCheck className="w-5 h-5 text-purple-400" />
           Autorizzazioni ({filteredAutorizzazioni.length})
         </h3>
-        <button
-          onClick={() => {
-            setSelectedAutorizzazione(null);
-            setShowModal(true);
-          }}
-          className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Nuova Autorizzazione
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowSpuntaModal(true)}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+          >
+            <FileCheck className="w-4 h-4" />
+            Domanda Spunta
+          </button>
+          <button
+            onClick={() => {
+              setSelectedAutorizzazione(null);
+              setShowModal(true);
+            }}
+            className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Nuova Autorizzazione
+          </button>
+        </div>
       </div>
 
       <div className="bg-gray-900/50 border border-gray-700/50 rounded-lg overflow-hidden">
@@ -214,6 +225,108 @@ export function MarketAutorizzazioniTab({ companies, searchQuery }: MarketAutori
           onSaved={handleSave}
         />
       )}
+
+      {showSpuntaModal && (
+        <DomandaSpuntaModal
+          companies={companies}
+          marketId={marketId}
+          onClose={() => setShowSpuntaModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// DOMANDA SPUNTA MODAL
+// ============================================================================
+
+function DomandaSpuntaModal({ companies, marketId, onClose }: { companies: CompanyRow[], marketId: number, onClose: () => void }) {
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCompanyId) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${MIHUB_API_BASE_URL}/api/wallets/init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: parseInt(selectedCompanyId),
+          type: 'SPUNTA',
+          market_id: marketId
+        })
+      });
+
+      const json = await response.json();
+      if (!json.success) throw new Error(json.error || 'Errore durante la creazione della domanda');
+
+      alert('Domanda Spunta inviata con successo! Il wallet è stato creato.');
+      onClose();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md shadow-2xl">
+        <div className="p-6 border-b border-slate-800 flex justify-between items-center">
+          <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+            <FileCheck className="w-5 h-5 text-blue-500" />
+            Domanda Spunta
+          </h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-200">
+            Inviando la domanda, verrà creato automaticamente un <strong>Wallet Spunta</strong> specifico per questo mercato.
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-300">Seleziona Impresa</label>
+            <select
+              value={selectedCompanyId}
+              onChange={(e) => setSelectedCompanyId(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">-- Seleziona un'impresa --</option>
+              {companies.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.denominazione} (P.IVA: {c.partita_iva})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="pt-4 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              Annulla
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !selectedCompanyId}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              Invia Domanda
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

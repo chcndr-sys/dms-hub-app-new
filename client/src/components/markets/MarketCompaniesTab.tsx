@@ -630,6 +630,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                   <CompanyCard
                     key={company.id}
                     company={company}
+                    marketId={marketId}
                     qualificazioni={qualificazioni.filter(q => q.company_id === company.id)}
                     onEdit={() => handleOpenCompanyModal(company)}
                     onViewQualificazioni={() => {
@@ -816,6 +817,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
         <MarketAutorizzazioniTab 
           companies={companies} 
           searchQuery={searchQuery} 
+          marketId={marketId}
         />
       )}
 
@@ -1022,11 +1024,16 @@ function QualificazioneModal({ company, qualificazione, onClose, onSaved }: Qual
 interface CompanyCardProps {
   company: CompanyRow;
   qualificazioni?: QualificazioneRow[];
+  marketId: string | number;
   onEdit: () => void;
   onViewQualificazioni?: () => void;
 }
 
-function CompanyCard({ company, qualificazioni = [], onEdit, onViewQualificazioni }: CompanyCardProps) {
+function CompanyCard({ company, qualificazioni = [], marketId, onEdit, onViewQualificazioni }: CompanyCardProps) {
+  // Trova il wallet spunta per questo mercato
+  const spuntaWallet = company.spunta_wallets?.find(w => 
+    marketId !== 'ALL' && w.market_id === Number(marketId)
+  );
   const getStatoBadge = (stato?: string) => {
     switch (stato) {
       case 'active':
@@ -1078,6 +1085,23 @@ function CompanyCard({ company, qualificazioni = [], onEdit, onViewQualificazion
         
         {/* Badge Concessioni, Autorizzazioni e Qualificazioni */}
         <div className="flex flex-wrap gap-2 pt-2">
+          {/* Wallet Spunta Badge */}
+          {spuntaWallet ? (
+            <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium border rounded-md ${
+              spuntaWallet.balance >= 0 
+                ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                : 'bg-red-500/10 text-red-400 border-red-500/20'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${spuntaWallet.balance >= 0 ? 'bg-green-500' : 'bg-red-500'}`} />
+              Spunta: € {Number(spuntaWallet.balance).toFixed(2)}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium border rounded-md bg-gray-500/10 text-gray-500 border-gray-500/20">
+              <div className="w-2 h-2 rounded-full bg-gray-500" />
+              No Spunta
+            </span>
+          )}
+
           {/* Semaforo Qualificazioni */}
           {onViewQualificazioni && (
             <button
