@@ -5,7 +5,7 @@ import {
   Building2, Calendar, User, CreditCard, RefreshCw, Download,
   Plus, Filter, Eye, Edit, Trash2, Send, Bell, AlertCircle,
   ExternalLink, Copy, Loader2, QrCode, ChevronDown, ChevronUp,
-  Store
+  Store, History as HistoryIcon
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -444,7 +444,7 @@ export default function WalletPanel() {
           <Card className="bg-[#1e293b] border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <History className="h-5 w-5 text-blue-500" />
+                <HistoryIcon className="h-5 w-5 text-blue-500" />
                 Storico Transazioni
               </CardTitle>
             </CardHeader>
