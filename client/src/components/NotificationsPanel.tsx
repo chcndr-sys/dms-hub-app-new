@@ -9,8 +9,8 @@ import {
   Filter, Eye, Calendar, ChevronDown
 } from 'lucide-react';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://orchestratore.mio-hub.me';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://api.mio-hub.me';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
 
 interface Notification {
   id: string;

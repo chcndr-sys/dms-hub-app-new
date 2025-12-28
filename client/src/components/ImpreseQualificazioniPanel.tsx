@@ -34,7 +34,7 @@ export interface QualificazioneDTO {
 // API CONFIGURATION
 // ============================================================================
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
 
 // ============================================================================
 // DATI MOCK (usati come fallback se API non disponibili)
