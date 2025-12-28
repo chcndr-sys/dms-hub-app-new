@@ -148,6 +148,57 @@ export default function WalletPanel() {
     fetchWallets();
   }, []);
 
+  // --- TRANSACTIONS ---
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [isLoadingTx, setIsLoadingTx] = useState(false);
+
+  const fetchAllTransactions = async () => {
+    setIsLoadingTx(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      // Fetch transactions for all wallets of all companies
+      // Since we don't have a global transactions endpoint, we'll fetch for each wallet
+      // In a real app, we should have a dedicated endpoint. For now, we iterate.
+      
+      let allTx: any[] = [];
+      
+      // Collect all wallet IDs
+      const walletIds: number[] = [];
+      companies.forEach(c => {
+        if (c.spunta_wallet) walletIds.push(c.spunta_wallet.id);
+        c.concession_wallets.forEach(w => walletIds.push(w.id));
+      });
+
+      // Fetch in parallel
+      const promises = walletIds.map(id => 
+        fetch(`${API_URL}/api/wallets/${id}/transactions`).then(r => r.json())
+      );
+      
+      const results = await Promise.all(promises);
+      
+      results.forEach(res => {
+        if (res.success && Array.isArray(res.data)) {
+          allTx = [...allTx, ...res.data];
+        }
+      });
+
+      // Sort by date desc
+      allTx.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      setTransactions(allTx);
+    } catch (err) {
+      console.error("Error fetching transactions", err);
+    } finally {
+      setIsLoadingTx(false);
+    }
+  };
+
+  useEffect(() => {
+    if (subTab === 'pagopa') {
+      fetchAllTransactions();
+    }
+  }, [subTab, companies]);
+
   // --- ACTIONS ---
 
   const handleOpenDeposit = async (wallet: WalletItem, companyName: string) => {
@@ -344,8 +395,11 @@ export default function WalletPanel() {
                               </div>
                               
                               <div className="text-right min-w-[120px]">
-                                <p className="text-xs text-slate-400">Stato Pagamenti</p>
+                                <p className="text-xs text-slate-400">Saldo Wallet</p>
                                 <p className={`text-lg font-bold ${wallet.balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                  € {wallet.balance.toFixed(2)}
+                                </p>
+                                <p className={`text-xs ${wallet.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                   {wallet.balance >= 0 ? 'In Regola' : 'Da Pagare'}
                                 </p>
                               </div>
@@ -374,12 +428,72 @@ export default function WalletPanel() {
       )}
 
       {subTab === 'pagopa' && (
-        <div className="text-center py-12 text-slate-400 bg-[#1e293b] rounded-lg border border-slate-700">
-          <CreditCard className="h-12 w-12 mx-auto mb-4 text-slate-600" />
-          <h3 className="text-lg font-medium text-white">Storico Transazioni PagoPA</h3>
-          <p className="max-w-md mx-auto mt-2">
-            Qui verranno visualizzati tutti gli avvisi di pagamento generati e il loro stato (Pagato, Scaduto, Annullato).
-          </p>
+        <div className="space-y-6">
+          <Card className="bg-[#1e293b] border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <History className="h-5 w-5 text-blue-500" />
+                Storico Transazioni
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingTx ? (
+                <div className="text-center py-8 text-slate-400">Caricamento transazioni...</div>
+              ) : transactions.length === 0 ? (
+                <div className="text-center py-12 text-slate-500">
+                  <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                  <p>Nessuna transazione trovata.</p>
+                </div>
+              ) : (
+                <div className="rounded-md border border-slate-700 overflow-hidden">
+                  <table className="w-full text-sm text-left text-slate-300">
+                    <thead className="bg-slate-800 text-slate-100 uppercase text-xs">
+                      <tr>
+                        <th className="px-4 py-3">Data</th>
+                        <th className="px-4 py-3">Descrizione</th>
+                        <th className="px-4 py-3">Tipo</th>
+                        <th className="px-4 py-3 text-right">Importo</th>
+                        <th className="px-4 py-3 text-center">Stato</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700">
+                      {transactions.map((tx) => (
+                        <tr key={tx.id} className="hover:bg-slate-800/50">
+                          <td className="px-4 py-3">
+                            {new Date(tx.created_at).toLocaleDateString('it-IT', {
+                              day: '2-digit', month: '2-digit', year: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-white">
+                            {tx.description || 'Movimento Wallet'}
+                            {tx.reference_id && <span className="block text-xs text-slate-500">Rif: {tx.reference_id}</span>}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant="outline" className={
+                              tx.type === 'DEPOSIT' 
+                                ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                                : 'bg-red-500/10 text-red-400 border-red-500/20'
+                            }>
+                              {tx.type === 'DEPOSIT' ? 'Ricarica / Pagamento' : 'Addebito'}
+                            </Badge>
+                          </td>
+                          <td className={`px-4 py-3 text-right font-bold ${
+                            tx.type === 'DEPOSIT' ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {tx.type === 'DEPOSIT' ? '+' : '-'} € {Number(tx.amount).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge className="bg-green-600">Completato</Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
