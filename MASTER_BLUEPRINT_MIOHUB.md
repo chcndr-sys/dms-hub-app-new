@@ -1,4 +1,4 @@
-# 🔑 BLUEPRINT MIO HUB - AGGIORNATO 29 DICEMBRE 2025 (v3)
+# 🔑 BLUEPRINT MIO HUB - AGGIORNATO 29 DICEMBRE 2025 (v3.1)
 
 **DOCUMENTO DI CONTESTO PER NUOVE SESSIONI MANUS**
 
@@ -27,26 +27,51 @@
 
 ### ✅ Nuove Funzionalità Implementate
 
-1.  **Wallet Spunta Specifico per Mercato**
+1.  **UI Wallet & Spunta (Refactoring Completo)**
+    -   **Wallet Chiusi di Default**: Le sezioni "Portafogli Spunta" e "Concessioni" nel pannello di dettaglio partono chiuse per pulizia.
+    -   **Wallet Generico**: I wallet senza mercato associato sono etichettati come **"GENERICO"** (Badge Bianco), distinti da quelli di mercato (Badge Giallo).
+    -   **Semafori Intelligenti**:
+        -   **Verde**: Saldo > € 0.00
+        -   **Rosso**: Saldo <= € 0.00 (Da Pagare/Ricaricare)
+    -   **Header Riepilogativo**: Mostra il numero totale di wallet e la somma totale dei saldi in bianco.
+
+2.  **Wallet Spunta Specifico per Mercato**
     -   **Architettura**: I wallet di tipo `SPUNTA` non sono più unici per azienda, ma specifici per ogni coppia `(Azienda, Mercato)`.
     -   **Motivazione**: I pagamenti della spunta devono confluire nelle casse specifiche del comune che gestisce quel mercato.
-    -   **Visualizzazione**: Nella lista imprese, il badge "Spunta" mostra il saldo del wallet relativo al mercato che si sta visualiz35	2.  **Domanda Spunta**
-36	    -   **Nuovo Flusso**: Aggiunto pulsante "Domanda Spunta" nel tab Autorizzazioni.
-37	    -   **Funzionamento**: Permette di creare un nuovo wallet spunta per un'impresa in uno specifico mercato.
-38	    -   **UX**: La modale mostra esplicitamente il Mercato e il Comune di riferimento per evitare errori.
-39	    -   **Nota**: Per le imprese con molti wallet spunta, la visualizzazione è filtrata per mostrare solo quello pertinente al mercato corrente.
-3.  **Fix Storico PagoPA**
+    -   **Visualizzazione**: Nella lista imprese, il badge "Spunta" mostra il saldo del wallet relativo al mercato che si sta visualizzando.
+
+3.  **Domanda Spunta**
+    -   **Nuovo Flusso**: Aggiunto pulsante "Domanda Spunta" nel tab Autorizzazioni.
+    -   **Funzionamento**: Permette di creare un nuovo wallet spunta per un'impresa in uno specifico mercato.
+    -   **UX**: La modale mostra esplicitamente il Mercato e il Comune di riferimento per evitare errori.
+    -   **Nota**: Per le imprese con molti wallet spunta, la visualizzazione è filtrata per mostrare solo quello pertinente al mercato corrente.
+
+4.  **Fix Storico PagoPA**
     -   **Problema**: Crash della pagina storico dovuto a conflitti di nomi (`History` vs `window.history`) e dati sporchi.
     -   **Soluzione**: Rinominato componente in `HistoryIcon`, blindato il rendering delle date e filtrati i dati non validi.
 
-4.  **Indicatori Visivi (Semafori)**
+5.  **Indicatori Visivi (Semafori)**
     -   **Lista Imprese**: Aggiunti semafori (Verde/Rosso) e importi per:
         -   Concessioni (Posteggi)
         -   Wallet Spunta (Ricaricabile)
     -   **Logica**: € 0.00 è considerato "Da Pagare" (Rosso) per le concessioni, mentre per la spunta dipende dal saldo positivo/negativo.
 
-### 📐 Architettura Wallet Spunta
-
+6.  **Fix Backend Qualificazioni (v3.1)**
+    -   **Problema**: Il badge delle qualificazioni nella lista imprese non si aggiornava automaticamente.
+    -   **Soluzione**: Modificata la query principale `/api/imprese` per includere una subquery che recupera le qualificazioni 62	    -   **Stato**: Committato su `mihub-backend-rest` (master).
+63	
+64	7.  **Fix Dimensioni Posteggi & Popup (v3.1)**
+65	    -   **Problema**: Dimensioni posteggi mancanti o stimate erroneamente, popup spunta incompleto.
+66	    -   **Soluzione Dimensioni**: Implementata logica a cascata (Priority Fallback):
+67	        1.  **DB**: Cerca dimensioni ufficiali nel database (`width` x `depth`).
+68	        2.  **GeoJSON**: Se mancano, cerca nelle proprietà del file mappa.
+69	        3.  **Stima**: Se mancano entrambe, calcola geometricamente dal poligono (Label "STIMATE").
+70	    -   **Soluzione Popup Spunta**:
+71	        -   Aggiunta visualizzazione **Impresa Intestataria**.
+72	        -   Aggiunto pulsante **"Visita Vetrina"** (Link interno SPA).
+73	        -   Allineata logica dimensioni a quella standard.
+74	
+75	### 📐 Architettura Wallet Spunta
 ```mermaid
 graph TD
     A[Impresa] -->|Ha Molti| W[Wallets]
@@ -245,287 +270,134 @@ CREATE TABLE agent_messages (
 | `src/modules/orchestrator/database.js` | Funzioni database: `addMessage`, `saveDirectMessage`, `createConversation` |
 | `src/modules/orchestrator/llm.js` | Chiamate agli agenti LLM (MIO, Manus, Abacus, GPT Dev) |
 | `config/database.js` | Configurazione connessione PostgreSQL |
+| `routes/imprese.js` | API Imprese (Fix Qualificazioni v3.1) |
 
 ### Frontend (dms-hub-app-new)
 
 | File | Descrizione |
 |------|-------------|
-| `api/mihub/get-messages.ts` | Endpoint Vercel per recuperare messaggi dal database |
-| `api/mihub/orchestrator-proxy.ts` | Proxy per inoltrare messaggi all'orchestratore Hetzner |
-| `client/src/contexts/MioContext.tsx` | Context React per chat MIO, gestisce invio/ricezione messaggi |
-| `client/src/hooks/useAgentLogs.ts` | Hook per caricare messaggi agenti (Vista 4 + Chat Singole) |
-| `client/src/pages/DashboardPA.tsx` | Pagina principale dashboard con tutte le chat |
-| `client/src/api/orchestratorClient.ts` | Client per chiamare backend orchestrator |
-| `client/src/lib/agentHelper.ts` | Helper per invio messaggi agli agenti |
-| `client/src/components/WalletPanel.tsx` | 🆕 UI gestione wallet operatori |
-| `server/walletRouter.ts` | 🆕 API wallet (20 endpoint) |
-| `server/services/efilPagopaService.ts` | 🆕 Integrazione E-FIL PagoPA |
-| `server/services/apiInventoryService.ts` | 🆕 Inventario 122+ endpoint API |
+| `src/components/DashboardPA.tsx` | Dashboard principale, logica chat e routing |
+| `src/components/markets/WalletPanel.tsx` | Pannello Wallet (Spunta/Concessioni) |
+| `src/components/markets/MarketCompaniesTab.tsx` | Lista Imprese con Badges |
+| `src/components/markets/MarketAutorizzazioniTab.tsx` | Tab Autorizzazioni (Domanda Spunta) |
 
 ---
 
-## 🛠️ COMANDI UTILI
+## 💻 COMANDI UTILI
 
-### Test API Backend
+### Avvio Server Backend (Locale)
 ```bash
-# Test MIO mode=auto
-curl -s -X POST https://orchestratore.mio-hub.me/api/mihub/orchestrator \
-  -H "Content-Type: application/json" \
-  -d '{"mode": "auto", "message": "Test", "conversationId": "mio-main"}' | jq .
-
-# Test Manus mode=direct
-curl -s -X POST https://orchestratore.mio-hub.me/api/mihub/orchestrator \
-  -H "Content-Type: application/json" \
-  -d '{"mode": "direct", "targetAgent": "manus", "message": "Test", "conversationId": "user-manus-direct"}' | jq .
+cd mihub-backend-rest
+npm install
+npm start
 ```
 
-### Query Database
+### Avvio Frontend (Locale)
 ```bash
-cd /home/ubuntu/mihub-backend-rest && node -e "
-const { Pool } = require('pg');
-const pool = new Pool({
-  host: 'ep-bold-silence-adftsojg-pooler.c-2.us-east-1.aws.neon.tech',
-  database: 'neondb',
-  user: 'neondb_owner',
-  password: 'npg_lYG6JQ5Krtsi',
-  ssl: { rejectUnauthorized: false }
-});
-
-async function check() {
-  const result = await pool.query(\"
-    SELECT conversation_id, sender, role, mode, LEFT(message, 50) as msg, created_at 
-    FROM agent_messages 
-    WHERE created_at > NOW() - INTERVAL '10 minutes'
-    ORDER BY created_at DESC
-    LIMIT 20
-  \");
-  console.log(result.rows);
-  await pool.end();
-}
-check();
-"
+cd dms-hub-app-new
+npm install
+npm run dev
 ```
 
-### PM2 Logs
+### Git Sync (Standard)
 ```bash
-ssh -i /home/ubuntu/.ssh/manus_hetzner_key root@157.90.29.66 'pm2 logs mihub-backend --lines 100'
+git add .
+git commit -m "Update"
+git push origin master
 ```
 
 ---
 
 ## 🤖 AGENTI DEL SISTEMA
 
-| Agente | Stato | Funzione |
-|--------|-------|----------|
-| **MIO** | ✅ OK | Orchestratore principale, coordina gli altri agenti |
-| **Manus** | ✅ OK | Navigazione web, esecuzione comandi SSH, file system |
-| **Abacus** | ✅ OK | Query SQL, accesso database PostgreSQL/Neon |
-| **GPT Dev** | ✅ OK | Accesso repository GitHub, lettura file, operazioni Git |
-| **Zapier** | ❌ Errore | Chiave API invalida (da configurare) |
+| Agente | Ruolo | Capability |
+|--------|-------|------------|
+| **MIO** | Orchestratore | Routing, Sintesi, Gestione Contesto |
+| **MANUS** | Esecutore Tecnico | Coding, Deploy, Debugging, Shell |
+| **ABACUS** | Analista Dati | SQL, Analisi, Reportistica |
+| **GPT DEV** | Sviluppatore | Code Generation, Refactoring |
+| **ZAPIER** | Automazione | Integrazioni Esterne (Email, Calendar) |
 
 ---
 
 ## 💳 WALLET / PAGOPA
 
-### Overview
+### Struttura Dati
+- **Tabella**: `wallets`
+- **Campi**: `id`, `company_id`, `market_id` (per Spunta), `concession_id` (per Concessioni), `balance`, `type` ('SPUNTA', 'CONCESSIONE').
 
-Sistema di borsellino elettronico prepagato per operatori mercatali con integrazione **E-FIL Plug&Pay** per pagamenti PagoPA. Mercato pilota: **Comune di Grosseto**.
-
-### Componenti
-
-| File | Descrizione |
-|------|-------------|
-| `server/walletRouter.ts` | API tRPC per gestione wallet (20 endpoint) |
-| `server/services/efilPagopaService.ts` | Integrazione SOAP E-FIL |
-| `client/src/components/WalletPanel.tsx` | UI gestione wallet |
-| `.env.efil.example` | Configurazione E-FIL |
-
-### Tabelle Database
-
-| Tabella | Descrizione |
-|---------|-------------|
-| `operatore_wallet` | Wallet per ogni impresa |
-| `wallet_transazioni` | Storico movimenti |
-| `tariffe_posteggio` | Tariffe per tipo posteggio |
-| `avvisi_pagopa` | Avvisi PagoPA generati |
-
-### API Endpoint Wallet (20)
-
-| Endpoint | Metodo | Descrizione |
-|----------|--------|-------------|
-| `wallet.stats` | GET | Statistiche dashboard |
-| `wallet.list` | GET | Lista wallet |
-| `wallet.getById` | GET | Dettaglio wallet |
-| `wallet.getByImpresa` | GET | Wallet per impresa |
-| `wallet.create` | POST | Crea wallet |
-| `wallet.updateStatus` | POST | Aggiorna stato |
-| `wallet.transazioni` | GET | Storico transazioni |
-| `wallet.ricarica` | POST | Ricarica wallet |
-| `wallet.decurtazione` | POST | Decurtazione |
-| `wallet.generaAvvisoPagopa` | POST | Genera avviso PagoPA |
-| `wallet.pagamentoSpontaneo` | POST | Pagamento immediato |
-| `wallet.verificaPagamento` | GET | Verifica IUV |
-| `wallet.generaPdfAvviso` | GET | PDF avviso |
-| `wallet.generaPdfQuietanza` | GET | PDF quietanza |
-| `wallet.avvisiPagopa` | GET | Lista avvisi |
-| `wallet.tariffe` | GET | Tariffe posteggio |
-| `wallet.verificaSaldoPresenza` | POST | Verifica saldo check-in |
-| `wallet.ricercaPagamentiGiornalieri` | GET | Ricerca pagamenti |
-| `wallet.reportRiconciliazione` | GET | Report riconciliazione |
-| `wallet.reportMercato` | GET | Report per mercato |
-
-### UI WalletPanel
-
-**Tab Wallet Operatori:**
-- Statistiche: wallet attivi, saldo basso, bloccati, saldo totale
-- Lista wallet con ricerca e filtri
-- Dettaglio wallet con saldo, giorni coperti, transazioni
-- Dialog "Genera Avviso PagoPA":
-  - Input importo + bottoni suggeriti (€50, €100, €250, €500, €1000)
-  - Preview nuovo saldo e giorni coperti
-  - Generazione IUV e Codice Avviso (18 cifre)
-  - Copia negli appunti, Download PDF, Paga Ora
-- Dialog "Pagamento Immediato" con redirect checkout
-
-**Tab PagoPA:**
-- Statistiche: totale incassato, pagati, in attesa, scaduti
-- Lista avvisi con stato (EMESSO, PAGATO, SCADUTO)
-- Azioni: Download PDF, Paga Ora, Scarica Quietanza
-
-**Tab Tariffe:**
-- Lista tariffe per tipo posteggio
-- CRUD tariffe
-
-**Tab Riconciliazione:**
-- Report ricariche/decurtazioni
-- Sincronizzazione E-FIL
-
-### Servizi E-FIL
-
-| Servizio | Funzione |
-|----------|----------|
-| WSPayment | Pagamento spontaneo + checkout |
-| WSFeed | Creazione avvisi PagoPA |
-| WSDeliver | Verifica stato pagamenti |
-| WSGeneratorPdf | PDF avviso/quietanza |
-| WSPaymentNotify | Notifica fuori nodo |
-
-### Flusso Check-in con Wallet
-
-```
-1. Operatore richiede check-in
-2. Sistema verifica stato wallet
-3. Sistema verifica saldo vs tariffa
-4. Se OK: decurta e crea presenza
-5. Se saldo < minimo: blocca wallet
-6. Se bloccato: rifiuta check-in
-```
-
-### Configurazione E-FIL
-
-```bash
-EFIL_BASE_URL=https://test.plugnpay.efil.it/plugnpay
-EFIL_USERNAME=<user>
-EFIL_PASSWORD=<pass>
-EFIL_APPLICATION_CODE=<fornito da E-FIL>
-EFIL_ID_GESTIONALE=DMS-GROSSETO
-DMS_PAGOPA_RETURN_URL=https://miohub.app/payments/return
-DMS_PAGOPA_CALLBACK_URL=https://miohub.app/api/wallet/callback
-```
+### Logica Colori
+- **Verde**: Saldo positivo (> 0)
+- **Rosso**: Saldo negativo o zero (<= 0)
+- **Giallo**: Badge identificativo "Spunta"
+- **Blu**: Badge identificativo "Concessione"
+- **Bianco**: Badge identificativo "Generico"
 
 ---
 
 ## 🏢 IMPRESE & QUALIFICAZIONI
 
-### API Endpoint Imprese (6)
-
-| Endpoint | Metodo | Descrizione |
-|----------|--------|-------------|
-| `imprese.list` | GET | Lista imprese con filtri |
-| `imprese.getById` | GET | Dettaglio impresa |
-| `qualificazioni.list` | GET | Lista qualificazioni |
-| `imprese.qualificazioni` | GET | Qualificazioni impresa |
-| `imprese.rating` | GET | Semaforo Conformità |
-| `imprese.migratePdnd` | POST | Migrazione PDND |
-
-### Semaforo Conformità
-
-Il sistema calcola automaticamente un rating di conformità per ogni impresa:
-
-- 🟢 **VERDE** - Tutti i documenti in regola
-- 🟡 **GIALLO** - Documenti in scadenza (< 30 giorni)
-- 🔴 **ROSSO** - Documenti scaduti o mancanti
+### Badge Qualificazioni
+- **Logica**: Il badge "Qualificato" appare se l'impresa ha almeno una qualificazione attiva.
+- **Dati**: Recuperati via subquery in `GET /api/imprese` (v3.1).
+- **Tabella**: `qualificazioni` (`company_id`, `type`, `status`, `start_date`, `end_date`).
 
 ---
 
-## 🔗 API INVENTORY (INTEGRAZIONI)
+## 🔌 API INVENTORY (INTEGRAZIONI)
 
-### Overview
-
-La sezione **Integrazioni** nella Dashboard PA è il centro di controllo per tutte le API e integrazioni esterne. Mostra **127 endpoint API** catalogati per categoria.
-
-### Categorie API
-
-| Categoria | Endpoint | Descrizione |
-|-----------|----------|-------------|
-| **analytics** | 7 | Statistiche piattaforma |
-| **system** | 5 | Health check, auth, config |
-| **carbon** | 3 | Crediti di carbonio |
-| **logs** | 2 | Log di sistema |
-| **users** | 1 | Statistiche utenti |
-| **sustainability** | 1 | Metriche sostenibilità |
-| **businesses** | 1 | Attività commerciali |
-| **inspections** | 1 | Ispezioni e violazioni |
-| **notifications** | 1 | Notifiche |
-| **civic** | 1 | Segnalazioni civiche |
-| **mobility** | 1 | Dati mobilità TPER |
-| **integrations** | 2 | TPER Bologna |
-| **dms** | 30+ | Gestione mercati DMS |
-| **guardian** | 5 | Monitoring e debug |
-| **mihub** | 11 | Multi-agent system |
-| **wallet** | 20 | 💳 Wallet/PagoPA |
-| **imprese** | 6 | 🏢 Imprese & Qualificazioni |
-| **sync** | 5 | 🔄 Sincronizzazione gestionale |
-
-### Tab Disponibili (6)
-
-| Tab | Funzione |
-|-----|----------|
-| **API Dashboard** | Lista 127 endpoint, API Playground con test tRPC, Statistiche utilizzo real-time |
-| **Connessioni** | Lista connessioni esterne (DMS Legacy, Pepe GIS), Health check, Data Owner |
-| **API Keys** | Gestione chiavi API per applicazioni esterne |
-| **Webhook** | Configurazione webhook, Log chiamate |
-| **Secrets** 🆕 | Gestione credenziali servizi esterni (LLM, GitHub, E-FIL, ecc.) |
-| **Sync Status** 🆕 | Sincronizzazione gestionale Heroku (ora reale, non mock) |
-
-### Sync Status - Sistema Reale
-
-**Tabelle Database:**
-- `sync_config` - Configurazione sincronizzazione
-- `sync_jobs` - Job di sincronizzazione
-- `sync_logs` - Log dettagliati
-
-**API Endpoints Sync (5):**
-| Endpoint | Metodo | Descrizione |
-|----------|--------|-------------|
-| `sync.status` | GET | Stato sincronizzazione |
-| `sync.jobs` | GET | Lista job recenti |
-| `sync.logs` | GET | Log dettagliati per job |
-| `sync.trigger` | POST | Avvia sync manuale |
-| `sync.updateConfig` | POST | Salva configurazione |
-| `sync.getConfig` | GET | Ottieni configurazione |
-
-### File Chiave
-
-| File | Descrizione |
-|------|-------------|
-| `server/services/apiInventoryService.ts` | Inventario 127 endpoint |
-| `server/integrationsRouter.ts` | Router con sync, apiKeys, webhook |
-| `client/src/components/Integrazioni.tsx` | Pagina Integrazioni (6 tab) |
-| `drizzle/schema.ts` | Tabelle sync_config, sync_jobs, sync_logs |
-| `Chcndr/MIO-hub/api/index.json` | Single source of truth endpoint |
+### MIO Hub Core
+- `POST /api/mihub/orchestrator`: Endpoint unico per messaggi chat.
+- `GET /api/imprese`: Lista imprese con aggregati (wallet, concessioni, qualificazioni).
+- `POST /api/wallets/init`: Creazione nuovi wallet (Spunta/Concessione).
+- `POST /api/wallets/recharge`: Ricarica wallet (simulazione PagoPA).
 
 ---
 
-*Documento aggiornato il 29 Dicembre 2025 - Manus AI*
-*Da allegare all'inizio di ogni nuova sessione di lavoro*
+## 📐 ARCHITETTURA FLUSSO DATI (DEFINITIVA v3.2)
+
+Questa sezione definisce il "contratto" unico per il flusso dei dati tra Database, Backend e Frontend. Ogni modifica futura DEVE rispettare questo schema.
+
+### 1. Dimensioni Posteggi (Stalls)
+
+Il calcolo delle dimensioni NON deve mai essere stimato dal frontend se i dati esistono nel DB.
+
+*   **Database (`stalls`)**:
+    *   `width` (numeric): Larghezza in metri (es. 4.00).
+    *   `depth` (numeric): Profondità in metri (es. 7.60).
+    *   `area_mq` (numeric): Superficie in mq (es. 30.40).
+*   **Backend (`GET /api/markets/:id/stalls`)**:
+    *   Deve restituire un campo `dimensions` formattato come stringa `"WxD"` (es. `"4.00 x 7.60"`).
+    *   Logica SQL: `CONCAT(ROUND(width, 2), ' x ', ROUND(depth, 2)) as dimensions`.
+*   **Frontend (`MarketMapComponent`)**:
+    *   **Priorità 1**: Usa `dbStall.dimensions` (dal backend).
+    *   **Priorità 2**: Usa `props.dimensions` (dal GeoJSON, solo se il DB è vuoto).
+    *   **Priorità 3 (Fallback)**: Calcolo geometrico (DA EVITARE, mostra etichetta "Stimate").
+
+### 2. Link Vetrina (Showcase)
+
+Il collegamento tra un posteggio e la vetrina dell'impresa deve essere deterministico.
+
+*   **Database**:
+    *   `vendors.impresa_id`: Chiave esterna che punta alla tabella `imprese`.
+    *   `concessions.vendor_id`: Collega il posteggio al venditore.
+*   **Backend**:
+    *   La query `/api/markets/:id/stalls` esegue una JOIN tra `stalls` -> `concessions` -> `vendors`.
+    *   Restituisce `impresa_id` per ogni posteggio occupato.
+*   **Frontend**:
+    *   Il link è: `/vetrine/{impresa_id}`.
+    *   Se `impresa_id` è nullo ma c'è un nome impresa, fallback a `/vetrine?q={nome_impresa}`.
+
+### 3. Wallet Spunta (Market-Specific)
+
+I wallet di tipo "Spunta" sono strettamente legati al mercato di riferimento.
+
+*   **Database (`wallets`)**:
+    *   `type`: 'SPUNTA'
+    *   `market_id`: ID del mercato (OBBLIGATORIO per tipo Spunta).
+    *   `company_id`: ID dell'impresa.
+*   **Logica di Visualizzazione**:
+    *   Nella lista imprese di un mercato (es. Modena), si deve mostrare SOLO il saldo del wallet con `market_id` corrispondente a Modena.
+    *   I wallet con `market_id` NULL sono considerati "GENERICI" e mostrati separatamente (badge bianco).
+
+---
