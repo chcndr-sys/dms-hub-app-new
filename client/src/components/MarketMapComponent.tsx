@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, LayersControl, Tooltip, useMap } from 'react-leaflet';
+import { Link } from 'wouter';
 import { ZoomFontUpdater } from './ZoomFontUpdater';
 import { RouteLayer } from './RouteLayer';
 import { getStallMapFillColor, getStallStatusLabel } from '@/lib/stallStatus';
@@ -851,7 +852,7 @@ export function MarketMapComponent({
                           
                           {/* Pulsante Visita Vetrina */}
                           {(dbStall?.vendor_name || props.vendor_name) && (
-                            <a 
+                            <Link 
                               href={(() => {
                                 // Logica robusta per trovare l'ID impresa
                                 // 1. Cerca in dbStall (dati live)
@@ -867,13 +868,11 @@ export function MarketMapComponent({
                                 }
                                 return `/vetrine/${companyId}`;
                               })()}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-2 w-full bg-[#14b8a6] hover:bg-[#0d9488] text-white font-medium py-2.5 px-4 rounded transition-all hover:shadow-[0_0_15px_rgba(20,184,166,0.3)] text-sm"
+                              className="flex items-center justify-center gap-2 w-full bg-[#14b8a6] hover:bg-[#0d9488] text-white font-medium py-2.5 px-4 rounded transition-all hover:shadow-[0_0_15px_rgba(20,184,166,0.3)] text-sm cursor-pointer"
                             >
                               <span>🏪</span>
                               <span>Visita Vetrina</span>
-                            </a>
+                            </Link>
                           )}
                         </div>
                       </div>
