@@ -562,11 +562,20 @@ function APIDashboard() {
           data = await suapStatsRes.json();
           break;
         case '/api/suap/pratiche':
-          const suapListRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/suap/pratiche?${new URLSearchParams(parsedBody)}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json', 'x-ente-id': 'MOCK_ENTE_001' },
-          });
-          data = await suapListRes.json();
+          if (endpointInfo?.method === 'POST') {
+            const suapCreateRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/suap/pratiche`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-ente-id': 'MOCK_ENTE_001' },
+              body: JSON.stringify(parsedBody),
+            });
+            data = await suapCreateRes.json();
+          } else {
+            const suapListRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/suap/pratiche?${new URLSearchParams(parsedBody)}`, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json', 'x-ente-id': 'MOCK_ENTE_001' },
+            });
+            data = await suapListRes.json();
+          }
           break;
         case '/api/suap/pratiche/:id':
           const suapId = parsedBody.id || 1;
@@ -576,14 +585,7 @@ function APIDashboard() {
           });
           data = await suapDetailRes.json();
           break;
-        case '/api/suap/pratiche': // POST
-          const suapCreateRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/suap/pratiche`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-ente-id': 'MOCK_ENTE_001' },
-            body: JSON.stringify(parsedBody),
-          });
-          data = await suapCreateRes.json();
-          break;
+
         case '/api/suap/pratiche/:id/valuta':
           const suapEvalId = parsedBody.id || 1;
           const suapEvalRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/suap/pratiche/${suapEvalId}/valuta`, {
@@ -840,7 +842,7 @@ function APIDashboard() {
       '/api/trpc/dmsHub.locations.create': { name: 'Nuovo HUB', address: 'Via Test 123', city: 'Grosseto', lat: 42.7635, lng: 11.1093 },
       
       // SUAP
-      '/api/suap/pratiche': { stato: 'RECEIVED' }, // GET filter example
+      // '/api/suap/pratiche': { stato: 'RECEIVED' }, // GET filter example (Commented to avoid duplicate key)
       '/api/suap/pratiche/:id': { id: 1 },
       '/api/suap/pratiche/:id/valuta': { id: 1 },
       '/api/suap/pratiche': { // POST example
