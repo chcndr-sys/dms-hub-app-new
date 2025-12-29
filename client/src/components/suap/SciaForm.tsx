@@ -15,7 +15,7 @@ const MOCK_MERCATI = {
   'modena': {
     nome: 'Mercato Novi Sad',
     comune: 'Modena',
-    posteggi: ['A01', 'A02', 'B01', 'B05']
+    posteggi: ['A01', 'A02', 'B01', 'B05', '1/16']
   }
 };
 
@@ -25,17 +25,36 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     // Sezione A - Subentrante
     cf_subentrante: '',
     ragione_sociale_sub: '',
-    comune_sub: '',
-    indirizzo_sub: '',
+    nome_sub: '',
+    cognome_sub: '',
+    data_nascita_sub: '',
+    luogo_nascita_sub: '',
+    residenza_via_sub: '',
+    residenza_comune_sub: '',
+    residenza_cap_sub: '',
+    qualita_sub: 'titolare', // titolare o legale_rappresentante
+    sede_via_sub: '',
+    sede_comune_sub: '',
+    sede_cap_sub: '',
     pec_sub: '',
+    
     // Sezione B - Cedente
     cf_cedente: '',
     ragione_sociale_ced: '',
+    scia_precedente_protocollo: '',
+    scia_precedente_data: '',
+    scia_precedente_comune: 'BOLOGNA',
+
     // Sezione C - Posteggio
     mercato: '',
     posteggio: '',
-    dimensioni: '',
+    fila: '',
+    dimensioni_mq: '',
+    dimensioni_lineari: '', // es. 6 x 6.5
     settore: '',
+    merceologia: 'non_alimentare', // alimentare, non_alimentare, misto
+    attrezzature: 'banco_automezzo', // banco, automezzo, banco_automezzo
+
     // Sezione D - Atto
     notaio: '',
     repertorio: '',
@@ -52,8 +71,9 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
         setFormData(prev => ({
           ...prev,
           ragione_sociale_sub: data.denominazione,
-          comune_sub: data.comune,
-          indirizzo_sub: `${data.indirizzo_via} ${data.indirizzo_civico}`,
+          sede_comune_sub: data.comune,
+          sede_via_sub: `${data.indirizzo_via} ${data.indirizzo_civico}`,
+          sede_cap_sub: data.cap || '',
           pec_sub: data.pec
         }));
         toast.success('Impresa trovata nel DB!', { description: data.denominazione });
@@ -93,7 +113,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
   };
 
   return (
-    <Card className="bg-[#0a1628] border-[#1e293b] max-w-4xl mx-auto">
+    <Card className="bg-[#0a1628] border-[#1e293b] max-w-4xl mx-auto max-h-[90vh] overflow-y-auto">
       <CardHeader>
         <CardTitle className="text-[#e8fbff] flex items-center gap-2">
           <FileText className="text-[#00f0ff]" />
@@ -111,6 +131,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
             <h3 className="text-lg font-semibold text-[#e8fbff] border-b border-[#1e293b] pb-2">
               A. Dati Subentrante (Cessionario)
             </h3>
+            
+            {/* Riga 1: CF e Ricerca */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Codice Fiscale / P.IVA *</Label>
@@ -127,18 +149,95 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Ragione Sociale</Label>
+                <Label className="text-[#e8fbff]">Ragione Sociale / Denominazione</Label>
                 <Input 
                   value={formData.ragione_sociale_sub}
                   onChange={(e) => setFormData({...formData, ragione_sociale_sub: e.target.value})}
                   className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
+            </div>
+
+            {/* Riga 2: Dati Personali Titolare */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+               <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Nome</Label>
+                <Input 
+                  value={formData.nome_sub}
+                  onChange={(e) => setFormData({...formData, nome_sub: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Cognome</Label>
+                <Input 
+                  value={formData.cognome_sub}
+                  onChange={(e) => setFormData({...formData, cognome_sub: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Data di Nascita</Label>
+                <Input 
+                  type="date"
+                  value={formData.data_nascita_sub}
+                  onChange={(e) => setFormData({...formData, data_nascita_sub: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Luogo di Nascita</Label>
+                <Input 
+                  value={formData.luogo_nascita_sub}
+                  onChange={(e) => setFormData({...formData, luogo_nascita_sub: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+            </div>
+
+            {/* Riga 3: Residenza Titolare */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Residenza (Via/Piazza)</Label>
+                <Input 
+                  value={formData.residenza_via_sub}
+                  onChange={(e) => setFormData({...formData, residenza_via_sub: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Comune Residenza</Label>
+                <Input 
+                  value={formData.residenza_comune_sub}
+                  onChange={(e) => setFormData({...formData, residenza_comune_sub: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">CAP</Label>
+                <Input 
+                  value={formData.residenza_cap_sub}
+                  onChange={(e) => setFormData({...formData, residenza_cap_sub: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+            </div>
+
+            {/* Riga 4: Sede Impresa */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Sede Impresa (Via/Piazza)</Label>
+                <Input 
+                  value={formData.sede_via_sub}
+                  onChange={(e) => setFormData({...formData, sede_via_sub: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Comune Sede</Label>
                 <Input 
-                  value={formData.comune_sub}
-                  onChange={(e) => setFormData({...formData, comune_sub: e.target.value})}
+                  value={formData.sede_comune_sub}
+                  onChange={(e) => setFormData({...formData, sede_comune_sub: e.target.value})}
                   className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
@@ -182,6 +281,35 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 />
               </div>
             </div>
+            
+            {/* Dati SCIA Precedente */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="space-y-2">
+                <Label className="text-[#e8fbff]">SCIA Precedente N. Prot.</Label>
+                <Input 
+                  value={formData.scia_precedente_protocollo}
+                  onChange={(e) => setFormData({...formData, scia_precedente_protocollo: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Data Presentazione</Label>
+                <Input 
+                  type="date"
+                  value={formData.scia_precedente_data}
+                  onChange={(e) => setFormData({...formData, scia_precedente_data: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Comune Presentazione</Label>
+                <Input 
+                  value={formData.scia_precedente_comune}
+                  onChange={(e) => setFormData({...formData, scia_precedente_comune: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+            </div>
           </div>
 
           {/* SEZIONE C: POSTEGGIO */}
@@ -212,6 +340,57 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                     {MOCK_MERCATI.modena.posteggi.map(p => (
                       <SelectItem key={p} value={p}>{p}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Dettagli Posteggio */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Dimensioni (MQ)</Label>
+                <Input 
+                  value={formData.dimensioni_mq}
+                  onChange={(e) => setFormData({...formData, dimensioni_mq: e.target.value})}
+                  placeholder="Es. 39"
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Dimensioni Lineari (m x m)</Label>
+                <Input 
+                  value={formData.dimensioni_lineari}
+                  onChange={(e) => setFormData({...formData, dimensioni_lineari: e.target.value})}
+                  placeholder="Es. 6 x 6.5"
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Attrezzature</Label>
+                <Select onValueChange={(val) => setFormData({...formData, attrezzature: val})}>
+                  <SelectTrigger className="bg-[#020817] border-[#1e293b] text-[#e8fbff]">
+                    <SelectValue placeholder="Seleziona..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="banco">Solo Banco</SelectItem>
+                    <SelectItem value="automezzo">Solo Automezzo</SelectItem>
+                    <SelectItem value="banco_automezzo">Banco e Automezzo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Merceologia</Label>
+                <Select onValueChange={(val) => setFormData({...formData, merceologia: val})}>
+                  <SelectTrigger className="bg-[#020817] border-[#1e293b] text-[#e8fbff]">
+                    <SelectValue placeholder="Seleziona..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="alimentare">Alimentare</SelectItem>
+                    <SelectItem value="non_alimentare">Non Alimentare</SelectItem>
+                    <SelectItem value="misto">Misto</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
