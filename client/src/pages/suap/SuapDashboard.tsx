@@ -2,17 +2,49 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Activity, FileText, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
-import { getSuapStats, SuapStats } from '@/api/suap';
+import { getSuapStats, createPratica, runEvaluation, SuapStats } from '@/api/suap';
+import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 
 export default function SuapDashboard({ embedded = false }: { embedded?: boolean }) {
   const [stats, setStats] = useState<SuapStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const [simulating, setSimulating] = useState(false);
+
+  const handleSimulation = async () => {
+    setSimulating(true);
+    try {
+      // 1. Crea Pratica
+      const newPratica = await createPratica('00000000-0000-0000-0000-000000000001', {
+        tipo_pratica: 'SCIA Apertura',
+        richiedente_nome: 'Simulazione ' + new Date().toLocaleTimeString(),
+        richiedente_cf: 'SIMUL00000000001',
+        oggetto: 'Apertura Esercizio Simulato'
+      });
+      
+      toast({ title: "Pratica Creata", description: `Protocollo: ${newPratica.protocollo}` });
+
+      // 2. Avvia Valutazione (Simulata)
+      await runEvaluation(newPratica.id);
+      toast({ title: "Valutazione Avviata", description: "Controlli in corso..." });
+
+      // 3. Refresh Dati
+      const newStats = await getSuapStats('00000000-0000-0000-0000-000000000001');
+      setStats(newStats);
+      
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Errore Simulazione", description: "Impossibile creare la pratica", variant: "destructive" });
+    } finally {
+      setSimulating(false);
+    }
+  };
 
   useEffect(() => {
     async function loadStats() {
       try {
-        const data = await getSuapStats('MOCK_ENTE_001');
+        const data = await getSuapStats('00000000-0000-0000-0000-000000000001');
         setStats(data);
       } catch (error) {
         console.error('Failed to load stats', error);
@@ -45,9 +77,13 @@ export default function SuapDashboard({ embedded = false }: { embedded?: boolean
               Lista Pratiche
             </Button>
           </Link>
-          <Button className="bg-[#00f0ff] text-black hover:bg-[#00f0ff]/90">
-            <Activity className="mr-2 h-4 w-4" />
-            Nuova Simulazione
+          <Button 
+            className="bg-[#00f0ff] text-black hover:bg-[#00f0ff]/90"
+            onClick={handleSimulation}
+            disabled={simulating}
+          >
+            <Activity className={`mr-2 h-4 w-4 ${simulating ? 'animate-spin' : ''}`} />
+            {simulating ? 'Simulazione...' : 'Nuova Simulazione'}
           </Button>
         </div>
       </div>
