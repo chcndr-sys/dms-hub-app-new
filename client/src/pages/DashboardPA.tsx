@@ -24,6 +24,7 @@ import GestioneMercati from '@/components/GestioneMercati';
 import Integrazioni from '@/components/Integrazioni';
 import { GISMap } from '@/components/GISMap';
 import { MarketMapComponent } from '@/components/MarketMapComponent';
+import SuapDashboard from '@/pages/suap/SuapDashboard';
 
 import MIOAgent from '@/components/MIOAgent';
 import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
@@ -3054,118 +3055,7 @@ export default function DashboardPA() {
 
           {/* TAB: SSO SUAP - Pratiche Ente Sussidiario */}
           <TabsContent value="ssosuap" className="space-y-6">
-            {/* Statistiche Pratiche */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="bg-[#1a2332] border-[#f59e0b]/30">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-[#f59e0b]" />
-                    <div>
-                      <p className="text-sm text-[#e8fbff]/70">Pratiche Totali</p>
-                      <p className="text-2xl font-bold text-[#f59e0b]">234</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-[#1a2332] border-[#3b82f6]/30">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-8 w-8 text-[#3b82f6]" />
-                    <div>
-                      <p className="text-sm text-[#e8fbff]/70">In Lavorazione</p>
-                      <p className="text-2xl font-bold text-[#3b82f6]">18</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-[#1a2332] border-[#10b981]/30">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-8 w-8 text-[#10b981]" />
-                    <div>
-                      <p className="text-sm text-[#e8fbff]/70">Approvate</p>
-                      <p className="text-2xl font-bold text-[#10b981]">198</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-[#1a2332] border-[#ef4444]/30">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className="h-8 w-8 text-[#ef4444]" />
-                    <div>
-                      <p className="text-sm text-[#e8fbff]/70">Rigettate</p>
-                      <p className="text-2xl font-bold text-[#ef4444]">18</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Lista Pratiche SUAP */}
-            <Card className="bg-[#1a2332] border-[#f59e0b]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-[#f59e0b]" />
-                  Pratiche SUAP Recenti - Ente Sussidiario
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="p-4 bg-[#0b1220] rounded-lg border border-[#3b82f6]/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[#e8fbff] font-semibold">SCIA Commercio - Subingresso</p>
-                        <p className="text-sm text-[#e8fbff]/70">Alimentari Rossi & C. - Prot. 2025/12345</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs bg-[#3b82f6]/20 text-[#3b82f6] px-2 py-1 rounded">IN LAVORAZIONE</span>
-                        <p className="text-sm text-[#e8fbff]/50 mt-1">20/12/2025</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-[#0b1220] rounded-lg border border-[#10b981]/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[#e8fbff] font-semibold">SCIA Commercio - Nuova Attività</p>
-                        <p className="text-sm text-[#e8fbff]/70">Bio Market Italia - Prot. 2025/12340</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs bg-[#10b981]/20 text-[#10b981] px-2 py-1 rounded">APPROVATA</span>
-                        <p className="text-sm text-[#e8fbff]/50 mt-1">18/12/2025</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-[#0b1220] rounded-lg border border-[#f59e0b]/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[#e8fbff] font-semibold">SCIA Commercio - Voltura</p>
-                        <p className="text-sm text-[#e8fbff]/70">Calzature Neri - Prot. 2025/12338</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs bg-[#f59e0b]/20 text-[#f59e0b] px-2 py-1 rounded">INTEGRAZIONE RICHIESTA</span>
-                        <p className="text-sm text-[#e8fbff]/50 mt-1">15/12/2025</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-[#0b1220] rounded-lg border border-[#ef4444]/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[#e8fbff] font-semibold">SCIA Commercio - Subingresso</p>
-                        <p className="text-sm text-[#e8fbff]/70">Casalinghi Gialli - Prot. 2025/12330</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xs bg-[#ef4444]/20 text-[#ef4444] px-2 py-1 rounded">RIGETTATA</span>
-                        <p className="text-sm text-[#e8fbff]/50 mt-1">10/12/2025</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 text-center">
-                  <p className="text-sm text-[#e8fbff]/50">Integrazione SSO SUAP - Ente Sussidiario in fase di configurazione</p>
-                </div>
-              </CardContent>
-            </Card>
+            <SuapDashboard embedded={true} />
           </TabsContent>
 
           {/* TAB 13: QUALIFICAZIONE IMPRESE */}

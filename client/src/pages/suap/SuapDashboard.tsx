@@ -5,7 +5,7 @@ import { Activity, FileText, CheckCircle2, XCircle, Clock, AlertTriangle } from 
 import { getSuapStats, SuapStats } from '@/api/suap';
 import { Link } from 'wouter';
 
-export default function SuapDashboard() {
+export default function SuapDashboard({ embedded = false }: { embedded?: boolean }) {
   const [stats, setStats] = useState<SuapStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,8 +28,9 @@ export default function SuapDashboard() {
   }
 
   return (
-    <div className="space-y-8 p-8 bg-[#020817] min-h-screen">
+    <div className={`space-y-8 ${embedded ? '' : 'p-8 bg-[#020817] min-h-screen'}`}>
       {/* Header */}
+      {!embedded && (
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[#e8fbff] tracking-tight">SUAP Dashboard</h1>
@@ -50,6 +51,7 @@ export default function SuapDashboard() {
           </Button>
         </div>
       </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
