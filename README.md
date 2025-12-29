@@ -7,15 +7,108 @@
 
 ---
 
-## 📋 Indice
+## 🚨 REGOLE FONDAMENTALI (LEGGERE PRIMA DI TUTTO!)
 
-1. [Panoramica](#-panoramica)
-2. [Architettura Sistema](#-architettura-sistema)
-3. [Sistema di Messaggistica](#-sistema-di-messaggistica)
-4. [Agenti AI](#-agenti-ai)
-5. [API Reference](#-api-reference)
-6. [Setup Sviluppo](#-setup-sviluppo)
-7. [Deploy](#-deploy)
+### ❌ COSA NON FARE MAI
+
+| Azione Vietata | Motivo |
+|----------------|--------|
+| Modificare file sul server via SSH | Rompe l'allineamento con GitHub |
+| Fare `git pull` manuale sul server | C'è l'auto-deploy! |
+| Creare progetti paralleli su Manus WebDev | Duplica il lavoro, crea confusione |
+| Hardcodare endpoint nel frontend | Aggiungi a `MIO-hub/api/index.json` |
+| Ignorare il Blueprint | Contiene architettura e regole |
+
+### ✅ COSA FARE SEMPRE
+
+| Azione Corretta | Come |
+|-----------------|------|
+| Modifica codice | In locale o direttamente su GitHub |
+| Deploy | Commit + Push → Auto-deploy |
+| Nuovi endpoint | Aggiungi a `MIO-hub/api/index.json` |
+| Modifiche significative | Aggiorna il Blueprint |
+| Prima di iniziare | Leggi `Blueprint_Evolutivo_SUAP.md` |
+
+### 🔄 FLUSSO AUTO-DEPLOY
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                         FLUSSO AUTO-DEPLOY                               │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   FRONTEND (questo repo)              BACKEND (mihub-backend-rest)       │
+│   ─────────────────────               ────────────────────────────       │
+│                                                                          │
+│   ┌─────────┐    ┌─────────┐          ┌─────────┐    ┌─────────┐        │
+│   │ Commit  │───►│  Push   │          │ Commit  │───►│  Push   │        │
+│   │ locale  │    │ GitHub  │          │ locale  │    │ GitHub  │        │
+│   └─────────┘    └────┬────┘          └─────────┘    └────┬────┘        │
+│                       │                                    │             │
+│                       ▼                                    ▼             │
+│              ┌────────────────┐                   ┌────────────────┐     │
+│              │ Vercel Webhook │                   │ Hetzner Webhook│     │
+│              │  (automatico)  │                   │  (automatico)  │     │
+│              └────────┬───────┘                   └────────┬───────┘     │
+│                       │                                    │             │
+│                       ▼                                    ▼             │
+│              ┌────────────────┐                   ┌────────────────┐     │
+│              │ Deploy Vercel  │                   │ Deploy Hetzner │     │
+│              │   (1-2 min)    │                   │   (1-2 min)    │     │
+│              └────────────────┘                   └────────────────┘     │
+│                                                                          │
+│   NON SERVE FARE NULLA MANUALMENTE!                                      │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📁 ARCHITETTURA SISTEMA
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ARCHITETTURA MIOHUB                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  FRONTEND (Vercel)          BACKEND (Hetzner)                   │
+│  ─────────────────          ────────────────────────            │
+│  Repo: dms-hub-app-new      Repo: mihub-backend-rest            │
+│        (QUESTO)                                                 │
+│  URL: dms-hub-app-new       URL: orchestratore.mio-hub.me       │
+│       .vercel.app           Server: 157.90.29.66                │
+│                                                                 │
+│                    DATABASE (Neon)                              │
+│                    ───────────────                              │
+│                    PostgreSQL serverless                        │
+│                    ep-bold-silence-adftsojg                     │
+│                                                                 │
+│  CONFIGURAZIONI (GitHub)                                        │
+│  ───────────────────────                                        │
+│  Repo: MIO-hub                                                  │
+│  File: api/index.json (150+ endpoint)                           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Repository Collegati
+
+| Repository | Scopo | URL |
+|------------|-------|-----|
+| **dms-hub-app-new** (questo) | Frontend React | [GitHub](https://github.com/Chcndr/dms-hub-app-new) |
+| **mihub-backend-rest** | Backend Express | [GitHub](https://github.com/Chcndr/mihub-backend-rest) |
+| **MIO-hub** | Configurazioni, API index | [GitHub](https://github.com/Chcndr/MIO-hub) |
+
+---
+
+## 📚 DOCUMENTAZIONE IMPORTANTE
+
+| Documento | Posizione | Descrizione |
+|-----------|-----------|-------------|
+| **Blueprint SUAP** | `Blueprint_Evolutivo_SUAP.md` | Architettura SUAP, regole agenti, roadmap |
+| **Credenziali** | `CREDENZIALI_MIOHUB.md` | Accessi server, database, servizi |
+| **API Index** | `MIO-hub/api/index.json` | Catalogo 150+ endpoint |
+
+> **⚠️ AGENTI AI:** Prima di fare qualsiasi modifica, LEGGI il `Blueprint_Evolutivo_SUAP.md`!
 
 ---
 
@@ -25,54 +118,18 @@ DMS HUB è una piattaforma di gestione per la Rete Mercati Made in Italy, dotata
 
 ### Caratteristiche Principali
 
-- **Dashboard PA**: Interfaccia amministrativa completa
-- **MIO Agent**: Orchestratore AI che coordina 4 agenti specializzati
-- **Chat Multi-Agente**: Sistema di chat con routing intelligente
-- **Shared Workspace**: Lavagna collaborativa per output visivi
+| Modulo | Descrizione |
+|--------|-------------|
+| **Dashboard PA** | Interfaccia amministrativa completa |
+| **MIO Agent** | Orchestratore AI con 4 agenti specializzati |
+| **SSO SUAP** | Gestione pratiche SCIA/Concessioni (Ente Sussidiario) |
+| **Gestione Mercati** | CRUD mercati, posteggi, operatori |
+| **Health Monitor** | Monitoraggio real-time di tutti i servizi |
+| **Chat Multi-Agente** | Sistema di chat con routing intelligente |
 
 ---
 
-## 🏗️ Architettura Sistema
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         FRONTEND (Vercel)                        │
-│                    dms-hub-app-new.vercel.app                    │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │  Dashboard  │  │  Chat MIO   │  │   Vista 4 Agenti        │  │
-│  │     PA      │  │  Principale │  │   + Chat Singole        │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
-│                              │                                   │
-│                    ┌─────────┴─────────┐                        │
-│                    │  API Vercel       │                        │
-│                    │  /api/mihub/*     │                        │
-│                    └─────────┬─────────┘                        │
-└──────────────────────────────┼──────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      DATABASE (Neon PostgreSQL)                  │
-│                    ep-bold-silence-adftsojg                      │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │                    agent_messages                        │    │
-│  │  id | conversation_id | sender | role | message | mode  │    │
-│  └─────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       BACKEND (Hetzner)                          │
-│                   orchestratore.mio-hub.me                       │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │                    Orchestrator                          │    │
-│  │  ┌─────┐  ┌───────┐  ┌────────┐  ┌───────┐  ┌────────┐ │    │
-│  │  │ MIO │→ │ Manus │  │ Abacus │  │GPT Dev│  │ Zapier │ │    │
-│  │  └─────┘  └───────┘  └────────┘  └───────┘  └────────┘ │    │
-│  └─────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Stack Tecnologico
+## 🛠️ Stack Tecnologico
 
 | Componente | Tecnologia |
 |------------|------------|
@@ -80,235 +137,78 @@ DMS HUB è una piattaforma di gestione per la Rete Mercati Made in Italy, dotata
 | **Backend** | Node.js + Express |
 | **Database** | PostgreSQL (Neon) |
 | **Deploy Frontend** | Vercel (automatico) |
-| **Deploy Backend** | Hetzner VPS (manuale) |
+| **Deploy Backend** | Hetzner VPS (automatico via webhook) |
 | **AI Models** | OpenAI GPT-4 |
-
----
-
-## 💬 Sistema di Messaggistica
-
-### Conversation IDs
-
-Il sistema utilizza conversation_id fissi per identificare le diverse chat:
-
-| Conversation ID | Descrizione | Mode |
-|-----------------|-------------|------|
-| `mio-main` | Chat principale con MIO | `auto` |
-| `user-gptdev-direct` | Chat diretta con GPT Developer | `direct` |
-| `user-manus-direct` | Chat diretta con Manus | `direct` |
-| `user-abacus-direct` | Chat diretta con Abacus | `direct` |
-| `user-zapier-direct` | Chat diretta con Zapier | `direct` |
-| `mio-{agent}-coordination` | Coordinamento MIO→Agente | `auto` |
-
-### Statistiche Attuali (20 Dic 2024)
-
-| Conversation | Messaggi |
-|--------------|----------|
-| mio-main | 148 |
-| user-gptdev-direct | 54 |
-| user-manus-direct | 72 |
-| user-abacus-direct | 21 |
-| user-zapier-direct | 19 |
-
-### Schema Database `agent_messages`
-
-```sql
-CREATE TABLE agent_messages (
-  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  conversation_id   varchar NOT NULL,    -- ID conversazione
-  sender            varchar NOT NULL,    -- Chi ha inviato: 'user', 'mio', 'manus', 'abacus', 'gptdev', 'zapier'
-  recipient         varchar,             -- Destinatario (opzionale)
-  role              varchar NOT NULL,    -- 'user' | 'assistant'
-  message           text NOT NULL,       -- Contenuto del messaggio
-  agent             varchar,             -- Agente che ha risposto
-  mode              varchar DEFAULT 'auto',  -- 'auto' | 'direct'
-  meta              jsonb,               -- Metadati aggiuntivi
-  tool_call_id      varchar,             -- ID chiamata tool (se presente)
-  tool_name         varchar,             -- Nome tool usato
-  tool_args         jsonb,               -- Argomenti tool
-  error             boolean,             -- Flag errore
-  created_at        timestamptz DEFAULT NOW()
-);
-```
-
-### Campi Chiave
-
-| Campo | Valori Possibili | Descrizione |
-|-------|------------------|-------------|
-| **sender** | `user`, `mio`, `manus`, `abacus`, `gptdev`, `zapier` | Chi ha inviato il messaggio |
-| **role** | `user`, `assistant` | Ruolo nel contesto LLM |
-| **mode** | `auto`, `direct` | Modalità di routing |
-| **agent** | `null`, `mio`, `manus`, `abacus`, `gptdev`, `zapier` | Agente che ha processato |
-
-### Logica di Rendering Frontend
-
-```typescript
-// Chat Principale MIO
-{msg.role === 'user' ? 'Tu' : msg.agentName?.toUpperCase() || 'MIO'}
-
-// Vista Singola (GPT Dev, Manus, Abacus, Zapier)
-{msg.role === 'user' ? 'Tu' : (msg.agent || 'agente')}
-```
-
-### Flusso Mode AUTO (User → MIO → Agente)
-
-```
-1. User scrive a MIO
-   └→ Salvato: mio-main, sender='user', role='user', mode='auto'
-
-2. MIO analizza e delega a Manus
-   └→ Salvato: mio-manus-coordination, sender='mio', role='user', mode='auto'
-
-3. Manus risponde
-   └→ Salvato: mio-manus-coordination, sender='manus', role='assistant', mode='auto'
-   └→ Salvato: mio-main, sender='manus', role='assistant', mode='auto'
-
-4. MIO elabora e risponde all'utente
-   └→ Salvato: mio-main, sender='mio', role='assistant', mode='auto'
-```
-
-### Flusso Mode DIRECT (User → Agente)
-
-```
-1. User scrive direttamente a Manus
-   └→ Salvato: user-manus-direct, sender='user', role='user', mode='direct'
-
-2. Manus risponde
-   └→ Salvato: user-manus-direct, sender='manus', role='assistant', mode='direct'
-```
 
 ---
 
 ## 🤖 Agenti AI
 
-### MIO - Orchestratore Principale
-
-**Ruolo**: Coordinatore centrale che analizza le richieste e delega agli agenti specializzati.
-
-**Capacità**:
-- Analisi richieste complesse
-- Routing intelligente agli agenti
-- Aggregazione risposte multiple
-- Gestione workflow multi-step
-
-### Manus - SysAdmin
-
-**Ruolo**: Gestione server e operazioni di sistema.
-
-**Capacità**:
-- Esecuzione comandi SSH
-- Gestione file system
-- Controllo servizi (PM2, Nginx)
-- Deploy applicazioni
-- Analisi log
-
-### Abacus - Data Analyst
-
-**Ruolo**: Analisi dati e query database.
-
-**Capacità**:
-- Query SQL su PostgreSQL
-- Aggregazioni e statistiche
-- Report dati
-- Accesso database Neon
-
-### GPT Developer - Sviluppatore
-
-**Ruolo**: Gestione codice e repository.
-
-**Capacità**:
-- Clonazione repository GitHub
-- Lettura/scrittura file
-- Creazione Pull Request
-- Analisi codice
-- Generazione diagrammi
-
-### Zapier - Automatore
-
-**Ruolo**: Integrazioni e automazioni esterne.
-
-**Capacità**:
-- Invio messaggi WhatsApp
-- Gestione Google Calendar
-- Invio email Gmail
-- Creazione documenti Google Docs
+| Agente | Ruolo | Capacità |
+|--------|-------|----------|
+| **MIO** | Orchestratore | Routing, coordinamento, aggregazione |
+| **Manus** | SysAdmin | SSH, file system, PM2, deploy |
+| **Abacus** | Data Analyst | SQL, statistiche, report |
+| **GPT Dev** | Sviluppatore | GitHub, codice, PR |
+| **Zapier** | Automatore | WhatsApp, Calendar, Gmail |
 
 ---
 
-## 📡 API Reference
+## 📋 Aggiungere Nuovi Endpoint
 
-### GET /api/mihub/get-messages
+**Procedura obbligatoria:**
 
-Recupera messaggi da una conversazione.
+1. **Crea l'endpoint** nel backend (`mihub-backend-rest/routes/`)
+2. **Commit e push** su GitHub
+3. **Aggiungi a `MIO-hub/api/index.json`** (obbligatorio!)
+4. **Incrementa la versione** nel file index.json
+5. **Commit e push** di MIO-hub
 
-**Query Parameters**:
+> **NON hardcodare endpoint in `Integrazioni.tsx`!** Devono essere tutti in `index.json`.
 
-| Parametro | Tipo | Required | Default | Descrizione |
-|-----------|------|----------|---------|-------------|
-| `conversation_id` | string | ✅ | - | ID conversazione |
-| `agent_name` | string | ❌ | - | Filtra per agente |
-| `mode` | string | ❌ | - | Filtra per mode (auto/direct) |
-| `limit` | number | ❌ | 200 | Max messaggi |
+---
 
-**Response**:
-```json
-{
-  "success": true,
-  "messages": [
-    {
-      "id": "uuid",
-      "conversation_id": "mio-main",
-      "agent": "mio",
-      "sender": "user",
-      "role": "user",
-      "message": "Ciao MIO",
-      "created_at": "2025-12-20T10:00:00Z",
-      "meta": null,
-      "mode": "auto"
-    }
-  ],
-  "pagination": {
-    "total": 148,
-    "limit": 200,
-    "has_more": false
-  }
-}
+## 🚀 Deploy
+
+### Frontend (Automatico - Vercel)
+
+```bash
+git add -A
+git commit -m "feat: nuova funzionalità"
+git push origin master
+# Vercel deploya automaticamente in 1-2 minuti
 ```
 
-### POST /api/mihub/orchestrator-proxy
+### Backend (Automatico - Hetzner)
 
-Invia un messaggio all'orchestratore.
-
-**Request Body**:
-```json
-{
-  "message": "Chiedi a Manus lo stato del server",
-  "mode": "auto",
-  "targetAgent": "manus",
-  "conversationId": "mio-main"
-}
+```bash
+# Nel repo mihub-backend-rest
+git add -A
+git commit -m "feat: nuovo endpoint"
+git push origin master
+# Il webhook deploya automaticamente in 1-2 minuti
 ```
 
-**Response**:
-```json
-{
-  "success": true,
-  "agent": "manus",
-  "conversationId": "mio-main",
-  "message": "Il server è online..."
-}
+### ⚠️ NON FARE MAI
+
+```bash
+# ❌ SBAGLIATO - Non fare SSH per deployare!
+ssh root@157.90.29.66
+cd /root/mihub-backend-rest
+git pull  # NO!
+pm2 restart  # NO!
 ```
 
 ---
 
-## 🛠️ Setup Sviluppo
+## 🛠️ Setup Sviluppo Locale
 
 ### Prerequisiti
 
 - Node.js 18+
 - pnpm
 - Account Vercel
-- Accesso SSH al server Hetzner
+- Accesso ai repository GitHub
 
 ### Installazione
 
@@ -326,61 +226,44 @@ pnpm dev
 
 ### Variabili d'Ambiente
 
-```env
-# Database
-DATABASE_URL=postgresql://neondb_owner:xxx@ep-bold-silence-adftsojg-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+Crea un file `.env.local`:
 
-# Backend
+```env
 VITE_BACKEND_URL=https://orchestratore.mio-hub.me
 ```
 
 ---
 
-## 🚀 Deploy
+## 💬 Sistema di Messaggistica
 
-### Frontend (Automatico)
+### Conversation IDs
 
-Il deploy su Vercel è automatico ad ogni push su `master`:
-
-```bash
-git add -A
-git commit -m "feat: nuova funzionalità"
-git push origin master
-```
-
-### Backend (Manuale)
-
-```bash
-# SSH al server
-ssh -i ~/.ssh/manus_hetzner_key root@157.90.29.66
-
-# Deploy
-cd /root/mihub-backend-rest
-git pull origin master
-pm2 restart mihub-backend
-```
+| Conversation ID | Descrizione | Mode |
+|-----------------|-------------|------|
+| `mio-main` | Chat principale con MIO | `auto` |
+| `user-gptdev-direct` | Chat diretta con GPT Developer | `direct` |
+| `user-manus-direct` | Chat diretta con Manus | `direct` |
+| `user-abacus-direct` | Chat diretta con Abacus | `direct` |
+| `user-zapier-direct` | Chat diretta con Zapier | `direct` |
 
 ---
 
-## 📝 Changelog Recente
+## 🆘 Troubleshooting
 
-### 20 Dicembre 2024
-
-- **Fix sender display**: Corretto il rendering "da Tu" vs "da MIO" nelle chat singole
-- **Commit**: `fd885bd` - Semplificata logica sender nelle Vista Singola
-
-### 19 Dicembre 2024
-
-- **Fix conversation_id**: Implementati ID fissi per le conversazioni
-- **Fix mode parameter**: Aggiunto parametro mode al salvataggio messaggi
+| Problema | Soluzione |
+|----------|-----------|
+| Modifiche non visibili (frontend) | Aspetta 1-2 min per Vercel |
+| Modifiche non visibili (backend) | Aspetta 1-2 min per webhook Hetzner |
+| Errore 500 | Controlla Health Monitor in Dashboard |
+| Endpoint non trovato | Verifica sia in `index.json` |
 
 ---
 
-## 📚 Documentazione Aggiuntiva
+## 📞 Contatti
 
-- [BLUEPRINT_MIOHUB.md](./BLUEPRINT_MIOHUB.md) - Documentazione tecnica dettagliata
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - Architettura del sistema
+Per problemi critici, contattare l'amministratore del sistema.
 
 ---
 
-*Ultimo aggiornamento: 20 Dicembre 2024*
+*© 2025 MIO Hub. Tutti i diritti riservati.*
+*Ultimo aggiornamento: 29 Dicembre 2025*
