@@ -51,13 +51,15 @@ interface MarketAutorizzazioniTabProps {
   companies: CompanyRow[];
   searchQuery: string;
   marketId: number;
+  marketName?: string;
+  municipality?: string;
 }
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-export function MarketAutorizzazioniTab({ companies, searchQuery, marketId }: MarketAutorizzazioniTabProps) {
+export function MarketAutorizzazioniTab({ companies, searchQuery, marketId, marketName, municipality }: MarketAutorizzazioniTabProps) {
   const [autorizzazioni, setAutorizzazioni] = useState<AutorizzazioneRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -230,6 +232,8 @@ export function MarketAutorizzazioniTab({ companies, searchQuery, marketId }: Ma
         <DomandaSpuntaModal
           companies={companies}
           marketId={marketId}
+          marketName={marketName}
+          municipality={municipality}
           onClose={() => setShowSpuntaModal(false)}
         />
       )}
@@ -241,7 +245,7 @@ export function MarketAutorizzazioniTab({ companies, searchQuery, marketId }: Ma
 // DOMANDA SPUNTA MODAL
 // ============================================================================
 
-function DomandaSpuntaModal({ companies, marketId, onClose }: { companies: CompanyRow[], marketId: number, onClose: () => void }) {
+function DomandaSpuntaModal({ companies, marketId, marketName, municipality, onClose }: { companies: CompanyRow[], marketId: number, marketName?: string, municipality?: string, onClose: () => void }) {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
@@ -277,18 +281,22 @@ function DomandaSpuntaModal({ companies, marketId, onClose }: { companies: Compa
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md shadow-2xl">
         <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-          <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-            <FileCheck className="w-5 h-5 text-blue-500" />
+          <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <FileCheck className="w-6 h-6 text-blue-500" />
             Domanda Spunta
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-200">
-            Inviando la domanda, verrà creato automaticamente un <strong>Wallet Spunta</strong> specifico per questo mercato.
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-sm text-blue-200 space-y-2">
+            <p>Inviando la domanda, verrà creato automaticamente un <strong>Wallet Spunta</strong> specifico per:</p>
+            <div className="flex flex-col gap-1 mt-2 pl-2 border-l-2 border-blue-500/30">
+              <span className="text-white font-medium">{marketName || 'Mercato Corrente'}</span>
+              <span className="text-blue-300 text-xs">{municipality || 'Comune di Riferimento'}</span>
+            </div>
           </div>
 
           <div className="space-y-2">

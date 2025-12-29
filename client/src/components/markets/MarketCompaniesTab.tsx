@@ -34,6 +34,8 @@ import { MarketAutorizzazioniTab } from './MarketAutorizzazioniTab';
 
 export interface MarketCompaniesTabProps {
   marketId: string;              // es. "GRO001"
+  marketName?: string;
+  municipality?: string;
   stalls: { id: string; code: string }[]; // lista posteggi già caricata dalla pagina
 }
 
@@ -179,7 +181,7 @@ export const STATO_IMPRESA_OPTIONS = [
 // ============================================================================
 
 export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
-  const { marketId, stalls } = props;
+  const { marketId, marketName, municipality, stalls } = props;
   
   console.log('[MarketCompaniesTab] props', { marketId, stallsLength: stalls?.length });
 
@@ -817,7 +819,9 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
         <MarketAutorizzazioniTab 
           companies={companies} 
           searchQuery={searchQuery} 
-          marketId={marketId}
+          marketId={parseInt(marketId)}
+          marketName={marketName}
+          municipality={municipality}
         />
       )}
 

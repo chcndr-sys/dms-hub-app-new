@@ -420,7 +420,12 @@ function MarketDetail({ market, allMarkets, onUpdate }: { market: Market; allMar
           </TabsContent>
 
           <TabsContent value="concessioni" className="space-y-4">
-            <MarketCompaniesTab marketId={market.id.toString()} stalls={stalls.map(s => ({ id: s.id.toString(), code: s.number }))} />
+            <MarketCompaniesTab 
+              marketId={market.id.toString()} 
+              marketName={market.name}
+              municipality={market.municipality}
+              stalls={stalls.map(s => ({ id: s.id.toString(), code: s.number }))} 
+            />
           </TabsContent>
         </Tabs>
       </CardContent>

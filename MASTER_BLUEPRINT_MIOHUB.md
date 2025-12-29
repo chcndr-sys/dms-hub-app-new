@@ -30,12 +30,11 @@
 1.  **Wallet Spunta Specifico per Mercato**
     -   **Architettura**: I wallet di tipo `SPUNTA` non sono più unici per azienda, ma specifici per ogni coppia `(Azienda, Mercato)`.
     -   **Motivazione**: I pagamenti della spunta devono confluire nelle casse specifiche del comune che gestisce quel mercato.
-    -   **Visualizzazione**: Nella lista imprese, il badge "Spunta" mostra il saldo del wallet relativo al mercato che si sta visualizzando.
-
-2.  **Domanda Spunta**
-    -   **Nuovo Flusso**: Aggiunto pulsante "Domanda Spunta" nel tab Autorizzazioni.
-    -   **Funzionamento**: Permette di creare un nuovo wallet spunta per un'impresa in uno specifico mercato, simulando la richiesta di partecipazione alla spunta.
-
+    -   **Visualizzazione**: Nella lista imprese, il badge "Spunta" mostra il saldo del wallet relativo al mercato che si sta visualiz35	2.  **Domanda Spunta**
+36	    -   **Nuovo Flusso**: Aggiunto pulsante "Domanda Spunta" nel tab Autorizzazioni.
+37	    -   **Funzionamento**: Permette di creare un nuovo wallet spunta per un'impresa in uno specifico mercato.
+38	    -   **UX**: La modale mostra esplicitamente il Mercato e il Comune di riferimento per evitare errori.
+39	    -   **Nota**: Per le imprese con molti wallet spunta, la visualizzazione è filtrata per mostrare solo quello pertinente al mercato corrente.
 3.  **Fix Storico PagoPA**
     -   **Problema**: Crash della pagina storico dovuto a conflitti di nomi (`History` vs `window.history`) e dati sporchi.
     -   **Soluzione**: Rinominato componente in `HistoryIcon`, blindato il rendering delle date e filtrati i dati non validi.
