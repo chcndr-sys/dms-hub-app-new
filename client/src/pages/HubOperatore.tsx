@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { QrReader } from 'react-qr-reader';
+// import { QrReader } from 'react-qr-reader'; // Removed due to React 19 incompatibility
 import { toast } from 'sonner';
 import { 
   BarChart3, 
@@ -248,11 +248,11 @@ export default function HubOperatore() {
                 <div className="aspect-square bg-[#0b1220] rounded-lg flex flex-col items-center justify-center border-2 border-dashed border-[#334155] overflow-hidden relative">
                   {isScanning ? (
                     <>
-                      <QrReader
-                        onResult={handleScanResult}
-                        constraints={{ facingMode: 'environment' }}
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                        <Camera className="w-12 h-12 text-yellow-500 mb-2" />
+                        <p className="text-yellow-500 font-medium">Scanner QR Temporaneamente Disabilitato</p>
+                        <p className="text-xs text-white/60 mt-1">Incompatibilità tecnica rilevata (React 19)</p>
+                      </div>
                       <Button 
                         variant="destructive" 
                         size="sm" 

@@ -2,32 +2,32 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Activity, FileText, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
-import { getSuapStats, createPratica, runEvaluation, SuapStats } from '@/api/suap';
-import { useToast } from '@/hooks/use-toast';
+import { getSuapStats, createSuapPratica, evaluateSuapPratica, SuapStats } from '@/api/suap';
+import { toast } from 'sonner';
 import { Link } from 'wouter';
 
 export default function SuapDashboard({ embedded = false }: { embedded?: boolean }) {
   const [stats, setStats] = useState<SuapStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Replaced by sonner import
   const [simulating, setSimulating] = useState(false);
 
   const handleSimulation = async () => {
     setSimulating(true);
     try {
       // 1. Crea Pratica
-      const newPratica = await createPratica('00000000-0000-0000-0000-000000000001', {
+      const newPratica = await createSuapPratica('00000000-0000-0000-0000-000000000001', {
         tipo_pratica: 'SCIA Apertura',
         richiedente_nome: 'Simulazione ' + new Date().toLocaleTimeString(),
         richiedente_cf: 'SIMUL00000000001',
         oggetto: 'Apertura Esercizio Simulato'
       });
       
-      toast({ title: "Pratica Creata", description: `Protocollo: ${newPratica.protocollo}` });
+      toast.success("Pratica Creata", { description: `Protocollo: ${newPratica.protocollo}` });
 
       // 2. Avvia Valutazione (Simulata)
-      await runEvaluation(newPratica.id);
-      toast({ title: "Valutazione Avviata", description: "Controlli in corso..." });
+      await evaluateSuapPratica(newPratica.id.toString(), '00000000-0000-0000-0000-000000000001');
+      toast.info("Valutazione Avviata", { description: "Controlli in corso..." });
 
       // 3. Refresh Dati
       const newStats = await getSuapStats('00000000-0000-0000-0000-000000000001');
@@ -35,7 +35,7 @@ export default function SuapDashboard({ embedded = false }: { embedded?: boolean
       
     } catch (error) {
       console.error(error);
-      toast({ title: "Errore Simulazione", description: "Impossibile creare la pratica", variant: "destructive" });
+      toast.error("Errore Simulazione", { description: "Impossibile creare la pratica" });
     } finally {
       setSimulating(false);
     }
