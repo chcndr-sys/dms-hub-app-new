@@ -154,27 +154,26 @@ export function MioProvider({ children }: { children: ReactNode }) {
                 agentName: log.agent_name || log.agent || log.sender,
               }));
               
-              // 🔧 FIX: Merge intelligente - confronta ID, contenuto E timestamp per evitare duplicati
+              // 🔧 FIX v2: Merge intelligente - confronta ID, contenuto ESATTO E ruolo per evitare duplicati
               setMessages(prev => {
                 const existingIds = new Set(prev.map(m => m.id));
-                // 🔥 FIX DUPLICATI: Crea anche un set di "fingerprint" basato su contenuto+ruolo+timestamp approssimato
-                const existingFingerprints = new Set(prev.map(m => {
-                  const timestamp = new Date(m.createdAt).getTime();
-                  // Arrotonda timestamp a 10 secondi per tolleranza
-                  const roundedTime = Math.floor(timestamp / 10000);
-                  return `${m.role}:${m.content?.substring(0, 50)}:${roundedTime}`;
-                }));
+                
+                // 🔥 FIX DUPLICATI v2: Crea set di contenuti esatti per ruolo (ignora timestamp)
+                const existingContentMap = new Map<string, boolean>();
+                prev.forEach(m => {
+                  // Chiave: ruolo + contenuto completo (normalizzato)
+                  const contentKey = `${m.role}:${(m.content || '').trim()}`;
+                  existingContentMap.set(contentKey, true);
+                });
                 
                 const newMessages = serverMessages.filter(m => {
                   // Salta se ID già esiste
                   if (existingIds.has(m.id)) return false;
                   
-                  // 🔥 Salta se contenuto+ruolo+timestamp simile già esiste (evita duplicati con ID diversi)
-                  const timestamp = new Date(m.createdAt).getTime();
-                  const roundedTime = Math.floor(timestamp / 10000);
-                  const fingerprint = `${m.role}:${m.content?.substring(0, 50)}:${roundedTime}`;
-                  if (existingFingerprints.has(fingerprint)) {
-                    console.log('🚫 [MioContext] Skipping duplicate by fingerprint:', fingerprint.substring(0, 30));
+                  // 🔥 FIX v2: Salta se stesso contenuto+ruolo già esiste (ignora timestamp completamente)
+                  const contentKey = `${m.role}:${(m.content || '').trim()}`;
+                  if (existingContentMap.has(contentKey)) {
+                    console.log('🚫 [MioContext] Skipping duplicate by content:', contentKey.substring(0, 50));
                     return false;
                   }
                   
