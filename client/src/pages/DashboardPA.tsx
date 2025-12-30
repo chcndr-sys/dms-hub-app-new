@@ -952,7 +952,7 @@ export default function DashboardPA() {
         const allLogs: any[] = [];
         
         for (const convId of conversationIds) {
-          const response = await fetch(`/api/mihub/get-messages?conversation_id=${convId}&limit=20`);
+          const response = await fetch(`/api/mihub/get-messages?conversation_id=${convId}&limit=20&order=desc`);
           const data = await response.json();
           if (data.success && Array.isArray(data.messages)) {
             // Trasforma i messaggi nel formato log

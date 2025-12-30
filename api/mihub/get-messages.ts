@@ -22,7 +22,8 @@ export default async function handler(
   }
 
   try {
-    const { conversation_id, agent_name, mode, limit = '200' } = req.query;
+    const { conversation_id, agent_name, mode, limit = '200', order = 'asc' } = req.query;
+    const orderDir = order === 'desc' ? 'DESC' : 'ASC';
 
     // Validazione
     if (!conversation_id || typeof conversation_id !== 'string') {
@@ -64,7 +65,7 @@ export default async function handler(
           WHERE conversation_id = ${conversation_id}
             AND agent = ${agent_name}
             AND (${mode || null}::varchar IS NULL OR mode = ${mode || null})
-          ORDER BY created_at ASC
+          ORDER BY created_at ${order === 'desc' ? sql`DESC` : sql`ASC`}
           LIMIT ${parseInt(limit as string)}
         `;
       } else {
@@ -82,7 +83,7 @@ export default async function handler(
           FROM agent_messages
           WHERE conversation_id = ${conversation_id}
             AND (${mode || null}::varchar IS NULL OR mode = ${mode || null})
-          ORDER BY created_at ASC
+          ORDER BY created_at ${order === 'desc' ? sql`DESC` : sql`ASC`}
           LIMIT ${parseInt(limit as string)}
         `;
       }
