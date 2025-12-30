@@ -20,7 +20,7 @@ export function useSystemStatus(pollInterval: number = 30000): SystemStatusResul
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
-      const response = await fetch('https://api.mio-hub.me/api/system/health', {
+      const response = await fetch('https://orchestratore.mio-hub.me/api/system/health', {
         signal: controller.signal,
         method: 'GET',
       });
@@ -39,7 +39,7 @@ export function useSystemStatus(pollInterval: number = 30000): SystemStatusResul
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
-      const response = await fetch('https://api.mio-hub.me/api/system/pm2-status', {
+      const response = await fetch('https://orchestratore.mio-hub.me/api/system/pm2-status', {
         signal: controller.signal,
         method: 'GET',
       });
