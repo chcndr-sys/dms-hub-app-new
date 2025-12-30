@@ -53,7 +53,7 @@ export function LegacyReportCards() {
               <Button 
                 variant="outline" 
                 className="flex-1 border-[#a855f7] text-[#a855f7] hover:bg-[#a855f7]/10"
-                onClick={() => window.open('/BLUEPRINT.md', '_blank')}
+                onClick={() => window.open('https://github.com/Chcndr/mihub-backend-rest/blob/master/BLUEPRINT_UNIFICATO.md', '_blank')}
               >
                 <FileText className="h-4 w-4 mr-2" />
                 Master Plan
