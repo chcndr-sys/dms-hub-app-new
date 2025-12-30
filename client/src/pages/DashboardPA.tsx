@@ -936,25 +936,52 @@ export default function DashboardPA() {
   }, [gisMarketId]);
   
   // Fetch Guardian logs from Neon database via Abacus SQL
+  // 🔥 FIX: Carica attività agenti da agent_messages invece di guardian_logs
   useEffect(() => {
-    const fetchGuardianLogs = async () => {
+    const fetchAgentActivity = async () => {
       try {
-        const response = await fetch('/api/guardian/logs');
-        const logs = await response.json();
-        if (Array.isArray(logs)) {
-          setGuardianLogs(logs);
-        } else {
-          console.error('Failed to fetch Guardian logs:', logs);
-          setGuardianLogs([]);
+        // Carica gli ultimi messaggi degli agenti da tutte le conversazioni di coordinamento
+        const conversationIds = [
+          'mio-manus-coordination',
+          'mio-abacus-coordination', 
+          'mio-zapier-coordination',
+          'mio-gptdev-coordination',
+          'mio-main'
+        ];
+        
+        const allLogs: any[] = [];
+        
+        for (const convId of conversationIds) {
+          const response = await fetch(`/api/mihub/get-messages?conversation_id=${convId}&limit=20`);
+          const data = await response.json();
+          if (data.success && Array.isArray(data.messages)) {
+            // Trasforma i messaggi nel formato log
+            const logs = data.messages.map((msg: any) => ({
+              timestamp: msg.created_at,
+              agent: msg.agent || msg.sender || 'unknown',
+              status: 'allowed',
+              method: msg.meta?.tool || 'message',
+              path: msg.message?.substring(0, 100) + (msg.message?.length > 100 ? '...' : ''),
+              reason: null,
+              response_time_ms: null,
+              conversation_id: msg.conversation_id
+            }));
+            allLogs.push(...logs);
+          }
         }
+        
+        // Ordina per timestamp decrescente e prendi gli ultimi 50
+        allLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setGuardianLogs(allLogs.slice(0, 50));
+        
       } catch (error) {
-        console.error('Failed to fetch Guardian logs:', error);
+        console.error('Failed to fetch agent activity:', error);
         setGuardianLogs([]);
       }
     };
-    fetchGuardianLogs();
+    fetchAgentActivity();
     // Refresh every 10 seconds for real-time updates
-    const interval = setInterval(fetchGuardianLogs, 10000);
+    const interval = setInterval(fetchAgentActivity, 10000);
     return () => clearInterval(interval);
   }, []);
   
