@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.2.1  
+> **Versione:** 3.2.2  
 > **Data:** 1 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -575,13 +575,23 @@ Piano sviluppo organizzato per quarter:
 
 ## 📝 CHANGELOG
 
+### v3.2.2 (01/01/2026) - "Fix MIO Prompt - Tool Obbligatori + English Rules"
+- ✅ **Fix prompt MIO** - Rafforzate regole per uso obbligatorio dei tool
+- ✅ **Conversione regole in inglese** per migliori performance Gemini
+- ✅ MIO ora usa `call_agent` invece di rispondere "Posso delegare"
+- ✅ Aggiunta sezione FORBIDDEN esplicita con comportamenti vietati
+- ✅ Caso EMAIL: estrae contesto dalla conversazione, non chiede dettagli
+- ✅ Keywords italiane mantenute per matching, risposta resta in italiano
+- ✅ Commit 1: `54cf37f` - "🧠 Rafforza prompt MIO: tool obbligatori"
+- ✅ Commit 2: `6ef1f79` - "🧠 Convert MIO prompt rules to English"
+
 ### v3.2.1 (01/01/2026) - "Fix Autoheal & Stabilità Backend"
 - ✅ **Fix script autoheal.sh** - Cambiato endpoint da `/api/mihub/status` (404) a `/health`
 - ✅ Script autoheal ora controlla correttamente lo stato del backend
 - ✅ Risolto problema 341 restart PM2 causati da health check errato
 - ✅ Aggiunta colonne `settore_merceologico` e `comune_rilascio` alla tabella concessioni frontend
 - ✅ Fix MarketCompaniesTab.tsx per visualizzare nuovi campi concessioni
-- ⚠️ Zapier Gmail: problema SSL in fase di investigazione
+- ✅ Zapier Gmail: verificato funzionante, problema era nel prompt MIO
 
 ### v3.2.0 (30/12/2025) - "Knowledge Base DMS Completa"
 - ✅ **Creata Knowledge Base DMS** con 30 documenti PDF strategici
