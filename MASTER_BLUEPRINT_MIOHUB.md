@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.2.5  
+> **Versione:** 3.3.0  
 > **Data:** 1 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -168,12 +168,27 @@ POST https://orchestratore.mio-hub.me/api/mihub/orchestrator
 ### I 5 Agenti
 
 | Agente | Ruolo | Capabilities |
-|--------|-------|--------------|
-| **MIO** | Coordinatore (GPT-5) | Smista task, coordina agenti |
-| **GPT Dev** | Sviluppatore | GitHub, commit, PR, codice |
-| **Manus** | Operatore | SSH, PM2, file system, server |
-| **Abacus** | Analista | Query SQL, analisi dati |
-| **Zapier** | Automazioni | Email, WhatsApp, Calendar, Gmail |
+|--------|-------|--------------||
+| **MIO** | Coordinatore (Gemini 2.5 Flash) | Smista task, coordina agenti, risponde a saluti |
+| **GPT Dev** | Sviluppatore | GitHub, commit, PR, codice, repository info |
+| **Manus** | Operatore | SSH, PM2, file system, server status |
+| **Abacus** | Analista SQL | Query SQL dirette, query multiple aggregate, analisi dati |
+| **Zapier** | Automazioni | Email, WhatsApp, Calendar, Gmail, Google Docs |
+
+### 🔥 Routing Intelligente (v3.3.0)
+
+**Query singole** (es: "Quanti mercati ci sono?"):
+- Routing diretto ad **Abacus** senza passare da Gemini
+- Risposta immediata con risultato SQL
+
+**Query multiple** (es: "Quanti mercati, posteggi e imprese ci sono?"):
+- Routing diretto ad **Abacus** con logica multi-query
+- Abacus esegue N query e aggrega i risultati
+- Risposta formattata: "📊 Riepilogo Database: Mercati: 2, Posteggi: 564, Imprese: 13"
+
+**Saluti e presentazioni** (es: "Ciao", "Chi sei?"):
+- Routing a **MIO** che risponde direttamente senza delegare
+- Nessun loop, risposta immediata
 
 ### Modalità di Funzionamento
 
@@ -326,17 +341,20 @@ POST /api/guardian/debug/testEndpoint
 
 **Connection String:** Vedi variabile `DATABASE_URL` o `NEON_POSTGRES_URL`
 
-### Tabelle Principali
+### Tabelle Principali (Dati Reali - 1 Gennaio 2026)
 
-| Tabella | Descrizione | Records (stima) |
-|---------|-------------|-----------------|
-| `markets` | Mercati | 542 |
-| `vendors` | Operatori | ~2000 |
-| `stalls` | Posteggi | ~5000 |
-| `concessions` | Concessioni | ~3000 |
-| `agent_messages` | Chat agenti | ~400 |
-| `mio_agent_logs` | Log API | ~1200 |
+| Tabella | Descrizione | Records |
+|---------|-------------|-----------------||
+| `markets` | Mercati | **2** |
+| `stalls` | Posteggi | **564** |
+| `imprese` | Imprese | **13** |
+| `vendors` | Operatori | **11** |
+| `concessions` | Concessioni | **23** |
+| `agent_messages` | Chat agenti | ~500 |
+| `mio_agent_logs` | Log API | ~1500 |
 | `suap_eventi` | Eventi SUAP | variabile |
+
+**Totale tabelle nel database:** 81
 
 ### Storage S3
 
@@ -574,6 +592,17 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+
+### v3.3.0 (01/01/2026) - "Fix Agenti e Routing Intelligente"
+- ✅ **Fix Abacus conteggio mercati:** Era 542 (contava stalls), ora 2 (conta markets)
+- ✅ **Fix MIO Loop:** MIO ora risponde direttamente ai saluti senza entrare in loop infinito
+- ✅ **Query Multiple Aggregate:** Abacus gestisce query su più entità (mercati+posteggi+imprese) con risposta formattata
+- ✅ **Routing Intelligente:** Query multiple vanno direttamente ad Abacus (non a MIO che non usa i tool)
+- ✅ **Pattern Abacus Estesi:** Aggiunti pattern per imprese, vendors, concessioni, comuni, utenti, prodotti, ispezioni, violazioni, wallets, tabelle
+- ✅ **Prompt MIO Aggiornato:** Sezione SALUTI E PRESENTAZIONI per rispondere senza delegare
+- ✅ **Allineamento GitHub-Server:** Commit `9ad9892` deployato su Hetzner
+- ✅ **Blueprint Aggiornato:** Dati reali database (2 mercati, 564 posteggi, 13 imprese, 11 vendors, 23 concessioni, 81 tabelle)
+- File modificati: `llm.js` (routing + prompt MIO + pattern Abacus multi-query)
 
 ### v3.2.5 (01/01/2026) - "Fix Chat MIO - Endpoint Vercel TUBO DIRETTO"
 - ✅ **Fix get-messages.ts (Vercel)** - Endpoint TUBO DIRETTO database→frontend
