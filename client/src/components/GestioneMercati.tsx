@@ -2005,21 +2005,25 @@ function ConcessioniTab({ marketId }: { marketId: number }) {
 
       {/* Sezione Concessioni */}
       <div>
-        <h3 className="text-lg font-semibold mb-4 text-[#e8fbff]">Concessioni Attive</h3>
+        <h3 className="text-lg font-semibold mb-4 text-[#e8fbff]">Concessioni</h3>
         <div className="border border-[#14b8a6]/20 rounded-lg overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-[#0b1220]/50 border-[#14b8a6]/20 hover:bg-[#0b1220]/50">
                 <TableHead className="text-[#e8fbff]/70">Posteggio</TableHead>
                 <TableHead className="text-[#e8fbff]/70">Impresa</TableHead>
-                <TableHead className="text-[#e8fbff]/70">Tipo</TableHead>
+                <TableHead className="text-[#e8fbff]/70">Settore</TableHead>
+                <TableHead className="text-[#e8fbff]/70">Comune</TableHead>
                 <TableHead className="text-[#e8fbff]/70">Valida Dal</TableHead>
                 <TableHead className="text-[#e8fbff]/70">Valida Al</TableHead>
+                <TableHead className="text-[#e8fbff]/70">Stato</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {concessions.map((concession) => (
-                <TableRow key={concession.id} className="border-[#14b8a6]/10 hover:bg-[#14b8a6]/5">
+              {concessions.map((concession) => {
+                const isExpired = concession.valid_to && new Date(concession.valid_to) < new Date();
+                return (
+                <TableRow key={concession.id} className={`border-[#14b8a6]/10 hover:bg-[#14b8a6]/5 ${isExpired ? 'opacity-70' : ''}`}>
                   <TableCell className="font-medium text-[#e8fbff]">{concession.stall_number}</TableCell>
                   <TableCell>
                     <div>
@@ -2029,8 +2033,11 @@ function ConcessioniTab({ marketId }: { marketId: number }) {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
-                      {concession.type}
+                      {concession.settore_merceologico || 'Alimentare'}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-[#e8fbff]">
+                    {concession.comune_rilascio || '-'}
                   </TableCell>
                   <TableCell className="text-[#e8fbff]">
                     {new Date(concession.valid_from).toLocaleDateString('it-IT')}
@@ -2040,8 +2047,15 @@ function ConcessioniTab({ marketId }: { marketId: number }) {
                       ? new Date(concession.valid_to).toLocaleDateString('it-IT')
                       : 'Indeterminato'}
                   </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={isExpired 
+                      ? "bg-red-500/20 text-red-400 border-red-500/30" 
+                      : "bg-green-500/20 text-green-400 border-green-500/30"}>
+                      {isExpired ? 'Scaduta' : 'Attiva'}
+                    </Badge>
+                  </TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
           </Table>
         </div>

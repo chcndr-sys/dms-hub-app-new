@@ -1171,15 +1171,21 @@ function CompanyCard({ company, qualificazioni = [], marketId, onEdit, onViewQua
           {company.concessioni && company.concessioni.map((conc, idx) => {
             const hasBalance = conc.wallet_balance !== undefined;
             const isPaid = hasBalance && conc.wallet_balance! > 0;
+            const isExpired = conc.stato === 'SCADUTA';
             
             return (
-              <span key={idx} className="inline-flex items-center gap-2 px-2 py-1 text-xs font-medium text-blue-400 bg-blue-400/10 border border-blue-400/20 rounded-md">
+              <span key={idx} className={`inline-flex items-center gap-2 px-2 py-1 text-xs font-medium rounded-md ${
+                isExpired 
+                  ? 'text-red-400 bg-red-400/10 border border-red-400/20' 
+                  : 'text-blue-400 bg-blue-400/10 border border-blue-400/20'
+              }`}>
                 <div className="flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   {conc.mercato}: {conc.posteggio_code}
+                  {isExpired && <span className="ml-1 text-[10px] uppercase font-bold">(Scaduta)</span>}
                 </div>
                 {hasBalance && (
-                  <div className={`flex items-center gap-1 pl-2 border-l border-blue-400/20 ${isPaid ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`flex items-center gap-1 pl-2 border-l ${isExpired ? 'border-red-400/20' : 'border-blue-400/20'} ${isPaid ? 'text-green-400' : 'text-red-400'}`}>
                     <div className={`w-2 h-2 rounded-full ${isPaid ? 'bg-green-500' : 'bg-red-500'}`} />
                     <span className="font-bold">€ {conc.wallet_balance!.toFixed(2)}</span>
                   </div>
