@@ -63,6 +63,8 @@ type ConcessionRow = {
   valida_dal?: string;       // ISO date
   valida_al?: string;        // ISO date
   stato?: string;            // ATTIVA/SCADUTA/SOSPESA
+  settore_merceologico?: string;  // Alimentare/Non Alimentare
+  comune_rilascio?: string;       // Comune che ha rilasciato la concessione
 };
 
 export type CompanyFormData = {
@@ -386,7 +388,9 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
             valida_al: c.valid_to || c.valida_al,
             stato: c.status || (
               (c.valid_to && new Date(c.valid_to) < new Date()) ? 'SCADUTA' : 'ATTIVA'
-            )
+            ),
+            settore_merceologico: c.settore_merceologico || 'Alimentare',
+            comune_rilascio: c.comune_rilascio || ''
           }));
           setConcessions(mappedData);
         } else {
@@ -422,7 +426,9 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
         valida_al: c.valid_to || c.valida_al,
         stato: c.status || (
           (c.valid_to && new Date(c.valid_to) < new Date()) ? 'SCADUTA' : 'ATTIVA'
-        )
+        ),
+        settore_merceologico: c.settore_merceologico || 'Alimentare',
+        comune_rilascio: c.comune_rilascio || ''
       }));
       
       setConcessions(mappedData);
@@ -694,7 +700,10 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                           Impresa
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                          Tipo
+                          Settore
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Comune
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                           Valida Dal
@@ -1244,7 +1253,12 @@ function ConcessionRow({ concession, onEdit }: ConcessionRowProps) {
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-gray-300">{concession.company_name}</td>
-      <td className="px-4 py-3 text-sm text-gray-300 capitalize">{concession.tipo_concessione}</td>
+      <td className="px-4 py-3 text-sm text-gray-300">
+        <span className="px-2 py-1 text-xs rounded-full bg-purple-500/20 text-purple-400">
+          {concession.settore_merceologico || 'Alimentare'}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-300">{concession.comune_rilascio || '-'}</td>
       <td className="px-4 py-3 text-sm text-gray-300">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-500" />
