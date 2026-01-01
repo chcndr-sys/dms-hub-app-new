@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.2.0  
-> **Data:** 30 Dicembre 2025  
+> **Versione:** 3.2.1  
+> **Data:** 1 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -460,6 +460,23 @@ ssh user@157.90.29.66 "pm2 status"
 ssh user@157.90.29.66 "pm2 restart mihub-backend"
 ```
 
+### Script Autoheal (Cron ogni 15 min)
+
+**File:** `/root/mihub-backend-rest/scripts/autoheal.sh`
+
+```bash
+#!/bin/bash
+URL="https://orchestratore.mio-hub.me/health"  # ⚠️ IMPORTANTE: usa /health, NON /api/mihub/status
+if ! curl -fs $URL >/dev/null; then
+  echo "$(date) – Orchestrator down, restarting..." >> /var/log/mio-autoheal.log
+  cd /root/mihub-backend-rest && pm2 restart mihub-backend
+fi
+```
+
+**Log:** `/var/log/mio-autoheal.log`
+
+**Cron:** `*/15 * * * * /root/mihub-backend-rest/scripts/autoheal.sh`
+
 ### Frontend non si aggiorna
 
 1. Verifica deploy Vercel: https://vercel.com/dashboard
@@ -557,6 +574,14 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+
+### v3.2.1 (01/01/2026) - "Fix Autoheal & Stabilità Backend"
+- ✅ **Fix script autoheal.sh** - Cambiato endpoint da `/api/mihub/status` (404) a `/health`
+- ✅ Script autoheal ora controlla correttamente lo stato del backend
+- ✅ Risolto problema 341 restart PM2 causati da health check errato
+- ✅ Aggiunta colonne `settore_merceologico` e `comune_rilascio` alla tabella concessioni frontend
+- ✅ Fix MarketCompaniesTab.tsx per visualizzare nuovi campi concessioni
+- ⚠️ Zapier Gmail: problema SSL in fase di investigazione
 
 ### v3.2.0 (30/12/2025) - "Knowledge Base DMS Completa"
 - ✅ **Creata Knowledge Base DMS** con 30 documenti PDF strategici
