@@ -1,0 +1,42 @@
+flowchart TB
+    subgraph INPUT["INPUT PRATICA"]
+        A[Pratica SCIA Ricevuta] --> B[Identifica CF/PIVA]
+        B --> C{Cerca in imprese}
+    end
+
+    subgraph LOOKUP["LOOKUP IMPRESE"]
+        C -->|Subentrante| D[Impresa SUB]
+        C -->|Cedente| E[Impresa CED]
+    end
+
+    subgraph CHECK_SUB["CONTROLLI SUBENTRANTE"]
+        D --> F1[CHECK_DURC_SUB]
+        D --> F2[CHECK_ONORABILITA_SUB]
+        D --> F3[CHECK_ANTIMAFIA_SUB]
+        D --> F4[CHECK_IMPRESA_ATTIVA_SUB]
+        D --> F5[CHECK_LIMITE_POSTEGGI]
+        D --> F6[CHECK_ALIMENTARE_SUB]
+        D --> F7[CHECK_HACCP_SUB]
+    end
+
+    subgraph CHECK_CED["CONTROLLI CEDENTE"]
+        E --> G1[CHECK_DURC_CED]
+        E --> G2[CHECK_ONORABILITA_CED]
+        E --> G3[CHECK_ANTIMAFIA_CED]
+        E --> G4[CHECK_IMPRESA_ATTIVA_CED]
+        E --> G5[CHECK_CANONE_UNICO]
+    end
+
+    subgraph SCORE["CALCOLO SCORE"]
+        F1 & F2 & F3 & F4 & F5 & F6 & F7 --> H[Somma Pesi SUB]
+        G1 & G2 & G3 & G4 & G5 --> I[Somma Pesi CED]
+        H & I --> J[Score Totale]
+    end
+
+    subgraph OUTPUT["OUTPUT"]
+        J --> K{Hard Fail?}
+        K -->|Si| L[REVIEW_NEEDED]
+        K -->|No| M{Score >= 70?}
+        M -->|Si| N[AUTO_OK]
+        M -->|No| L
+    end
