@@ -452,8 +452,8 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
             setQualificazioni(prev => {
               const others = prev.filter(q => q.company_id !== selectedCompanyForQualif.id);
               const newQualificazioni = json.data.map((q: any) => {
-                // Calcola lo stato basandosi sulla data di scadenza
-                let stato = q.stato;
+                // Calcola lo stato DINAMICAMENTE dalla data di scadenza
+                let stato = q.stato || 'ATTIVA';
                 if (q.data_scadenza) {
                   const oggi = new Date();
                   oggi.setHours(0, 0, 0, 0); // Confronta solo le date, non le ore
@@ -462,8 +462,11 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                   const [year, month, day] = scadenzaStr.split('-').map(Number);
                   const scadenza = new Date(year, month - 1, day); // Crea data locale
                   scadenza.setHours(23, 59, 59, 999); // Fine giornata della scadenza
+                  // Determina lo stato SOLO dalla data
                   if (scadenza < oggi) {
                     stato = 'SCADUTA';
+                  } else {
+                    stato = 'ATTIVA';
                   }
                 }
                 return {
@@ -1179,16 +1182,21 @@ function CompanyCard({ company, qualificazioni = [], marketId, onEdit, onViewQua
     const oggi = new Date();
     oggi.setHours(0, 0, 0, 0);
     return quals.map(q => {
-      let stato = q.status || q.stato;
-      // Se ha una data di scadenza e è passata, forza lo stato a SCADUTA
+      // Calcola lo stato DINAMICAMENTE dalla data di scadenza, ignorando lo stato del DB
+      // perché il DB potrebbe avere uno stato obsoleto
+      let stato = q.status || q.stato || 'ATTIVA';
       if (q.data_scadenza) {
-        // Normalizza la data di scadenza a mezzanotte per evitare problemi di fuso orario
+        // Normalizza la data di scadenza per evitare problemi di fuso orario
         const scadenzaStr = q.data_scadenza.split('T')[0]; // Prende solo YYYY-MM-DD
         const [year, month, day] = scadenzaStr.split('-').map(Number);
         const scadenza = new Date(year, month - 1, day); // Crea data locale senza fuso orario
         scadenza.setHours(23, 59, 59, 999); // Fine giornata della scadenza
+        // Determina lo stato SOLO dalla data
         if (scadenza < oggi) {
           stato = 'SCADUTA';
+        } else {
+          // Se la data NON è scaduta, forza ATTIVA (sovrascrive eventuale stato errato nel DB)
+          stato = 'ATTIVA';
         }
       }
       return { ...q, stato };

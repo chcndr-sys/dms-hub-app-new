@@ -977,4 +977,4 @@
 ## Bug Fix - Batch 02/01/2026 (sera 3)
 
 - [x] Date picker funziona ora
-- [ ] Semaforo qualificazioni mostra Scaduta anche quando data_scadenza è nel futuro (es. REC 09/01/2030)
+- [x] Semaforo qualificazioni mostra Scaduta anche quando data_scadenza è nel futuro - corretto confronto date con fuso orario
