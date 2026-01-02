@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.6.0  
+> **Versione:** 3.7.0  
 > **Data:** 2 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -592,6 +592,23 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+
+### v3.7.0 (02/01/2026) - SSO SUAP Database Completo SCIA
+- ✅ **Migrazione Database** - Aggiunte 55+ nuove colonne a `suap_pratiche`:
+  - Dati Pratica: numero_protocollo, comune_presentazione, tipo_segnalazione, motivo_subingresso, settore_merceologico, ruolo_dichiarante
+  - Dati Subentrante: ragione_sociale, nome, cognome, data_nascita, luogo_nascita, residenza, sede_impresa, PEC, telefono
+  - Dati Cedente: CF, ragione_sociale, nome, cognome, data_nascita, residenza, PEC, SCIA_precedente
+  - Dati Mercato: mercato_id, mercato_nome, posteggio_id, posteggio_numero, ubicazione, giorno, fila, dimensioni, attrezzature
+  - Dati Atto Notarile: notaio_rogante, numero_repertorio, data_atto
+  - Dati Delegato: nome, cognome, CF, data_nascita, qualifica, residenza
+- ✅ **Backend Aggiornato** - `createPratica` salva tutti i 63 parametri del form SCIA
+- ✅ **Frontend Aggiornato** - `handleSciaSubmit` invia tutti i dati del form
+- ✅ **Pagina Dettaglio Pratica** - `SuapDetail.tsx` mostra tutti i dati SCIA con sezioni dedicate
+- ✅ **Fix CORS** - Passaggio `ente_id` nel body invece che nell'header
+- File modificati: service.js, SuapDashboard.tsx, SuapDetail.tsx, suap.ts
+- Script migrazione: scripts/add_scia_columns.js
+- Commit Backend: ea620b9
+- Commit Frontend: 3f6bdce
 
 ### v3.6.0 (02/01/2026) - SSO SUAP Sezione Delegato e Campi Sede Impresa
 - ✅ **Sezione Delegato Condizionale** - Nuova sezione "Dati del Delegato / Procuratore"
