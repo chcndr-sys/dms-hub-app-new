@@ -961,7 +961,14 @@
 
 ## Bug Fix - Batch 02/01/2026 (sera)
 
-- [ ] Date picker si chiude ancora - verificare fix
-- [ ] Toggle storico confuso - cambiare testo in "Visualizzando: X"
-- [ ] Semaforo qualifiche non cambia colore (rimane verde anche se scaduto)
-- [ ] Form SCIA: mercato/posteggio prende dati subentrante invece del cedente
+- [x] Date picker si chiude ancora - aggiunto fix a GestioneMercati.tsx e MarketAutorizzazioniTab.tsx
+- [x] Toggle storico confuso - cambiato testo in "Mostra Storico" / "Mostra Solo Ultima"
+- [x] Semaforo qualifiche non cambia colore - aggiunto calcolo dinamico basato su data_scadenza
+- [x] Form SCIA: mercato/posteggio ora usa CEDENTE invece del subentrante
+
+
+## Bug Fix - Batch 02/01/2026 (sera 2)
+
+- [ ] Punteggio verifiche deve basarsi SOLO sull'ultima verifica, non sullo storico completo
+- [ ] Form SCIA: mercato/posteggio deve mostrare SOLO i posteggi del cedente (non tutti i mercati)
+- [ ] Verificare che il filtro selectedCedente funzioni correttamente

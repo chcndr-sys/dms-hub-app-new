@@ -870,14 +870,30 @@ export default function SuapPanel() {
                   </CardHeader>
                   <CardContent className="flex flex-col items-center justify-center py-8">
                     {(() => {
-                      // Calcola statistiche dai controlli
-                      const checks = selectedPratica.checks || [];
+                      // Calcola statistiche dai controlli - SOLO ULTIMA VERIFICA
+                      const allChecks = selectedPratica.checks || [];
+                      
+                      // Filtra per mostrare solo ultima verifica (stesso filtro usato nella lista)
+                      let checks = allChecks;
+                      if (allChecks.length > 0) {
+                        const latestTime = Math.max(...allChecks.map(c => 
+                          new Date(c.data_check || c.created_at || 0).getTime()
+                        ));
+                        const threshold = latestTime - (5 * 60 * 1000); // 5 minuti
+                        checks = allChecks.filter(c => {
+                          const checkTime = new Date(c.data_check || c.created_at || 0).getTime();
+                          return checkTime >= threshold;
+                        });
+                      }
+                      
                       const totalChecks = checks.length;
                       const passedChecks = checks.filter(c => 
                         c.esito === true || c.esito === 'PASS' || c.esito === 'true'
                       ).length;
                       const failedChecks = totalChecks - passedChecks;
-                      const score = selectedPratica.score || 0;
+                      
+                      // Ricalcola score basato solo sull'ultima verifica
+                      const score = totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0;
                       const scoreColor = score >= 70 ? '#22c55e' : score >= 40 ? '#eab308' : '#ef4444';
                       
                       return (

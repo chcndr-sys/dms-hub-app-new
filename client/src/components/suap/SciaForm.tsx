@@ -342,10 +342,10 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
           });
           setStalls(sortedStalls);
           
-          // Se c'è un'impresa selezionata, filtra solo i suoi posteggi
-          if (selectedImpresa) {
-            const impresaStallsFiltered = sortedStalls.filter((s: Stall) => s.impresa_id === selectedImpresa.id);
-            setFilteredStalls(impresaStallsFiltered);
+          // Se c'è un CEDENTE selezionato, filtra solo i suoi posteggi
+          if (selectedCedente) {
+            const cedenteStallsFiltered = sortedStalls.filter((s: Stall) => s.impresa_id === selectedCedente.id);
+            setFilteredStalls(cedenteStallsFiltered);
           } else {
             setFilteredStalls(sortedStalls);
           }
@@ -359,7 +359,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     };
     
     fetchStalls();
-  }, [selectedMarketId, selectedImpresa]);
+  }, [selectedMarketId, selectedCedente]);
 
   // Funzione per cercare impresa (CF, P.IVA o denominazione)
   const searchImpresa = (searchValue: string): Impresa | undefined => {
@@ -1215,8 +1215,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">
-                  Mercato * {selectedImpresa && filteredMarkets.length < markets.length && (
-                    <span className="text-[#14b8a6] text-xs ml-2">({filteredMarkets.length} mercati dell'impresa)</span>
+                  Mercato * {selectedCedente && filteredMarkets.length < markets.length && (
+                    <span className="text-[#14b8a6] text-xs ml-2">({filteredMarkets.length} mercati del cedente)</span>
                   )}
                 </Label>
                 <Select 
@@ -1228,7 +1228,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                     <SelectValue placeholder={loadingMarkets ? "Caricamento..." : "Seleziona Mercato"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {(selectedImpresa ? filteredMarkets : markets).map(market => (
+                    {(selectedCedente ? filteredMarkets : markets).map(market => (
                       <SelectItem key={market.id} value={market.id.toString()}>
                         {market.name} ({market.municipality})
                       </SelectItem>
@@ -1238,8 +1238,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
               </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">
-                  Numero Posteggio * {selectedImpresa && selectedMarketId && filteredStalls.length > 0 && (
-                    <span className="text-[#14b8a6] text-xs ml-2">({filteredStalls.length} posteggi dell'impresa)</span>
+                  Numero Posteggio * {selectedCedente && selectedMarketId && filteredStalls.length > 0 && (
+                    <span className="text-[#14b8a6] text-xs ml-2">({filteredStalls.length} posteggi del cedente)</span>
                   )}
                 </Label>
                 <Select 
@@ -1251,7 +1251,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                     <SelectValue placeholder={loadingStalls ? "Caricamento..." : "Seleziona Posteggio"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {(selectedImpresa && filteredStalls.length > 0 ? filteredStalls : stalls).map(stall => (
+                    {(selectedCedente && filteredStalls.length > 0 ? filteredStalls : stalls).map(stall => (
                       <SelectItem key={stall.id} value={stall.id.toString()}>
                         {stall.number} - {stall.area_mq} mq ({stall.vendor_business_name || 'Libero'})
                       </SelectItem>
