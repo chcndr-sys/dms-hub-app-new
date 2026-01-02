@@ -1180,7 +1180,7 @@ function CompanyInlineForm({ company, marketId, onClose, onSaved }: {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className={labelClass}>Data Nascita</label>
-              <input type="date" value={formData.rappresentante_legale_data_nascita} onChange={(e) => setFormData({ ...formData, rappresentante_legale_data_nascita: e.target.value })} className={inputClass} />
+              <input type="date" value={formData.rappresentante_legale_data_nascita} onChange={(e) => setFormData({ ...formData, rappresentante_legale_data_nascita: e.target.value })} onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()} onFocus={(e) => e.stopPropagation()} onBlur={(e) => e.stopPropagation()} className={`${inputClass} relative z-[100]`} />
             </div>
             <div>
               <label className={labelClass}>Luogo Nascita</label>
@@ -1241,7 +1241,7 @@ function CompanyInlineForm({ company, marketId, onClose, onSaved }: {
           </div>
           <div>
             <label className={labelClass}>Data Iscrizione RI</label>
-            <input type="date" value={formData.data_iscrizione_ri} onChange={(e) => setFormData({ ...formData, data_iscrizione_ri: e.target.value })} className={inputClass} />
+            <input type="date" value={formData.data_iscrizione_ri} onChange={(e) => setFormData({ ...formData, data_iscrizione_ri: e.target.value })} onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()} onFocus={(e) => e.stopPropagation()} onBlur={(e) => e.stopPropagation()} className={`${inputClass} relative z-[100]`} />
           </div>
         </div>
       </div>

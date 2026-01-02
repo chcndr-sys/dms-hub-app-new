@@ -1060,7 +1060,9 @@ function QualificazioneModal({ company, qualificazione, onClose, onSaved }: Qual
                 value={formData.data_rilascio}
                 onChange={(e) => setFormData({ ...formData, data_rilascio: e.target.value })}
                 onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 relative z-[100]"
               />
             </div>
@@ -1071,7 +1073,9 @@ function QualificazioneModal({ company, qualificazione, onClose, onSaved }: Qual
                 value={formData.data_scadenza}
                 onChange={(e) => setFormData({ ...formData, data_scadenza: e.target.value })}
                 onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 relative z-[100]"
               />
             </div>
@@ -1165,7 +1169,23 @@ interface CompanyCardProps {
 function CompanyCard({ company, qualificazioni = [], marketId, onEdit, onViewQualificazioni }: CompanyCardProps) {
   // Usiamo le qualificazioni passate come prop (dal fetch dettagliato) se presenti,
   // altrimenti usiamo quelle incorporate nell'oggetto company (dal fetch lista)
-  const displayQualificazioni = qualificazioni.length > 0 ? qualificazioni : (company.qualificazioni || []);
+  // Calcoliamo dinamicamente lo stato SCADUTA basandoci sulla data di scadenza
+  const displayQualificazioni = React.useMemo(() => {
+    const quals = qualificazioni.length > 0 ? qualificazioni : (company.qualificazioni || []);
+    const oggi = new Date();
+    oggi.setHours(0, 0, 0, 0);
+    return quals.map(q => {
+      let stato = q.status || q.stato;
+      // Se ha una data di scadenza e è passata, forza lo stato a SCADUTA
+      if (q.data_scadenza) {
+        const scadenza = new Date(q.data_scadenza);
+        if (scadenza < oggi) {
+          stato = 'SCADUTA';
+        }
+      }
+      return { ...q, stato };
+    });
+  }, [qualificazioni, company.qualificazioni]);
   // Filtra i wallet spunta da visualizzare
   // Se siamo in un mercato specifico, mettiamo quello corrente per primo, poi gli altri
   const sortedSpuntaWallets = React.useMemo(() => {
@@ -1974,7 +1994,9 @@ export function CompanyModal({ marketId, company, onClose, onSaved, inline = fal
                   value={formData.rappresentante_legale_data_nascita}
                   onChange={(e) => setFormData({ ...formData, rappresentante_legale_data_nascita: e.target.value })}
                   onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
                   onFocus={(e) => e.stopPropagation()}
+                  onBlur={(e) => e.stopPropagation()}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative z-[100]"
                 />
               </div>
@@ -2129,7 +2151,9 @@ export function CompanyModal({ marketId, company, onClose, onSaved, inline = fal
                 value={formData.data_iscrizione_ri}
                 onChange={(e) => setFormData({ ...formData, data_iscrizione_ri: e.target.value })}
                 onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative z-[100]"
               />
             </div>
@@ -2420,7 +2444,9 @@ function ConcessionModal({ marketId, marketName, concession, companies, stalls, 
                 value={formData.valida_dal}
                 onChange={(e) => setFormData({ ...formData, valida_dal: e.target.value })}
                 onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative z-[100]"
               />
             </div>
@@ -2434,7 +2460,9 @@ function ConcessionModal({ marketId, marketName, concession, companies, stalls, 
                 value={formData.valida_al}
                 onChange={(e) => setFormData({ ...formData, valida_al: e.target.value })}
                 onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
                 className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative z-[100]"
               />
             </div>

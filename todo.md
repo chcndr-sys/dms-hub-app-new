@@ -954,6 +954,14 @@
 
 ## Bug Fix - Verifica SCIA e Semafori (02/01/2026)
 
-- [ ] Aggiungere filtro per mostrare solo ultima verifica o storico completo
-- [ ] Toggle per passare da "Ultima Verifica" a "Storico Completo"
-- [ ] Semaforo rosso per qualifiche scadute nella scheda qualifiche
+- [x] Aggiungere filtro per mostrare solo ultima verifica o storico completo
+- [x] Toggle per passare da "Ultima Verifica" a "Storico Completo"
+- [x] Semaforo rosso per qualifiche scadute nella scheda qualifiche
+
+
+## Bug Fix - Batch 02/01/2026 (sera)
+
+- [ ] Date picker si chiude ancora - verificare fix
+- [ ] Toggle storico confuso - cambiare testo in "Visualizzando: X"
+- [ ] Semaforo qualifiche non cambia colore (rimane verde anche se scaduto)
+- [ ] Form SCIA: mercato/posteggio prende dati subentrante invece del cedente

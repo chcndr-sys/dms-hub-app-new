@@ -89,6 +89,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
   const [cedenteSearchQuery, setCedenteSearchQuery] = useState('');
   const [showCedenteSuggestions, setShowCedenteSuggestions] = useState(false);
   const [filteredCedenteImprese, setFilteredCedenteImprese] = useState<Impresa[]>([]);
+  const [selectedCedente, setSelectedCedente] = useState<Impresa | null>(null); // Cedente selezionato
   const searchCedenteRef = useRef<HTMLDivElement>(null);
   
   // Stati per filtro mercati/posteggi per impresa
@@ -238,26 +239,27 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     setShowCedenteSuggestions(filtered.length > 0);
   }, [cedenteSearchQuery, allImprese]);
 
-  // Carica posteggi dell'impresa selezionata
+  // Carica posteggi dell'impresa CEDENTE (non subentrante!)
+  // Il mercato/posteggio deve essere quello del cedente che cede la concessione
   useEffect(() => {
-    if (!selectedImpresa) {
+    if (!selectedCedente) {
       setImpresaStalls([]);
       setFilteredMarkets(markets);
       return;
     }
     
-    const loadImpresaStalls = async () => {
+    const loadCedenteStalls = async () => {
       try {
         const stallsData: {marketId: number, marketName: string, stallNumber: string, stallId: number}[] = [];
         
-        // Per ogni mercato, carica i posteggi e filtra quelli dell'impresa
+        // Per ogni mercato, carica i posteggi e filtra quelli del CEDENTE
         for (const market of markets) {
           const res = await fetch(`${API_URL}/api/markets/${market.id}/stalls`);
           const json = await res.json();
           
           if (json.success && json.data) {
-            const impresaStallsInMarket = json.data.filter((s: Stall) => s.impresa_id === selectedImpresa.id);
-            impresaStallsInMarket.forEach((s: Stall) => {
+            const cedenteStallsInMarket = json.data.filter((s: Stall) => s.impresa_id === selectedCedente.id);
+            cedenteStallsInMarket.forEach((s: Stall) => {
               stallsData.push({
                 marketId: market.id,
                 marketName: market.name,
@@ -270,7 +272,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
         
         setImpresaStalls(stallsData);
         
-        // Filtra mercati dove l'impresa ha posteggi
+        // Filtra mercati dove il CEDENTE ha posteggi
         const marketIds = [...new Set(stallsData.map(s => s.marketId))];
         if (marketIds.length > 0) {
           setFilteredMarkets(markets.filter(m => marketIds.includes(m.id)));
@@ -278,15 +280,15 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
           setFilteredMarkets(markets); // Se non ha posteggi, mostra tutti
         }
       } catch (error) {
-        console.error('Errore caricamento posteggi impresa:', error);
+        console.error('Errore caricamento posteggi cedente:', error);
         setFilteredMarkets(markets);
       }
     };
     
     if (markets.length > 0) {
-      loadImpresaStalls();
+      loadCedenteStalls();
     }
-  }, [selectedImpresa, markets]);
+  }, [selectedCedente, markets]);
 
   // Carica mercati e imprese all'avvio
   useEffect(() => {
@@ -414,6 +416,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
 
   // Popola dati impresa nel form (per Cedente)
   const populateCedenteData = (impresa: Impresa) => {
+    setSelectedCedente(impresa); // Salva il cedente selezionato per filtrare mercati/posteggi
     setFormData(prev => ({
       ...prev,
       cf_cedente: impresa.codice_fiscale || impresa.partita_iva || '',

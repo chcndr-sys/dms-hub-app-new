@@ -750,7 +750,7 @@ export default function SuapPanel() {
                               : 'bg-[#00f0ff]/20 text-[#00f0ff] hover:bg-[#00f0ff]/30'
                           }`}
                         >
-                          {showAllChecks ? '📜 Storico Completo' : '✨ Ultima Verifica'}
+                          {showAllChecks ? '🔄 Mostra Solo Ultima' : '📜 Mostra Storico'}
                         </button>
                       )}
                     </div>
