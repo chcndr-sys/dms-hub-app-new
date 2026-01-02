@@ -731,46 +731,100 @@ export default function SuapPanel() {
 
               {/* Controlli e Punteggio */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Controlli Automatici */}
+                {/* Controlli Automatici v2.0 */}
                 <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
                   <CardHeader>
-                    <CardTitle className="text-[#e8fbff]">Controlli Automatici</CardTitle>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      Controlli Automatici
+                      <Badge className="bg-[#00f0ff]/20 text-[#00f0ff] text-xs">v2.0</Badge>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {selectedPratica.checks && selectedPratica.checks.length > 0 ? (
-                      <div className="space-y-3">
-                        {selectedPratica.checks.map((check, idx) => {
-                          // Gestisce sia boolean che string per esito
-                          const isPassed = check.esito === true || check.esito === 'PASS' || check.esito === 'true';
-                          const checkName = check.tipo_check || check.check_code || 'Controllo';
-                          const checkTime = check.data_check || check.created_at;
+                      <div className="space-y-4">
+                        {/* Raggruppa per categoria */}
+                        {(() => {
+                          const checks = selectedPratica.checks || [];
+                          const grouped: Record<string, typeof checks> = {};
                           
-                          return (
-                            <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-[#0b1220]">
-                              <div className="flex items-center gap-2">
-                                {isPassed ? (
-                                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                ) : (
-                                  <XCircle className="h-5 w-5 text-red-500" />
-                                )}
-                                <div>
-                                  <p className="text-[#e8fbff] font-medium">{checkName}</p>
-                                  <p className="text-xs text-gray-500">Fonte: {check.fonte}</p>
+                          checks.forEach(check => {
+                            // Estrai categoria dal dettaglio o dal check_code
+                            let categoria = 'PRATICA';
+                            try {
+                              const dettaglio = typeof check.dettaglio === 'string' ? JSON.parse(check.dettaglio) : check.dettaglio;
+                              categoria = dettaglio?.categoria || 'PRATICA';
+                            } catch {
+                              // Determina categoria dal nome del check
+                              if (check.check_code?.includes('_SUB')) categoria = 'SUBENTRANTE';
+                              else if (check.check_code?.includes('_CED') || check.check_code?.includes('CANONE')) categoria = 'CEDENTE';
+                            }
+                            if (!grouped[categoria]) grouped[categoria] = [];
+                            grouped[categoria].push(check);
+                          });
+                          
+                          const categorieOrder = ['SUBENTRANTE', 'CEDENTE', 'PRATICA'];
+                          const categorieLabels: Record<string, { label: string; color: string; icon: string }> = {
+                            'SUBENTRANTE': { label: 'Subentrante', color: '#00f0ff', icon: '👤' },
+                            'CEDENTE': { label: 'Cedente', color: '#f59e0b', icon: '📤' },
+                            'PRATICA': { label: 'Pratica', color: '#8b5cf6', icon: '📄' }
+                          };
+                          
+                          return categorieOrder.map(cat => {
+                            const catChecks = grouped[cat];
+                            if (!catChecks || catChecks.length === 0) return null;
+                            const catInfo = categorieLabels[cat] || { label: cat, color: '#6b7280', icon: '✓' };
+                            
+                            return (
+                              <div key={cat} className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: catInfo.color }}>
+                                  <span>{catInfo.icon}</span>
+                                  <span>{catInfo.label}</span>
+                                  <span className="text-xs text-gray-500">({catChecks.length})</span>
+                                </div>
+                                <div className="space-y-2 pl-4 border-l-2" style={{ borderColor: catInfo.color + '40' }}>
+                                  {catChecks.map((check, idx) => {
+                                    const isPassed = check.esito === true || check.esito === 'PASS' || check.esito === 'true';
+                                    const checkName = check.tipo_check || check.check_code || 'Controllo';
+                                    const checkTime = check.data_check || check.created_at;
+                                    
+                                    // Estrai motivo dal dettaglio
+                                    let motivo = '';
+                                    try {
+                                      const dettaglio = typeof check.dettaglio === 'string' ? JSON.parse(check.dettaglio) : check.dettaglio;
+                                      motivo = dettaglio?.motivo || '';
+                                    } catch {}
+                                    
+                                    return (
+                                      <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-[#0b1220]/50">
+                                        <div className="flex items-center gap-2">
+                                          {isPassed ? (
+                                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                          ) : (
+                                            <XCircle className="h-4 w-4 text-red-500" />
+                                          )}
+                                          <div>
+                                            <p className="text-[#e8fbff] text-sm">{checkName}</p>
+                                            {motivo && <p className="text-xs text-gray-500">{motivo}</p>}
+                                          </div>
+                                        </div>
+                                        <div className="text-right">
+                                          <span className={`text-xs font-medium ${isPassed ? 'text-green-400' : 'text-red-400'}`}>
+                                            {isPassed ? 'PASS' : 'FAIL'}
+                                          </span>
+                                          {checkTime && (
+                                            <p className="text-xs text-gray-500">
+                                              {formatDateTime(checkTime)}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <span className={`text-xs font-medium ${isPassed ? 'text-green-400' : 'text-red-400'}`}>
-                                  {isPassed ? 'PASS' : 'FAIL'}
-                                </span>
-                                {checkTime && (
-                                  <p className="text-xs text-gray-500">
-                                    {formatDateTime(checkTime)}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          });
+                        })()}
                       </div>
                     ) : (
                       <p className="text-gray-500 italic">Nessun controllo eseguito ancora. Clicca "Esegui Valutazione" per avviare i controlli.</p>
