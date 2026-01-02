@@ -92,7 +92,7 @@ interface SuapPraticaFull extends SuapPratica {
 
 function DataSection({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
-    <Card className="bg-[#1e293b] border-[#334155]">
+    <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
       <CardHeader className="pb-3">
         <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-lg">
           <Icon className="h-5 w-5 text-[#14b8a6]" />
@@ -352,7 +352,7 @@ export default function SuapPanel() {
           <Button 
             onClick={() => setShowConcessioneForm(true)}
             variant="outline"
-            className="border-[#1e293b] text-[#e8fbff] hover:bg-[#1e293b]"
+            className="border-[#14b8a6]/30 text-[#e8fbff] hover:bg-[#1e293b]"
           >
             <CheckCircle2 className="mr-2 h-4 w-4" />
             Concessione
@@ -441,7 +441,7 @@ export default function SuapPanel() {
           {/* Attività Recente e Stato Integrazioni */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Attività Recente */}
-            <Card className="bg-[#1e293b] border-[#334155]">
+            <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff]">Attività Recente</CardTitle>
               </CardHeader>
@@ -481,7 +481,7 @@ export default function SuapPanel() {
             </Card>
 
             {/* Stato Integrazioni */}
-            <Card className="bg-[#1e293b] border-[#334155]">
+            <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff]">Stato Integrazioni</CardTitle>
               </CardHeader>
@@ -524,17 +524,17 @@ export default function SuapPanel() {
                 placeholder="Cerca per CUI, Richiedente o CF..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-[#1e293b] border-[#334155] text-[#e8fbff]"
+                className="pl-10 bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30 text-[#e8fbff]"
               />
             </div>
-            <Button variant="outline" className="border-[#1e293b] text-[#e8fbff]">
+            <Button variant="outline" className="border-[#14b8a6]/30 text-[#e8fbff]">
               <Filter className="mr-2 h-4 w-4" />
               Filtri Avanzati
             </Button>
           </div>
 
           {/* Tabella pratiche */}
-          <Card className="bg-[#1e293b] border-[#334155]">
+          <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
             <CardContent className="p-0">
               {loading ? (
                 <div className="flex items-center justify-center py-16">
@@ -548,7 +548,7 @@ export default function SuapPanel() {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-[#1e293b] hover:bg-transparent">
+                    <TableRow className="border-[#14b8a6]/30 hover:bg-transparent">
                       <TableHead className="text-gray-400">CUI</TableHead>
                       <TableHead className="text-gray-400">Tipo</TableHead>
                       <TableHead className="text-gray-400">Richiedente</TableHead>
@@ -562,7 +562,7 @@ export default function SuapPanel() {
                     {filteredPratiche.map((pratica) => (
                       <TableRow 
                         key={pratica.id} 
-                        className="border-[#1e293b] hover:bg-[#0f172a] cursor-pointer"
+                        className="border-[#14b8a6]/30 hover:bg-[#0f172a] cursor-pointer"
                         onClick={() => loadPraticaDetail(pratica.id)}
                       >
                         <TableCell className="text-[#e8fbff] font-medium">{pratica.cui}</TableCell>
@@ -603,7 +603,7 @@ export default function SuapPanel() {
         {/* ================================================================== */}
         <TabsContent value="dettaglio" className="space-y-6 mt-6">
           {!selectedPratica ? (
-            <Card className="bg-[#1e293b] border-[#334155]">
+            <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
               <CardContent className="py-16 text-center">
                 <FileSearch className="w-16 h-16 mx-auto mb-4 text-gray-600" />
                 <p className="text-gray-500">Seleziona una pratica dalla lista per visualizzare i dettagli</p>
@@ -732,7 +732,7 @@ export default function SuapPanel() {
               {/* Controlli e Punteggio */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Controlli Automatici */}
-                <Card className="bg-[#1e293b] border-[#334155]">
+                <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
                   <CardHeader>
                     <CardTitle className="text-[#e8fbff]">Controlli Automatici</CardTitle>
                   </CardHeader>
@@ -779,7 +779,7 @@ export default function SuapPanel() {
                 </Card>
 
                 {/* Punteggio Affidabilità */}
-                <Card className="bg-[#1e293b] border-[#334155]">
+                <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
                   <CardHeader>
                     <CardTitle className="text-[#e8fbff]">Punteggio Affidabilità</CardTitle>
                   </CardHeader>
@@ -841,7 +841,7 @@ export default function SuapPanel() {
               </div>
 
               {/* Timeline Eventi */}
-              <Card className="bg-[#1e293b] border-[#334155]">
+              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
                 <CardHeader>
                   <CardTitle className="text-[#e8fbff]">Timeline Eventi</CardTitle>
                 </CardHeader>
