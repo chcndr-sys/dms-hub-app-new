@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Activity, FileText, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
-import { getSuapStats, createSuapPratica, evaluateSuapPratica, SuapStats } from '@/api/suap';
+import { FileText, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
+import { getSuapStats, getSuapPratiche, createSuapPratica, SuapStats, SuapPratica } from '@/api/suap';
 import SciaForm from '@/components/suap/SciaForm';
 import ConcessioneForm from '@/components/suap/ConcessioneForm';
 import { toast } from 'sonner';
@@ -10,41 +10,13 @@ import { Link } from 'wouter';
 
 export default function SuapDashboard({ embedded = false }: { embedded?: boolean }) {
   const [stats, setStats] = useState<SuapStats | null>(null);
+  const [pratiche, setPratiche] = useState<SuapPratica[]>([]);
   const [loading, setLoading] = useState(true);
-  // const { toast } = useToast(); // Replaced by sonner import
-  const [simulating, setSimulating] = useState(false);
+  const [loadingPratiche, setLoadingPratiche] = useState(true);
   const [showSciaForm, setShowSciaForm] = useState(false);
   const [showConcessioneForm, setShowConcessioneForm] = useState(false);
 
-  const handleSimulation = async () => {
-    setSimulating(true);
-    try {
-      // 1. Crea Pratica
-      const newPratica = await createSuapPratica('00000000-0000-0000-0000-000000000001', {
-        tipo_pratica: 'SCIA Apertura',
-        richiedente_nome: 'Simulazione ' + new Date().toLocaleTimeString(),
-        richiedente_cf: 'SIMUL00000000001',
-        oggetto: 'Apertura Esercizio Simulato'
-      });
-      
-      toast.success("Pratica Creata", { description: `Protocollo: ${newPratica.protocollo}` });
-
-      // 2. Avvia Valutazione (Simulata)
-      await evaluateSuapPratica(newPratica.id.toString(), '00000000-0000-0000-0000-000000000001');
-      toast.info("Valutazione Avviata", { description: "Controlli in corso..." });
-
-      // 3. Refresh Dati
-      const newStats = await getSuapStats('00000000-0000-0000-0000-000000000001');
-      setStats(newStats);
-      
-    } catch (error) {
-      console.error(error);
-      toast.error("Errore Simulazione", { description: "Impossibile creare la pratica" });
-    } finally {
-      setSimulating(false);
-    }
-  };
-
+  // Carica statistiche
   useEffect(() => {
     async function loadStats() {
       try {
@@ -58,6 +30,88 @@ export default function SuapDashboard({ embedded = false }: { embedded?: boolean
     }
     loadStats();
   }, []);
+
+  // Carica pratiche recenti
+  useEffect(() => {
+    async function loadPratiche() {
+      try {
+        const data = await getSuapPratiche('00000000-0000-0000-0000-000000000001');
+        // Prendi solo le ultime 5 pratiche ordinate per data
+        const sorted = data.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ).slice(0, 5);
+        setPratiche(sorted);
+      } catch (error) {
+        console.error('Failed to load pratiche', error);
+        // Se fallisce, mostra array vuoto (nessun mock)
+        setPratiche([]);
+      } finally {
+        setLoadingPratiche(false);
+      }
+    }
+    loadPratiche();
+  }, []);
+
+  // Handler per submit SCIA
+  const handleSciaSubmit = async (data: any) => {
+    try {
+      // Crea la pratica nel backend
+      const newPratica = await createSuapPratica('00000000-0000-0000-0000-000000000001', {
+        tipo_pratica: `SCIA ${data.motivazione_scia || 'Subingresso'}`,
+        richiedente_nome: data.ragione_sociale_sub || `${data.nome_sub} ${data.cognome_sub}`,
+        richiedente_cf: data.cf_subentrante,
+        oggetto: `${data.motivazione_scia || 'Subingresso'} - ${data.mercato} - Posteggio ${data.posteggio}`
+      });
+      
+      setShowSciaForm(false);
+      toast.success("SCIA Inviata con successo!", { 
+        description: `Protocollo: ${newPratica.protocollo || newPratica.cui}` 
+      });
+      
+      // Ricarica le pratiche
+      const updatedPratiche = await getSuapPratiche('00000000-0000-0000-0000-000000000001');
+      setPratiche(updatedPratiche.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ).slice(0, 5));
+      
+      // Ricarica le statistiche
+      const newStats = await getSuapStats('00000000-0000-0000-0000-000000000001');
+      setStats(newStats);
+      
+    } catch (error) {
+      console.error('Errore creazione SCIA:', error);
+      toast.error("Errore", { description: "Impossibile creare la pratica SCIA" });
+    }
+  };
+
+  // Formatta la data relativa
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Adesso';
+    if (diffMins < 60) return `${diffMins} min fa`;
+    if (diffHours < 24) return `${diffHours} ore fa`;
+    if (diffDays < 7) return `${diffDays} giorni fa`;
+    return date.toLocaleDateString('it-IT');
+  };
+
+  // Mappa stato a colore badge
+  const getStatoBadge = (stato: string) => {
+    const colors: Record<string, string> = {
+      'RECEIVED': 'bg-blue-500/20 text-blue-400',
+      'PRECHECK': 'bg-yellow-500/20 text-yellow-400',
+      'EVALUATED': 'bg-purple-500/20 text-purple-400',
+      'APPROVED': 'bg-green-500/20 text-green-400',
+      'REJECTED': 'bg-red-500/20 text-red-400',
+      'INTEGRATION_NEEDED': 'bg-orange-500/20 text-orange-400'
+    };
+    return colors[stato] || 'bg-gray-500/20 text-gray-400';
+  };
 
   if (loading) {
     return <div className="p-8 text-[#e8fbff]">Caricamento dashboard SUAP...</div>;
@@ -106,11 +160,7 @@ export default function SuapDashboard({ embedded = false }: { embedded?: boolean
           <div className="w-full max-w-4xl my-8">
             <SciaForm 
               onCancel={() => setShowSciaForm(false)} 
-              onSubmit={async (data) => {
-                setShowSciaForm(false);
-                toast.success("SCIA Inviata", { description: "Protocollo generato con successo" });
-                // Qui chiameremo l'API reale
-              }} 
+              onSubmit={handleSciaSubmit} 
             />
           </div>
         </div>
@@ -184,21 +234,42 @@ export default function SuapDashboard({ embedded = false }: { embedded?: boolean
             <CardTitle className="text-[#e8fbff]">Attività Recente</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-8">
-              {/* Mock Activity List */}
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none text-[#e8fbff]">
-                      Pratica SCIA-{2025000 + i} ricevuta
-                    </p>
-                    <p className="text-sm text-[#e8fbff]/60">
-                      Mario Rossi S.r.l. - Apertura Esercizio
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium text-[#e8fbff]/60">Just now</div>
+            <div className="space-y-6">
+              {loadingPratiche ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#00f0ff]" />
+                  <span className="ml-2 text-[#e8fbff]/60">Caricamento pratiche...</span>
                 </div>
-              ))}
+              ) : pratiche.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 mx-auto text-[#e8fbff]/20 mb-4" />
+                  <p className="text-[#e8fbff]/60">Nessuna pratica presente</p>
+                  <p className="text-sm text-[#e8fbff]/40 mt-2">
+                    Clicca su "Nuova SCIA" per creare la prima pratica
+                  </p>
+                </div>
+              ) : (
+                pratiche.map((pratica) => (
+                  <div key={pratica.id} className="flex items-center">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium leading-none text-[#e8fbff]">
+                          {pratica.tipo_pratica}
+                        </p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${getStatoBadge(pratica.stato)}`}>
+                          {pratica.stato}
+                        </span>
+                      </div>
+                      <p className="text-sm text-[#e8fbff]/60">
+                        {pratica.richiedente_nome} - {pratica.richiedente_cf}
+                      </p>
+                    </div>
+                    <div className="ml-auto font-medium text-[#e8fbff]/60 text-sm">
+                      {formatRelativeTime(pratica.created_at)}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

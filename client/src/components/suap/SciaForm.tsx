@@ -482,7 +482,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   <SelectContent>
                     <SelectItem value="alimentare">Alimentare</SelectItem>
                     <SelectItem value="non_alimentare">Non Alimentare</SelectItem>
-                    <SelectItem value="misto">Misto</SelectItem>
+                    <SelectItem value="misto">Misto (Alimentare e Non)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -498,6 +498,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   <SelectContent>
                     <SelectItem value="titolare">Titolare</SelectItem>
                     <SelectItem value="legale_rappresentante">Legale Rappresentante</SelectItem>
+                    <SelectItem value="associazione">Associazione</SelectItem>
                     <SelectItem value="curatore_fallimentare">Curatore Fallimentare</SelectItem>
                     <SelectItem value="erede">Erede / Avente Causa</SelectItem>
                     <SelectItem value="altro">Altro</SelectItem>
