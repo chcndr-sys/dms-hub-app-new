@@ -78,12 +78,18 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
   const [loadingStalls, setLoadingStalls] = useState(false);
   const [loadingImpresa, setLoadingImpresa] = useState(false);
   
-  // Stati per autocomplete impresa
+  // Stati per autocomplete impresa (Subentrante)
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredImprese, setFilteredImprese] = useState<Impresa[]>([]);
   const [selectedImpresa, setSelectedImpresa] = useState<Impresa | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  
+  // Stati per autocomplete Cedente
+  const [cedenteSearchQuery, setCedenteSearchQuery] = useState('');
+  const [showCedenteSuggestions, setShowCedenteSuggestions] = useState(false);
+  const [filteredCedenteImprese, setFilteredCedenteImprese] = useState<Impresa[]>([]);
+  const searchCedenteRef = useRef<HTMLDivElement>(null);
   
   // Stati per filtro mercati/posteggi per impresa
   const [impresaStalls, setImpresaStalls] = useState<{marketId: number, marketName: string, stallNumber: string, stallId: number}[]>([]);
@@ -180,18 +186,21 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     data_atto: ''
   });
 
-  // Chiudi suggerimenti quando si clicca fuori
+  // Chiudi suggerimenti quando si clicca fuori (Subentrante e Cedente)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+      }
+      if (searchCedenteRef.current && !searchCedenteRef.current.contains(event.target as Node)) {
+        setShowCedenteSuggestions(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filtra imprese mentre si digita (autocomplete)
+  // Filtra imprese mentre si digita (autocomplete Subentrante)
   useEffect(() => {
     if (searchQuery.length < 2) {
       setFilteredImprese([]);
@@ -209,6 +218,25 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     setFilteredImprese(filtered);
     setShowSuggestions(filtered.length > 0);
   }, [searchQuery, allImprese]);
+
+  // Filtra imprese mentre si digita (autocomplete Cedente)
+  useEffect(() => {
+    if (cedenteSearchQuery.length < 2) {
+      setFilteredCedenteImprese([]);
+      setShowCedenteSuggestions(false);
+      return;
+    }
+    
+    const query = cedenteSearchQuery.toUpperCase();
+    const filtered = allImprese.filter(i => 
+      i.denominazione?.toUpperCase().includes(query) ||
+      i.codice_fiscale?.toUpperCase().includes(query) ||
+      i.partita_iva?.includes(query.replace(/\D/g, ''))
+    ).slice(0, 10); // Max 10 suggerimenti
+    
+    setFilteredCedenteImprese(filtered);
+    setShowCedenteSuggestions(filtered.length > 0);
+  }, [cedenteSearchQuery, allImprese]);
 
   // Carica posteggi dell'impresa selezionata
   useEffect(() => {
@@ -562,73 +590,6 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-8">
           
-          {/* RICERCA IMPRESA CON AUTOCOMPLETE */}
-          <div className="space-y-4 p-4 bg-[#020817] rounded-lg border border-[#14b8a6]/50">
-            <h3 className="text-lg font-semibold text-[#14b8a6] flex items-center gap-2">
-              <Building2 className="w-5 h-5" />
-              Ricerca Impresa
-            </h3>
-            <p className="text-sm text-[#e8fbff]/60">Inizia a digitare per cercare l'impresa subentrante</p>
-            
-            {/* Badge impresa selezionata */}
-            {selectedImpresa && (
-              <div className="flex items-center gap-2 p-3 bg-[#14b8a6]/10 border border-[#14b8a6]/30 rounded-lg">
-                <Building2 className="w-5 h-5 text-[#14b8a6]" />
-                <div className="flex-1">
-                  <p className="font-semibold text-[#e8fbff]">{selectedImpresa.denominazione}</p>
-                  <p className="text-sm text-[#e8fbff]/60">
-                    CF: {selectedImpresa.codice_fiscale || selectedImpresa.partita_iva}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearImpresa}
-                  className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-            
-            {/* Campo ricerca con autocomplete */}
-            {!selectedImpresa && (
-              <div ref={searchRef} className="relative">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#e8fbff]/40" />
-                    <Input
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Cerca per nome, CF o P.IVA..."
-                      className="pl-10 bg-[#020817] border-[#14b8a6]/50 text-[#e8fbff] focus:border-[#14b8a6]"
-                    />
-                  </div>
-                </div>
-                
-                {/* Dropdown suggerimenti */}
-                {showSuggestions && filteredImprese.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-[#0f172a] border border-[#334155] rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                    {filteredImprese.map((impresa) => (
-                      <button
-                        key={impresa.id}
-                        type="button"
-                        onClick={() => handleSelectImpresa(impresa)}
-                        className="w-full px-4 py-3 text-left hover:bg-[#1e293b] border-b border-[#334155] last:border-b-0 transition-colors"
-                      >
-                        <p className="font-medium text-[#e8fbff]">{impresa.denominazione}</p>
-                        <p className="text-sm text-[#e8fbff]/60">
-                          {impresa.codice_fiscale || impresa.partita_iva} • {impresa.comune}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
           {/* DATI PROTOCOLLO SCIA */}
           <div className="space-y-4 p-4 bg-[#0b1220] rounded-lg border border-[#14b8a6]/30">
             <h3 className="text-lg font-semibold text-[#14b8a6]">
@@ -878,17 +839,22 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
           {/* SEZIONE A: SUBENTRANTE */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-[#e8fbff] border-b border-[#1e293b] pb-2">
-              A. Dati Subentrante (Cessionario)
+              A. Dati Subentrante
             </h3>
             
-            {/* Riga 1: CF/P.IVA/Denominazione e Ricerca */}
+            {/* Riga 1: CF/P.IVA/Denominazione e Ricerca con Autocomplete */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2 relative" ref={searchRef}>
                 <Label className="text-[#e8fbff]">CF / P.IVA / Denominazione *</Label>
                 <div className="flex gap-2">
                   <Input 
                     value={formData.cf_subentrante}
-                    onChange={(e) => setFormData({...formData, cf_subentrante: e.target.value.toUpperCase()})}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      setFormData({...formData, cf_subentrante: val});
+                      setSearchQuery(val);
+                    }}
+                    onFocus={() => formData.cf_subentrante.length >= 2 && setShowSuggestions(true)}
                     placeholder="Es. RSSMRA... o 01234567890 o Nome Impresa"
                     className="bg-[#0b1220] border-[#334155] text-[#e8fbff]"
                   />
@@ -902,7 +868,30 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                     {loadingImpresa ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                   </Button>
                 </div>
-                <p className="text-xs text-[#e8fbff]/40">Cerca per Codice Fiscale, Partita IVA o Nome</p>
+                {/* Dropdown autocomplete Subentrante */}
+                {showSuggestions && filteredImprese.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-[#0f172a] border border-[#334155] rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                    {filteredImprese.map((impresa) => (
+                      <button
+                        key={impresa.id}
+                        type="button"
+                        onClick={() => {
+                          populateSubentranteData(impresa);
+                          setSelectedImpresa(impresa);
+                          setShowSuggestions(false);
+                          toast.success('Impresa selezionata!', { description: impresa.denominazione });
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-[#1e293b] border-b border-[#334155] last:border-b-0 transition-colors"
+                      >
+                        <p className="font-medium text-[#e8fbff]">{impresa.denominazione}</p>
+                        <p className="text-sm text-[#e8fbff]/60">
+                          {impresa.codice_fiscale || impresa.partita_iva} • {impresa.comune}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-[#e8fbff]/40">Digita per cercare o clicca la lente</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Ragione Sociale / Denominazione</Label>
@@ -1044,21 +1033,26 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
           {/* SEZIONE B: CEDENTE */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-[#e8fbff] border-b border-[#1e293b] pb-2">
-              B. Dati Cedente (Dante Causa)
+              B. Dati Cedente
             </h3>
             <p className="text-sm text-[#e8fbff]/60">
               I dati del cedente vengono compilati automaticamente quando selezioni un posteggio occupato
             </p>
             
-            {/* Riga 1: CF e Ricerca manuale */}
+            {/* Riga 1: CF e Ricerca manuale con Autocomplete */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2 relative" ref={searchCedenteRef}>
                 <Label className="text-[#e8fbff]">CF / P.IVA / Denominazione Cedente *</Label>
                 <div className="flex gap-2">
                   <Input 
                     value={formData.cf_cedente}
-                    onChange={(e) => setFormData({...formData, cf_cedente: e.target.value.toUpperCase()})}
-                    placeholder="Es. VRDLGI..."
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      setFormData({...formData, cf_cedente: val});
+                      setCedenteSearchQuery(val);
+                    }}
+                    onFocus={() => formData.cf_cedente.length >= 2 && setShowCedenteSuggestions(true)}
+                    placeholder="Es. VRDLGI... o 01234567890 o Nome Impresa"
                     className="bg-[#0b1220] border-[#334155] text-[#e8fbff]"
                   />
                   <Button 
@@ -1071,6 +1065,29 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                     {loadingImpresa ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                   </Button>
                 </div>
+                {/* Dropdown autocomplete Cedente */}
+                {showCedenteSuggestions && filteredCedenteImprese.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-[#0f172a] border border-[#334155] rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                    {filteredCedenteImprese.map((impresa) => (
+                      <button
+                        key={impresa.id}
+                        type="button"
+                        onClick={() => {
+                          populateCedenteData(impresa);
+                          setShowCedenteSuggestions(false);
+                          toast.success('Cedente selezionato!', { description: impresa.denominazione });
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-[#1e293b] border-b border-[#334155] last:border-b-0 transition-colors"
+                      >
+                        <p className="font-medium text-[#e8fbff]">{impresa.denominazione}</p>
+                        <p className="text-sm text-[#e8fbff]/60">
+                          {impresa.codice_fiscale || impresa.partita_iva} • {impresa.comune}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-[#e8fbff]/40">Digita per cercare o clicca la lente</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Ragione Sociale Cedente</Label>
