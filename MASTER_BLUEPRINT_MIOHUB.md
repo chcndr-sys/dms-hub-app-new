@@ -655,6 +655,35 @@ Piano sviluppo organizzato per quarter:
 
 ## 📝 CHANGELOG
 
+### v3.8.0 (02/01/2026) - SSO SUAP Navigazione Tab + Valutazione Reale
+- ✅ **Navigazione Tab** - Ristrutturato SuapPanel.tsx con 3 tab (come Gestione Mercati):
+  - Tab Dashboard: statistiche, attività recente, stato integrazioni
+  - Tab Lista Pratiche: tabella ricercabile con tutte le pratiche
+  - Tab Dettaglio Pratica: visualizzazione completa quando selezionata
+  - Rimossa navigazione a pagine separate (no più freccia indietro)
+  - Barra navigazione principale sempre visibile
+- ✅ **Visualizzazione Dettaglio Completa** - Aggiunte tutte le sezioni mancanti:
+  - Residenza Subentrante (via, comune, CAP)
+  - Sede Impresa Subentrante (via, comune, provincia, CAP)
+  - Residenza Cedente (via, comune, CAP)
+  - Dati Delegato/Procuratore (9 campi: nome, cognome, CF, nascita, qualifica, residenza)
+  - Comune Presentazione SCIA Precedente nel Cedente
+- ✅ **Fix Sistema Valutazione** - Rimosso MOCK casuale, ora validazione reale:
+  - CHECK_CF_VALIDO: verifica formato CF (16 char) o P.IVA (11 char)
+  - CHECK_DATI_COMPLETI: verifica campi obbligatori presenti
+  - CHECK_MERCATO_VALIDO: verifica mercato/posteggio specificato
+  - CHECK_ATTO_NOTARILE: verifica estremi atto notarile (soft)
+  - CHECK_CEDENTE: verifica dati cedente per subingresso (soft)
+  - CHECK_PEC: verifica formato PEC valido (soft)
+- ✅ **Fix Visualizzazione Controlli** - Indicatori ora coerenti con punteggio:
+  - Gestisce sia boolean che string per esito
+  - Usa check_code quando tipo_check mancante
+  - Mostra conteggio superati/falliti sotto punteggio
+  - Timestamp formattato correttamente
+- File modificati: SuapPanel.tsx, suap.ts, service.js
+- Commit Frontend: b85c917, 4dfcf89
+- Commit Backend: 15b779c
+
 ### v3.7.0 (02/01/2026) - SSO SUAP Database Completo SCIA
 - ✅ **Migrazione Database** - Aggiunte 55+ nuove colonne a `suap_pratiche`:
   - Dati Pratica: numero_protocollo, comune_presentazione, tipo_segnalazione, motivo_subingresso, settore_merceologico, ruolo_dichiarante
