@@ -639,7 +639,11 @@ export default function SuapPanel() {
                 </Button>
               </div>
 
-              {/* Dati Pratica SCIA */}
+              {/* ============================================================== */}
+              {/* SEZIONI ORDINATE COME IL FORM SCIA */}
+              {/* ============================================================== */}
+
+              {/* 1. Dati Pratica SCIA */}
               <DataSection title="Dati Pratica SCIA" icon={FileText}>
                 <DataField label="Numero Protocollo" value={selectedPratica.numero_protocollo || selectedPratica.cui} />
                 <DataField label="Data Presentazione" value={formatDate(selectedPratica.data_presentazione)} />
@@ -650,67 +654,7 @@ export default function SuapPanel() {
                 <DataField label="Ruolo Dichiarante" value={selectedPratica.ruolo_dichiarante} />
               </DataSection>
 
-              {/* Dati Subentrante - Anagrafica */}
-              <DataSection title="Dati Subentrante (Cessionario)" icon={User}>
-                <DataField label="Ragione Sociale" value={selectedPratica.sub_ragione_sociale || selectedPratica.richiedente_nome} />
-                <DataField label="Nome" value={selectedPratica.sub_nome} />
-                <DataField label="Cognome" value={selectedPratica.sub_cognome} />
-                <DataField label="Codice Fiscale" value={selectedPratica.richiedente_cf} />
-                <DataField label="Data di Nascita" value={formatDate(selectedPratica.sub_data_nascita)} />
-                <DataField label="Luogo di Nascita" value={selectedPratica.sub_luogo_nascita} />
-                <DataField label="PEC" value={selectedPratica.sub_pec} />
-                <DataField label="Telefono" value={selectedPratica.sub_telefono} />
-              </DataSection>
-
-              {/* Dati Posteggio e Mercato - SEMPRE VISIBILE */}
-              <DataSection title="Dati Posteggio e Mercato" icon={MapPin}>
-                {/* mercato_id contiene il nome se mercato_nome è vuoto (bug nel salvataggio) */}
-                <DataField label="Mercato" value={selectedPratica.mercato_nome || selectedPratica.mercato_id} />
-                <DataField label="ID Mercato" value={selectedPratica.mercato_nome ? selectedPratica.mercato_id : '-'} />
-                {/* posteggio_id contiene il numero se posteggio_numero è vuoto */}
-                <DataField label="Numero Posteggio" value={selectedPratica.posteggio_numero || selectedPratica.posteggio_id} />
-                <DataField label="ID Posteggio" value={selectedPratica.posteggio_numero ? selectedPratica.posteggio_id : '-'} />
-                <DataField label="Ubicazione" value={selectedPratica.ubicazione_mercato} />
-                <DataField label="Giorno Mercato" value={selectedPratica.giorno_mercato} />
-                <DataField label="Fila" value={selectedPratica.fila} />
-                <DataField label="Dimensioni (MQ)" value={selectedPratica.dimensioni_mq} />
-                <DataField label="Dimensioni Lineari" value={selectedPratica.dimensioni_lineari} />
-                <DataField label="Attrezzature" value={selectedPratica.attrezzature} />
-              </DataSection>
-
-              {/* Dati Cedente - SEMPRE VISIBILE per subingresso */}
-              <DataSection title="Dati Cedente (Dante Causa)" icon={Users}>
-                <DataField label="Codice Fiscale" value={selectedPratica.ced_cf} />
-                <DataField label="Ragione Sociale" value={selectedPratica.ced_ragione_sociale} />
-                <DataField label="Nome" value={selectedPratica.ced_nome} />
-                <DataField label="Cognome" value={selectedPratica.ced_cognome} />
-                <DataField label="Data di Nascita" value={formatDate(selectedPratica.ced_data_nascita)} />
-                <DataField label="Luogo di Nascita" value={selectedPratica.ced_luogo_nascita} />
-                <DataField label="Residenza Via" value={selectedPratica.ced_residenza_via} />
-                <DataField label="Residenza Comune" value={selectedPratica.ced_residenza_comune} />
-                <DataField label="Residenza CAP" value={selectedPratica.ced_residenza_cap} />
-                <DataField label="PEC" value={selectedPratica.ced_pec} />
-                <DataField label="SCIA Precedente N. Prot." value={selectedPratica.ced_scia_precedente} />
-                <DataField label="Data Presentazione SCIA Prec." value={formatDate(selectedPratica.ced_data_presentazione)} />
-                <DataField label="Comune Presentazione SCIA Prec." value={selectedPratica.ced_comune_presentazione} />
-              </DataSection>
-
-              {/* Residenza Subentrante - SEMPRE VISIBILE */}
-              <DataSection title="Residenza Subentrante" icon={MapPin}>
-                <DataField label="Via/Indirizzo" value={selectedPratica.sub_residenza_via} />
-                <DataField label="Comune" value={selectedPratica.sub_residenza_comune} />
-                <DataField label="CAP" value={selectedPratica.sub_residenza_cap} />
-              </DataSection>
-
-              {/* Sede Impresa Subentrante - SEMPRE VISIBILE */}
-              <DataSection title="Sede Impresa Subentrante" icon={Building2}>
-                <DataField label="Via/Indirizzo" value={selectedPratica.sub_sede_via} />
-                <DataField label="Comune" value={selectedPratica.sub_sede_comune} />
-                <DataField label="Provincia" value={selectedPratica.sub_sede_provincia} />
-                <DataField label="CAP" value={selectedPratica.sub_sede_cap} />
-              </DataSection>
-
-              {/* Dati Delegato/Procuratore - Mostra se ruolo != titolare OPPURE se ci sono dati delegato */}
+              {/* 2. Dati Delegato/Procuratore - SUBITO DOPO se ruolo != titolare */}
               {((selectedPratica.ruolo_dichiarante && selectedPratica.ruolo_dichiarante.toLowerCase() !== 'titolare') || 
                 selectedPratica.del_cf || selectedPratica.del_nome) && (
                 <DataSection title="Dati Delegato / Procuratore" icon={User}>
@@ -726,8 +670,60 @@ export default function SuapPanel() {
                 </DataSection>
               )}
 
-              {/* Estremi Atto Notarile - SEMPRE VISIBILE */}
-              <DataSection title="Estremi Atto Notarile" icon={FileCheck}>
+              {/* 3. Dati Subentrante (Sezione A) - Anagrafica + Residenza + Sede */}
+              <DataSection title="A. Dati Subentrante (Cessionario)" icon={User}>
+                <DataField label="CF / P.IVA" value={selectedPratica.richiedente_cf} />
+                <DataField label="Ragione Sociale" value={selectedPratica.sub_ragione_sociale || selectedPratica.richiedente_nome} />
+                <DataField label="Nome" value={selectedPratica.sub_nome} />
+                <DataField label="Cognome" value={selectedPratica.sub_cognome} />
+                <DataField label="Data di Nascita" value={formatDate(selectedPratica.sub_data_nascita)} />
+                <DataField label="Luogo di Nascita" value={selectedPratica.sub_luogo_nascita} />
+                <DataField label="Residenza Via" value={selectedPratica.sub_residenza_via} />
+                <DataField label="Residenza Comune" value={selectedPratica.sub_residenza_comune} />
+                <DataField label="Residenza CAP" value={selectedPratica.sub_residenza_cap} />
+                <DataField label="Sede Impresa Via" value={selectedPratica.sub_sede_via} />
+                <DataField label="Sede Impresa Comune" value={selectedPratica.sub_sede_comune} />
+                <DataField label="Sede Impresa Provincia" value={selectedPratica.sub_sede_provincia} />
+                <DataField label="Sede Impresa CAP" value={selectedPratica.sub_sede_cap} />
+                <DataField label="PEC" value={selectedPratica.sub_pec} />
+                <DataField label="Telefono" value={selectedPratica.sub_telefono} />
+              </DataSection>
+
+              {/* 4. Dati Cedente (Sezione B) - Anagrafica + Residenza + SCIA Precedente */}
+              <DataSection title="B. Dati Cedente (Dante Causa)" icon={Users}>
+                <DataField label="CF / P.IVA" value={selectedPratica.ced_cf} />
+                <DataField label="Ragione Sociale" value={selectedPratica.ced_ragione_sociale} />
+                <DataField label="Nome" value={selectedPratica.ced_nome} />
+                <DataField label="Cognome" value={selectedPratica.ced_cognome} />
+                <DataField label="Data di Nascita" value={formatDate(selectedPratica.ced_data_nascita)} />
+                <DataField label="Luogo di Nascita" value={selectedPratica.ced_luogo_nascita} />
+                <DataField label="Residenza Via" value={selectedPratica.ced_residenza_via} />
+                <DataField label="Residenza Comune" value={selectedPratica.ced_residenza_comune} />
+                <DataField label="Residenza CAP" value={selectedPratica.ced_residenza_cap} />
+                <DataField label="PEC" value={selectedPratica.ced_pec} />
+                <DataField label="SCIA Precedente N. Prot." value={selectedPratica.ced_scia_precedente} />
+                <DataField label="Data Presentazione SCIA Prec." value={formatDate(selectedPratica.ced_data_presentazione)} />
+                <DataField label="Comune Presentazione SCIA Prec." value={selectedPratica.ced_comune_presentazione} />
+              </DataSection>
+
+              {/* 5. Dati Posteggio e Mercato (Sezione C) */}
+              <DataSection title="C. Dati Posteggio e Mercato" icon={MapPin}>
+                {/* mercato_id contiene il nome se mercato_nome è vuoto (bug nel salvataggio) */}
+                <DataField label="Mercato" value={selectedPratica.mercato_nome || selectedPratica.mercato_id} />
+                <DataField label="ID Mercato" value={selectedPratica.mercato_nome ? selectedPratica.mercato_id : '-'} />
+                {/* posteggio_id contiene il numero se posteggio_numero è vuoto */}
+                <DataField label="Numero Posteggio" value={selectedPratica.posteggio_numero || selectedPratica.posteggio_id} />
+                <DataField label="ID Posteggio" value={selectedPratica.posteggio_numero ? selectedPratica.posteggio_id : '-'} />
+                <DataField label="Ubicazione" value={selectedPratica.ubicazione_mercato} />
+                <DataField label="Giorno Mercato" value={selectedPratica.giorno_mercato} />
+                <DataField label="Fila" value={selectedPratica.fila} />
+                <DataField label="Dimensioni (MQ)" value={selectedPratica.dimensioni_mq} />
+                <DataField label="Dimensioni Lineari" value={selectedPratica.dimensioni_lineari} />
+                <DataField label="Attrezzature" value={selectedPratica.attrezzature} />
+              </DataSection>
+
+              {/* 6. Estremi Atto Notarile (Sezione D) */}
+              <DataSection title="D. Estremi Atto Notarile" icon={FileCheck}>
                 <DataField label="Notaio Rogante" value={selectedPratica.notaio_rogante} />
                 <DataField label="N. Repertorio" value={selectedPratica.numero_repertorio} />
                 <DataField label="Data Atto" value={formatDate(selectedPratica.data_atto)} />
