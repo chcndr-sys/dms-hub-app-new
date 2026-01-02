@@ -869,6 +869,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
           stalls={stalls}
           onClose={handleCloseConcessionModal}
           onSaved={handleConcessionSaved}
+          onDeleted={handleConcessionSaved}
         />
       )}
 
@@ -2147,9 +2148,10 @@ interface ConcessionModalProps {
   stalls: { id: string; code: string }[];
   onClose: () => void;
   onSaved: () => void;
+  onDeleted?: () => void;
 }
 
-function ConcessionModal({ marketId, concession, companies, stalls, onClose, onSaved }: ConcessionModalProps) {
+function ConcessionModal({ marketId, concession, companies, stalls, onClose, onSaved, onDeleted }: ConcessionModalProps) {
   const [formData, setFormData] = useState<ConcessionFormData>({
     company_id: concession?.company_id || '',
     stall_id: concession?.stall_id || '',
@@ -2159,7 +2161,37 @@ function ConcessionModal({ marketId, concession, companies, stalls, onClose, onS
     stato: concession?.stato || 'ATTIVA',
   });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!concession?.id) return;
+    
+    if (!confirm('Sei sicuro di voler eliminare questa concessione? Verrà eliminato anche il wallet associato.')) {
+      return;
+    }
+    
+    setDeleting(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/concessions/${concession.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Errore durante l\'eliminazione');
+      }
+      
+      onDeleted?.();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore sconosciuto');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2330,23 +2362,39 @@ function ConcessionModal({ marketId, concession, companies, stalls, onClose, onS
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-              disabled={saving}
-            >
-              Annulla
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              {saving ? 'Salvataggio...' : 'Salva'}
-            </button>
+          <div className="flex items-center justify-between pt-4">
+            {/* Pulsante Elimina - solo in modifica */}
+            {concession && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting || saving}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                <Trash2 className="w-4 h-4" />
+                {deleting ? 'Eliminazione...' : 'Elimina'}
+              </button>
+            )}
+            
+            <div className="flex items-center gap-3 ml-auto">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                disabled={saving || deleting}
+              >
+                Annulla
+              </button>
+              <button
+                type="submit"
+                disabled={saving || deleting}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                {saving ? 'Salvataggio...' : 'Salva'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
