@@ -1047,7 +1047,9 @@ function QualificazioneModal({ company, qualificazione, onClose, onSaved }: Qual
                 required
                 value={formData.data_rilascio}
                 onChange={(e) => setFormData({ ...formData, data_rilascio: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 relative z-[100]"
               />
             </div>
             <div>
@@ -1056,7 +1058,9 @@ function QualificazioneModal({ company, qualificazione, onClose, onSaved }: Qual
                 type="date"
                 value={formData.data_scadenza}
                 onChange={(e) => setFormData({ ...formData, data_scadenza: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 relative z-[100]"
               />
             </div>
           </div>
@@ -1957,7 +1961,9 @@ export function CompanyModal({ marketId, company, onClose, onSaved, inline = fal
                   type="date"
                   value={formData.rappresentante_legale_data_nascita}
                   onChange={(e) => setFormData({ ...formData, rappresentante_legale_data_nascita: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onClick={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative z-[100]"
                 />
               </div>
 
@@ -2110,7 +2116,9 @@ export function CompanyModal({ marketId, company, onClose, onSaved, inline = fal
                 type="date"
                 value={formData.data_iscrizione_ri}
                 onChange={(e) => setFormData({ ...formData, data_iscrizione_ri: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative z-[100]"
               />
             </div>
           </div>
@@ -2399,7 +2407,9 @@ function ConcessionModal({ marketId, marketName, concession, companies, stalls, 
                 type="date"
                 value={formData.valida_dal}
                 onChange={(e) => setFormData({ ...formData, valida_dal: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative z-[100]"
               />
             </div>
 
@@ -2411,7 +2421,9 @@ function ConcessionModal({ marketId, marketName, concession, companies, stalls, 
                 type="date"
                 value={formData.valida_al}
                 onChange={(e) => setFormData({ ...formData, valida_al: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 relative z-[100]"
               />
             </div>
           </div>

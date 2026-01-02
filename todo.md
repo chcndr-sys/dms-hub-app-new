@@ -942,3 +942,10 @@
 - [ ] Permettere cambio mercato tramite dropdown (non implementato - mercato è in sola visualizzazione)
 - [x] Filtrare posteggi per mostrare solo quelli liberi (non già assegnati a concessioni attive)
 - [ ] Caricare posteggi dinamicamente quando si cambia mercato (non necessario - mercato fisso)
+
+
+## Bug Fix - Date Picker nei Modal (02/01/2026)
+
+- [ ] Fix date picker che si chiude immediatamente nei modal Qualifiche
+- [ ] Fix date picker che si chiude immediatamente nei modal Concessioni
+- [ ] Verificare altri modal con lo stesso problema
