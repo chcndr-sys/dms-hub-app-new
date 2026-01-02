@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Search, FileText, Loader2 } from 'lucide-react';
+import { Search, FileText, Loader2, Building2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 // API URL
@@ -63,20 +63,44 @@ interface Impresa {
   rappresentante_legale_residenza_provincia: string;
 }
 
+// Funzione per capitalizzare la prima lettera
+const capitalize = (str: string) => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
+// Funzione per capitalizzare ogni parola
+const capitalizeWords = (str: string) => {
+  if (!str) return str;
+  return str.split(' ').map(word => capitalize(word)).join(' ');
+};
+
 export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void, onSubmit: (data: any) => void }) {
   // Stati per dati dal database
   const [markets, setMarkets] = useState<Market[]>([]);
+  const [allStalls, setAllStalls] = useState<Map<number, Stall[]>>(new Map()); // Tutti i posteggi per mercato
   const [stalls, setStalls] = useState<Stall[]>([]);
   const [allImprese, setAllImprese] = useState<Impresa[]>([]);
   const [selectedMarketId, setSelectedMarketId] = useState<number | null>(null);
+  const [selectedImpresa, setSelectedImpresa] = useState<Impresa | null>(null);
   const [loadingMarkets, setLoadingMarkets] = useState(true);
   const [loadingStalls, setLoadingStalls] = useState(false);
   const [loadingImpresa, setLoadingImpresa] = useState(false);
+  
+  // Stati per autocomplete
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredImprese, setFilteredImprese] = useState<Impresa[]>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
+  
+  // Stati per mercati/posteggi filtrati per impresa
+  const [impresaMarkets, setImpresaMarkets] = useState<number[]>([]); // IDs dei mercati dove l'impresa ha posteggi
+  const [impresaStalls, setImpresaStalls] = useState<Map<number, number[]>>(new Map()); // market_id -> [stall_ids]
 
   // Genera numero protocollo SCIA automatico
   const generateProtocollo = () => {
     const year = new Date().getFullYear();
-    const random = Math.floor(Math.random() * 9000) + 1000;
+    const random = Math.floor(Math.random() * 90000) + 10000;
     return `SCIA-${year}-${random}`;
   };
 
@@ -125,7 +149,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     delegato_residenza_comune: '',
     delegato_residenza_cap: '',
     delegato_residenza_provincia: '',
-    delegato_qualifica: '', // es: procuratore, curatore, erede, etc.
+    delegato_qualifica: '',
     telefono_sub: '',
     
     // Sezione B - Cedente
@@ -163,6 +187,35 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     data_atto: ''
   });
 
+  // Chiudi suggerimenti quando si clicca fuori
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filtra imprese mentre si digita
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setFilteredImprese([]);
+      return;
+    }
+    
+    const query = searchQuery.toUpperCase();
+    const filtered = allImprese.filter(i => 
+      i.denominazione?.toUpperCase().includes(query) ||
+      i.codice_fiscale?.toUpperCase().includes(query) ||
+      i.partita_iva?.includes(query.replace(/\D/g, ''))
+    ).slice(0, 10); // Max 10 suggerimenti
+    
+    setFilteredImprese(filtered);
+    setShowSuggestions(filtered.length > 0);
+  }, [searchQuery, allImprese]);
+
   // Carica mercati e imprese all'avvio
   useEffect(() => {
     const fetchData = async () => {
@@ -174,6 +227,26 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
         const marketsJson = await marketsRes.json();
         if (marketsJson.success && marketsJson.data) {
           setMarkets(marketsJson.data);
+          
+          // Carica tutti i posteggi per ogni mercato
+          const stallsMap = new Map<number, Stall[]>();
+          for (const market of marketsJson.data) {
+            try {
+              const stallsRes = await fetch(`${API_URL}/api/markets/${market.id}/stalls`);
+              const stallsJson = await stallsRes.json();
+              if (stallsJson.success && stallsJson.data) {
+                const sorted = stallsJson.data.sort((a: Stall, b: Stall) => {
+                  const numA = parseInt(a.number) || 0;
+                  const numB = parseInt(b.number) || 0;
+                  return numA - numB;
+                });
+                stallsMap.set(market.id, sorted);
+              }
+            } catch (e) {
+              console.error(`Errore caricamento posteggi mercato ${market.id}:`, e);
+            }
+          }
+          setAllStalls(stallsMap);
         }
         
         // Carica tutte le imprese per ricerca locale
@@ -193,69 +266,78 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     fetchData();
   }, []);
 
-  // Carica posteggi quando cambia mercato
+  // Quando cambia l'impresa selezionata, trova i suoi mercati e posteggi
+  useEffect(() => {
+    if (!selectedImpresa) {
+      setImpresaMarkets([]);
+      setImpresaStalls(new Map());
+      return;
+    }
+    
+    const marketIds: number[] = [];
+    const stallsPerMarket = new Map<number, number[]>();
+    
+    // Cerca in tutti i posteggi quelli intestati a questa impresa
+    allStalls.forEach((stalls, marketId) => {
+      const impresaStallIds = stalls
+        .filter(s => s.impresa_id === selectedImpresa.id)
+        .map(s => s.id);
+      
+      if (impresaStallIds.length > 0) {
+        marketIds.push(marketId);
+        stallsPerMarket.set(marketId, impresaStallIds);
+      }
+    });
+    
+    setImpresaMarkets(marketIds);
+    setImpresaStalls(stallsPerMarket);
+    
+    // Reset selezione mercato/posteggio quando cambia impresa
+    setSelectedMarketId(null);
+    setStalls([]);
+    setFormData(prev => ({
+      ...prev,
+      mercato: '',
+      mercato_id: '',
+      ubicazione_mercato: '',
+      giorno_mercato: '',
+      posteggio: '',
+      posteggio_id: '',
+      dimensioni_mq: '',
+      dimensioni_lineari: '',
+      attrezzature: ''
+    }));
+  }, [selectedImpresa, allStalls]);
+
+  // Carica posteggi quando cambia mercato (filtrati per impresa se selezionata)
   useEffect(() => {
     if (!selectedMarketId) {
       setStalls([]);
       return;
     }
 
-    const fetchStalls = async () => {
-      try {
-        setLoadingStalls(true);
-        const res = await fetch(`${API_URL}/api/markets/${selectedMarketId}/stalls`);
-        const json = await res.json();
-        
-        if (json.success && json.data) {
-          const sortedStalls = json.data.sort((a: Stall, b: Stall) => {
-            const numA = parseInt(a.number) || 0;
-            const numB = parseInt(b.number) || 0;
-            return numA - numB;
-          });
-          setStalls(sortedStalls);
-        }
-      } catch (error) {
-        console.error('Errore fetch posteggi:', error);
-        toast.error('Errore caricamento posteggi');
-      } finally {
-        setLoadingStalls(false);
-      }
-    };
+    const marketStalls = allStalls.get(selectedMarketId) || [];
     
-    fetchStalls();
-  }, [selectedMarketId]);
+    // Se c'è un'impresa selezionata, filtra solo i suoi posteggi
+    if (selectedImpresa && impresaStalls.has(selectedMarketId)) {
+      const allowedIds = impresaStalls.get(selectedMarketId) || [];
+      const filtered = marketStalls.filter(s => allowedIds.includes(s.id));
+      setStalls(filtered);
+    } else if (!selectedImpresa) {
+      // Se non c'è impresa selezionata, mostra tutti
+      setStalls(marketStalls);
+    } else {
+      setStalls([]);
+    }
+  }, [selectedMarketId, selectedImpresa, allStalls, impresaStalls]);
 
-  // Funzione per cercare impresa (CF, P.IVA o denominazione)
-  const searchImpresa = (searchValue: string): Impresa | undefined => {
-    const normalizedSearch = searchValue.toUpperCase().trim();
-    
-    // Cerca per codice fiscale (esatto)
-    let found = allImprese.find(i => 
-      i.codice_fiscale?.toUpperCase() === normalizedSearch
-    );
-    if (found) return found;
-    
-    // Cerca per partita IVA (esatto)
-    found = allImprese.find(i => 
-      i.partita_iva === normalizedSearch || 
-      i.partita_iva === searchValue.replace(/\D/g, '')
-    );
-    if (found) return found;
-    
-    // Cerca per denominazione (contiene)
-    found = allImprese.find(i => 
-      i.denominazione?.toUpperCase().includes(normalizedSearch)
-    );
-    if (found) return found;
-    
-    // Cerca per nome/cognome rappresentante
-    found = allImprese.find(i => {
-      const fullName = `${i.rappresentante_legale_nome || ''} ${i.rappresentante_legale_cognome || ''}`.toUpperCase();
-      return fullName.includes(normalizedSearch);
-    });
-    
-    return found;
-  };
+  // Mercati filtrati (solo quelli dove l'impresa ha posteggi, se selezionata)
+  const filteredMarkets = useMemo(() => {
+    if (!selectedImpresa || impresaMarkets.length === 0) {
+      return markets;
+    }
+    return markets.filter(m => impresaMarkets.includes(m.id));
+  }, [markets, selectedImpresa, impresaMarkets]);
 
   // Popola dati impresa nel form (per Subentrante)
   const populateSubentranteData = (impresa: Impresa) => {
@@ -263,15 +345,15 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
       ...prev,
       cf_subentrante: impresa.codice_fiscale || impresa.partita_iva || '',
       ragione_sociale_sub: impresa.denominazione || '',
-      nome_sub: impresa.rappresentante_legale_nome || '',
-      cognome_sub: impresa.rappresentante_legale_cognome || '',
+      nome_sub: capitalizeWords(impresa.rappresentante_legale_nome || ''),
+      cognome_sub: capitalizeWords(impresa.rappresentante_legale_cognome || ''),
       data_nascita_sub: impresa.rappresentante_legale_data_nascita ? impresa.rappresentante_legale_data_nascita.split('T')[0] : '',
-      luogo_nascita_sub: impresa.rappresentante_legale_luogo_nascita || '',
-      residenza_via_sub: `${impresa.rappresentante_legale_residenza_via || ''} ${impresa.rappresentante_legale_residenza_civico || ''}`.trim(),
-      residenza_comune_sub: impresa.rappresentante_legale_residenza_comune || '',
+      luogo_nascita_sub: capitalizeWords(impresa.rappresentante_legale_luogo_nascita || ''),
+      residenza_via_sub: capitalizeWords(`${impresa.rappresentante_legale_residenza_via || ''} ${impresa.rappresentante_legale_residenza_civico || ''}`.trim()),
+      residenza_comune_sub: capitalizeWords(impresa.rappresentante_legale_residenza_comune || ''),
       residenza_cap_sub: impresa.rappresentante_legale_residenza_cap || '',
-      sede_via_sub: `${impresa.indirizzo_via || ''} ${impresa.indirizzo_civico || ''}`.trim(),
-      sede_comune_sub: impresa.comune || '',
+      sede_via_sub: capitalizeWords(`${impresa.indirizzo_via || ''} ${impresa.indirizzo_civico || ''}`.trim()),
+      sede_comune_sub: capitalizeWords(impresa.comune || ''),
       sede_cap_sub: impresa.indirizzo_cap || '',
       pec_sub: impresa.pec || '',
       telefono_sub: impresa.telefono || ''
@@ -284,53 +366,53 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
       ...prev,
       cf_cedente: impresa.codice_fiscale || impresa.partita_iva || '',
       ragione_sociale_ced: impresa.denominazione || '',
-      nome_ced: impresa.rappresentante_legale_nome || '',
-      cognome_ced: impresa.rappresentante_legale_cognome || '',
+      nome_ced: capitalizeWords(impresa.rappresentante_legale_nome || ''),
+      cognome_ced: capitalizeWords(impresa.rappresentante_legale_cognome || ''),
       data_nascita_ced: impresa.rappresentante_legale_data_nascita ? impresa.rappresentante_legale_data_nascita.split('T')[0] : '',
-      luogo_nascita_ced: impresa.rappresentante_legale_luogo_nascita || '',
-      residenza_via_ced: `${impresa.rappresentante_legale_residenza_via || ''} ${impresa.rappresentante_legale_residenza_civico || ''}`.trim(),
-      residenza_comune_ced: impresa.rappresentante_legale_residenza_comune || '',
+      luogo_nascita_ced: capitalizeWords(impresa.rappresentante_legale_luogo_nascita || ''),
+      residenza_via_ced: capitalizeWords(`${impresa.rappresentante_legale_residenza_via || ''} ${impresa.rappresentante_legale_residenza_civico || ''}`.trim()),
+      residenza_comune_ced: capitalizeWords(impresa.rappresentante_legale_residenza_comune || ''),
       residenza_cap_ced: impresa.rappresentante_legale_residenza_cap || '',
       pec_ced: impresa.pec || ''
     }));
   };
 
-  // Lookup Subentrante
-  const handleLookupSubentrante = async () => {
-    if (!formData.cf_subentrante) {
-      toast.error('Inserire CF, P.IVA o Denominazione');
-      return;
-    }
-
-    setLoadingImpresa(true);
-    const impresa = searchImpresa(formData.cf_subentrante);
-    
-    if (impresa) {
-      populateSubentranteData(impresa);
-      toast.success('Impresa trovata!', { description: impresa.denominazione });
-    } else {
-      toast.error('Impresa non trovata', { description: 'Inserire i dati manualmente' });
-    }
-    setLoadingImpresa(false);
+  // Seleziona impresa dall'autocomplete
+  const handleSelectImpresa = (impresa: Impresa) => {
+    setSelectedImpresa(impresa);
+    setSearchQuery(impresa.denominazione);
+    setShowSuggestions(false);
+    populateSubentranteData(impresa);
+    toast.success('Impresa selezionata!', { 
+      description: `${impresa.denominazione} - ${impresaMarkets.length > 0 ? `${impresaMarkets.length} mercati` : 'Nessun posteggio'}` 
+    });
   };
 
-  // Lookup Cedente
-  const handleLookupCedente = async () => {
-    if (!formData.cf_cedente) {
-      toast.error('Inserire CF, P.IVA o Denominazione Cedente');
-      return;
-    }
-
-    setLoadingImpresa(true);
-    const impresa = searchImpresa(formData.cf_cedente);
-    
-    if (impresa) {
-      populateCedenteData(impresa);
-      toast.success('Cedente trovato!', { description: impresa.denominazione });
-    } else {
-      toast.error('Cedente non trovato', { description: 'Inserire i dati manualmente' });
-    }
-    setLoadingImpresa(false);
+  // Reset impresa selezionata
+  const handleClearImpresa = () => {
+    setSelectedImpresa(null);
+    setSearchQuery('');
+    setFormData(prev => ({
+      ...prev,
+      cf_subentrante: '',
+      ragione_sociale_sub: '',
+      nome_sub: '',
+      cognome_sub: '',
+      data_nascita_sub: '',
+      luogo_nascita_sub: '',
+      residenza_via_sub: '',
+      residenza_comune_sub: '',
+      residenza_cap_sub: '',
+      sede_via_sub: '',
+      sede_comune_sub: '',
+      sede_cap_sub: '',
+      pec_sub: '',
+      telefono_sub: '',
+      mercato: '',
+      mercato_id: '',
+      posteggio: '',
+      posteggio_id: ''
+    }));
   };
 
   // Handler cambio mercato
@@ -343,22 +425,23 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
       mercato_id: marketId,
       ubicazione_mercato: market?.municipality || '',
       giorno_mercato: market?.days || '',
-      // Reset posteggio e cedente quando cambia mercato
       posteggio: '',
       posteggio_id: '',
       dimensioni_mq: '',
       dimensioni_lineari: '',
-      // Reset cedente
-      cf_cedente: '',
-      ragione_sociale_ced: '',
-      nome_ced: '',
-      cognome_ced: '',
-      data_nascita_ced: '',
-      luogo_nascita_ced: '',
-      residenza_via_ced: '',
-      residenza_comune_ced: '',
-      residenza_cap_ced: '',
-      pec_ced: ''
+      // Reset cedente solo se non c'è impresa selezionata
+      ...(selectedImpresa ? {} : {
+        cf_cedente: '',
+        ragione_sociale_ced: '',
+        nome_ced: '',
+        cognome_ced: '',
+        data_nascita_ced: '',
+        luogo_nascita_ced: '',
+        residenza_via_ced: '',
+        residenza_comune_ced: '',
+        residenza_cap_ced: '',
+        pec_ced: ''
+      })
     }));
   };
 
@@ -411,10 +494,10 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
   };
 
   return (
-    <Card className="bg-[#0a1628] border-[#1e293b] max-w-4xl mx-auto max-h-[90vh] overflow-y-auto">
+    <Card className="bg-[#0f172a] border-[#1e293b] max-w-4xl mx-auto max-h-[90vh] overflow-y-auto">
       <CardHeader>
         <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-          <FileText className="text-[#00f0ff]" />
+          <FileText className="text-[#14b8a6]" />
           Compilazione Guidata SCIA
         </CardTitle>
         <CardDescription className="text-[#e8fbff]/60">
@@ -425,8 +508,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
         <form onSubmit={handleSubmit} className="space-y-8">
           
           {/* DATI PROTOCOLLO SCIA */}
-          <div className="space-y-4 p-4 bg-[#020817] rounded-lg border border-[#00f0ff]/30">
-            <h3 className="text-lg font-semibold text-[#00f0ff]">
+          <div className="space-y-4 p-4 bg-[#0b1220] rounded-lg border border-[#14b8a6]/30">
+            <h3 className="text-lg font-semibold text-[#14b8a6]">
               Dati Pratica SCIA
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -435,7 +518,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Input 
                   value={formData.numero_protocollo}
                   onChange={(e) => setFormData({...formData, numero_protocollo: e.target.value})}
-                  className="bg-[#020817] border-[#00f0ff]/50 text-[#00f0ff] font-mono font-bold"
+                  className="bg-[#0b1220] border-[#14b8a6]/50 text-[#14b8a6] font-mono font-bold"
                 />
               </div>
               <div className="space-y-2">
@@ -444,23 +527,95 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   type="date"
                   value={formData.data_presentazione}
                   onChange={(e) => setFormData({...formData, data_presentazione: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Comune Presentazione</Label>
                 <Input 
                   value={formData.comune_presentazione || 'MODENA'}
-                  onChange={(e) => setFormData({...formData, comune_presentazione: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, comune_presentazione: e.target.value.toUpperCase()})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] uppercase"
                 />
               </div>
             </div>
           </div>
 
+          {/* RICERCA IMPRESA CON AUTOCOMPLETE */}
+          <div className="space-y-4 p-4 bg-[#0b1220] rounded-lg border border-[#3b82f6]/30">
+            <h3 className="text-lg font-semibold text-[#3b82f6] flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              Ricerca Impresa Subentrante
+            </h3>
+            <p className="text-sm text-[#e8fbff]/60">
+              Inizia a digitare per cercare l'impresa per nome, CF o P.IVA. I mercati e posteggi verranno filtrati automaticamente.
+            </p>
+            
+            <div className="relative" ref={searchRef}>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Es. Alimentari Verdi, IT34567890123..."
+                    className="bg-[#0b1220] border-[#3b82f6]/50 text-[#e8fbff] pr-10"
+                    disabled={loadingMarkets}
+                  />
+                  {selectedImpresa && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 text-gray-400 hover:text-white"
+                      onClick={handleClearImpresa}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Dropdown suggerimenti */}
+              {showSuggestions && filteredImprese.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-[#1e293b] border border-[#334155] rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                  {filteredImprese.map((impresa) => (
+                    <button
+                      key={impresa.id}
+                      type="button"
+                      className="w-full px-4 py-3 text-left hover:bg-[#334155] border-b border-[#334155] last:border-0 transition-colors"
+                      onClick={() => handleSelectImpresa(impresa)}
+                    >
+                      <div className="font-medium text-[#e8fbff]">{impresa.denominazione}</div>
+                      <div className="text-sm text-gray-400">
+                        {impresa.codice_fiscale || impresa.partita_iva} • {impresa.comune}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Badge impresa selezionata */}
+            {selectedImpresa && (
+              <div className="flex items-center gap-2 p-3 bg-[#3b82f6]/10 border border-[#3b82f6]/30 rounded-lg">
+                <Building2 className="w-5 h-5 text-[#3b82f6]" />
+                <div className="flex-1">
+                  <div className="font-medium text-[#e8fbff]">{selectedImpresa.denominazione}</div>
+                  <div className="text-sm text-gray-400">
+                    {selectedImpresa.codice_fiscale} • 
+                    {impresaMarkets.length > 0 
+                      ? ` ${impresaMarkets.length} mercati con posteggi`
+                      : ' Nessun posteggio intestato'
+                    }
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* MOTIVAZIONE SCIA */}
-          <div className="space-y-4 p-4 bg-[#020817] rounded-lg border border-[#1e293b]">
-            <h3 className="text-lg font-semibold text-[#00f0ff]">
+          <div className="space-y-4 p-4 bg-[#0b1220] rounded-lg border border-[#1e293b]">
+            <h3 className="text-lg font-semibold text-[#14b8a6]">
               Tipo di Segnalazione
             </h3>
             <RadioGroup 
@@ -497,8 +652,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
 
           {/* MOTIVO SUBINGRESSO - Visibile solo se motivazione è subingresso */}
           {formData.motivazione_scia === 'subingresso' && (
-            <div className="space-y-4 p-4 bg-[#020817] rounded-lg border border-[#1e293b]">
-              <h3 className="text-lg font-semibold text-[#00f0ff]">
+            <div className="space-y-4 p-4 bg-[#0b1220] rounded-lg border border-[#1e293b]">
+              <h3 className="text-lg font-semibold text-[#14b8a6]">
                 Motivo del Subingresso
               </h3>
               <div className="space-y-2">
@@ -507,7 +662,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   value={formData.motivo_subingresso || 'acquisto'} 
                   onValueChange={(value) => setFormData({...formData, motivo_subingresso: value})}
                 >
-                  <SelectTrigger className="bg-[#020817] border-[#1e293b] text-[#e8fbff]">
+                  <SelectTrigger className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]">
                     <SelectValue placeholder="Seleziona motivo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -524,8 +679,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
           )}
 
           {/* TIPOLOGIA ATTIVITÀ */}
-          <div className="space-y-4 p-4 bg-[#020817] rounded-lg border border-[#1e293b]">
-            <h3 className="text-lg font-semibold text-[#00f0ff]">
+          <div className="space-y-4 p-4 bg-[#0b1220] rounded-lg border border-[#1e293b]">
+            <h3 className="text-lg font-semibold text-[#14b8a6]">
               Tipologia Attività
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -535,7 +690,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   value={formData.tipologia_attivita} 
                   onValueChange={(value) => setFormData({...formData, tipologia_attivita: value, merceologia: value})}
                 >
-                  <SelectTrigger className="bg-[#020817] border-[#1e293b] text-[#e8fbff]">
+                  <SelectTrigger className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -551,7 +706,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   value={formData.ruolo_dichiarante} 
                   onValueChange={(value) => setFormData({...formData, ruolo_dichiarante: value})}
                 >
-                  <SelectTrigger className="bg-[#020817] border-[#1e293b] text-[#e8fbff]">
+                  <SelectTrigger className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -569,7 +724,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
 
           {/* SEZIONE DELEGATO - Visibile solo se ruolo_dichiarante != titolare */}
           {formData.ruolo_dichiarante !== 'titolare' && (
-            <div className="space-y-4 p-4 bg-[#0a1628] rounded-lg border border-[#f59e0b]/30">
+            <div className="space-y-4 p-4 bg-[#0f172a] rounded-lg border border-[#f59e0b]/30">
               <h3 className="text-lg font-semibold text-[#f59e0b]">
                 Dati del Delegato / Procuratore
               </h3>
@@ -583,8 +738,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   <Label className="text-[#e8fbff]">Nome Delegato *</Label>
                   <Input 
                     value={formData.delegato_nome}
-                    onChange={(e) => setFormData({...formData, delegato_nome: e.target.value})}
-                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                    onChange={(e) => setFormData({...formData, delegato_nome: capitalizeWords(e.target.value)})}
+                    className="bg-[#0b1220] border-[#f59e0b]/50 text-[#e8fbff] capitalize"
                     required
                   />
                 </div>
@@ -592,8 +747,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   <Label className="text-[#e8fbff]">Cognome Delegato *</Label>
                   <Input 
                     value={formData.delegato_cognome}
-                    onChange={(e) => setFormData({...formData, delegato_cognome: e.target.value})}
-                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                    onChange={(e) => setFormData({...formData, delegato_cognome: capitalizeWords(e.target.value)})}
+                    className="bg-[#0b1220] border-[#f59e0b]/50 text-[#e8fbff] capitalize"
                     required
                   />
                 </div>
@@ -602,7 +757,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   <Input 
                     value={formData.delegato_cf}
                     onChange={(e) => setFormData({...formData, delegato_cf: e.target.value.toUpperCase()})}
-                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                    className="bg-[#0b1220] border-[#f59e0b]/50 text-[#e8fbff] uppercase"
                     required
                   />
                 </div>
@@ -616,24 +771,24 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                     type="date"
                     value={formData.delegato_data_nascita}
                     onChange={(e) => setFormData({...formData, delegato_data_nascita: e.target.value})}
-                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                    className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[#e8fbff]">Luogo di Nascita</Label>
                   <Input 
                     value={formData.delegato_luogo_nascita}
-                    onChange={(e) => setFormData({...formData, delegato_luogo_nascita: e.target.value})}
-                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                    onChange={(e) => setFormData({...formData, delegato_luogo_nascita: capitalizeWords(e.target.value)})}
+                    className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[#e8fbff]">Qualifica / Titolo *</Label>
                   <Input 
                     value={formData.delegato_qualifica}
-                    onChange={(e) => setFormData({...formData, delegato_qualifica: e.target.value})}
+                    onChange={(e) => setFormData({...formData, delegato_qualifica: capitalizeWords(e.target.value)})}
                     placeholder="Es. Procuratore, Curatore, Erede..."
-                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                    className="bg-[#0b1220] border-[#f59e0b]/50 text-[#e8fbff] capitalize"
                     required
                   />
                 </div>
@@ -645,16 +800,16 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   <Label className="text-[#e8fbff]">Residenza (Via/Piazza)</Label>
                   <Input 
                     value={formData.delegato_residenza_via}
-                    onChange={(e) => setFormData({...formData, delegato_residenza_via: e.target.value})}
-                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                    onChange={(e) => setFormData({...formData, delegato_residenza_via: capitalizeWords(e.target.value)})}
+                    className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[#e8fbff]">Comune</Label>
                   <Input 
                     value={formData.delegato_residenza_comune}
-                    onChange={(e) => setFormData({...formData, delegato_residenza_comune: e.target.value})}
-                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                    onChange={(e) => setFormData({...formData, delegato_residenza_comune: capitalizeWords(e.target.value)})}
+                    className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                   />
                 </div>
                 <div className="space-y-2">
@@ -663,7 +818,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                     value={formData.delegato_residenza_cap}
                     onChange={(e) => setFormData({...formData, delegato_residenza_cap: e.target.value})}
                     maxLength={5}
-                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                    className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                   />
                 </div>
               </div>
@@ -676,35 +831,23 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
               A. Dati Subentrante (Cessionario)
             </h3>
             
-            {/* Riga 1: CF/P.IVA/Denominazione e Ricerca */}
+            {/* Riga 1: CF e Ragione Sociale */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[#e8fbff]">CF / P.IVA / Denominazione *</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    value={formData.cf_subentrante}
-                    onChange={(e) => setFormData({...formData, cf_subentrante: e.target.value.toUpperCase()})}
-                    placeholder="Es. RSSMRA... o 01234567890 o Nome Impresa"
-                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                  />
-                  <Button 
-                    type="button" 
-                    onClick={handleLookupSubentrante} 
-                    variant="secondary"
-                    disabled={loadingImpresa}
-                    title="Cerca impresa registrata"
-                  >
-                    {loadingImpresa ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  </Button>
-                </div>
-                <p className="text-xs text-[#e8fbff]/40">Cerca per Codice Fiscale, Partita IVA o Nome</p>
+                <Label className="text-[#e8fbff]">CF / P.IVA *</Label>
+                <Input 
+                  value={formData.cf_subentrante}
+                  onChange={(e) => setFormData({...formData, cf_subentrante: e.target.value.toUpperCase()})}
+                  placeholder="Es. RSSMRA... o 01234567890"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] uppercase"
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Ragione Sociale / Denominazione</Label>
+                <Label className="text-[#e8fbff]">Ragione Sociale *</Label>
                 <Input 
                   value={formData.ragione_sociale_sub}
                   onChange={(e) => setFormData({...formData, ragione_sociale_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
             </div>
@@ -715,16 +858,16 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Label className="text-[#e8fbff]">Nome</Label>
                 <Input 
                   value={formData.nome_sub}
-                  onChange={(e) => setFormData({...formData, nome_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, nome_sub: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Cognome</Label>
                 <Input 
                   value={formData.cognome_sub}
-                  onChange={(e) => setFormData({...formData, cognome_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, cognome_sub: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                 />
               </div>
               <div className="space-y-2">
@@ -733,35 +876,35 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   type="date"
                   value={formData.data_nascita_sub}
                   onChange={(e) => setFormData({...formData, data_nascita_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Luogo di Nascita</Label>
                 <Input 
                   value={formData.luogo_nascita_sub}
-                  onChange={(e) => setFormData({...formData, luogo_nascita_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, luogo_nascita_sub: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                 />
               </div>
             </div>
 
             {/* Riga 3: Residenza */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-2 col-span-2">
                 <Label className="text-[#e8fbff]">Residenza (Via/Piazza)</Label>
                 <Input 
                   value={formData.residenza_via_sub}
-                  onChange={(e) => setFormData({...formData, residenza_via_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, residenza_via_sub: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Comune Residenza</Label>
+                <Label className="text-[#e8fbff]">Comune</Label>
                 <Input 
                   value={formData.residenza_comune_sub}
-                  onChange={(e) => setFormData({...formData, residenza_comune_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, residenza_comune_sub: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                 />
               </div>
               <div className="space-y-2">
@@ -769,27 +912,28 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Input 
                   value={formData.residenza_cap_sub}
                   onChange={(e) => setFormData({...formData, residenza_cap_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  maxLength={5}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
             </div>
 
             {/* Riga 4: Sede Impresa */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label className="text-[#e8fbff]">Sede Impresa (Via/Piazza)</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Sede Impresa (Via)</Label>
                 <Input 
                   value={formData.sede_via_sub}
-                  onChange={(e) => setFormData({...formData, sede_via_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, sede_via_sub: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Comune Sede</Label>
                 <Input 
                   value={formData.sede_comune_sub}
-                  onChange={(e) => setFormData({...formData, sede_comune_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, sede_comune_sub: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                 />
               </div>
               <div className="space-y-2">
@@ -797,9 +941,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Input 
                   value={formData.sede_provincia_sub}
                   onChange={(e) => setFormData({...formData, sede_provincia_sub: e.target.value.toUpperCase()})}
-                  placeholder="Es. MO"
                   maxLength={2}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] uppercase"
                 />
               </div>
               <div className="space-y-2">
@@ -807,21 +950,20 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Input 
                   value={formData.sede_cap_sub}
                   onChange={(e) => setFormData({...formData, sede_cap_sub: e.target.value})}
-                  placeholder="Es. 41058"
                   maxLength={5}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
             </div>
 
-            {/* Riga 5: PEC */}
+            {/* Riga 5: PEC e Telefono */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">PEC</Label>
                 <Input 
                   value={formData.pec_sub}
-                  onChange={(e) => setFormData({...formData, pec_sub: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, pec_sub: e.target.value.toLowerCase()})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] lowercase"
                 />
               </div>
               <div className="space-y-2">
@@ -830,151 +972,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   value={formData.telefono_sub}
                   onChange={(e) => setFormData({...formData, telefono_sub: e.target.value})}
                   placeholder="Es. 059 123456"
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* SEZIONE B: CEDENTE */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-[#e8fbff] border-b border-[#1e293b] pb-2">
-              B. Dati Cedente (Dante Causa)
-            </h3>
-            <p className="text-sm text-[#e8fbff]/60">
-              I dati del cedente vengono compilati automaticamente quando selezioni un posteggio occupato
-            </p>
-            
-            {/* Riga 1: CF e Ricerca manuale */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">CF / P.IVA / Denominazione Cedente *</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    value={formData.cf_cedente}
-                    onChange={(e) => setFormData({...formData, cf_cedente: e.target.value.toUpperCase()})}
-                    placeholder="Es. VRDLGI..."
-                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                  />
-                  <Button 
-                    type="button" 
-                    onClick={handleLookupCedente} 
-                    variant="secondary"
-                    disabled={loadingImpresa}
-                    title="Cerca cedente"
-                  >
-                    {loadingImpresa ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Ragione Sociale Cedente</Label>
-                <Input 
-                  value={formData.ragione_sociale_ced}
-                  onChange={(e) => setFormData({...formData, ragione_sociale_ced: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-            </div>
-
-            {/* Riga 2: Nome, Cognome, Data/Luogo Nascita Cedente */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Nome</Label>
-                <Input 
-                  value={formData.nome_ced}
-                  onChange={(e) => setFormData({...formData, nome_ced: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Cognome</Label>
-                <Input 
-                  value={formData.cognome_ced}
-                  onChange={(e) => setFormData({...formData, cognome_ced: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Data di Nascita</Label>
-                <Input 
-                  type="date"
-                  value={formData.data_nascita_ced}
-                  onChange={(e) => setFormData({...formData, data_nascita_ced: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Luogo di Nascita</Label>
-                <Input 
-                  value={formData.luogo_nascita_ced}
-                  onChange={(e) => setFormData({...formData, luogo_nascita_ced: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-            </div>
-
-            {/* Riga 3: Residenza Cedente */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Residenza (Via/Piazza)</Label>
-                <Input 
-                  value={formData.residenza_via_ced}
-                  onChange={(e) => setFormData({...formData, residenza_via_ced: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Comune</Label>
-                <Input 
-                  value={formData.residenza_comune_ced}
-                  onChange={(e) => setFormData({...formData, residenza_comune_ced: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">CAP</Label>
-                <Input 
-                  value={formData.residenza_cap_ced}
-                  onChange={(e) => setFormData({...formData, residenza_cap_ced: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">PEC</Label>
-                <Input 
-                  value={formData.pec_ced}
-                  onChange={(e) => setFormData({...formData, pec_ced: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-            </div>
-
-            {/* Riga 4: SCIA Precedente */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">SCIA Precedente N. Prot.</Label>
-                <Input 
-                  value={formData.scia_precedente_protocollo}
-                  onChange={(e) => setFormData({...formData, scia_precedente_protocollo: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Data Presentazione</Label>
-                <Input 
-                  type="date"
-                  value={formData.scia_precedente_data}
-                  onChange={(e) => setFormData({...formData, scia_precedente_data: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Comune Presentazione</Label>
-                <Input 
-                  value={formData.scia_precedente_comune}
-                  onChange={(e) => setFormData({...formData, scia_precedente_comune: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
             </div>
@@ -986,20 +984,33 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
               C. Dati Posteggio e Mercato
             </h3>
             
+            {selectedImpresa && impresaMarkets.length === 0 && (
+              <div className="p-3 bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg text-[#f59e0b] text-sm">
+                ⚠️ L'impresa selezionata non ha posteggi intestati. Seleziona manualmente mercato e posteggio.
+              </div>
+            )}
+            
             {/* Riga 1: Mercato e Posteggio */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Mercato *</Label>
+                <Label className="text-[#e8fbff]">
+                  Mercato *
+                  {selectedImpresa && impresaMarkets.length > 0 && (
+                    <span className="text-[#3b82f6] text-xs ml-2">
+                      (filtrato per {selectedImpresa.denominazione})
+                    </span>
+                  )}
+                </Label>
                 <Select 
                   value={formData.mercato_id} 
                   onValueChange={handleMarketChange}
                   disabled={loadingMarkets}
                 >
-                  <SelectTrigger className="bg-[#020817] border-[#1e293b] text-[#e8fbff]">
+                  <SelectTrigger className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]">
                     <SelectValue placeholder={loadingMarkets ? "Caricamento..." : "Seleziona Mercato"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {markets.map(market => (
+                    {filteredMarkets.map(market => (
                       <SelectItem key={market.id} value={market.id.toString()}>
                         {market.name} ({market.municipality})
                       </SelectItem>
@@ -1008,13 +1019,20 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-[#e8fbff]">Numero Posteggio *</Label>
+                <Label className="text-[#e8fbff]">
+                  Numero Posteggio *
+                  {selectedImpresa && selectedMarketId && impresaStalls.has(selectedMarketId) && (
+                    <span className="text-[#3b82f6] text-xs ml-2">
+                      ({impresaStalls.get(selectedMarketId)?.length} posteggi)
+                    </span>
+                  )}
+                </Label>
                 <Select 
                   value={formData.posteggio_id} 
                   onValueChange={handleStallChange}
                   disabled={!selectedMarketId || loadingStalls}
                 >
-                  <SelectTrigger className="bg-[#020817] border-[#1e293b] text-[#e8fbff]">
+                  <SelectTrigger className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]">
                     <SelectValue placeholder={loadingStalls ? "Caricamento..." : "Seleziona Posteggio"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1034,8 +1052,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Label className="text-[#e8fbff]">Ubicazione Mercato</Label>
                 <Input 
                   value={formData.ubicazione_mercato}
-                  onChange={(e) => setFormData({...formData, ubicazione_mercato: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, ubicazione_mercato: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                   readOnly
                 />
               </div>
@@ -1043,8 +1061,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Label className="text-[#e8fbff]">Giorno Mercato</Label>
                 <Input 
                   value={formData.giorno_mercato}
-                  onChange={(e) => setFormData({...formData, giorno_mercato: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, giorno_mercato: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                   readOnly
                 />
               </div>
@@ -1056,9 +1074,9 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Label className="text-[#e8fbff]">Fila</Label>
                 <Input 
                   value={formData.fila}
-                  onChange={(e) => setFormData({...formData, fila: e.target.value})}
+                  onChange={(e) => setFormData({...formData, fila: e.target.value.toUpperCase()})}
                   placeholder="Es. A, B, C"
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] uppercase"
                 />
               </div>
               <div className="space-y-2">
@@ -1066,7 +1084,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Input 
                   value={formData.dimensioni_mq}
                   readOnly
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
               <div className="space-y-2">
@@ -1074,16 +1092,149 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Input 
                   value={formData.dimensioni_lineari}
                   readOnly
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Attrezzature</Label>
                 <Input 
                   value={formData.attrezzature}
-                  onChange={(e) => setFormData({...formData, attrezzature: e.target.value})}
+                  onChange={(e) => setFormData({...formData, attrezzature: e.target.value.toLowerCase()})}
                   placeholder="Es. banco, automezzo"
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] lowercase"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SEZIONE B: CEDENTE */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-[#e8fbff] border-b border-[#1e293b] pb-2">
+              B. Dati Cedente (Dante Causa)
+            </h3>
+            <p className="text-sm text-[#e8fbff]/60">
+              I dati del cedente vengono compilati automaticamente quando selezioni un posteggio occupato
+            </p>
+            
+            {/* Riga 1: CF e Ragione Sociale */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">CF / P.IVA Cedente *</Label>
+                <Input 
+                  value={formData.cf_cedente}
+                  onChange={(e) => setFormData({...formData, cf_cedente: e.target.value.toUpperCase()})}
+                  placeholder="Es. VRDLGI..."
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] uppercase"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Ragione Sociale Cedente</Label>
+                <Input 
+                  value={formData.ragione_sociale_ced}
+                  onChange={(e) => setFormData({...formData, ragione_sociale_ced: e.target.value})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+            </div>
+
+            {/* Riga 2: Nome, Cognome, Data/Luogo Nascita Cedente */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Nome</Label>
+                <Input 
+                  value={formData.nome_ced}
+                  onChange={(e) => setFormData({...formData, nome_ced: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Cognome</Label>
+                <Input 
+                  value={formData.cognome_ced}
+                  onChange={(e) => setFormData({...formData, cognome_ced: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Data di Nascita</Label>
+                <Input 
+                  type="date"
+                  value={formData.data_nascita_ced}
+                  onChange={(e) => setFormData({...formData, data_nascita_ced: e.target.value})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Luogo di Nascita</Label>
+                <Input 
+                  value={formData.luogo_nascita_ced}
+                  onChange={(e) => setFormData({...formData, luogo_nascita_ced: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
+                />
+              </div>
+            </div>
+
+            {/* Riga 3: Residenza Cedente */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Residenza (Via/Piazza)</Label>
+                <Input 
+                  value={formData.residenza_via_ced}
+                  onChange={(e) => setFormData({...formData, residenza_via_ced: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Comune</Label>
+                <Input 
+                  value={formData.residenza_comune_ced}
+                  onChange={(e) => setFormData({...formData, residenza_comune_ced: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">CAP</Label>
+                <Input 
+                  value={formData.residenza_cap_ced}
+                  onChange={(e) => setFormData({...formData, residenza_cap_ced: e.target.value})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">PEC</Label>
+                <Input 
+                  value={formData.pec_ced}
+                  onChange={(e) => setFormData({...formData, pec_ced: e.target.value.toLowerCase()})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] lowercase"
+                />
+              </div>
+            </div>
+
+            {/* Riga 4: SCIA Precedente */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">SCIA Precedente N. Prot.</Label>
+                <Input 
+                  value={formData.scia_precedente_protocollo}
+                  onChange={(e) => setFormData({...formData, scia_precedente_protocollo: e.target.value})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Data Presentazione</Label>
+                <Input 
+                  type="date"
+                  value={formData.scia_precedente_data}
+                  onChange={(e) => setFormData({...formData, scia_precedente_data: e.target.value})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Comune Presentazione</Label>
+                <Input 
+                  value={formData.scia_precedente_comune}
+                  onChange={(e) => setFormData({...formData, scia_precedente_comune: e.target.value.toUpperCase()})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] uppercase"
                 />
               </div>
             </div>
@@ -1100,8 +1251,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Label className="text-[#e8fbff]">Notaio Rogante</Label>
                 <Input 
                   value={formData.notaio}
-                  onChange={(e) => setFormData({...formData, notaio: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  onChange={(e) => setFormData({...formData, notaio: capitalizeWords(e.target.value)})}
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff] capitalize"
                 />
               </div>
               <div className="space-y-2">
@@ -1109,7 +1260,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 <Input 
                   value={formData.repertorio}
                   onChange={(e) => setFormData({...formData, repertorio: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
               <div className="space-y-2">
@@ -1118,7 +1269,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   type="date"
                   value={formData.data_atto}
                   onChange={(e) => setFormData({...formData, data_atto: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  className="bg-[#0b1220] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
             </div>
@@ -1129,7 +1280,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
             <Button type="button" variant="outline" onClick={onCancel}>
               Annulla
             </Button>
-            <Button type="submit" className="bg-[#00f0ff] text-[#020817] hover:bg-[#00f0ff]/80">
+            <Button type="submit" className="bg-[#14b8a6] text-[#020817] hover:bg-[#14b8a6]/80">
               Genera SCIA
             </Button>
           </div>
