@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.10.1  
+> **Versione:** 3.11.0  
 > **Data:** 2 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -398,7 +398,7 @@ Il modulo **SSO SUAP** (Sportello Unico Attività Produttive) gestisce le pratic
 
 - **Dashboard SUAP** - Panoramica pratiche con statistiche
 - **Form SCIA Guidato** - Compilazione assistita con dropdown dinamici
-- **Valutazione Automatica** - Controlli PDND integrati
+- **Valutazione Automatica v2.0** - Motore verifica con 23 controlli reali
 - **Gestione Pratiche** - Lista, dettaglio, timeline eventi
 
 ### Struttura Tabella `suap_pratiche` (69 colonne)
@@ -435,6 +435,38 @@ Il modulo **SSO SUAP** (Sportello Unico Attività Produttive) gestisce le pratic
 7. **Dati Posteggio e Mercato** - Dropdown dinamici con dati reali
 8. **Estremi Atto Notarile** - Notaio, repertorio, data
 
+### Motore Verifica SCIA v2.0
+
+Il motore di verifica esegue **23 controlli automatici** su dati reali del sistema:
+
+| Categoria | Controlli | Fonte Dati |
+|-----------|-----------|------------|
+| **Subentrante** | DURC, Onorabilità, Antimafia, Impresa Attiva, Limite Posteggi, Alimentare, HACCP | qualificazioni, imprese, concessions |
+| **Cedente** | DURC, Onorabilità, Antimafia, Canone Unico | qualificazioni, wallets |
+| **Pratica** | Dati Completi, PEC, Atto Notarile | suap_pratiche |
+
+**Logica Limite Posteggi:**
+- Mercato ≤ 100 posti: max **2 posteggi** per impresa
+- Mercato > 100 posti: max **3 posteggi** per impresa
+
+**Esiti Valutazione:**
+- `AUTO_OK` - Score ≥ 80 (approvazione automatica)
+- `REVIEW_NEEDED` - Score 50-79 (revisione manuale)
+- `REJECTED` - Score < 50 (rigetto)
+
+### Tipi Qualificazione Supportati
+
+| Tipo | Descrizione | Categoria |
+|------|-------------|----------|
+| DURC | Regolarità Contributiva | Obbligatorio |
+| ONORABILITA | Requisiti Morali Art. 71 D.Lgs. 59/2010 | Obbligatorio |
+| ANTIMAFIA | Dichiarazione Art. 67 D.Lgs. 159/2011 | Obbligatorio |
+| SAB | Somministrazione Alimenti e Bevande | Alimentare |
+| REC | Registro Esercenti Commercio | Alimentare |
+| CORSO_ALIMENTARE | Formazione Regionale | Alimentare |
+| HACCP | Sicurezza Alimentare | Alimentare |
+| ISO 9001/14001/22000 | Certificazioni Qualità | Opzionale |
+
 ### File Principali
 
 | File | Descrizione |
@@ -443,8 +475,9 @@ Il modulo **SSO SUAP** (Sportello Unico Attività Produttive) gestisce le pratic
 | `client/src/pages/suap/SuapDetail.tsx` | Dettaglio pratica con tutti i dati |
 | `client/src/pages/suap/SuapList.tsx` | Lista pratiche con filtri |
 | `client/src/components/suap/SciaForm.tsx` | Form compilazione SCIA guidato |
+| `client/src/components/SuapPanel.tsx` | Pannello SUAP con controlli v2.0 |
 | `client/src/api/suap.ts` | Client API SUAP |
-| `mihub-backend-rest/src/modules/suap/service.js` | Service backend SUAP |
+| `mihub-backend-rest/src/modules/suap/service.js` | Service backend SUAP + Motore Verifica v2.0 |
 | `mihub-backend-rest/routes/suap.js` | Routes API SUAP |
 
 ---
@@ -654,6 +687,55 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+
+### v3.11.0 (02/01/2026) - Motore Verifica SCIA v2.0 con Controlli Reali
+- ✅ **Motore Verifica SCIA v2.0** - Implementazione completa con controlli reali:
+  - 23 controlli totali suddivisi in 3 categorie
+  - Verifica su dati reali del sistema (qualificazioni, wallet, concessioni)
+  - Punteggio affidabilità calcolato automaticamente
+  - Esito: AUTO_OK (≥80), REVIEW_NEEDED (50-79), REJECTED (<50)
+- ✅ **Controlli Subentrante (12):**
+  - CHECK_DURC_SUB - Verifica DURC valido da tabella qualificazioni
+  - CHECK_ONORABILITA_SUB - Verifica requisiti morali (Art. 71 D.Lgs. 59/2010)
+  - CHECK_ANTIMAFIA_SUB - Verifica dichiarazione antimafia (Art. 67 D.Lgs. 159/2011)
+  - CHECK_IMPRESA_ATTIVA_SUB - Verifica stato impresa attiva
+  - CHECK_LIMITE_POSTEGGI - Max 2 posteggi (mercato ≤100) o 3 (mercato >100)
+  - CHECK_ALIMENTARE_SUB - Verifica abilitazione SAB/REC/CORSO (solo settore alimentare)
+  - CHECK_HACCP_SUB - Verifica certificazione HACCP (solo settore alimentare)
+- ✅ **Controlli Cedente (8):**
+  - CHECK_DURC_CED - Verifica DURC valido cedente
+  - CHECK_ONORABILITA_CED - Verifica requisiti morali cedente
+  - CHECK_ANTIMAFIA_CED - Verifica dichiarazione antimafia cedente
+  - CHECK_CANONE_UNICO - Verifica wallet posteggio non in rosso (saldo ≥ 0)
+- ✅ **Controlli Pratica (3):**
+  - CHECK_DATI_COMPLETI - Verifica campi obbligatori
+  - CHECK_PEC - Verifica PEC valida
+  - CHECK_ATTO_NOTARILE - Verifica completezza atto notarile
+- ✅ **Nuovi Tipi Qualificazione** - Aggiunti nel dropdown frontend:
+  - ONORABILITA - Autocertificazione requisiti morali
+  - ANTIMAFIA - Dichiarazione antimafia
+  - SAB - Somministrazione Alimenti e Bevande
+  - REC - Registro Esercenti Commercio
+  - CORSO_ALIMENTARE - Formazione Regionale
+- ✅ **Helper Functions Backend** - 6 nuove funzioni in service.js:
+  - findImpresaByCF() - Trova impresa da CF/P.IVA
+  - checkQualificazione() - Verifica qualificazione valida
+  - checkImpresaAttiva() - Verifica stato impresa
+  - checkWalletPosteggio() - Verifica saldo wallet
+  - checkLimitePosteggi() - Verifica limite posteggi per mercato
+  - checkAbilitazioneAlimentare() - Verifica SAB/REC/CORSO
+- ✅ **Frontend Aggiornato** - Visualizzazione controlli v2.0:
+  - Badge "v2.0" nel titolo sezione
+  - Controlli raggruppati per categoria (Subentrante/Cedente/Pratica)
+  - Colori distintivi per categoria
+  - Motivo dettagliato per ogni controllo
+- File modificati:
+  - mihub-backend-rest/src/modules/suap/service.js (432 righe aggiunte)
+  - client/src/components/markets/MarketCompaniesTab.tsx (nuovi tipi qualificazione)
+  - client/src/components/SuapPanel.tsx (visualizzazione controlli v2.0)
+- Commit backend: 95736d4
+- Commit frontend: b173f54
+- Tag checkpoint: v3.10.1-stable
 
 ### v3.10.1 (02/01/2026) - SciaForm Autocomplete Integrato nei Campi CF
 - ✅ **Autocomplete Integrato nel Campo CF Subentrante** - Non più barra di ricerca separata:
