@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.4.0  
+> **Versione:** 3.5.0  
 > **Data:** 2 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -592,6 +592,22 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+
+### v3.5.0 (02/01/2026) - SSO SUAP Numero Protocollo e Refinements
+- ✅ **Numero Protocollo SCIA** - Nuova sezione "Dati Pratica SCIA" in cima al form
+  - Numero Protocollo auto-generato formato SCIA-YYYY-NNNN
+  - Data Presentazione (default: data odierna)
+  - Comune Presentazione (default: MODENA)
+  - Tutti i campi modificabili dall'utente
+- ✅ **Dropdown Verificati** - Confermati già presenti:
+  - "Associazione" in Ruolo Dichiarante
+  - "Alimentare" in Settore Merceologico
+- ✅ **Attività Recente** - Già collegata al database reale
+  - Nessun dato mock presente
+  - Carica pratiche da /api/suap/pratiche
+  - Mostra messaggio vuoto se nessuna pratica
+- File modificati: SciaForm.tsx
+- Commit: 4b1eb2a
 
 ### v3.4.0 (02/01/2026) - SSO SUAP Form SCIA Dinamici
 - SciaForm.tsx v2 - Completamente riscritto con dropdown dinamici
