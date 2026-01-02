@@ -451,17 +451,29 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
           if (json.success) {
             setQualificazioni(prev => {
               const others = prev.filter(q => q.company_id !== selectedCompanyForQualif.id);
-              const newQualificazioni = json.data.map((q: any) => ({
-                id: q.id.toString(),
-                company_id: selectedCompanyForQualif.id,
-                company_name: selectedCompanyForQualif.denominazione,
-                tipo: q.tipo,
-                ente_rilascio: q.ente_rilascio,
-                data_rilascio: q.data_rilascio ? q.data_rilascio.split('T')[0] : '',
-                data_scadenza: q.data_scadenza ? q.data_scadenza.split('T')[0] : '',
-                stato: q.stato,
-                note: q.note
-              }));
+              const newQualificazioni = json.data.map((q: any) => {
+                // Calcola lo stato basandosi sulla data di scadenza
+                let stato = q.stato;
+                if (q.data_scadenza) {
+                  const scadenza = new Date(q.data_scadenza);
+                  const oggi = new Date();
+                  oggi.setHours(0, 0, 0, 0); // Confronta solo le date, non le ore
+                  if (scadenza < oggi) {
+                    stato = 'SCADUTA';
+                  }
+                }
+                return {
+                  id: q.id.toString(),
+                  company_id: selectedCompanyForQualif.id,
+                  company_name: selectedCompanyForQualif.denominazione,
+                  tipo: q.tipo,
+                  ente_rilascio: q.ente_rilascio,
+                  data_rilascio: q.data_rilascio ? q.data_rilascio.split('T')[0] : '',
+                  data_scadenza: q.data_scadenza ? q.data_scadenza.split('T')[0] : '',
+                  stato: stato,
+                  note: q.note
+                };
+              });
               return [...others, ...newQualificazioni];
             });
           }

@@ -946,6 +946,14 @@
 
 ## Bug Fix - Date Picker nei Modal (02/01/2026)
 
-- [ ] Fix date picker che si chiude immediatamente nei modal Qualifiche
-- [ ] Fix date picker che si chiude immediatamente nei modal Concessioni
-- [ ] Verificare altri modal con lo stesso problema
+- [x] Fix date picker che si chiude immediatamente nei modal Qualifiche
+- [x] Fix date picker che si chiude immediatamente nei modal Concessioni
+- [x] Fix date picker in modal Imprese (data nascita, data iscrizione RI)
+- [x] Aggiunto stopPropagation e z-index alto a tutti gli input date
+
+
+## Bug Fix - Verifica SCIA e Semafori (02/01/2026)
+
+- [ ] Aggiungere filtro per mostrare solo ultima verifica o storico completo
+- [ ] Toggle per passare da "Ultima Verifica" a "Storico Completo"
+- [ ] Semaforo rosso per qualifiche scadute nella scheda qualifiche

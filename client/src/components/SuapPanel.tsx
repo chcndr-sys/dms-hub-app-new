@@ -171,6 +171,7 @@ export default function SuapPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSciaForm, setShowSciaForm] = useState(false);
   const [showConcessioneForm, setShowConcessioneForm] = useState(false);
+  const [showAllChecks, setShowAllChecks] = useState(false); // false = solo ultima verifica, true = storico completo
 
   // Carica dati iniziali
   useEffect(() => {
@@ -734,17 +735,47 @@ export default function SuapPanel() {
                 {/* Controlli Automatici v2.0 */}
                 <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
                   <CardHeader>
-                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                      Controlli Automatici
-                      <Badge className="bg-[#00f0ff]/20 text-[#00f0ff] text-xs">v2.0</Badge>
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                        Controlli Automatici
+                        <Badge className="bg-[#00f0ff]/20 text-[#00f0ff] text-xs">v2.0</Badge>
+                      </CardTitle>
+                      {/* Toggle Ultima Verifica / Storico */}
+                      {selectedPratica?.checks && selectedPratica.checks.length > 0 && (
+                        <button
+                          onClick={() => setShowAllChecks(!showAllChecks)}
+                          className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                            showAllChecks 
+                              ? 'bg-[#f59e0b]/20 text-[#f59e0b] hover:bg-[#f59e0b]/30' 
+                              : 'bg-[#00f0ff]/20 text-[#00f0ff] hover:bg-[#00f0ff]/30'
+                          }`}
+                        >
+                          {showAllChecks ? '📜 Storico Completo' : '✨ Ultima Verifica'}
+                        </button>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {selectedPratica.checks && selectedPratica.checks.length > 0 ? (
                       <div className="space-y-4">
                         {/* Raggruppa per categoria */}
                         {(() => {
-                          const checks = selectedPratica.checks || [];
+                          const allChecks = selectedPratica.checks || [];
+                          
+                          // Filtra per mostrare solo ultima verifica o tutto
+                          let checks = allChecks;
+                          if (!showAllChecks && allChecks.length > 0) {
+                            // Trova il timestamp più recente
+                            const latestTime = Math.max(...allChecks.map(c => 
+                              new Date(c.data_check || c.created_at || 0).getTime()
+                            ));
+                            // Considera "ultima verifica" i check entro 5 minuti dal più recente
+                            const threshold = latestTime - (5 * 60 * 1000); // 5 minuti
+                            checks = allChecks.filter(c => {
+                              const checkTime = new Date(c.data_check || c.created_at || 0).getTime();
+                              return checkTime >= threshold;
+                            });
+                          }
                           const grouped: Record<string, typeof checks> = {};
                           
                           checks.forEach(check => {
