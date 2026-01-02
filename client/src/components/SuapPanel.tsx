@@ -19,6 +19,9 @@ import SciaForm from '@/components/suap/SciaForm';
 import ConcessioneForm from '@/components/suap/ConcessioneForm';
 import { toast } from 'sonner';
 
+// Ente ID hardcoded per ora - in futuro da contesto utente
+const ENTE_ID = 'ente_modena';
+
 // ============================================================================
 // TIPI
 // ============================================================================
@@ -178,8 +181,8 @@ export default function SuapPanel() {
     setLoading(true);
     try {
       const [statsData, praticheData] = await Promise.all([
-        getSuapStats(),
-        getSuapPratiche()
+        getSuapStats(ENTE_ID),
+        getSuapPratiche(ENTE_ID)
       ]);
       setStats(statsData);
       // Ordina per data creazione (più recenti prima)
@@ -198,7 +201,7 @@ export default function SuapPanel() {
   const loadPraticaDetail = async (id: number) => {
     setLoading(true);
     try {
-      const pratica = await getSuapPraticaById(id);
+      const pratica = await getSuapPraticaById(String(id), ENTE_ID);
       setSelectedPratica(pratica as SuapPraticaFull);
       setActiveTab('dettaglio');
     } catch (error) {
@@ -287,7 +290,7 @@ export default function SuapPanel() {
 
       console.log('Dati pratica da inviare:', praticaData);  // Debug
 
-      await createSuapPratica(praticaData);
+      await createSuapPratica(ENTE_ID, praticaData);
       toast.success('SCIA creata con successo!');
       setShowSciaForm(false);
       loadData();
@@ -303,7 +306,7 @@ export default function SuapPanel() {
     if (!selectedPratica) return;
     setLoading(true);
     try {
-      await evaluateSuapPratica(selectedPratica.id);
+      await evaluateSuapPratica(String(selectedPratica.id), ENTE_ID);
       toast.success('Valutazione avviata');
       await loadPraticaDetail(selectedPratica.id);
     } catch (error) {
