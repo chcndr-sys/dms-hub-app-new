@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.10.0  
+> **Versione:** 3.10.1  
 > **Data:** 2 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -654,6 +654,27 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+
+### v3.10.1 (02/01/2026) - SciaForm Autocomplete Integrato nei Campi CF
+- ✅ **Autocomplete Integrato nel Campo CF Subentrante** - Non più barra di ricerca separata:
+  - Dropdown appare direttamente sotto il campo CF/P.IVA mentre si digita
+  - Trigger dopo 2+ caratteri digitati
+  - Cerca per nome impresa, Codice Fiscale o Partita IVA
+  - Max 10 risultati con nome impresa, CF/P.IVA e comune
+  - Click su risultato auto-popola tutti i campi Subentrante
+  - Toast di conferma "Impresa selezionata!"
+- ✅ **Autocomplete Integrato nel Campo CF Cedente** - Stessa funzionalità:
+  - Dropdown sotto campo CF Cedente mentre si digita
+  - Cerca per nome, CF o P.IVA
+  - Click auto-popola tutti i campi Cedente
+  - Toast di conferma "Cedente selezionato!"
+- ✅ **Titoli Sezioni Semplificati** - Rimossi termini tecnici tra parentesi:
+  - "A. Dati Subentrante (Cessionario)" → "A. Dati Subentrante"
+  - "B. Dati Cedente (Dante Causa)" → "B. Dati Cedente"
+- ✅ **Click Outside per Chiudere** - Dropdown si chiude cliccando fuori
+- ✅ **Ref Separati** - `searchRef` per Subentrante, `searchCedenteRef` per Cedente
+- File modificati: SciaForm.tsx
+- Commit: 8a08220
 
 ### v3.10.0 (02/01/2026) - SciaForm Autocomplete e Filtri Intelligenti
 - ✅ **Autocomplete Impresa** - Ricerca intelligente mentre digiti:
