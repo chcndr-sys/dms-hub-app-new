@@ -55,32 +55,58 @@ export default function SuapDashboard({ embedded = false }: { embedded?: boolean
   // Handler per submit SCIA
   const handleSciaSubmit = async (data: any) => {
     try {
+      console.log('Dati SCIA da inviare:', data);
+      
+      // Prepara i dati per la creazione della pratica
+      const praticaData = {
+        tipo_pratica: `SCIA ${data.motivazione_scia || 'Subingresso'}`.toUpperCase(),
+        richiedente_nome: data.ragione_sociale_sub || `${data.nome_sub || ''} ${data.cognome_sub || ''}`.trim() || 'Non specificato',
+        richiedente_cf: data.cf_subentrante || 'NON_SPECIFICATO',
+        oggetto: `${(data.motivazione_scia || 'Subingresso').toUpperCase()} - Mercato: ${data.mercato || 'N/D'} - Posteggio: ${data.posteggio || 'N/D'}`,
+        // Aggiungi dati extra per tracciabilità
+        numero_protocollo: data.numero_protocollo,
+        data_presentazione: data.data_presentazione,
+        comune_presentazione: data.comune_presentazione
+      };
+      
+      console.log('Payload pratica:', praticaData);
+      
       // Crea la pratica nel backend
-      const newPratica = await createSuapPratica('00000000-0000-0000-0000-000000000001', {
-        tipo_pratica: `SCIA ${data.motivazione_scia || 'Subingresso'}`,
-        richiedente_nome: data.ragione_sociale_sub || `${data.nome_sub} ${data.cognome_sub}`,
-        richiedente_cf: data.cf_subentrante,
-        oggetto: `${data.motivazione_scia || 'Subingresso'} - ${data.mercato} - Posteggio ${data.posteggio}`
-      });
+      const newPratica = await createSuapPratica('00000000-0000-0000-0000-000000000001', praticaData);
+      
+      console.log('Pratica creata:', newPratica);
       
       setShowSciaForm(false);
       toast.success("SCIA Inviata con successo!", { 
-        description: `Protocollo: ${newPratica.protocollo || newPratica.cui}` 
+        description: `Protocollo: ${newPratica.cui || data.numero_protocollo}` 
       });
       
       // Ricarica le pratiche
-      const updatedPratiche = await getSuapPratiche('00000000-0000-0000-0000-000000000001');
-      setPratiche(updatedPratiche.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      ).slice(0, 5));
+      try {
+        const updatedPratiche = await getSuapPratiche('00000000-0000-0000-0000-000000000001');
+        setPratiche(updatedPratiche.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ).slice(0, 5));
+      } catch (e) {
+        console.warn('Errore ricarica pratiche:', e);
+      }
       
       // Ricarica le statistiche
-      const newStats = await getSuapStats('00000000-0000-0000-0000-000000000001');
-      setStats(newStats);
+      try {
+        const newStats = await getSuapStats('00000000-0000-0000-0000-000000000001');
+        setStats(newStats);
+      } catch (e) {
+        console.warn('Errore ricarica stats:', e);
+      }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Errore creazione SCIA:', error);
-      toast.error("Errore", { description: "Impossibile creare la pratica SCIA" });
+      const errorMessage = error?.message || 'Errore sconosciuto';
+      toast.error("Errore Creazione SCIA", { 
+        description: errorMessage.includes('Failed') 
+          ? "Impossibile contattare il server. Riprova tra poco." 
+          : errorMessage 
+      });
     }
   };
 

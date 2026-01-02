@@ -112,7 +112,20 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     sede_via_sub: '',
     sede_comune_sub: '',
     sede_cap_sub: '',
+    sede_provincia_sub: '',
     pec_sub: '',
+    
+    // Dati Delegato (se ruolo_dichiarante != titolare)
+    delegato_nome: '',
+    delegato_cognome: '',
+    delegato_cf: '',
+    delegato_data_nascita: '',
+    delegato_luogo_nascita: '',
+    delegato_residenza_via: '',
+    delegato_residenza_comune: '',
+    delegato_residenza_cap: '',
+    delegato_residenza_provincia: '',
+    delegato_qualifica: '', // es: procuratore, curatore, erede, etc.
     telefono_sub: '',
     
     // Sezione B - Cedente
@@ -554,6 +567,109 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
             </div>
           </div>
 
+          {/* SEZIONE DELEGATO - Visibile solo se ruolo_dichiarante != titolare */}
+          {formData.ruolo_dichiarante !== 'titolare' && (
+            <div className="space-y-4 p-4 bg-[#0a1628] rounded-lg border border-[#f59e0b]/30">
+              <h3 className="text-lg font-semibold text-[#f59e0b]">
+                Dati del Delegato / Procuratore
+              </h3>
+              <p className="text-sm text-[#e8fbff]/60">
+                Compilare i dati del soggetto che presenta la SCIA in qualità di: <strong className="text-[#f59e0b]">{formData.ruolo_dichiarante.replace('_', ' ').toUpperCase()}</strong>
+              </p>
+              
+              {/* Riga 1: Nome, Cognome, CF */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Nome Delegato *</Label>
+                  <Input 
+                    value={formData.delegato_nome}
+                    onChange={(e) => setFormData({...formData, delegato_nome: e.target.value})}
+                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Cognome Delegato *</Label>
+                  <Input 
+                    value={formData.delegato_cognome}
+                    onChange={(e) => setFormData({...formData, delegato_cognome: e.target.value})}
+                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Codice Fiscale Delegato *</Label>
+                  <Input 
+                    value={formData.delegato_cf}
+                    onChange={(e) => setFormData({...formData, delegato_cf: e.target.value.toUpperCase()})}
+                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Riga 2: Data/Luogo Nascita, Qualifica */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Data di Nascita</Label>
+                  <Input 
+                    type="date"
+                    value={formData.delegato_data_nascita}
+                    onChange={(e) => setFormData({...formData, delegato_data_nascita: e.target.value})}
+                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Luogo di Nascita</Label>
+                  <Input 
+                    value={formData.delegato_luogo_nascita}
+                    onChange={(e) => setFormData({...formData, delegato_luogo_nascita: e.target.value})}
+                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Qualifica / Titolo *</Label>
+                  <Input 
+                    value={formData.delegato_qualifica}
+                    onChange={(e) => setFormData({...formData, delegato_qualifica: e.target.value})}
+                    placeholder="Es. Procuratore, Curatore, Erede..."
+                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Riga 3: Residenza Delegato */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <Label className="text-[#e8fbff]">Residenza (Via/Piazza)</Label>
+                  <Input 
+                    value={formData.delegato_residenza_via}
+                    onChange={(e) => setFormData({...formData, delegato_residenza_via: e.target.value})}
+                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Comune</Label>
+                  <Input 
+                    value={formData.delegato_residenza_comune}
+                    onChange={(e) => setFormData({...formData, delegato_residenza_comune: e.target.value})}
+                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">CAP</Label>
+                  <Input 
+                    value={formData.delegato_residenza_cap}
+                    onChange={(e) => setFormData({...formData, delegato_residenza_cap: e.target.value})}
+                    maxLength={5}
+                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* SEZIONE A: SUBENTRANTE */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-[#e8fbff] border-b border-[#1e293b] pb-2">
@@ -659,8 +775,8 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
             </div>
 
             {/* Riga 4: Sede Impresa */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="space-y-2 col-span-2">
                 <Label className="text-[#e8fbff]">Sede Impresa (Via/Piazza)</Label>
                 <Input 
                   value={formData.sede_via_sub}
@@ -677,10 +793,43 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                 />
               </div>
               <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Provincia</Label>
+                <Input 
+                  value={formData.sede_provincia_sub}
+                  onChange={(e) => setFormData({...formData, sede_provincia_sub: e.target.value.toUpperCase()})}
+                  placeholder="Es. MO"
+                  maxLength={2}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">CAP Sede</Label>
+                <Input 
+                  value={formData.sede_cap_sub}
+                  onChange={(e) => setFormData({...formData, sede_cap_sub: e.target.value})}
+                  placeholder="Es. 41058"
+                  maxLength={5}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+            </div>
+
+            {/* Riga 5: PEC */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label className="text-[#e8fbff]">PEC</Label>
                 <Input 
                   value={formData.pec_sub}
                   onChange={(e) => setFormData({...formData, pec_sub: e.target.value})}
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[#e8fbff]">Telefono</Label>
+                <Input 
+                  value={formData.telefono_sub}
+                  onChange={(e) => setFormData({...formData, telefono_sub: e.target.value})}
+                  placeholder="Es. 059 123456"
                   className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
                 />
               </div>
