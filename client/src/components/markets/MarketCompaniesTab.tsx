@@ -455,9 +455,13 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                 // Calcola lo stato basandosi sulla data di scadenza
                 let stato = q.stato;
                 if (q.data_scadenza) {
-                  const scadenza = new Date(q.data_scadenza);
                   const oggi = new Date();
                   oggi.setHours(0, 0, 0, 0); // Confronta solo le date, non le ore
+                  // Normalizza la data di scadenza per evitare problemi di fuso orario
+                  const scadenzaStr = q.data_scadenza.split('T')[0]; // Prende solo YYYY-MM-DD
+                  const [year, month, day] = scadenzaStr.split('-').map(Number);
+                  const scadenza = new Date(year, month - 1, day); // Crea data locale
+                  scadenza.setHours(23, 59, 59, 999); // Fine giornata della scadenza
                   if (scadenza < oggi) {
                     stato = 'SCADUTA';
                   }
@@ -1178,7 +1182,11 @@ function CompanyCard({ company, qualificazioni = [], marketId, onEdit, onViewQua
       let stato = q.status || q.stato;
       // Se ha una data di scadenza e è passata, forza lo stato a SCADUTA
       if (q.data_scadenza) {
-        const scadenza = new Date(q.data_scadenza);
+        // Normalizza la data di scadenza a mezzanotte per evitare problemi di fuso orario
+        const scadenzaStr = q.data_scadenza.split('T')[0]; // Prende solo YYYY-MM-DD
+        const [year, month, day] = scadenzaStr.split('-').map(Number);
+        const scadenza = new Date(year, month - 1, day); // Crea data locale senza fuso orario
+        scadenza.setHours(23, 59, 59, 999); // Fine giornata della scadenza
         if (scadenza < oggi) {
           stato = 'SCADUTA';
         }

@@ -969,6 +969,12 @@
 
 ## Bug Fix - Batch 02/01/2026 (sera 2)
 
-- [ ] Punteggio verifiche deve basarsi SOLO sull'ultima verifica, non sullo storico completo
-- [ ] Form SCIA: mercato/posteggio deve mostrare SOLO i posteggi del cedente (non tutti i mercati)
-- [ ] Verificare che il filtro selectedCedente funzioni correttamente
+- [x] Punteggio verifiche deve basarsi SOLO sull'ultima verifica, non sullo storico completo
+- [x] Form SCIA: mercato/posteggio deve mostrare SOLO i posteggi del cedente (non tutti i mercati)
+- [x] Corretto filtro: selectedImpresa -> selectedCedente in tutti i punti
+
+
+## Bug Fix - Batch 02/01/2026 (sera 3)
+
+- [x] Date picker funziona ora
+- [ ] Semaforo qualificazioni mostra Scaduta anche quando data_scadenza è nel futuro (es. REC 09/01/2030)
