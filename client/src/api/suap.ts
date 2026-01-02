@@ -54,9 +54,9 @@ export interface SuapFilters {
  * Recupera le statistiche generali per la dashboard SUAP
  */
 export async function getSuapStats(enteId: string): Promise<SuapStats> {
-  const res = await fetch(`${baseUrl}/api/suap/stats`, {
+  const res = await fetch(`${baseUrl}/api/suap/stats?ente_id=${enteId}`, {
     headers: {
-      'x-ente-id': enteId
+      'Content-Type': 'application/json'
     }
   });
   
@@ -70,12 +70,13 @@ export async function getSuapStats(enteId: string): Promise<SuapStats> {
  */
 export async function getSuapPratiche(enteId: string, filters: SuapFilters = {}): Promise<SuapPratica[]> {
   const params = new URLSearchParams();
+  params.append('ente_id', enteId);
   if (filters.stato) params.append('stato', filters.stato);
   if (filters.search) params.append('search', filters.search);
 
   const res = await fetch(`${baseUrl}/api/suap/pratiche?${params.toString()}`, {
     headers: {
-      'x-ente-id': enteId
+      'Content-Type': 'application/json'
     }
   });
 
@@ -88,9 +89,9 @@ export async function getSuapPratiche(enteId: string, filters: SuapFilters = {})
  * Recupera il dettaglio di una singola pratica inclusi eventi e check
  */
 export async function getSuapPraticaById(id: string, enteId: string): Promise<SuapPratica & { timeline: SuapEvento[], checks: SuapCheck[] }> {
-  const res = await fetch(`${baseUrl}/api/suap/pratiche/${id}`, {
+  const res = await fetch(`${baseUrl}/api/suap/pratiche/${id}?ente_id=${enteId}`, {
     headers: {
-      'x-ente-id': enteId
+      'Content-Type': 'application/json'
     }
   });
 
@@ -101,15 +102,18 @@ export async function getSuapPraticaById(id: string, enteId: string): Promise<Su
 
 /**
  * Crea una nuova pratica (simulazione ingestione)
+ * Passa ente_id nel body per evitare problemi CORS con header custom
  */
 export async function createSuapPratica(enteId: string, data: Partial<SuapPratica>): Promise<SuapPratica> {
   const res = await fetch(`${baseUrl}/api/suap/pratiche`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'x-ente-id': enteId
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify({
+      ...data,
+      ente_id: enteId
+    })
   });
 
   if (!res.ok) throw new Error('Failed to create SUAP pratica');
@@ -124,8 +128,9 @@ export async function evaluateSuapPratica(id: string, enteId: string): Promise<a
   const res = await fetch(`${baseUrl}/api/suap/pratiche/${id}/valuta`, {
     method: 'POST',
     headers: {
-      'x-ente-id': enteId
-    }
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ente_id: enteId })
   });
 
   if (!res.ok) throw new Error('Failed to evaluate SUAP pratica');
