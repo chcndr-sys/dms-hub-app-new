@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.5.0  
+> **Versione:** 3.6.0  
 > **Data:** 2 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -592,6 +592,22 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+
+### v3.6.0 (02/01/2026) - SSO SUAP Sezione Delegato e Campi Sede Impresa
+- ✅ **Sezione Delegato Condizionale** - Nuova sezione "Dati del Delegato / Procuratore"
+  - Appare automaticamente quando ruolo_dichiarante ≠ 'titolare'
+  - Campi: Nome, Cognome, CF, Data/Luogo Nascita, Qualifica, Residenza completa
+  - Stile arancione per distinguerla dalle altre sezioni
+- ✅ **Campi Sede Impresa Completi** - Aggiunti campi mancanti:
+  - Provincia (2 caratteri, uppercase automatico)
+  - CAP Sede (5 caratteri)
+  - Telefono
+- ✅ **Migliorata Gestione Errori** - handleSciaSubmit migliorato:
+  - Console logging per debugging
+  - Messaggi errore più chiari per l'utente
+  - Gestione graceful dei fallimenti ricarica stats/pratiche
+- File modificati: SciaForm.tsx, SuapDashboard.tsx
+- Commit: bd7756c
 
 ### v3.5.0 (02/01/2026) - SSO SUAP Numero Protocollo e Refinements
 - ✅ **Numero Protocollo SCIA** - Nuova sezione "Dati Pratica SCIA" in cima al form
