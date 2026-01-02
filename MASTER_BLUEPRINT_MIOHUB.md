@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.9.0  
+> **Versione:** 3.9.1  
 > **Data:** 2 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -654,6 +654,18 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+
+### v3.9.1 (02/01/2026) - SSO SUAP Fix Critico ENTE_ID
+- ✅ **Fix Critico Chiamate API** - Tutte le funzioni API richiedevano `enteId` ma non veniva passato:
+  - Aggiunto `const ENTE_ID = 'ente_modena'` a livello componente
+  - `getSuapStats(ENTE_ID)` - prima chiamata senza parametri
+  - `getSuapPratiche(ENTE_ID)` - prima chiamata senza parametri
+  - `getSuapPraticaById(String(id), ENTE_ID)` - prima solo id
+  - `createSuapPratica(ENTE_ID, praticaData)` - prima solo data
+  - `evaluateSuapPratica(String(id), ENTE_ID)` - prima solo id
+- ✅ **Test API Verificato** - Testato via curl, tutti i 50+ campi salvati correttamente
+- File modificati: SuapPanel.tsx
+- Commit: e4cff89
 
 ### v3.9.0 (02/01/2026) - SSO SUAP Fix Mapping Campi + UI Uniformata
 - ✅ **Fix Critico Mapping Campi Form→Backend** - I dati del form SCIA ora vengono salvati correttamente:
