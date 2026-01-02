@@ -57,16 +57,81 @@ export default function SuapDashboard({ embedded = false }: { embedded?: boolean
     try {
       console.log('Dati SCIA da inviare:', data);
       
-      // Prepara i dati per la creazione della pratica
+      // Prepara i dati completi per la creazione della pratica
       const praticaData = {
-        tipo_pratica: `SCIA ${data.motivazione_scia || 'Subingresso'}`.toUpperCase(),
+        // Dati base
+        tipo_pratica: `SCIA ${data.tipo_segnalazione || data.motivazione_scia || 'Subingresso'}`.toUpperCase(),
         richiedente_nome: data.ragione_sociale_sub || `${data.nome_sub || ''} ${data.cognome_sub || ''}`.trim() || 'Non specificato',
         richiedente_cf: data.cf_subentrante || 'NON_SPECIFICATO',
-        oggetto: `${(data.motivazione_scia || 'Subingresso').toUpperCase()} - Mercato: ${data.mercato || 'N/D'} - Posteggio: ${data.posteggio || 'N/D'}`,
-        // Aggiungi dati extra per tracciabilità
+        oggetto: `${(data.tipo_segnalazione || data.motivazione_scia || 'Subingresso').toUpperCase()} - Mercato: ${data.mercato || 'N/D'} - Posteggio: ${data.posteggio || 'N/D'}`,
+        
+        // Dati Pratica SCIA
         numero_protocollo: data.numero_protocollo,
         data_presentazione: data.data_presentazione,
-        comune_presentazione: data.comune_presentazione
+        comune_presentazione: data.comune_presentazione,
+        tipo_segnalazione: data.tipo_segnalazione,
+        motivo_subingresso: data.motivo_subingresso,
+        settore_merceologico: data.settore_merceologico,
+        ruolo_dichiarante: data.ruolo_dichiarante,
+        
+        // Dati Subentrante
+        sub_ragione_sociale: data.ragione_sociale_sub,
+        sub_nome: data.nome_sub,
+        sub_cognome: data.cognome_sub,
+        sub_data_nascita: data.data_nascita_sub,
+        sub_luogo_nascita: data.luogo_nascita_sub,
+        sub_residenza_via: data.residenza_sub,
+        sub_residenza_comune: data.comune_residenza_sub,
+        sub_residenza_cap: data.cap_residenza_sub,
+        sub_sede_via: data.sede_impresa_sub,
+        sub_sede_comune: data.comune_sede_sub,
+        sub_sede_provincia: data.provincia_sede_sub,
+        sub_sede_cap: data.cap_sede_sub,
+        sub_pec: data.pec_sub,
+        sub_telefono: data.telefono_sub,
+        
+        // Dati Cedente
+        ced_cf: data.cf_cedente,
+        ced_ragione_sociale: data.ragione_sociale_cedente,
+        ced_nome: data.nome_cedente,
+        ced_cognome: data.cognome_cedente,
+        ced_data_nascita: data.data_nascita_cedente,
+        ced_luogo_nascita: data.luogo_nascita_cedente,
+        ced_residenza_via: data.residenza_cedente,
+        ced_residenza_comune: data.comune_cedente,
+        ced_residenza_cap: data.cap_cedente,
+        ced_pec: data.pec_cedente,
+        ced_scia_precedente: data.scia_precedente,
+        ced_data_presentazione: data.data_presentazione_cedente,
+        ced_comune_presentazione: data.comune_presentazione_cedente,
+        
+        // Dati Mercato e Posteggio
+        mercato_id: data.mercato,
+        mercato_nome: data.mercato_nome,
+        posteggio_id: data.posteggio,
+        posteggio_numero: data.posteggio_numero,
+        ubicazione_mercato: data.ubicazione_mercato,
+        giorno_mercato: data.giorno_mercato,
+        fila: data.fila,
+        dimensioni_mq: data.dimensioni_mq,
+        dimensioni_lineari: data.dimensioni_lineari,
+        attrezzature: data.attrezzature,
+        
+        // Dati Atto Notarile
+        notaio_rogante: data.notaio,
+        numero_repertorio: data.repertorio,
+        data_atto: data.data_atto,
+        
+        // Dati Delegato (se presente)
+        del_nome: data.delegato_nome,
+        del_cognome: data.delegato_cognome,
+        del_cf: data.delegato_cf,
+        del_data_nascita: data.delegato_data_nascita,
+        del_luogo_nascita: data.delegato_luogo_nascita,
+        del_qualifica: data.delegato_qualifica,
+        del_residenza_via: data.delegato_residenza,
+        del_residenza_comune: data.delegato_comune,
+        del_residenza_cap: data.delegato_cap
       };
       
       console.log('Payload pratica:', praticaData);
