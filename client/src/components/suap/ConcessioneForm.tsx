@@ -205,7 +205,12 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
           if (initialData?.mercato_id) {
             const mercatoIdNum = Number(initialData.mercato_id);
             console.log('[ConcessioneForm] Cercando mercato con ID:', mercatoIdNum);
-            const targetMarket = marketsJson.data.find((m: Market) => m.id === mercatoIdNum);
+            
+            // Cerca sia per ID numerico che per stringa
+            const targetMarket = marketsJson.data.find((m: Market) => 
+              m.id === mercatoIdNum || 
+              m.id.toString() === String(initialData.mercato_id)
+            );
             console.log('[ConcessioneForm] Mercato trovato:', targetMarket);
             
             if (targetMarket) {
@@ -213,17 +218,36 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
               setSelectedMarketId(targetMarket.id);
               setSelectedMarket(targetMarket);
               
-              // Aggiorna formData con i dati del mercato
+              // Aggiorna formData con i dati del mercato E i dati del posteggio dalla SCIA
               setFormData(prev => ({
                 ...prev,
                 mercato: targetMarket.name,
                 ubicazione: targetMarket.municipality,
-                giorno: targetMarket.days
+                giorno: targetMarket.days,
+                // Mantieni i dati del posteggio dalla SCIA se presenti
+                tipo_posteggio: initialData?.tipo_posteggio || prev.tipo_posteggio
               }));
               
               console.log('[ConcessioneForm] Mercato pre-selezionato:', targetMarket.name, 'ID:', targetMarket.id);
             } else {
               console.warn('[ConcessioneForm] Mercato non trovato con ID:', mercatoIdNum);
+              // Prova a cercare per nome se l'ID non funziona
+              if (initialData?.mercato) {
+                const marketByName = marketsJson.data.find((m: Market) => 
+                  m.name.toLowerCase().includes(String(initialData.mercato).toLowerCase())
+                );
+                if (marketByName) {
+                  setSelectedMarketId(marketByName.id);
+                  setSelectedMarket(marketByName);
+                  setFormData(prev => ({
+                    ...prev,
+                    mercato: marketByName.name,
+                    ubicazione: marketByName.municipality,
+                    giorno: marketByName.days
+                  }));
+                  console.log('[ConcessioneForm] Mercato trovato per nome:', marketByName.name);
+                }
+              }
             }
           }
         }
