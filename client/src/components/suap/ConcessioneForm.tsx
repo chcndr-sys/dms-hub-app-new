@@ -81,6 +81,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
   const [loadingStalls, setLoadingStalls] = useState(false);
   const [loadingImpresa, setLoadingImpresa] = useState(false);
   const [loadingCedente, setLoadingCedente] = useState(false);
+  const [selectedStallId, setSelectedStallId] = useState<number | null>(null);
   
   // Stati per autocomplete Concessionario
   const [searchQuery, setSearchQuery] = useState('');
@@ -177,6 +178,12 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
         ...prev,
         ...initialData
       }));
+      
+      // Se c'è mercato_id, pre-seleziona il mercato
+      if (initialData.mercato_id) {
+        setSelectedMarketId(Number(initialData.mercato_id));
+      }
+      
       toast.info('Form pre-compilato con i dati della SCIA', { description: 'Verifica e completa i dati mancanti' });
     }
   }, [initialData]);
@@ -192,6 +199,22 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
         const marketsJson = await marketsRes.json();
         if (marketsJson.success && marketsJson.data) {
           setMarkets(marketsJson.data);
+          
+          // Se c'è mercato_id da initialData, trova e seleziona il mercato
+          if (initialData?.mercato_id) {
+            const targetMarket = marketsJson.data.find((m: Market) => m.id === Number(initialData.mercato_id));
+            if (targetMarket) {
+              setSelectedMarket(targetMarket);
+              setSelectedMarketId(targetMarket.id);
+              // Aggiorna formData con i dati del mercato
+              setFormData(prev => ({
+                ...prev,
+                mercato: targetMarket.name,
+                ubicazione: targetMarket.municipality,
+                giorno: targetMarket.days
+              }));
+            }
+          }
         }
         
         // Carica tutte le imprese per autocomplete
@@ -209,7 +232,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
     };
     
     fetchData();
-  }, []);
+  }, [initialData]);
 
   // Filtra imprese mentre si digita (autocomplete Concessionario)
   useEffect(() => {
@@ -270,6 +293,28 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
             return numA - numB;
           });
           setStalls(sortedStalls);
+          
+          // Se c'è posteggio_id da initialData, auto-seleziona il posteggio
+          if (initialData?.posteggio_id || initialData?.posteggio) {
+            const targetStall = sortedStalls.find((s: Stall) => 
+              s.id === Number(initialData.posteggio_id) || 
+              s.number === String(initialData.posteggio_id) ||
+              s.number === String(initialData.posteggio)
+            );
+            if (targetStall) {
+              // Setta l'ID per il Select
+              setSelectedStallId(targetStall.id);
+              // Auto-compila i dati del posteggio
+              setFormData(prev => ({
+                ...prev,
+                posteggio: targetStall.number,
+                posteggio_id: targetStall.id.toString(),
+                mq: targetStall.area_mq || '',
+                dimensioni_lineari: targetStall.dimensions || '',
+                tipo_posteggio: targetStall.type || ''
+              }));
+            }
+          }
         } else {
           console.error('Errore caricamento posteggi:', json);
         }
@@ -282,7 +327,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
     };
     
     fetchStalls();
-  }, [selectedMarketId]);
+  }, [selectedMarketId, initialData]);
 
   // Seleziona impresa dall'autocomplete (Concessionario)
   const selectImpresa = (impresa: Impresa) => {
@@ -348,6 +393,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
 
   // Handler cambio posteggio - Auto-popola dimensioni e calcola canone
   const handleStallChange = (stallId: string) => {
+    setSelectedStallId(parseInt(stallId));
     const stall = stalls.find(s => s.id === parseInt(stallId));
     if (stall) {
       // Calcola canone se disponibili i dati
@@ -896,7 +942,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
               {/* DROPDOWN MERCATI DINAMICO */}
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Mercato *</Label>
-                <Select onValueChange={handleMarketChange} disabled={loadingMarkets}>
+                <Select value={selectedMarketId?.toString() || ''} onValueChange={handleMarketChange} disabled={loadingMarkets}>
                   <SelectTrigger className="bg-[#020817] border-[#1e293b] text-[#e8fbff]">
                     <SelectValue placeholder={loadingMarkets ? "Caricamento..." : "Seleziona Mercato"} />
                   </SelectTrigger>
@@ -934,6 +980,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Posteggio *</Label>
                 <Select 
+                  value={selectedStallId?.toString() || ''}
                   onValueChange={handleStallChange} 
                   disabled={!selectedMarketId || loadingStalls}
                 >

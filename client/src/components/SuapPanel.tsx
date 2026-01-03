@@ -674,6 +674,7 @@ export default function SuapPanel() {
                       const preData = {
                         tipo_concessione: 'subingresso',
                         cf_concessionario: selectedPratica.richiedente_cf || '',
+                        partita_iva: selectedPratica.sub_partita_iva || '',
                         ragione_sociale: selectedPratica.sub_ragione_sociale || selectedPratica.richiedente_nome || '',
                         nome: selectedPratica.sub_nome || '',
                         cognome: selectedPratica.sub_cognome || '',
@@ -682,14 +683,18 @@ export default function SuapPanel() {
                         residenza_via: selectedPratica.sub_residenza_via || '',
                         residenza_comune: selectedPratica.sub_residenza_comune || '',
                         residenza_cap: selectedPratica.sub_residenza_cap || '',
+                        residenza_provincia: selectedPratica.sub_residenza_provincia || '',
                         sede_legale_via: selectedPratica.sub_sede_via || '',
                         sede_legale_comune: selectedPratica.sub_sede_comune || '',
                         sede_legale_provincia: selectedPratica.sub_sede_provincia || '',
                         sede_legale_cap: selectedPratica.sub_sede_cap || '',
                         // Cedente
                         cedente_cf: selectedPratica.ced_cf || '',
+                        cedente_partita_iva: selectedPratica.ced_partita_iva || '',
                         cedente_ragione_sociale: selectedPratica.ced_ragione_sociale || '',
-                        // Posteggio
+                        // Posteggio - ID per pre-selezione automatica
+                        mercato_id: selectedPratica.mercato_id || null,
+                        posteggio_id: selectedPratica.posteggio_id || null,
                         mercato: selectedPratica.mercato_nome || selectedPratica.mercato_id || '',
                         ubicazione: selectedPratica.ubicazione_mercato || '',
                         posteggio: selectedPratica.posteggio_numero || selectedPratica.posteggio_id || '',
