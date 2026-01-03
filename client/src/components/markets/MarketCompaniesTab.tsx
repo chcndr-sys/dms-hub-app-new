@@ -1460,9 +1460,10 @@ function CompanyCard({ company, qualificazioni = [], marketId, onEdit, onViewQua
       // Calcola lo stato DINAMICAMENTE dalla data di scadenza, ignorando lo stato del DB
       // perché il DB potrebbe avere uno stato obsoleto
       let stato = q.status || q.stato || 'ATTIVA';
-      if (q.data_scadenza) {
+      const dataScadenza = q.data_scadenza || q.end_date;
+      if (dataScadenza) {
         // Normalizza la data di scadenza per evitare problemi di fuso orario
-        const scadenzaStr = q.data_scadenza.split('T')[0]; // Prende solo YYYY-MM-DD
+        const scadenzaStr = dataScadenza.split('T')[0]; // Prende solo YYYY-MM-DD
         const [year, month, day] = scadenzaStr.split('-').map(Number);
         const scadenza = new Date(year, month - 1, day); // Crea data locale senza fuso orario
         scadenza.setHours(23, 59, 59, 999); // Fine giornata della scadenza
