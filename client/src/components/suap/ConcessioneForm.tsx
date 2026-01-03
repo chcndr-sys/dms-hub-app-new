@@ -193,6 +193,10 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
       try {
         setLoadingMarkets(true);
         
+        // DEBUG: Mostra initialData
+        console.log('[ConcessioneForm] DEBUG initialData:', JSON.stringify(initialData, null, 2));
+        console.log('[ConcessioneForm] DEBUG mercato_id:', initialData?.mercato_id, 'tipo:', typeof initialData?.mercato_id);
+        
         // Carica mercati
         const marketsRes = await fetch(`${API_URL}/api/markets`);
         const marketsJson = await marketsRes.json();
@@ -214,14 +218,17 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
             console.log('[ConcessioneForm] Mercato trovato:', targetMarket);
             
             if (targetMarket) {
-              // Setta PRIMA selectedMarketId per il Select
+              console.log('[ConcessioneForm] Mercato trovato! Chiamando handleMarketChange con ID:', targetMarket.id.toString());
+              
+              // Setta gli state per il Select
               setSelectedMarketId(targetMarket.id);
               setSelectedMarket(targetMarket);
               
-              // Aggiorna formData con i dati del mercato E i dati del posteggio dalla SCIA
+              // Aggiorna formData con TUTTI i dati del mercato
               setFormData(prev => ({
                 ...prev,
                 mercato: targetMarket.name,
+                mercato_id: targetMarket.id.toString(),
                 ubicazione: targetMarket.municipality,
                 giorno: targetMarket.days,
                 // Mantieni i dati del posteggio dalla SCIA se presenti
