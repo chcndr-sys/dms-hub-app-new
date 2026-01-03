@@ -179,6 +179,8 @@ export default function SuapPanel() {
   const [concessioni, setConcessioni] = useState<any[]>([]);
   const [searchConcessioni, setSearchConcessioni] = useState('');
   const [showAllChecks, setShowAllChecks] = useState(false); // false = solo ultima verifica, true = storico completo
+  const [selectedConcessione, setSelectedConcessione] = useState<any | null>(null);
+  const [concessioneDetailTab, setConcessioneDetailTab] = useState<'dati' | 'posteggio' | 'esporta'>('dati');
 
   // Carica dati iniziali
   useEffect(() => {
@@ -1186,6 +1188,10 @@ export default function SuapPanel() {
                             size="sm" 
                             variant="ghost"
                             className="text-[#f59e0b] hover:bg-[#f59e0b]/10"
+                            onClick={() => {
+                              setSelectedConcessione(conc);
+                              setConcessioneDetailTab('dati');
+                            }}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -1209,6 +1215,250 @@ export default function SuapPanel() {
               onCancel={() => setShowSciaForm(false)}
               isLoading={loading}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Modal Dettaglio Concessione */}
+      {selectedConcessione && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e293b] rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <Card className="bg-transparent border-0">
+              <CardHeader className="border-b border-[#f59e0b]/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-[#f59e0b] flex items-center gap-2">
+                      <ScrollText className="h-5 w-5" />
+                      Concessione {selectedConcessione.numero_protocollo || `#${selectedConcessione.id}`}
+                    </CardTitle>
+                    <CardDescription className="text-gray-400">
+                      {selectedConcessione.tipo_concessione || 'Nuova'} - {selectedConcessione.market_name}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {/* Semaforo stato */}
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${
+                        selectedConcessione.stato === 'ATTIVA' || selectedConcessione.stato_calcolato === 'ATTIVA'
+                          ? 'bg-green-500' 
+                          : selectedConcessione.stato === 'SCADUTA' || selectedConcessione.stato_calcolato === 'SCADUTA'
+                            ? 'bg-red-500'
+                            : 'bg-yellow-500 animate-pulse'
+                      }`} />
+                      <span className="text-sm text-gray-400">
+                        {selectedConcessione.stato_calcolato || selectedConcessione.stato || 'DA_ASSOCIARE'}
+                      </span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setSelectedConcessione(null)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <XCircle className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Tab Navigation */}
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant={concessioneDetailTab === 'dati' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setConcessioneDetailTab('dati')}
+                    className={concessioneDetailTab === 'dati' 
+                      ? 'bg-[#f59e0b] text-black' 
+                      : 'border-[#f59e0b]/30 text-[#e8fbff]'}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Dati Generali
+                  </Button>
+                  {/* Tab Aggiorna Posteggi - visibile solo per subingresso DA_ASSOCIARE */}
+                  {selectedConcessione.tipo_concessione === 'subingresso' && 
+                   (selectedConcessione.stato === 'DA_ASSOCIARE' || !selectedConcessione.stato) && (
+                    <Button
+                      variant={concessioneDetailTab === 'posteggio' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setConcessioneDetailTab('posteggio')}
+                      className={concessioneDetailTab === 'posteggio' 
+                        ? 'bg-[#f59e0b] text-black' 
+                        : 'border-[#f59e0b]/30 text-[#e8fbff]'}
+                    >
+                      <MapPin className="mr-2 h-4 w-4" />
+                      Aggiorna Posteggi
+                      <span className="ml-2 w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                    </Button>
+                  )}
+                  <Button
+                    variant={concessioneDetailTab === 'esporta' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setConcessioneDetailTab('esporta')}
+                    className={concessioneDetailTab === 'esporta' 
+                      ? 'bg-[#f59e0b] text-black' 
+                      : 'border-[#f59e0b]/30 text-[#e8fbff]'}
+                  >
+                    <FileCheck className="mr-2 h-4 w-4" />
+                    Esporta
+                  </Button>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="p-6">
+                {/* Tab Dati Generali */}
+                {concessioneDetailTab === 'dati' && (
+                  <div className="space-y-6">
+                    {/* Frontespizio */}
+                    <div className="bg-[#0b1220] rounded-lg p-4 border border-[#f59e0b]/20">
+                      <h3 className="text-[#f59e0b] font-medium mb-3 flex items-center gap-2">
+                        <FileText className="h-4 w-4" /> Frontespizio
+                      </h3>
+                      <div className="grid grid-cols-4 gap-4 text-sm">
+                        <div><span className="text-gray-500">N. Protocollo:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.numero_protocollo || '-'}</span></div>
+                        <div><span className="text-gray-500">Data:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.data_protocollazione ? formatDate(selectedConcessione.data_protocollazione) : '-'}</span></div>
+                        <div><span className="text-gray-500">Durata:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.durata_anni || 10} anni</span></div>
+                        <div><span className="text-gray-500">Scadenza:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.valid_to ? formatDate(selectedConcessione.valid_to) : '-'}</span></div>
+                      </div>
+                    </div>
+                    
+                    {/* Concessionario */}
+                    <div className="bg-[#0b1220] rounded-lg p-4 border border-[#f59e0b]/20">
+                      <h3 className="text-[#f59e0b] font-medium mb-3 flex items-center gap-2">
+                        <User className="h-4 w-4" /> Concessionario
+                      </h3>
+                      <div className="grid grid-cols-4 gap-4 text-sm">
+                        <div><span className="text-gray-500">Ragione Sociale:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.ragione_sociale || selectedConcessione.vendor_business_name || '-'}</span></div>
+                        <div><span className="text-gray-500">P.IVA:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.partita_iva || '-'}</span></div>
+                        <div><span className="text-gray-500">CF:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.cf_concessionario || '-'}</span></div>
+                        <div><span className="text-gray-500">Nome:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.nome} {selectedConcessione.cognome}</span></div>
+                      </div>
+                    </div>
+                    
+                    {/* Posteggio */}
+                    <div className="bg-[#0b1220] rounded-lg p-4 border border-[#f59e0b]/20">
+                      <h3 className="text-[#f59e0b] font-medium mb-3 flex items-center gap-2">
+                        <MapPin className="h-4 w-4" /> Posteggio
+                      </h3>
+                      <div className="grid grid-cols-4 gap-4 text-sm">
+                        <div><span className="text-gray-500">Mercato:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.market_name || '-'}</span></div>
+                        <div><span className="text-gray-500">Posteggio:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.stall_number || '-'}</span></div>
+                        <div><span className="text-gray-500">MQ:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.mq || selectedConcessione.stall_area || '-'}</span></div>
+                        <div><span className="text-gray-500">Giorno:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.giorno || '-'}</span></div>
+                      </div>
+                    </div>
+                    
+                    {/* Cedente (solo per subingresso) */}
+                    {selectedConcessione.tipo_concessione === 'subingresso' && (
+                      <div className="bg-[#0b1220] rounded-lg p-4 border border-[#f59e0b]/20">
+                        <h3 className="text-[#f59e0b] font-medium mb-3 flex items-center gap-2">
+                          <Users className="h-4 w-4" /> Cedente
+                        </h3>
+                        <div className="grid grid-cols-4 gap-4 text-sm">
+                          <div><span className="text-gray-500">Ragione Sociale:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.cedente_ragione_sociale || '-'}</span></div>
+                          <div><span className="text-gray-500">P.IVA:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.cedente_partita_iva || '-'}</span></div>
+                          <div><span className="text-gray-500">CF:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.cedente_cf || '-'}</span></div>
+                          <div><span className="text-gray-500">Aut. Precedente:</span><br/><span className="text-[#e8fbff]">{selectedConcessione.autorizzazione_precedente_pg || '-'}</span></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Tab Aggiorna Posteggi */}
+                {concessioneDetailTab === 'posteggio' && (
+                  <div className="space-y-6">
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-yellow-400 mb-2">
+                        <AlertCircle className="h-5 w-5" />
+                        <span className="font-medium">Azione Richiesta</span>
+                      </div>
+                      <p className="text-gray-300 text-sm">
+                        Questa concessione di subingresso richiede l'associazione del posteggio al nuovo concessionario.
+                        L'operazione disassocerà il posteggio dal cedente e lo assocerà al subentrante.
+                      </p>
+                    </div>
+                    
+                    {/* Riepilogo trasferimento */}
+                    <div className="grid grid-cols-2 gap-6">
+                      {/* Da (Cedente) */}
+                      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                        <h4 className="text-red-400 font-medium mb-3">DA: Cedente</h4>
+                        <div className="space-y-2 text-sm">
+                          <div><span className="text-gray-500">Operatore:</span> <span className="text-[#e8fbff]">{selectedConcessione.cedente_ragione_sociale || '-'}</span></div>
+                          <div><span className="text-gray-500">CF/P.IVA:</span> <span className="text-[#e8fbff]">{selectedConcessione.cedente_cf || selectedConcessione.cedente_partita_iva || '-'}</span></div>
+                          <div><span className="text-gray-500">Posteggio:</span> <span className="text-[#e8fbff]">{selectedConcessione.stall_number} - {selectedConcessione.market_name}</span></div>
+                        </div>
+                      </div>
+                      
+                      {/* A (Subentrante) */}
+                      <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                        <h4 className="text-green-400 font-medium mb-3">A: Subentrante</h4>
+                        <div className="space-y-2 text-sm">
+                          <div><span className="text-gray-500">Operatore:</span> <span className="text-[#e8fbff]">{selectedConcessione.ragione_sociale || '-'}</span></div>
+                          <div><span className="text-gray-500">CF/P.IVA:</span> <span className="text-[#e8fbff]">{selectedConcessione.cf_concessionario || selectedConcessione.partita_iva || '-'}</span></div>
+                          <div><span className="text-gray-500">Posteggio:</span> <span className="text-[#e8fbff]">{selectedConcessione.stall_number} - {selectedConcessione.market_name}</span></div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Azioni */}
+                    <div className="flex justify-center gap-4 pt-4">
+                      <Button
+                        onClick={async () => {
+                          try {
+                            setLoading(true);
+                            const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${selectedConcessione.id}/associa-posteggio`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' }
+                            });
+                            const result = await response.json();
+                            if (result.success) {
+                              toast.success('Posteggio associato!', { description: 'Il trasferimento è stato completato' });
+                              setSelectedConcessione({ ...selectedConcessione, stato: 'ATTIVA' });
+                              loadConcessioni();
+                            } else {
+                              toast.error('Errore', { description: result.error });
+                            }
+                          } catch (error) {
+                            toast.error('Errore di connessione');
+                          } finally {
+                            setLoading(false);
+                          }
+                        }}
+                        disabled={loading}
+                        className="bg-green-600 hover:bg-green-700 text-white px-8"
+                      >
+                        {loading ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Elaborazione...</>
+                        ) : (
+                          <><CheckCircle2 className="mr-2 h-4 w-4" /> Conferma Associazione</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Tab Esporta */}
+                {concessioneDetailTab === 'esporta' && (
+                  <div className="space-y-4">
+                    <p className="text-gray-400 text-sm">Seleziona il formato di esportazione:</p>
+                    <div className="grid grid-cols-3 gap-4">
+                      <Button variant="outline" className="border-[#f59e0b]/30 text-[#e8fbff] h-20 flex-col">
+                        <FileText className="h-6 w-6 mb-2" />
+                        Genera PDF
+                      </Button>
+                      <Button variant="outline" className="border-[#f59e0b]/30 text-[#e8fbff] h-20 flex-col">
+                        <Stamp className="h-6 w-6 mb-2" />
+                        Stampa
+                      </Button>
+                      <Button variant="outline" className="border-[#f59e0b]/30 text-[#e8fbff] h-20 flex-col">
+                        <Building2 className="h-6 w-6 mb-2" />
+                        Invia PEC
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}

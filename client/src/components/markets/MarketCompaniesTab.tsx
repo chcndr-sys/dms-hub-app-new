@@ -26,7 +26,9 @@ import {
   CheckCircle,
   Clock,
   FileBadge, // Icona per Autorizzazioni
-  Trash2
+  Trash2,
+  Eye,
+  XCircle
 } from 'lucide-react';
 import { MarketAutorizzazioniTab } from './MarketAutorizzazioniTab';
 
@@ -57,16 +59,42 @@ export type CompanyRow = {
 
 type ConcessionRow = {
   id: string;
+  market_id?: number;
   stall_id?: string;
   stall_code: string;
   company_id: string;
   company_name: string;
-  tipo_concessione: string;  // fisso/spunta/temporanea
+  tipo_concessione: string;  // fisso/spunta/temporanea/subingresso
   valida_dal?: string;       // ISO date
   valida_al?: string;        // ISO date
-  stato?: string;            // ATTIVA/SCADUTA/SOSPESA
+  stato?: string;            // ATTIVA/SCADUTA/SOSPESA/DA_ASSOCIARE/CESSATA
+  stato_calcolato?: string;  // Stato calcolato dinamicamente dal backend
   settore_merceologico?: string;  // Alimentare/Non Alimentare
   comune_rilascio?: string;       // Comune che ha rilasciato la concessione
+  // Campi aggiuntivi per sincronizzazione con SSO SUAP
+  numero_protocollo?: string;
+  data_protocollazione?: string;
+  oggetto?: string;
+  cf_concessionario?: string;
+  partita_iva?: string;
+  ragione_sociale?: string;
+  nome?: string;
+  cognome?: string;
+  durata_anni?: number;
+  data_decorrenza?: string;
+  fila?: string;
+  mq?: number;
+  dimensioni_lineari?: string;
+  giorno?: string;
+  ubicazione?: string;
+  scia_id?: number;
+  cedente_impresa_id?: number;
+  market_name?: string;
+  market_code?: string;
+  vendor_code?: string;
+  impresa_id?: number;
+  impresa_denominazione?: string;
+  impresa_partita_iva?: string;
 };
 
 export type CompanyFormData = {
@@ -206,6 +234,10 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
   const [selectedCompanyForQualif, setSelectedCompanyForQualif] = useState<CompanyRow | null>(null);
   const [showQualificazioneModal, setShowQualificazioneModal] = useState(false);
   const [selectedQualificazione, setSelectedQualificazione] = useState<QualificazioneRow | null>(null);
+  
+  // Dettaglio concessione (sincronizzato con SSO SUAP)
+  const [selectedConcessionDetail, setSelectedConcessionDetail] = useState<ConcessionRow | null>(null);
+  const [concessionDetailTab, setConcessionDetailTab] = useState<'dati' | 'posteggio' | 'modifica'>('dati');
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -419,6 +451,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
       
       const mappedData = json.data.map((c: any) => ({
         id: c.id,
+        market_id: c.market_id,
         stall_id: c.stall_id,
         stall_code: c.stall_number || c.stall_code || 'N/A',
         company_id: c.vendor_id || c.company_id,
@@ -426,11 +459,35 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
         tipo_concessione: c.type || c.tipo_concessione || 'N/A',
         valida_dal: c.valid_from || c.valida_dal,
         valida_al: c.valid_to || c.valida_al,
-        stato: c.status || (
-          (c.valid_to && new Date(c.valid_to) < new Date()) ? 'SCADUTA' : 'ATTIVA'
-        ),
+        // Usa stato_calcolato dal backend (calcolo dinamico SCADUTA)
+        stato: c.stato_calcolato || c.stato || c.status || 'ATTIVA',
+        stato_calcolato: c.stato_calcolato,
         settore_merceologico: c.settore_merceologico || 'Alimentare',
-        comune_rilascio: c.comune_rilascio || ''
+        comune_rilascio: c.comune_rilascio || '',
+        // Campi aggiuntivi per dettaglio (sincronizzato con SSO SUAP)
+        numero_protocollo: c.numero_protocollo,
+        data_protocollazione: c.data_protocollazione,
+        oggetto: c.oggetto,
+        cf_concessionario: c.cf_concessionario,
+        partita_iva: c.partita_iva,
+        ragione_sociale: c.ragione_sociale,
+        nome: c.nome,
+        cognome: c.cognome,
+        durata_anni: c.durata_anni,
+        data_decorrenza: c.data_decorrenza,
+        fila: c.fila,
+        mq: c.mq,
+        dimensioni_lineari: c.dimensioni_lineari,
+        giorno: c.giorno,
+        ubicazione: c.ubicazione,
+        scia_id: c.scia_id,
+        cedente_impresa_id: c.cedente_impresa_id,
+        market_name: c.market_name,
+        market_code: c.market_code,
+        vendor_code: c.vendor_code,
+        impresa_id: c.impresa_id,
+        impresa_denominazione: c.impresa_denominazione,
+        impresa_partita_iva: c.impresa_partita_iva
       }));
       
       setConcessions(mappedData);
@@ -745,6 +802,10 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                         <ConcessionRow
                           key={concession.id}
                           concession={concession}
+                          onView={() => {
+                            setSelectedConcessionDetail(concession);
+                            setConcessionDetailTab('dati');
+                          }}
                           onEdit={() => handleOpenConcessionModal(concession)}
                         />
                       ))}
@@ -901,6 +962,234 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
           onClose={handleCloseQualificazioneModal}
           onSaved={handleQualificazioneSaved}
         />
+      )}
+
+      {/* ================================================================== */}
+      {/* MODALE DETTAGLIO CONCESSIONE (sincronizzato con SSO SUAP) */}
+      {/* ================================================================== */}
+      {selectedConcessionDetail && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] rounded-xl border border-amber-500/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-500/20 rounded-lg">
+                    <FileText className="w-6 h-6 text-amber-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">
+                      Concessione #{selectedConcessionDetail.numero_protocollo || selectedConcessionDetail.id}
+                    </h2>
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                      selectedConcessionDetail.tipo_concessione === 'subingresso' 
+                        ? 'bg-purple-500/20 text-purple-400' 
+                        : 'bg-blue-500/20 text-blue-400'
+                    }`}>
+                      {selectedConcessionDetail.tipo_concessione || 'fisso'}
+                    </span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedConcessionDetail(null)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+              
+              {/* Tab Navigation */}
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => setConcessionDetailTab('dati')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    concessionDetailTab === 'dati'
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                  }`}
+                >
+                  Dati Concessione
+                </button>
+                {selectedConcessionDetail.tipo_concessione === 'subingresso' && 
+                 selectedConcessionDetail.stato === 'DA_ASSOCIARE' && (
+                  <button
+                    onClick={() => setConcessionDetailTab('posteggio')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      concessionDetailTab === 'posteggio'
+                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50'
+                        : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    Aggiorna Posteggi
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setSelectedConcessionDetail(null);
+                    handleOpenConcessionModal(selectedConcessionDetail);
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                >
+                  Modifica
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6">
+              {concessionDetailTab === 'dati' && (
+                <div className="space-y-6">
+                  {/* Info Mercato e Posteggio */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-800/50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">Mercato</h4>
+                      <p className="text-white font-semibold">{selectedConcessionDetail.market_name || marketName || 'N/A'}</p>
+                      <p className="text-sm text-gray-400">{selectedConcessionDetail.market_code || marketId}</p>
+                    </div>
+                    <div className="bg-gray-800/50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">Posteggio</h4>
+                      <p className="text-white font-semibold">N. {selectedConcessionDetail.stall_code}</p>
+                      {selectedConcessionDetail.fila && <p className="text-sm text-gray-400">Fila: {selectedConcessionDetail.fila}</p>}
+                      {selectedConcessionDetail.mq && <p className="text-sm text-gray-400">{selectedConcessionDetail.mq} mq</p>}
+                    </div>
+                  </div>
+                  
+                  {/* Info Concessionario */}
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-400 mb-3">Concessionario</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Ragione Sociale</p>
+                        <p className="text-white">{selectedConcessionDetail.ragione_sociale || selectedConcessionDetail.company_name || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">P.IVA</p>
+                        <p className="text-white">{selectedConcessionDetail.partita_iva || selectedConcessionDetail.impresa_partita_iva || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Codice Fiscale</p>
+                        <p className="text-white">{selectedConcessionDetail.cf_concessionario || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Settore</p>
+                        <p className="text-white">{selectedConcessionDetail.settore_merceologico || 'Alimentare'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Date e Stato */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-gray-800/50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">Valida Dal</h4>
+                      <p className="text-white">
+                        {selectedConcessionDetail.valida_dal 
+                          ? new Date(selectedConcessionDetail.valida_dal).toLocaleDateString('it-IT')
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="bg-gray-800/50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">Scadenza</h4>
+                      <p className="text-white">
+                        {selectedConcessionDetail.valida_al 
+                          ? new Date(selectedConcessionDetail.valida_al).toLocaleDateString('it-IT')
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="bg-gray-800/50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-2">Stato</h4>
+                      <span className={`px-3 py-1 text-sm rounded-full ${
+                        selectedConcessionDetail.stato === 'ATTIVA' ? 'bg-green-500/20 text-green-400' :
+                        selectedConcessionDetail.stato === 'SCADUTA' ? 'bg-red-500/20 text-red-400' :
+                        selectedConcessionDetail.stato === 'DA_ASSOCIARE' ? 'bg-orange-500/20 text-orange-400' :
+                        selectedConcessionDetail.stato === 'SOSPESA' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        {selectedConcessionDetail.stato || 'ATTIVA'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Info aggiuntive se presenti */}
+                  {(selectedConcessionDetail.durata_anni || selectedConcessionDetail.giorno || selectedConcessionDetail.ubicazione) && (
+                    <div className="bg-gray-800/50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-400 mb-3">Dettagli Aggiuntivi</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        {selectedConcessionDetail.durata_anni && (
+                          <div>
+                            <p className="text-xs text-gray-500">Durata</p>
+                            <p className="text-white">{selectedConcessionDetail.durata_anni} anni</p>
+                          </div>
+                        )}
+                        {selectedConcessionDetail.giorno && (
+                          <div>
+                            <p className="text-xs text-gray-500">Giorno</p>
+                            <p className="text-white">{selectedConcessionDetail.giorno}</p>
+                          </div>
+                        )}
+                        {selectedConcessionDetail.ubicazione && (
+                          <div>
+                            <p className="text-xs text-gray-500">Ubicazione</p>
+                            <p className="text-white">{selectedConcessionDetail.ubicazione}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Link SCIA se presente */}
+                  {selectedConcessionDetail.scia_id && (
+                    <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                      <p className="text-sm text-purple-400">
+                        Questa concessione è collegata alla SCIA #{selectedConcessionDetail.scia_id}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {concessionDetailTab === 'posteggio' && selectedConcessionDetail.tipo_concessione === 'subingresso' && (
+                <div className="space-y-6">
+                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                    <h4 className="text-orange-400 font-medium mb-2">Trasferimento Posteggio</h4>
+                    <p className="text-sm text-gray-300">
+                      Questa concessione di subingresso richiede il trasferimento del posteggio dal cedente al subentrante.
+                    </p>
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <button
+                      onClick={async () => {
+                        try {
+                          setLoading(true);
+                          const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${selectedConcessionDetail.id}/associa-posteggio`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                          });
+                          const result = await response.json();
+                          if (result.success) {
+                            alert('Posteggio associato con successo!');
+                            setSelectedConcessionDetail({ ...selectedConcessionDetail, stato: 'ATTIVA' });
+                            fetchConcessions();
+                          } else {
+                            alert('Errore: ' + result.error);
+                          }
+                        } catch (error) {
+                          alert('Errore di connessione');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading}
+                      className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                    >
+                      {loading ? 'Associazione in corso...' : 'Associa Posteggio'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1369,10 +1658,11 @@ function CompanyCard({ company, qualificazioni = [], marketId, onEdit, onViewQua
 
 interface ConcessionRowProps {
   concession: ConcessionRow;
+  onView: () => void;
   onEdit: () => void;
 }
 
-function ConcessionRow({ concession, onEdit }: ConcessionRowProps) {
+function ConcessionRow({ concession, onView, onEdit }: ConcessionRowProps) {
   const getStatoBadge = (stato?: string) => {
     switch (stato?.toUpperCase()) {
       case 'ATTIVA':
@@ -1381,6 +1671,10 @@ function ConcessionRow({ concession, onEdit }: ConcessionRowProps) {
         return <span className="px-2 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-400">Sospesa</span>;
       case 'SCADUTA':
         return <span className="px-2 py-1 text-xs rounded-full bg-red-500/20 text-red-400">Scaduta</span>;
+      case 'DA_ASSOCIARE':
+        return <span className="px-2 py-1 text-xs rounded-full bg-orange-500/20 text-orange-400">Da Associare</span>;
+      case 'CESSATA':
+        return <span className="px-2 py-1 text-xs rounded-full bg-gray-500/20 text-gray-400">Cessata</span>;
       default:
         return <span className="px-2 py-1 text-xs rounded-full bg-gray-500/20 text-gray-400">{stato || 'N/A'}</span>;
     }
@@ -1424,13 +1718,22 @@ function ConcessionRow({ concession, onEdit }: ConcessionRowProps) {
       </td>
       <td className="px-4 py-3 text-sm">{getStatoBadge(concession.stato)}</td>
       <td className="px-4 py-3 text-sm text-right">
-        <button
-          onClick={onEdit}
-          className="text-gray-400 hover:text-white transition-colors"
-          title="Modifica concessione"
-        >
-          <Edit className="w-4 h-4" />
-        </button>
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={onView}
+            className="text-amber-400 hover:text-amber-300 transition-colors"
+            title="Visualizza dettaglio"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onEdit}
+            className="text-gray-400 hover:text-white transition-colors"
+            title="Modifica concessione"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+        </div>
       </td>
     </tr>
   );
