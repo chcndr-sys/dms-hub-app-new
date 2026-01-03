@@ -999,11 +999,11 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
       )}
 
       {/* ================================================================== */}
-      {/* MODALE DETTAGLIO CONCESSIONE (sincronizzato con SSO SUAP) */}
+      {/* MODALE DETTAGLIO CONCESSIONE - Vista Statica (stile SCIA) */}
       {/* ================================================================== */}
       {selectedConcessionDetail && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] rounded-xl border border-amber-500/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] rounded-xl border border-amber-500/30 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="p-6 border-b border-gray-700">
               <div className="flex items-center justify-between">
@@ -1015,13 +1015,29 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                     <h2 className="text-xl font-bold text-white">
                       Concessione #{selectedConcessionDetail.numero_protocollo || selectedConcessionDetail.id}
                     </h2>
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${
-                      selectedConcessionDetail.tipo_concessione === 'subingresso' 
-                        ? 'bg-purple-500/20 text-purple-400' 
-                        : 'bg-blue-500/20 text-blue-400'
-                    }`}>
-                      {selectedConcessionDetail.tipo_concessione || 'fisso'}
-                    </span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        selectedConcessionDetail.tipo_concessione === 'subingresso' 
+                          ? 'bg-purple-500/20 text-purple-400' 
+                          : 'bg-blue-500/20 text-blue-400'
+                      }`}>
+                        {selectedConcessionDetail.tipo_concessione || 'fisso'}
+                      </span>
+                      <span className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded-full ${
+                        (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'ATTIVA' ? 'bg-green-500/20 text-green-400' :
+                        (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'SCADUTA' ? 'bg-red-500/20 text-red-400' :
+                        (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'DA_ASSOCIARE' ? 'bg-orange-500/20 text-orange-400' :
+                        'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        <span className={`w-2 h-2 rounded-full ${
+                          (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'ATTIVA' ? 'bg-green-400' :
+                          (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'SCADUTA' ? 'bg-red-400' :
+                          (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'DA_ASSOCIARE' ? 'bg-orange-400' :
+                          'bg-gray-400'
+                        }`}></span>
+                        {selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato || 'ATTIVA'}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <button 
@@ -1045,7 +1061,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                   Dati Concessione
                 </button>
                 {selectedConcessionDetail.tipo_concessione === 'subingresso' && 
-                 selectedConcessionDetail.stato === 'DA_ASSOCIARE' && (
+                 (selectedConcessionDetail.stato === 'DA_ASSOCIARE' || selectedConcessionDetail.stato_calcolato === 'DA_ASSOCIARE') && (
                   <button
                     onClick={() => setConcessionDetailTab('posteggio')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -1069,115 +1085,180 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
               </div>
             </div>
             
-            {/* Content */}
+            {/* Content - Vista Statica stile SCIA */}
             <div className="p-6">
               {concessionDetailTab === 'dati' && (
                 <div className="space-y-6">
-                  {/* Info Mercato e Posteggio */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-800/50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-2">Mercato</h4>
-                      <p className="text-white font-semibold">{selectedConcessionDetail.market_name || marketName || 'N/A'}</p>
-                      <p className="text-sm text-gray-400">{selectedConcessionDetail.market_code || marketId}</p>
+                  
+                  {/* 1. FRONTESPIZIO */}
+                  <div className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border border-cyan-500/30 rounded-xl overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-700">
+                      <h3 className="text-cyan-400 flex items-center gap-2 text-lg font-semibold">
+                        <FileText className="h-5 w-5" />
+                        Frontespizio
+                      </h3>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-2">Posteggio</h4>
-                      <p className="text-white font-semibold">N. {selectedConcessionDetail.stall_code}</p>
-                      {selectedConcessionDetail.fila && <p className="text-sm text-gray-400">Fila: {selectedConcessionDetail.fila}</p>}
-                      {selectedConcessionDetail.mq && <p className="text-sm text-gray-400">{selectedConcessionDetail.mq} mq</p>}
+                    <div className="p-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">N. Protocollo</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.numero_protocollo || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Data</p>
+                          <p className="text-white font-medium">
+                            {selectedConcessionDetail.data_protocollazione 
+                              ? new Date(selectedConcessionDetail.data_protocollazione).toLocaleDateString('it-IT')
+                              : '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Durata</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.durata_anni ? `${selectedConcessionDetail.durata_anni} anni` : '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Scadenza</p>
+                          <p className="text-white font-medium">
+                            {selectedConcessionDetail.valida_al 
+                              ? new Date(selectedConcessionDetail.valida_al).toLocaleDateString('it-IT')
+                              : '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Data Decorrenza</p>
+                          <p className="text-white font-medium">
+                            {(selectedConcessionDetail.data_decorrenza || selectedConcessionDetail.valida_dal)
+                              ? new Date(selectedConcessionDetail.data_decorrenza || selectedConcessionDetail.valida_dal).toLocaleDateString('it-IT')
+                              : '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Comune Rilascio</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.comune_rilascio || '-'}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Oggetto</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.oggetto || '-'}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
-                  {/* Info Concessionario */}
-                  <div className="bg-gray-800/50 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-gray-400 mb-3">Concessionario</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-gray-500">Ragione Sociale</p>
-                        <p className="text-white">{selectedConcessionDetail.ragione_sociale || selectedConcessionDetail.company_name || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">P.IVA</p>
-                        <p className="text-white">{selectedConcessionDetail.partita_iva || selectedConcessionDetail.impresa_partita_iva || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Codice Fiscale</p>
-                        <p className="text-white">{selectedConcessionDetail.cf_concessionario || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Settore</p>
-                        <p className="text-white">{selectedConcessionDetail.settore_merceologico || 'Alimentare'}</p>
+                  {/* 2. CONCESSIONARIO */}
+                  <div className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border border-green-500/30 rounded-xl overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-700">
+                      <h3 className="text-green-400 flex items-center gap-2 text-lg font-semibold">
+                        <Users className="h-5 w-5" />
+                        Concessionario
+                      </h3>
+                    </div>
+                    <div className="p-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Ragione Sociale</p>
+                          <p className="text-white font-medium">
+                            {selectedConcessionDetail.ragione_sociale || 
+                             selectedConcessionDetail.impresa_denominazione || 
+                             selectedConcessionDetail.vendor_business_name || '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">P.IVA</p>
+                          <p className="text-white font-medium">
+                            {selectedConcessionDetail.partita_iva || 
+                             selectedConcessionDetail.impresa_partita_iva || '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">CF</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.cf_concessionario || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Nome</p>
+                          <p className="text-white font-medium">
+                            {selectedConcessionDetail.nome && selectedConcessionDetail.cognome 
+                              ? `${selectedConcessionDetail.nome} ${selectedConcessionDetail.cognome}`
+                              : selectedConcessionDetail.vendor_contact_name || '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Settore Merceologico</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.settore_merceologico || '-'}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Date e Stato */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-gray-800/50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-2">Valida Dal</h4>
-                      <p className="text-white">
-                        {selectedConcessionDetail.valida_dal 
-                          ? new Date(selectedConcessionDetail.valida_dal).toLocaleDateString('it-IT')
-                          : 'N/A'}
-                      </p>
+                  {/* 3. POSTEGGIO */}
+                  <div className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border border-purple-500/30 rounded-xl overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-700">
+                      <h3 className="text-purple-400 flex items-center gap-2 text-lg font-semibold">
+                        <MapPin className="h-5 w-5" />
+                        Posteggio
+                      </h3>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-2">Scadenza</h4>
-                      <p className="text-white">
-                        {selectedConcessionDetail.valida_al 
-                          ? new Date(selectedConcessionDetail.valida_al).toLocaleDateString('it-IT')
-                          : 'N/A'}
-                      </p>
-                    </div>
-                    <div className="bg-gray-800/50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-2">Stato</h4>
-                      <span className={`px-3 py-1 text-sm rounded-full ${
-                        selectedConcessionDetail.stato === 'ATTIVA' ? 'bg-green-500/20 text-green-400' :
-                        selectedConcessionDetail.stato === 'SCADUTA' ? 'bg-red-500/20 text-red-400' :
-                        selectedConcessionDetail.stato === 'DA_ASSOCIARE' ? 'bg-orange-500/20 text-orange-400' :
-                        selectedConcessionDetail.stato === 'SOSPESA' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-gray-500/20 text-gray-400'
-                      }`}>
-                        {selectedConcessionDetail.stato || 'ATTIVA'}
-                      </span>
+                    <div className="p-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Mercato</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.market_name || marketName || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Posteggio</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.stall_number || selectedConcessionDetail.stall_code || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">MQ</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.mq || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Giorno</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.giorno || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Fila</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.fila || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Dimensioni Lineari</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.dimensioni_lineari || '-'}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Ubicazione</p>
+                          <p className="text-white font-medium">{selectedConcessionDetail.ubicazione || '-'}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
-                  {/* Info aggiuntive se presenti */}
-                  {(selectedConcessionDetail.durata_anni || selectedConcessionDetail.giorno || selectedConcessionDetail.ubicazione) && (
-                    <div className="bg-gray-800/50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-3">Dettagli Aggiuntivi</h4>
-                      <div className="grid grid-cols-3 gap-4">
-                        {selectedConcessionDetail.durata_anni && (
-                          <div>
-                            <p className="text-xs text-gray-500">Durata</p>
-                            <p className="text-white">{selectedConcessionDetail.durata_anni} anni</p>
-                          </div>
-                        )}
-                        {selectedConcessionDetail.giorno && (
-                          <div>
-                            <p className="text-xs text-gray-500">Giorno</p>
-                            <p className="text-white">{selectedConcessionDetail.giorno}</p>
-                          </div>
-                        )}
-                        {selectedConcessionDetail.ubicazione && (
-                          <div>
-                            <p className="text-xs text-gray-500">Ubicazione</p>
-                            <p className="text-white">{selectedConcessionDetail.ubicazione}</p>
-                          </div>
-                        )}
+                  {/* 4. NOTE E RIFERIMENTI */}
+                  {(selectedConcessionDetail.notes || selectedConcessionDetail.scia_id) && (
+                    <div className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border border-orange-500/30 rounded-xl overflow-hidden">
+                      <div className="px-4 py-3 border-b border-gray-700">
+                        <h3 className="text-orange-400 flex items-center gap-2 text-lg font-semibold">
+                          <FileCheck className="h-5 w-5" />
+                          Note e Riferimenti
+                        </h3>
+                      </div>
+                      <div className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {selectedConcessionDetail.notes && (
+                            <div className="col-span-2">
+                              <p className="text-xs text-gray-500 uppercase tracking-wide">Note / Prescrizioni</p>
+                              <p className="text-white font-medium">{selectedConcessionDetail.notes}</p>
+                            </div>
+                          )}
+                          {selectedConcessionDetail.scia_id && (
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase tracking-wide">Riferimento SCIA</p>
+                              <p className="text-purple-400 font-medium">SCIA #{selectedConcessionDetail.scia_id}</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
                   
-                  {/* Link SCIA se presente */}
-                  {selectedConcessionDetail.scia_id && (
-                    <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-                      <p className="text-sm text-purple-400">
-                        Questa concessione è collegata alla SCIA #{selectedConcessionDetail.scia_id}
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
               
@@ -1202,7 +1283,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                           const result = await response.json();
                           if (result.success) {
                             alert('Posteggio associato con successo!');
-                            setSelectedConcessionDetail({ ...selectedConcessionDetail, stato: 'ATTIVA' });
+                            setSelectedConcessionDetail({ ...selectedConcessionDetail, stato: 'ATTIVA', stato_calcolato: 'ATTIVA' });
                             fetchConcessions();
                           } else {
                             alert('Errore: ' + result.error);
