@@ -151,6 +151,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     delegato_residenza_cap: '',
     delegato_residenza_provincia: '',
     delegato_qualifica: '', // es: procuratore, curatore, erede, etc.
+    pec_del: '', // PEC del delegato
     telefono_sub: '',
     
     // Sezione B - Cedente
@@ -837,6 +838,21 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                     onChange={(e) => setFormData({...formData, delegato_residenza_cap: e.target.value})}
                     maxLength={5}
                     className="bg-[#0b1220] border-[#334155] text-[#e8fbff]"
+                  />
+                </div>
+              </div>
+
+              {/* Riga 4: PEC Delegato */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">PEC Delegato *</Label>
+                  <Input 
+                    type="email"
+                    value={formData.pec_del}
+                    onChange={(e) => setFormData({...formData, pec_del: e.target.value.toLowerCase()})}
+                    placeholder="delegato@pec.it"
+                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                    required
                   />
                 </div>
               </div>

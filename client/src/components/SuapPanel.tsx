@@ -84,6 +84,7 @@ interface SuapPraticaFull extends SuapPratica {
   del_residenza_via?: string;
   del_residenza_comune?: string;
   del_residenza_cap?: string;
+  del_pec?: string;
   // Collegamento Concessione
   concessione_id?: number;
   concessione_numero?: string;
@@ -295,6 +296,7 @@ export default function SuapPanel() {
         del_residenza_via: formData.delegato_residenza_via,
         del_residenza_comune: formData.delegato_residenza_comune,
         del_residenza_cap: formData.delegato_residenza_cap,
+        del_pec: formData.pec_del,
       };
 
       console.log('Dati pratica da inviare:', praticaData);  // Debug
@@ -745,12 +747,14 @@ export default function SuapPanel() {
                   <DataField label="Residenza Via" value={selectedPratica.del_residenza_via} />
                   <DataField label="Residenza Comune" value={selectedPratica.del_residenza_comune} />
                   <DataField label="Residenza CAP" value={selectedPratica.del_residenza_cap} />
+                  <DataField label="PEC" value={selectedPratica.del_pec} />
                 </DataSection>
               )}
 
               {/* 3. Dati Subentrante (Sezione A) - Anagrafica + Residenza + Sede */}
-              <DataSection title="A. Dati Subentrante (Cessionario)" icon={User}>
-                <DataField label="CF / P.IVA" value={selectedPratica.richiedente_cf} />
+              <DataSection title="A. Dati Subentrante" icon={User}>
+                <DataField label="Partita IVA" value={selectedPratica.sub_partita_iva} />
+                <DataField label="Codice Fiscale" value={selectedPratica.richiedente_cf} />
                 <DataField label="Ragione Sociale" value={selectedPratica.sub_ragione_sociale || selectedPratica.richiedente_nome} />
                 <DataField label="Nome" value={selectedPratica.sub_nome} />
                 <DataField label="Cognome" value={selectedPratica.sub_cognome} />
@@ -768,8 +772,9 @@ export default function SuapPanel() {
               </DataSection>
 
               {/* 4. Dati Cedente (Sezione B) - Anagrafica + Residenza + SCIA Precedente */}
-              <DataSection title="B. Dati Cedente (Dante Causa)" icon={Users}>
-                <DataField label="CF / P.IVA" value={selectedPratica.ced_cf} />
+              <DataSection title="B. Dati Cedente" icon={Users}>
+                <DataField label="Partita IVA" value={selectedPratica.ced_partita_iva} />
+                <DataField label="Codice Fiscale" value={selectedPratica.ced_cf} />
                 <DataField label="Ragione Sociale" value={selectedPratica.ced_ragione_sociale} />
                 <DataField label="Nome" value={selectedPratica.ced_nome} />
                 <DataField label="Cognome" value={selectedPratica.ced_cognome} />
