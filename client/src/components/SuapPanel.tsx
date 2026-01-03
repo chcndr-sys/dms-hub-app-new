@@ -198,11 +198,30 @@ export default function SuapPanel() {
         new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
       );
       setPratiche(sorted);
+      
+      // Carica anche le concessioni
+      await loadConcessioni();
     } catch (error) {
       console.error('Error loading SUAP data:', error);
       toast.error('Errore nel caricamento dei dati');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const loadConcessioni = async () => {
+    try {
+      const response = await fetch('https://orchestratore.mio-hub.me/api/concessions');
+      const data = await response.json();
+      if (data.success) {
+        // Ordina per data creazione (più recenti prima)
+        const sorted = data.data.sort((a: any, b: any) => 
+          new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+        );
+        setConcessioni(sorted);
+      }
+    } catch (error) {
+      console.error('Error loading concessioni:', error);
     }
   };
 
@@ -1116,25 +1135,50 @@ export default function SuapPanel() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {concessioni.map((conc) => (
+                    {concessioni
+                      .filter((conc) => {
+                        if (!searchConcessioni) return true;
+                        const search = searchConcessioni.toLowerCase();
+                        return (
+                          conc.numero_protocollo?.toLowerCase().includes(search) ||
+                          conc.ragione_sociale?.toLowerCase().includes(search) ||
+                          conc.market_name?.toLowerCase().includes(search) ||
+                          conc.cf_concessionario?.toLowerCase().includes(search)
+                        );
+                      })
+                      .map((conc) => (
                       <TableRow 
                         key={conc.id} 
                         className="border-[#f59e0b]/30 hover:bg-[#0f172a] cursor-pointer"
                       >
-                        <TableCell className="text-[#e8fbff] font-medium">{conc.numero_protocollo}</TableCell>
-                        <TableCell className="text-[#e8fbff]">{conc.tipo_concessione}</TableCell>
+                        <TableCell className="text-[#e8fbff] font-medium">
+                          {conc.numero_protocollo || `#${conc.id}`}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="bg-[#f59e0b]/20 text-[#f59e0b]">
+                            {conc.tipo_concessione || 'nuova'}
+                          </Badge>
+                        </TableCell>
                         <TableCell>
                           <div>
-                            <p className="text-[#e8fbff]">{conc.ragione_sociale}</p>
-                            <p className="text-xs text-gray-500">{conc.cf_concessionario}</p>
+                            <p className="text-[#e8fbff]">{conc.ragione_sociale || conc.vendor_business_name || '-'}</p>
+                            <p className="text-xs text-gray-500">{conc.cf_concessionario || conc.partita_iva || '-'}</p>
                           </div>
                         </TableCell>
-                        <TableCell className="text-[#e8fbff]">{conc.mercato}</TableCell>
-                        <TableCell className="text-[#e8fbff]">{conc.posteggio}</TableCell>
-                        <TableCell className="text-gray-400">{formatDate(conc.data_scadenza)}</TableCell>
+                        <TableCell className="text-[#e8fbff]">{conc.market_name || '-'}</TableCell>
+                        <TableCell className="text-[#e8fbff]">{conc.stall_number || '-'}</TableCell>
+                        <TableCell className="text-gray-400">
+                          {conc.valid_to ? formatDate(conc.valid_to) : '-'}
+                        </TableCell>
                         <TableCell>
-                          <Badge className={conc.stato === 'ATTIVA' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}>
-                            {conc.stato || 'DA_ASSOCIARE'}
+                          <Badge className={
+                            conc.stato_calcolato === 'ATTIVA' || conc.stato === 'ATTIVA' 
+                              ? 'bg-green-500/20 text-green-400' 
+                              : conc.stato_calcolato === 'SCADUTA' || conc.stato === 'SCADUTA'
+                                ? 'bg-red-500/20 text-red-400'
+                                : 'bg-yellow-500/20 text-yellow-400'
+                          }>
+                            {conc.stato_calcolato || conc.stato || 'DA_ASSOCIARE'}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -1174,10 +1218,14 @@ export default function SuapPanel() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#1e293b] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <ConcessioneForm 
-              onSubmit={() => {
+              onSubmit={(savedConcessione) => {
                 setShowConcessioneForm(false);
                 setConcessionePreData(null);
-                loadData();
+                loadConcessioni(); // Ricarica solo le concessioni
+                setActiveTab('concessioni'); // Vai al tab concessioni
+                toast.success('Concessione salvata!', { 
+                  description: `N. ${savedConcessione?.numero_protocollo || savedConcessione?.id}` 
+                });
               }}
               onCancel={() => {
                 setShowConcessioneForm(false);

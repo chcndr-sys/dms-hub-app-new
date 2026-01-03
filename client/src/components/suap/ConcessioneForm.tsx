@@ -82,6 +82,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
   const [loadingImpresa, setLoadingImpresa] = useState(false);
   const [loadingCedente, setLoadingCedente] = useState(false);
   const [selectedStallId, setSelectedStallId] = useState<number | null>(null);
+  const [selectedImpresaId, setSelectedImpresaId] = useState<number | null>(null);
   
   // Stati per autocomplete Concessionario
   const [searchQuery, setSearchQuery] = useState('');
@@ -352,6 +353,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
     }));
     setSearchQuery('');
     setShowSuggestions(false);
+    setSelectedImpresaId(impresa.id);
     toast.success('Concessionario selezionato!', { description: impresa.denominazione });
   };
 
@@ -439,9 +441,56 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Validazione campi obbligatori
+    if (!selectedMarketId) {
+      toast.error('Seleziona un mercato');
+      return;
+    }
+    if (!selectedStallId) {
+      toast.error('Seleziona un posteggio');
+      return;
+    }
+    
+    setSaving(true);
+    
+    try {
+      // Prepara i dati per l'API
+      const dataToSave = {
+        ...formData,
+        market_id: selectedMarketId,
+        stall_id: selectedStallId,
+        valid_to: formData.data_scadenza,
+        impresa_id: selectedImpresaId || null,
+        scia_id: initialData?.scia_id || null
+      };
+      
+      const response = await fetch(`${API_URL}/api/concessions/full`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSave),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success('Concessione salvata con successo!');
+        onSubmit(result.data);
+      } else {
+        toast.error(`Errore: ${result.error || 'Impossibile salvare la concessione'}`);
+      }
+    } catch (error) {
+      console.error('Errore salvataggio concessione:', error);
+      toast.error('Errore di connessione al server');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Verifica se mostrare sezioni condizionali
@@ -1161,9 +1210,12 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
             <Button type="button" variant="outline" onClick={onCancel} className="border-[#e8fbff]/20 text-[#e8fbff]">
               Annulla
             </Button>
-            <Button type="submit" className="bg-[#00f0ff] text-black hover:bg-[#00f0ff]/90">
-              <Printer className="mr-2 h-4 w-4" />
-              Genera Atto
+            <Button type="submit" className="bg-[#00f0ff] text-black hover:bg-[#00f0ff]/90" disabled={saving}>
+              {saving ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvataggio...</>
+              ) : (
+                <><Printer className="mr-2 h-4 w-4" /> Genera Atto</>
+              )}
             </Button>
           </div>
 
