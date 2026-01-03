@@ -42,7 +42,9 @@ interface SuapPraticaFull extends SuapPratica {
   sub_luogo_nascita?: string;
   sub_residenza_via?: string;
   sub_residenza_comune?: string;
+  sub_residenza_provincia?: string;
   sub_residenza_cap?: string;
+  sub_partita_iva?: string;
   sub_sede_via?: string;
   sub_sede_comune?: string;
   sub_sede_provincia?: string;
@@ -247,7 +249,9 @@ export default function SuapPanel() {
         sub_luogo_nascita: formData.luogo_nascita_sub,
         sub_residenza_via: formData.residenza_via_sub,
         sub_residenza_comune: formData.residenza_comune_sub,
+        sub_residenza_provincia: formData.residenza_provincia_sub,
         sub_residenza_cap: formData.residenza_cap_sub,
+        sub_partita_iva: formData.partita_iva_sub,
         sub_sede_via: formData.sede_via_sub,
         sub_sede_comune: formData.sede_comune_sub,
         sub_sede_provincia: formData.sede_provincia_sub,
@@ -670,6 +674,7 @@ export default function SuapPanel() {
                       const preData = {
                         tipo_concessione: 'subingresso',
                         cf_concessionario: selectedPratica.richiedente_cf || '',
+                        partita_iva: selectedPratica.sub_partita_iva || '', // P.IVA subentrante
                         ragione_sociale: selectedPratica.sub_ragione_sociale || selectedPratica.richiedente_nome || '',
                         nome: selectedPratica.sub_nome || '',
                         cognome: selectedPratica.sub_cognome || '',
@@ -677,10 +682,11 @@ export default function SuapPanel() {
                         luogo_nascita: selectedPratica.sub_luogo_nascita || '',
                         residenza_via: selectedPratica.sub_residenza_via || '',
                         residenza_comune: selectedPratica.sub_residenza_comune || '',
+                        residenza_provincia: selectedPratica.sub_residenza_provincia || selectedPratica.sub_sede_provincia || '', // Provincia residenza
                         residenza_cap: selectedPratica.sub_residenza_cap || '',
                         sede_legale_via: selectedPratica.sub_sede_via || '',
                         sede_legale_comune: selectedPratica.sub_sede_comune || '',
-                        sede_legale_provincia: selectedPratica.sub_sede_provincia || '',
+                        sede_legale_provincia: selectedPratica.sub_sede_provincia || '', // Provincia sede
                         sede_legale_cap: selectedPratica.sub_sede_cap || '',
                         // Cedente
                         cedente_cf: selectedPratica.ced_cf || '',

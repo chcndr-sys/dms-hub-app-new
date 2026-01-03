@@ -61,13 +61,13 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
     // Dati Generali (Frontespizio)
     numero_protocollo: '',
     data_protocollazione: new Date().toISOString().split('T')[0],
-    oggetto: 'RILASCIO CONCESSIONE OCCUPAZIONE SUOLO PUBBLICO VALIDO PER IL MERCATO PERIODICO SPECIALIZZATO NON ALIMENTARE LA PIAZZOLA',
+    oggetto: '', // Vuoto - da compilare a scelta
     numero_file: '',
     
     // Dati Concessione
-    durata_anni: '12',
+    durata_anni: '10', // Default 10 anni
     data_decorrenza: new Date().toISOString().split('T')[0],
-    data_scadenza: '',
+    data_scadenza: (() => { const d = new Date(); d.setFullYear(d.getFullYear() + 10); return d.toISOString().split('T')[0]; })(), // Calcolata automaticamente
     tipo_concessione: 'subingresso', // nuova, subingresso, conversione, rinnovo, voltura
     sottotipo_conversione: '', // tipo_b_a, merceologia, dimensioni
     
