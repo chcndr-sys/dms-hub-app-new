@@ -499,8 +499,8 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
         tipo_concessione: c.type || c.tipo_concessione || 'N/A',
         valida_dal: c.valid_from || c.valida_dal,
         valida_al: c.valid_to || c.valida_al,
-        // Usa stato_calcolato dal backend (calcolo dinamico SCADUTA)
-        stato: c.stato_calcolato || c.stato || c.status || 'ATTIVA',
+        // Priorità: CESSATA/SOSPESA dal DB > stato_calcolato > stato generico
+        stato: (c.stato === 'CESSATA' || c.stato === 'SOSPESA') ? c.stato : (c.stato_calcolato || c.stato || c.status || 'ATTIVA'),
         stato_calcolato: c.stato_calcolato,
         settore_merceologico: c.settore_merceologico || 'Alimentare',
         comune_rilascio: c.comune_rilascio || '',
