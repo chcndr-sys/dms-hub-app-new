@@ -180,10 +180,8 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
         ...initialData
       }));
       
-      // Se c'è mercato_id, pre-seleziona il mercato
-      if (initialData.mercato_id) {
-        setSelectedMarketId(Number(initialData.mercato_id));
-      }
+      // NOTA: La pre-selezione del mercato viene gestita nell'useEffect che carica i mercati
+      // per evitare race condition
       
       toast.info('Form pre-compilato con i dati della SCIA', { description: 'Verifica e completa i dati mancanti' });
     }
@@ -200,13 +198,21 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
         const marketsJson = await marketsRes.json();
         if (marketsJson.success && marketsJson.data) {
           setMarkets(marketsJson.data);
+          console.log('[ConcessioneForm] Mercati caricati:', marketsJson.data.length);
+          console.log('[ConcessioneForm] initialData.mercato_id:', initialData?.mercato_id);
           
           // Se c'è mercato_id da initialData, trova e seleziona il mercato
           if (initialData?.mercato_id) {
-            const targetMarket = marketsJson.data.find((m: Market) => m.id === Number(initialData.mercato_id));
+            const mercatoIdNum = Number(initialData.mercato_id);
+            console.log('[ConcessioneForm] Cercando mercato con ID:', mercatoIdNum);
+            const targetMarket = marketsJson.data.find((m: Market) => m.id === mercatoIdNum);
+            console.log('[ConcessioneForm] Mercato trovato:', targetMarket);
+            
             if (targetMarket) {
-              setSelectedMarket(targetMarket);
+              // Setta PRIMA selectedMarketId per il Select
               setSelectedMarketId(targetMarket.id);
+              setSelectedMarket(targetMarket);
+              
               // Aggiorna formData con i dati del mercato
               setFormData(prev => ({
                 ...prev,
@@ -214,6 +220,10 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
                 ubicazione: targetMarket.municipality,
                 giorno: targetMarket.days
               }));
+              
+              console.log('[ConcessioneForm] Mercato pre-selezionato:', targetMarket.name, 'ID:', targetMarket.id);
+            } else {
+              console.warn('[ConcessioneForm] Mercato non trovato con ID:', mercatoIdNum);
             }
           }
         }

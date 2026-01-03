@@ -978,3 +978,27 @@
 
 - [x] Date picker funziona ora
 - [x] Semaforo qualificazioni mostra Scaduta anche quando data_scadenza è nel futuro - ora calcola stato SOLO dalla data, ignora DB
+
+
+## BUG URGENTE - Form Concessione Autocompilazione (3 Gen 2026) 🔴
+
+### Problema
+- [ ] Solo la Partita IVA viene autocompilata dalla SCIA
+- [ ] Tutti gli altri campi rimangono vuoti o con placeholder
+
+### Campi da Autocompilare
+- [ ] Concessionario (Subentrante): Nome, Cognome, CF, Qualità, Data/Luogo Nascita, Residenza, Sede Legale
+- [ ] Cedente: P.IVA, CF, Ragione Sociale, Aut. Precedente, Data Aut., Intestatario Prec.
+- [ ] Posteggio: Mercato, Posteggio, MQ, Dimensioni, Giorno, Tipo, Attrezzature
+- [ ] Riferimenti: SCIA Precedente N., Data SCIA, Comune SCIA
+
+
+## BUG Form Concessione (3 Gen 2026) - URGENTE
+
+### Problemi Segnalati
+- [ ] Mercato non pre-selezionato automaticamente dalla SCIA (Select vuoto)
+- [ ] Popup modal troppo stretto - deve usare tutta la larghezza pagina
+- [ ] Campi sovrapposti nel layout del form
+- [ ] Giorno mercato non si compila automaticamente
+- [ ] Canone unico non si calcola automaticamente
+

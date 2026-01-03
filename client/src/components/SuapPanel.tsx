@@ -36,6 +36,7 @@ interface SuapPraticaFull extends SuapPratica {
   motivo_subingresso?: string;
   settore_merceologico?: string;
   ruolo_dichiarante?: string;
+  sub_partita_iva?: string;
   sub_ragione_sociale?: string;
   sub_nome?: string;
   sub_cognome?: string;
@@ -43,6 +44,7 @@ interface SuapPraticaFull extends SuapPratica {
   sub_luogo_nascita?: string;
   sub_residenza_via?: string;
   sub_residenza_comune?: string;
+  sub_residenza_provincia?: string;
   sub_residenza_cap?: string;
   sub_sede_via?: string;
   sub_sede_comune?: string;
@@ -51,6 +53,7 @@ interface SuapPraticaFull extends SuapPratica {
   sub_pec?: string;
   sub_telefono?: string;
   ced_cf?: string;
+  ced_partita_iva?: string;
   ced_ragione_sociale?: string;
   ced_nome?: string;
   ced_cognome?: string;
@@ -1534,7 +1537,7 @@ export default function SuapPanel() {
       {/* Modal Form Concessione */}
       {showConcessioneForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1e293b] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#1e293b] rounded-lg max-w-7xl w-full max-h-[90vh] overflow-y-auto">
             <ConcessioneForm 
               onSubmit={(savedConcessione) => {
                 setShowConcessioneForm(false);
