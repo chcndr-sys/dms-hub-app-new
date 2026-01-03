@@ -40,6 +40,30 @@ interface Stall {
   valid_to?: string;
 }
 
+interface Impresa {
+  id: number;
+  denominazione: string;
+  codice_fiscale: string;
+  partita_iva: string;
+  comune: string;
+  indirizzo_via: string;
+  indirizzo_civico: string;
+  indirizzo_cap: string;
+  indirizzo_provincia: string;
+  rappresentante_legale_nome: string;
+  rappresentante_legale_cognome: string;
+  rappresentante_legale_cf: string;
+  rappresentante_legale_data_nascita: string;
+  rappresentante_legale_luogo_nascita: string;
+  rappresentante_legale_residenza_via: string;
+  rappresentante_legale_residenza_civico: string;
+  rappresentante_legale_residenza_comune: string;
+  rappresentante_legale_residenza_provincia: string;
+  rappresentante_legale_residenza_cap: string;
+  pec: string;
+  telefono: string;
+}
+
 interface ConcessioneFormProps {
   onCancel: () => void;
   onSubmit: (data: any) => void;
@@ -50,12 +74,23 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
   // Stati per dati dal database
   const [markets, setMarkets] = useState<Market[]>([]);
   const [stalls, setStalls] = useState<Stall[]>([]);
+  const [allImprese, setAllImprese] = useState<Impresa[]>([]);
   const [selectedMarketId, setSelectedMarketId] = useState<number | null>(null);
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [loadingMarkets, setLoadingMarkets] = useState(true);
   const [loadingStalls, setLoadingStalls] = useState(false);
   const [loadingImpresa, setLoadingImpresa] = useState(false);
   const [loadingCedente, setLoadingCedente] = useState(false);
+  
+  // Stati per autocomplete Concessionario
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredImprese, setFilteredImprese] = useState<Impresa[]>([]);
+  
+  // Stati per autocomplete Cedente
+  const [cedenteSearchQuery, setCedenteSearchQuery] = useState('');
+  const [showCedenteSuggestions, setShowCedenteSuggestions] = useState(false);
+  const [filteredCedenteImprese, setFilteredCedenteImprese] = useState<Impresa[]>([]);
 
   const [formData, setFormData] = useState({
     // Dati Generali (Frontespizio)
@@ -145,29 +180,73 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
     }
   }, [initialData]);
 
-  // Carica mercati all'avvio
+  // Carica mercati e imprese all'avvio
   useEffect(() => {
-    const fetchMarkets = async () => {
+    const fetchData = async () => {
       try {
         setLoadingMarkets(true);
-        const res = await fetch(`${API_URL}/api/markets`);
-        const json = await res.json();
         
-        if (json.success && json.data) {
-          setMarkets(json.data);
-        } else {
-          console.error('Errore caricamento mercati:', json);
+        // Carica mercati
+        const marketsRes = await fetch(`${API_URL}/api/markets`);
+        const marketsJson = await marketsRes.json();
+        if (marketsJson.success && marketsJson.data) {
+          setMarkets(marketsJson.data);
+        }
+        
+        // Carica tutte le imprese per autocomplete
+        const impreseRes = await fetch(`${API_URL}/api/imprese`);
+        const impreseJson = await impreseRes.json();
+        if (impreseJson.success && impreseJson.data) {
+          setAllImprese(impreseJson.data);
         }
       } catch (error) {
-        console.error('Errore fetch mercati:', error);
-        toast.error('Errore caricamento mercati');
+        console.error('Errore fetch dati:', error);
+        toast.error('Errore caricamento dati');
       } finally {
         setLoadingMarkets(false);
       }
     };
     
-    fetchMarkets();
+    fetchData();
   }, []);
+
+  // Filtra imprese mentre si digita (autocomplete Concessionario)
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setFilteredImprese([]);
+      setShowSuggestions(false);
+      return;
+    }
+    
+    const query = searchQuery.toUpperCase();
+    const filtered = allImprese.filter(i => 
+      i.denominazione?.toUpperCase().includes(query) ||
+      i.codice_fiscale?.toUpperCase().includes(query) ||
+      i.partita_iva?.includes(query.replace(/\D/g, ''))
+    ).slice(0, 10); // Max 10 suggerimenti
+    
+    setFilteredImprese(filtered);
+    setShowSuggestions(filtered.length > 0);
+  }, [searchQuery, allImprese]);
+
+  // Filtra imprese mentre si digita (autocomplete Cedente)
+  useEffect(() => {
+    if (cedenteSearchQuery.length < 2) {
+      setFilteredCedenteImprese([]);
+      setShowCedenteSuggestions(false);
+      return;
+    }
+    
+    const query = cedenteSearchQuery.toUpperCase();
+    const filtered = allImprese.filter(i => 
+      i.denominazione?.toUpperCase().includes(query) ||
+      i.codice_fiscale?.toUpperCase().includes(query) ||
+      i.partita_iva?.includes(query.replace(/\D/g, ''))
+    ).slice(0, 10); // Max 10 suggerimenti
+    
+    setFilteredCedenteImprese(filtered);
+    setShowCedenteSuggestions(filtered.length > 0);
+  }, [cedenteSearchQuery, allImprese]);
 
   // Carica posteggi quando cambia mercato
   useEffect(() => {
@@ -204,110 +283,44 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
     fetchStalls();
   }, [selectedMarketId]);
 
-  // Lookup Concessionario per P.IVA/CF/Denominazione
-  const handleLookup = async () => {
-    const searchTerm = formData.partita_iva;
-    if (!searchTerm) {
-      toast.error('Inserire P.IVA, CF o Denominazione');
-      return;
-    }
-
-    try {
-      setLoadingImpresa(true);
-      // Prova prima per P.IVA, poi per CF, poi per denominazione
-      let res = await fetch(`${API_URL}/api/imprese?partita_iva=${searchTerm}`);
-      let json = await res.json();
-      
-      // Se non trova per P.IVA, prova per CF
-      if (!json.success || !json.data || json.data.length === 0) {
-        res = await fetch(`${API_URL}/api/imprese?codice_fiscale=${searchTerm}`);
-        json = await res.json();
-      }
-      
-      // Se non trova per CF, prova per denominazione
-      if (!json.success || !json.data || json.data.length === 0) {
-        res = await fetch(`${API_URL}/api/imprese?denominazione=${encodeURIComponent(searchTerm)}`);
-        json = await res.json();
-      }
-      
-      if (json.success && json.data && json.data.length > 0) {
-        const data = json.data[0];
-        setFormData(prev => ({
-          ...prev,
-          cf_concessionario: data.codice_fiscale || prev.cf_concessionario,
-          ragione_sociale: data.denominazione || '',
-          partita_iva: data.partita_iva || '',
-          nome: data.rappresentante_legale_nome || '',
-          cognome: data.rappresentante_legale_cognome || '',
-          data_nascita: data.rappresentante_legale_data_nascita ? data.rappresentante_legale_data_nascita.split('T')[0] : '',
-          luogo_nascita: data.rappresentante_legale_luogo_nascita || '',
-          residenza_via: data.rappresentante_legale_residenza_via ? `${data.rappresentante_legale_residenza_via} ${data.rappresentante_legale_residenza_civico || ''}`.trim() : `${data.indirizzo_via || ''} ${data.indirizzo_civico || ''}`.trim(),
-          residenza_comune: data.rappresentante_legale_residenza_comune || data.comune || '',
-          residenza_provincia: data.rappresentante_legale_residenza_provincia || data.indirizzo_provincia || '',
-          residenza_cap: data.rappresentante_legale_residenza_cap || data.indirizzo_cap || '',
-          // Sede Legale
-          sede_legale_via: data.indirizzo_via ? `${data.indirizzo_via} ${data.indirizzo_civico || ''}`.trim() : '',
-          sede_legale_comune: data.comune || '',
-          sede_legale_provincia: data.indirizzo_provincia || '',
-          sede_legale_cap: data.indirizzo_cap || ''
-        }));
-        toast.success('Concessionario trovato!', { description: data.denominazione });
-      } else {
-        toast.error('Concessionario non trovato', { description: 'Inserire i dati manualmente' });
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Errore ricerca', { description: 'Impossibile contattare il server' });
-    } finally {
-      setLoadingImpresa(false);
-    }
+  // Seleziona impresa dall'autocomplete (Concessionario)
+  const selectImpresa = (impresa: Impresa) => {
+    setFormData(prev => ({
+      ...prev,
+      cf_concessionario: impresa.codice_fiscale || '',
+      ragione_sociale: impresa.denominazione || '',
+      partita_iva: impresa.partita_iva || '',
+      nome: impresa.rappresentante_legale_nome || '',
+      cognome: impresa.rappresentante_legale_cognome || '',
+      data_nascita: impresa.rappresentante_legale_data_nascita ? impresa.rappresentante_legale_data_nascita.split('T')[0] : '',
+      luogo_nascita: impresa.rappresentante_legale_luogo_nascita || '',
+      residenza_via: impresa.rappresentante_legale_residenza_via ? `${impresa.rappresentante_legale_residenza_via} ${impresa.rappresentante_legale_residenza_civico || ''}`.trim() : `${impresa.indirizzo_via || ''} ${impresa.indirizzo_civico || ''}`.trim(),
+      residenza_comune: impresa.rappresentante_legale_residenza_comune || impresa.comune || '',
+      residenza_provincia: impresa.rappresentante_legale_residenza_provincia || impresa.indirizzo_provincia || '',
+      residenza_cap: impresa.rappresentante_legale_residenza_cap || impresa.indirizzo_cap || '',
+      // Sede Legale
+      sede_legale_via: impresa.indirizzo_via ? `${impresa.indirizzo_via} ${impresa.indirizzo_civico || ''}`.trim() : '',
+      sede_legale_comune: impresa.comune || '',
+      sede_legale_provincia: impresa.indirizzo_provincia || '',
+      sede_legale_cap: impresa.indirizzo_cap || ''
+    }));
+    setSearchQuery('');
+    setShowSuggestions(false);
+    toast.success('Concessionario selezionato!', { description: impresa.denominazione });
   };
 
-  // Lookup Cedente per CF (solo per subingresso)
-  const handleLookupCedente = async () => {
-    if (!formData.cedente_cf) {
-      toast.error('Inserire P.IVA, CF o Denominazione Cedente');
-      return;
-    }
-
-    try {
-      setLoadingCedente(true);
-      const searchTerm = formData.cedente_cf;
-      
-      // Prova prima per P.IVA, poi per CF, poi per denominazione
-      let res = await fetch(`${API_URL}/api/imprese?partita_iva=${searchTerm}`);
-      let json = await res.json();
-      
-      // Se non trova per P.IVA, prova per CF
-      if (!json.success || !json.data || json.data.length === 0) {
-        res = await fetch(`${API_URL}/api/imprese?codice_fiscale=${searchTerm}`);
-        json = await res.json();
-      }
-      
-      // Se non trova per CF, prova per denominazione
-      if (!json.success || !json.data || json.data.length === 0) {
-        res = await fetch(`${API_URL}/api/imprese?denominazione=${encodeURIComponent(searchTerm)}`);
-        json = await res.json();
-      }
-      
-      if (json.success && json.data && json.data.length > 0) {
-        const data = json.data[0];
-        setFormData(prev => ({
-          ...prev,
-          cedente_ragione_sociale: data.denominazione || '',
-          cedente_impresa_id: data.id?.toString() || '',
-          autorizzazione_precedente_intestatario: data.denominazione || ''
-        }));
-        toast.success('Cedente trovato!', { description: data.denominazione });
-      } else {
-        toast.error('Cedente non trovato', { description: 'Inserire i dati manualmente' });
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Errore ricerca cedente', { description: 'Impossibile contattare il server' });
-    } finally {
-      setLoadingCedente(false);
-    }
+  // Seleziona cedente dall'autocomplete
+  const selectCedente = (impresa: Impresa) => {
+    setFormData(prev => ({
+      ...prev,
+      cedente_cf: impresa.codice_fiscale || '',
+      cedente_ragione_sociale: impresa.denominazione || '',
+      cedente_impresa_id: impresa.id?.toString() || '',
+      autorizzazione_precedente_intestatario: impresa.denominazione || ''
+    }));
+    setCedenteSearchQuery('');
+    setShowCedenteSuggestions(false);
+    toast.success('Cedente selezionato!', { description: impresa.denominazione });
   };
 
   // Handler cambio mercato
@@ -521,24 +534,38 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
           <div className="space-y-4 border p-4 rounded-lg border-[#1e293b]">
             <h3 className="text-sm font-semibold text-[#e8fbff]">Dati Concessionario (Subentrante)</h3>
             
-            {/* Riga 1: P.IVA (con ricerca), CF e Ragione Sociale */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex gap-2">
+            {/* Riga 1: Ricerca Impresa con autocomplete, P.IVA, CF e Ragione Sociale */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
                 <Input 
-                  placeholder="P.IVA / CF / Denominazione"
-                  value={formData.partita_iva}
-                  onChange={(e) => setFormData({...formData, partita_iva: e.target.value.toUpperCase()})}
+                  placeholder="Cerca P.IVA / CF / Denominazione"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value.toUpperCase())}
                   className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
                 />
-                <Button 
-                  type="button" 
-                  onClick={handleLookup} 
-                  variant="secondary"
-                  disabled={loadingImpresa}
-                >
-                  {loadingImpresa ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                </Button>
+                {showSuggestions && (
+                  <div className="absolute z-50 w-full mt-1 bg-[#0a1628] border border-[#1e293b] rounded-md shadow-lg max-h-60 overflow-auto">
+                    {filteredImprese.map((impresa) => (
+                      <div
+                        key={impresa.id}
+                        className="px-3 py-2 cursor-pointer hover:bg-[#1e293b] text-[#e8fbff] text-sm"
+                        onClick={() => selectImpresa(impresa)}
+                      >
+                        <div className="font-medium">{impresa.denominazione}</div>
+                        <div className="text-xs text-gray-400">
+                          P.IVA: {impresa.partita_iva} | CF: {impresa.codice_fiscale}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+              <Input 
+                placeholder="Partita IVA"
+                value={formData.partita_iva}
+                readOnly
+                className="bg-[#020817] border-[#1e293b] text-[#e8fbff] bg-[#0a1628]"
+              />
               <Input 
                 placeholder="Codice Fiscale"
                 value={formData.cf_concessionario}
@@ -685,27 +712,41 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
               <h3 className="text-sm font-semibold text-[#14b8a6]">Dati Cedente (Solo per Subingresso)</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex gap-2">
+                <div className="relative">
                   <Input 
-                    placeholder="P.IVA / CF / Denominazione Cedente"
-                    value={formData.cedente_cf}
-                    onChange={(e) => setFormData({...formData, cedente_cf: e.target.value.toUpperCase()})}
+                    placeholder="Cerca P.IVA / CF / Denominazione Cedente"
+                    value={cedenteSearchQuery}
+                    onChange={(e) => setCedenteSearchQuery(e.target.value.toUpperCase())}
                     className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
                   />
-                  <Button 
-                    type="button" 
-                    onClick={handleLookupCedente} 
-                    variant="secondary"
-                    disabled={loadingCedente}
-                  >
-                    {loadingCedente ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  </Button>
+                  {showCedenteSuggestions && (
+                    <div className="absolute z-50 w-full mt-1 bg-[#0a1628] border border-[#1e293b] rounded-md shadow-lg max-h-60 overflow-auto">
+                      {filteredCedenteImprese.map((impresa) => (
+                        <div
+                          key={impresa.id}
+                          className="px-3 py-2 cursor-pointer hover:bg-[#1e293b] text-[#e8fbff] text-sm"
+                          onClick={() => selectCedente(impresa)}
+                        >
+                          <div className="font-medium">{impresa.denominazione}</div>
+                          <div className="text-xs text-gray-400">
+                            P.IVA: {impresa.partita_iva} | CF: {impresa.codice_fiscale}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+                <Input 
+                  placeholder="Codice Fiscale Cedente"
+                  value={formData.cedente_cf}
+                  readOnly
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff] bg-[#0a1628]"
+                />
                 <Input 
                   placeholder="Ragione Sociale Cedente"
                   value={formData.cedente_ragione_sociale}
-                  onChange={(e) => setFormData({...formData, cedente_ragione_sociale: e.target.value})}
-                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
+                  readOnly
+                  className="bg-[#020817] border-[#1e293b] text-[#e8fbff] bg-[#0a1628]"
                 />
               </div>
               
