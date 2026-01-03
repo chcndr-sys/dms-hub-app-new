@@ -778,62 +778,43 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
             {/* Vista Dettaglio Concessione INLINE (stile SCIA) */}
             {selectedConcessionDetail ? (
               <div className="space-y-6">
-                {/* Header con pulsante Torna */}
+                {/* Header identico alla SCIA */}
                 <div className="flex items-center justify-between">
-                  <button
-                    onClick={() => setSelectedConcessionDetail(null)}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                    Torna alla lista
-                  </button>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-xl font-bold text-white">
+                      Concessione #{selectedConcessionDetail.numero_protocollo || selectedConcessionDetail.id}
+                    </h2>
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                      (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'ATTIVA' ? 'bg-green-500/20 text-green-400' :
+                      (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'SCADUTA' ? 'bg-red-500/20 text-red-400' :
+                      (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'DA_ASSOCIARE' ? 'bg-orange-500/20 text-orange-400' :
+                      'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato || 'ATTIVA'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
                     <button
-                      onClick={() => {
-                        handleOpenConcessionModal(selectedConcessionDetail);
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
+                      onClick={() => setSelectedConcessionDetail(null)}
+                      className="flex items-center gap-2 px-4 py-2 text-gray-400 hover:text-white border border-gray-600 rounded-lg transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      Torna alla lista
+                    </button>
+                    <button
+                      onClick={() => handleOpenConcessionModal(selectedConcessionDetail)}
+                      className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
                     >
                       <Edit className="w-4 h-4" />
                       Modifica
                     </button>
                   </div>
                 </div>
-
-                {/* Titolo Concessione */}
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-amber-500/20 rounded-xl">
-                    <FileText className="w-8 h-8 text-amber-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">
-                      Concessione #{selectedConcessionDetail.numero_protocollo || selectedConcessionDetail.id}
-                    </h2>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className={`px-3 py-1 text-sm rounded-full ${
-                        selectedConcessionDetail.tipo_concessione === 'subingresso' 
-                          ? 'bg-purple-500/20 text-purple-400' 
-                          : 'bg-blue-500/20 text-blue-400'
-                      }`}>
-                        {selectedConcessionDetail.tipo_concessione || 'fisso'}
-                      </span>
-                      <span className={`flex items-center gap-2 px-3 py-1 text-sm rounded-full ${
-                        (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'ATTIVA' ? 'bg-green-500/20 text-green-400' :
-                        (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'SCADUTA' ? 'bg-red-500/20 text-red-400' :
-                        (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'DA_ASSOCIARE' ? 'bg-orange-500/20 text-orange-400' :
-                        'bg-gray-500/20 text-gray-400'
-                      }`}>
-                        <span className={`w-2 h-2 rounded-full ${
-                          (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'ATTIVA' ? 'bg-green-400' :
-                          (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'SCADUTA' ? 'bg-red-400' :
-                          (selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato) === 'DA_ASSOCIARE' ? 'bg-orange-400' :
-                          'bg-gray-400'
-                        }`}></span>
-                        {selectedConcessionDetail.stato_calcolato || selectedConcessionDetail.stato || 'ATTIVA'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                
+                {/* Sottotitolo con tipo */}
+                <p className="text-gray-400">
+                  {selectedConcessionDetail.tipo_concessione?.toUpperCase() || 'FISSO'} - {selectedConcessionDetail.ragione_sociale || 'N/A'} ({selectedConcessionDetail.cf_concessionario || selectedConcessionDetail.partita_iva || 'N/A'})
+                </p>
 
                 {/* 1. FRONTESPIZIO */}
                 <div className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border border-[#14b8a6]/30 rounded-xl overflow-hidden">
