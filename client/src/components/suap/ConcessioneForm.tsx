@@ -127,6 +127,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
     
     // Cedente (solo per subingresso)
     cedente_cf: '',
+    cedente_partita_iva: '',
     cedente_ragione_sociale: '',
     cedente_impresa_id: '',
     autorizzazione_precedente_pg: '',
@@ -313,7 +314,8 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
   const selectCedente = (impresa: Impresa) => {
     setFormData(prev => ({
       ...prev,
-      cedente_cf: impresa.codice_fiscale || impresa.partita_iva || '',
+      cedente_cf: impresa.codice_fiscale || '',
+      cedente_partita_iva: impresa.partita_iva || '',
       cedente_ragione_sociale: impresa.denominazione || '',
       cedente_impresa_id: impresa.id?.toString() || '',
       autorizzazione_precedente_intestatario: impresa.denominazione || ''
@@ -722,18 +724,14 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
             <div className="space-y-4 border p-4 rounded-lg border-[#14b8a6]/30 bg-[#14b8a6]/5">
               <h3 className="text-sm font-semibold text-[#14b8a6]">Dati Cedente (Solo per Subingresso)</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2 relative">
-                  <Label className="text-[#14b8a6]">CF / P.IVA / Denominazione Cedente *</Label>
+                  <Label className="text-[#14b8a6]">Cerca Cedente *</Label>
                   <Input 
-                    placeholder="Es. RSSMRA... o 01234567890 o Nome Impresa"
-                    value={formData.cedente_cf}
-                    onChange={(e) => {
-                      const val = e.target.value.toUpperCase();
-                      setFormData({...formData, cedente_cf: val});
-                      setCedenteSearchQuery(val);
-                    }}
-                    onFocus={() => formData.cedente_cf.length >= 2 && setShowCedenteSuggestions(true)}
+                    placeholder="P.IVA / CF / Nome"
+                    value={cedenteSearchQuery}
+                    onChange={(e) => setCedenteSearchQuery(e.target.value.toUpperCase())}
+                    onFocus={() => cedenteSearchQuery.length >= 2 && setShowCedenteSuggestions(true)}
                     className="bg-[#020817] border-[#1e293b] text-[#e8fbff]"
                   />
                   {showCedenteSuggestions && (
@@ -746,12 +744,30 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
                         >
                           <div className="font-medium">{impresa.denominazione}</div>
                           <div className="text-xs text-gray-400">
-                            {impresa.codice_fiscale || impresa.partita_iva} • {impresa.comune}
+                            P.IVA: {impresa.partita_iva || '-'} | CF: {impresa.codice_fiscale || '-'}
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#14b8a6]">Partita IVA Cedente</Label>
+                  <Input 
+                    placeholder="01234567890"
+                    value={formData.cedente_partita_iva || ''}
+                    readOnly
+                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff] bg-[#0a1628]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#14b8a6]">Codice Fiscale Cedente</Label>
+                  <Input 
+                    placeholder="RSSMRA..."
+                    value={formData.cedente_cf}
+                    readOnly
+                    className="bg-[#020817] border-[#1e293b] text-[#e8fbff] bg-[#0a1628]"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[#14b8a6]">Ragione Sociale Cedente</Label>
