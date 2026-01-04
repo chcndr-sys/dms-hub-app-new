@@ -490,6 +490,25 @@ export default function DashboardPA() {
   // Documentation Modal state
   const [docModalContent, setDocModalContent] = useState<{ title: string; content: string } | null>(null);
   
+  // Statistiche Imprese
+  const [impreseStats, setImpreseStats] = useState({ total: 0, concessioni: 0, comuni: 0, media: '0' });
+  
+  // Carica statistiche imprese
+  useEffect(() => {
+    fetch('https://api.mio-hub.me/api/imprese')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.data) {
+          const imprese = data.data;
+          const totalConcessioni = imprese.reduce((acc: number, i: any) => acc + (i.concessioni_attive?.length || 0), 0);
+          const comuniUnici = [...new Set(imprese.map((i: any) => i.comune).filter(Boolean))].length;
+          const media = imprese.length > 0 ? (totalConcessioni / imprese.length).toFixed(1) : '0';
+          setImpreseStats({ total: imprese.length, concessioni: totalConcessioni, comuni: comuniUnici, media });
+        }
+      })
+      .catch(err => console.error('Error loading imprese stats:', err));
+  }, []);
+  
   // Multi-Agent Chat state
   const [showMultiAgentChat, setShowMultiAgentChat] = useState(true);  // 🎯 FIX: Mostra Vista 4 Agenti di default
   const [selectedAgent, setSelectedAgent] = useState<'mio' | 'gptdev' | 'manus' | 'abacus' | 'zapier'>('gptdev');
@@ -3889,7 +3908,7 @@ export default function DashboardPA() {
                     <Building2 className="w-4 h-4" />
                     Imprese Totali
                   </div>
-                  <div className="text-2xl font-bold text-white">--</div>
+                  <div className="text-2xl font-bold text-white">{impreseStats.total}</div>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
@@ -3898,7 +3917,7 @@ export default function DashboardPA() {
                     <FileText className="w-4 h-4" />
                     Concessioni Attive
                   </div>
-                  <div className="text-2xl font-bold text-white">--</div>
+                  <div className="text-2xl font-bold text-white">{impreseStats.concessioni}</div>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
@@ -3907,7 +3926,7 @@ export default function DashboardPA() {
                     <Users className="w-4 h-4" />
                     Comuni Coperti
                   </div>
-                  <div className="text-2xl font-bold text-white">--</div>
+                  <div className="text-2xl font-bold text-white">{impreseStats.comuni}</div>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
@@ -3916,7 +3935,7 @@ export default function DashboardPA() {
                     <TrendingUp className="w-4 h-4" />
                     Media Concess./Impresa
                   </div>
-                  <div className="text-2xl font-bold text-white">--</div>
+                  <div className="text-2xl font-bold text-white">{impreseStats.media}</div>
                 </CardContent>
               </Card>
             </div>
