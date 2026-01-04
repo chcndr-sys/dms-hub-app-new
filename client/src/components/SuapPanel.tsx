@@ -1630,6 +1630,7 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                       <TableHead className="text-gray-400">N. Protocollo</TableHead>
                       <TableHead className="text-gray-400">Tipo</TableHead>
                       <TableHead className="text-gray-400">Concessionario</TableHead>
+                      <TableHead className="text-gray-400">Sede Legale</TableHead>
                       <TableHead className="text-gray-400">Mercato</TableHead>
                       <TableHead className="text-gray-400">Posteggio</TableHead>
                       <TableHead className="text-gray-400">Scadenza</TableHead>
@@ -1667,6 +1668,9 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                             <p className="text-[#e8fbff]">{conc.ragione_sociale || conc.vendor_business_name || '-'}</p>
                             <p className="text-xs text-gray-500">{conc.cf_concessionario || conc.partita_iva || '-'}</p>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-[#e8fbff] text-xs">
+                          {[conc.sede_legale_via, conc.sede_legale_comune, conc.sede_legale_provincia].filter(Boolean).join(', ') || '-'}
                         </TableCell>
                         <TableCell className="text-[#e8fbff]">{conc.market_name || '-'}</TableCell>
                         <TableCell className="text-[#e8fbff]">{conc.stall_number || '-'}</TableCell>

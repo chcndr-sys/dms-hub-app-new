@@ -1134,6 +1134,9 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                           Impresa
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          Sede Legale
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                           Settore
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -1697,6 +1700,12 @@ function CompanyCard({ company, qualificazioni = [], marketId, onEdit, onViewQua
             <span className="text-gray-300">{company.telefono}</span>
           </div>
         )}
+        {(company.indirizzo_via || company.indirizzo_cap || company.indirizzo_provincia) && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Sede Legale:</span>
+            <span className="text-gray-300 text-xs">{[company.indirizzo_via, company.indirizzo_civico, company.indirizzo_cap, company.indirizzo_provincia].filter(Boolean).join(', ')}</span>
+          </div>
+        )}
         
         {/* Badge Concessioni, Autorizzazioni e Qualificazioni */}
         <div className="flex flex-wrap gap-2 pt-2">
@@ -1841,6 +1850,9 @@ function ConcessionRow({ concession, onView, onEdit }: ConcessionRowProps) {
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-gray-300">{concession.company_name}</td>
+      <td className="px-4 py-3 text-sm text-gray-300 text-xs">
+        {[concession.sede_legale_via, concession.sede_legale_comune, concession.sede_legale_provincia].filter(Boolean).join(', ') || '-'}
+      </td>
       <td className="px-4 py-3 text-sm text-gray-300">
         <span className="px-2 py-1 text-xs rounded-full bg-purple-500/20 text-purple-400">
           {concession.settore_merceologico || 'Alimentare'}
