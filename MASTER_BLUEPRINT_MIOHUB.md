@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.15.0  
+> **Versione:** 3.16.0  
 > **Data:** 4 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -778,6 +778,27 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+### v3.16.0 (5 Gennaio 2026)
+**Logica Rinnovo Concessione Automatico:**
+- ✅ **Rilevamento Rinnovo:** Quando `tipo_concessione="rinnovo"`, il sistema gestisce automaticamente la sostituzione
+- ✅ **Chiusura Concessione Precedente:** La vecchia concessione viene messa in stato CESSATA
+- ✅ **Eliminazione Wallet:** Il wallet della vecchia concessione viene eliminato
+- ✅ **Trasferimento Saldo:** Il saldo residuo viene trasferito al nuovo wallet
+- ✅ **Risposta API:** Include dettagli rinnovo (old_concession_id, wallet_transferred, transferred_balance)
+
+**Flusso Rinnovo:**
+```
+1. POST /api/concessions con tipo_concessione="rinnovo"
+2. Sistema trova concessione attiva sullo stesso posteggio
+3. Chiude vecchia concessione (stato=CESSATA)
+4. Elimina wallet vecchia concessione
+5. Crea nuova concessione con nuovo wallet (saldo trasferito)
+```
+
+**File Modificati:**
+- `mihub-backend-rest/routes/concessions.js` - Aggiunta logica rinnovo (commit `9579ffa`)
+
+
 ### v3.14.0 (4 Gennaio 2026 - Sera)
 ### v3.15.0 (4 Gennaio 2026 - Notte)
 **Fix Dettaglio Concessione Multi-Vista:**
