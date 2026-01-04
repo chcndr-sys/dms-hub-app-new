@@ -1527,15 +1527,20 @@ export const dmsHubRouter = router({
         
         await logAction("CREATE_CONCESSION", "concession", concession.id, null, null, concession);
         
-        // Se c'è una SCIA collegata, aggiorna lo stato della pratica
+        // Se c'è una SCIA collegata, aggiorna lo stato della pratica via API REST
         if (input.sciaId) {
-          await db.update(schema.suapPratiche)
-            .set({ 
-              stato: "approvata",
-              concessione_id: concession.id,
-              concessione_numero: concession.concessionNumber,
-            })
-            .where(eq(schema.suapPratiche.id, input.sciaId));
+          try {
+            await fetch(`https://orchestratore.mio-hub.me/api/suap/pratiche/${input.sciaId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                stato: 'approvata',
+                concessione_id: concession.id
+              })
+            });
+          } catch (err) {
+            console.error('Errore aggiornamento SCIA:', err);
+          }
         }
         
         return { success: true, concessionId: concession.id, concession };
