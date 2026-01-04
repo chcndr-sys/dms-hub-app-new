@@ -244,17 +244,21 @@ export default function VetrinePage() {
 
   // Funzione per gestire l'upload dell'immagine
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'principale' | 'gallery') => {
+    alert('Upload iniziato! File: ' + (event.target.files?.[0]?.name || 'nessuno'));
     console.log('handleImageUpload called', { type, files: event.target.files });
     const file = event.target.files?.[0];
     if (!file) {
+      alert('Nessun file selezionato');
       console.log('No file selected');
       return;
     }
     if (!selectedImpresa) {
+      alert('Nessuna impresa selezionata');
       console.log('No selectedImpresa');
       return;
     }
     
+    alert('File valido: ' + file.name + ' - Dimensione: ' + file.size + ' bytes');
     toast.info(`Caricamento ${file.name} in corso...`);
 
     // Verifica tipo file
