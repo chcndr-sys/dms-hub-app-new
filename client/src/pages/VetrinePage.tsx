@@ -94,6 +94,10 @@ export default function VetrinePage() {
   const [editSocialWebsite, setEditSocialWebsite] = useState('');
   const [editSocialWhatsapp, setEditSocialWhatsapp] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Stati upload immagini
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -238,6 +242,112 @@ export default function VetrinePage() {
     }
   };
 
+  // Funzione per gestire l'upload dell'immagine
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'principale' | 'gallery') => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedImpresa) return;
+
+    // Verifica tipo file
+    if (!file.type.startsWith('image/')) {
+      toast.error('Seleziona un file immagine valido');
+      return;
+    }
+
+    // Verifica dimensione (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('L\'immagine deve essere inferiore a 5MB');
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      // Converti in base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Data = e.target?.result as string;
+        
+        // Mostra preview
+        setPreviewImage(base64Data);
+
+        // Invia al backend
+        const response = await fetch(`${API_BASE_URL}/api/imprese/${selectedImpresa.id}/vetrina/upload`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: type,
+            imageData: base64Data,
+            fileName: file.name
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Aggiorna i dati locali
+          if (type === 'principale') {
+            setSelectedImpresa({
+              ...selectedImpresa,
+              vetrina_immagine_principale: result.data.url
+            });
+          } else {
+            const currentGallery = selectedImpresa.vetrina_gallery || [];
+            setSelectedImpresa({
+              ...selectedImpresa,
+              vetrina_gallery: [...currentGallery, result.data.url]
+            });
+          }
+          toast.success('Immagine caricata con successo!');
+          setPreviewImage(null);
+        } else {
+          toast.error(result.error || 'Errore nel caricamento');
+        }
+        setIsUploadingImage(false);
+      };
+
+      reader.onerror = () => {
+        toast.error('Errore nella lettura del file');
+        setIsUploadingImage(false);
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Errore nel caricamento dell\'immagine');
+      setIsUploadingImage(false);
+    }
+  };
+
+  // Funzione per rimuovere immagine dalla gallery
+  const handleRemoveGalleryImage = async (index: number) => {
+    if (!selectedImpresa) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/imprese/${selectedImpresa.id}/vetrina/gallery/${index}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const newGallery = [...(selectedImpresa.vetrina_gallery || [])];
+        newGallery.splice(index, 1);
+        setSelectedImpresa({
+          ...selectedImpresa,
+          vetrina_gallery: newGallery
+        });
+        toast.success('Immagine rimossa');
+      } else {
+        toast.error(result.error || 'Errore nella rimozione');
+      }
+    } catch (error) {
+      console.error('Error removing image:', error);
+      toast.error('Errore nella rimozione dell\'immagine');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -257,7 +367,7 @@ export default function VetrinePage() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="bg-primary text-primary-foreground p-3 shadow-md">
-          <div className="container max-w-2xl flex items-center justify-between">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
@@ -285,7 +395,7 @@ export default function VetrinePage() {
           </div>
         </header>
 
-        <div className="container py-6 max-w-4xl space-y-6">
+        <div className="max-w-7xl mx-auto py-6 px-4 space-y-6">
           {/* Immagine Principale */}
           {selectedImpresa.vetrina_immagine_principale && (
             <div className="w-full h-64 rounded-lg overflow-hidden shadow-lg">
@@ -487,7 +597,7 @@ export default function VetrinePage() {
 
         {/* Modal Modifica Vetrina */}
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>✏️ Modifica Vetrina</DialogTitle>
               <DialogDescription>
@@ -572,11 +682,88 @@ export default function VetrinePage() {
                 </div>
               </div>
 
-              {/* TODO: Upload Immagini - da implementare nella prossima iterazione */}
-              <div className="p-4 border border-dashed rounded-lg bg-muted/50">
-                <p className="text-sm text-muted-foreground text-center">
-                  📸 Upload immagini disponibile a breve
-                </p>
+              {/* Upload Immagini */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">📸 Immagini Vetrina</Label>
+                
+                {/* Immagine Principale */}
+                <div className="space-y-2">
+                  <Label className="text-sm">Immagine Principale (copertina)</Label>
+                  <div className="flex items-center gap-4">
+                    {selectedImpresa?.vetrina_immagine_principale ? (
+                      <div className="relative w-32 h-20 rounded-lg overflow-hidden border">
+                        <img 
+                          src={selectedImpresa.vetrina_immagine_principale} 
+                          alt="Copertina" 
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={() => {
+                            setSelectedImpresa({
+                              ...selectedImpresa,
+                              vetrina_immagine_principale: undefined
+                            });
+                          }}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-32 h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/30">
+                        <span className="text-xs text-muted-foreground">Nessuna</span>
+                      </div>
+                    )}
+                    <div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'principale')}
+                        disabled={isUploadingImage}
+                        className="w-auto"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Max 5MB - JPG, PNG, GIF</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gallery */}
+                <div className="space-y-2">
+                  <Label className="text-sm">Galleria Prodotti (max 6 immagini)</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(selectedImpresa?.vetrina_gallery || []).map((img, index) => (
+                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden border">
+                        <img src={img} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => handleRemoveGalleryImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {(selectedImpresa?.vetrina_gallery || []).length < 6 && (
+                      <label className="aspect-square border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
+                        <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                        <span className="text-xs text-muted-foreground">Aggiungi</span>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, 'gallery')}
+                          disabled={isUploadingImage}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {isUploadingImage && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    Caricamento in corso...
+                  </div>
+                )}
               </div>
             </div>
 
@@ -606,7 +793,7 @@ export default function VetrinePage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-primary text-primary-foreground p-3 shadow-md">
-        <div className="container max-w-2xl flex items-center gap-4">
+        <div className="max-w-7xl mx-auto flex items-center gap-4">
           <Link href="/">
             <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/20">
               <ArrowLeft className="h-5 w-5" />
@@ -619,7 +806,7 @@ export default function VetrinePage() {
         </div>
       </header>
 
-      <div className="container py-6 max-w-4xl space-y-6">
+      <div className="max-w-7xl mx-auto py-6 px-4 space-y-6">
         {/* Ricerca */}
         <Card>
           <CardContent className="pt-6">
