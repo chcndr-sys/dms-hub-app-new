@@ -222,8 +222,22 @@ export default function SuapPanel() {
       const response = await fetch('https://orchestratore.mio-hub.me/api/concessions');
       const data = await response.json();
       if (data.success) {
+        // Calcola lo stato basato sulla data di scadenza
+        const oggi = new Date();
+        const concessionsWithStatus = data.data.map((conc: any) => {
+          let stato_calcolato = conc.stato;
+          if (conc.valid_to) {
+            const scadenza = new Date(conc.valid_to);
+            if (scadenza < oggi) {
+              stato_calcolato = 'SCADUTA';
+            } else if (conc.stato !== 'CESSATA') {
+              stato_calcolato = 'ATTIVA';
+            }
+          }
+          return { ...conc, stato_calcolato };
+        });
         // Ordina per data creazione (più recenti prima)
-        const sorted = data.data.sort((a: any, b: any) => 
+        const sorted = concessionsWithStatus.sort((a: any, b: any) => 
           new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
         );
         setConcessioni(sorted);

@@ -10,12 +10,20 @@ import { Building2, FileCheck, AlertCircle, CheckCircle, Clock, Users, Search, X
 // ============================================================================
 
 export interface ImpresaDTO {
-  id_impresa: number;
-  ragione_sociale: string;
-  piva: string;
+  // Campi dall'API (nomi originali)
+  id: number;
+  denominazione: string;
+  partita_iva: string;
   codice_fiscale: string;
   comune: string;
   settore?: string;
+  concessioni_attive?: any[];
+  autorizzazioni_attive?: any[];
+  qualificazioni?: any[];
+  // Alias per compatibilità
+  id_impresa?: number;
+  ragione_sociale?: string;
+  piva?: string;
   num_qualificazioni_attive?: number;
 }
 
@@ -216,8 +224,16 @@ export default function ImpreseQualificazioniPanel() {
       try {
         const response = await fetch(`${API_BASE_URL}/api/imprese`);
         const data = await response.json();
-        if (data.success) {
-          setImprese(data.data);
+        if (data.success && data.data) {
+          // Mappa i campi dall'API ai nomi usati nel frontend
+          const mappedImprese = data.data.map((imp: any) => ({
+            ...imp,
+            id_impresa: imp.id,
+            ragione_sociale: imp.denominazione,
+            piva: imp.partita_iva,
+            num_qualificazioni_attive: (imp.concessioni_attive?.length || 0) + (imp.qualificazioni?.length || 0)
+          }));
+          setImprese(mappedImprese);
         } else {
           // Fallback a dati mock
           setImprese(MOCK_IMPRESE);
@@ -288,16 +304,18 @@ export default function ImpreseQualificazioniPanel() {
   };
 
   // Calcola statistiche
+  const totalConcessioni = imprese.reduce((acc, i) => acc + (i.concessioni_attive?.length || 0), 0);
   const totalQualificazioni = imprese.reduce((acc, i) => acc + (i.num_qualificazioni_attive || 0), 0);
-  const comuniUnici = [...new Set(imprese.map(i => i.comune))].length;
+  const comuniUnici = [...new Set(imprese.map(i => i.comune).filter(Boolean))].length;
+  const mediaConcessioni = imprese.length > 0 ? (totalConcessioni / imprese.length).toFixed(1) : '0';
   
   // Filtra imprese in base alla ricerca
   const filteredImprese = imprese.filter(impresa => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      impresa.ragione_sociale?.toLowerCase().includes(query) ||
-      impresa.piva?.toLowerCase().includes(query) ||
+      (impresa.ragione_sociale || impresa.denominazione)?.toLowerCase().includes(query) ||
+      (impresa.piva || impresa.partita_iva)?.toLowerCase().includes(query) ||
       impresa.codice_fiscale?.toLowerCase().includes(query) ||
       impresa.comune?.toLowerCase().includes(query) ||
       impresa.settore?.toLowerCase().includes(query)
@@ -321,9 +339,9 @@ export default function ImpreseQualificazioniPanel() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-emerald-400 text-sm mb-1">
               <FileCheck className="w-4 h-4" />
-              Qualificazioni Attive
+              Concessioni Attive
             </div>
-            <div className="text-2xl font-bold text-white">{totalQualificazioni}</div>
+            <div className="text-2xl font-bold text-white">{totalConcessioni}</div>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
@@ -339,11 +357,9 @@ export default function ImpreseQualificazioniPanel() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-orange-400 text-sm mb-1">
               <TrendingUp className="w-4 h-4" />
-              Media Qualif./Impresa
+              Media Concess./Impresa
             </div>
-            <div className="text-2xl font-bold text-white">
-              {imprese.length > 0 ? (totalQualificazioni / imprese.length).toFixed(1) : '0'}
-            </div>
+            <div className="text-2xl font-bold text-white">{mediaConcessioni}</div>
           </CardContent>
         </Card>
       </div>
@@ -400,24 +416,24 @@ export default function ImpreseQualificazioniPanel() {
                   <TableBody>
                     {filteredImprese.map((impresa) => (
                     <TableRow
-                      key={impresa.id_impresa}
+                      key={impresa.id || impresa.id_impresa}
                       className={`cursor-pointer hover:bg-gray-50 ${
-                        selectedImpresa?.id_impresa === impresa.id_impresa
+                        (selectedImpresa?.id || selectedImpresa?.id_impresa) === (impresa.id || impresa.id_impresa)
                           ? 'bg-blue-50 border-l-4 border-blue-500'
                           : ''
                       }`}
                       onClick={() => setSelectedImpresa(impresa)}
                     >
                       <TableCell className="font-medium">
-                        {impresa.ragione_sociale}
+                        {impresa.ragione_sociale || impresa.denominazione}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {impresa.piva}
+                        {impresa.piva || impresa.partita_iva}
                       </TableCell>
                       <TableCell className="text-sm">{impresa.comune}</TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline">
-                          {impresa.num_qualificazioni_attive || 0}
+                          {(impresa.concessioni_attive?.length || 0)}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -438,7 +454,7 @@ export default function ImpreseQualificazioniPanel() {
           </CardTitle>
           <CardDescription>
             {selectedImpresa
-              ? `Qualificazioni di ${selectedImpresa.ragione_sociale}`
+              ? `Qualificazioni di ${selectedImpresa.ragione_sociale || selectedImpresa.denominazione}`
               : 'Seleziona un\'impresa per visualizzare le qualificazioni'}
           </CardDescription>
         </CardHeader>
