@@ -33,7 +33,8 @@ import {
   Eye,
   XCircle,
   Users,
-  User
+  User,
+  Wallet
 } from 'lucide-react';
 import { MarketAutorizzazioniTab } from './MarketAutorizzazioniTab';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -555,12 +556,41 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
         ubicazione: c.ubicazione,
         scia_id: c.scia_id,
         cedente_impresa_id: c.cedente_impresa_id,
+        cedente_cf: c.cedente_cf,
+        cedente_partita_iva: c.cedente_partita_iva,
+        cedente_ragione_sociale: c.cedente_ragione_sociale,
         market_name: c.market_name,
         market_code: c.market_code,
         vendor_code: c.vendor_code,
+        vendor_phone: c.vendor_phone,
         impresa_id: c.impresa_id,
         impresa_denominazione: c.impresa_denominazione,
-        impresa_partita_iva: c.impresa_partita_iva
+        impresa_partita_iva: c.impresa_partita_iva,
+        // Dati anagrafici completi
+        data_nascita: c.data_nascita,
+        luogo_nascita: c.luogo_nascita,
+        qualita: c.qualita,
+        residenza_via: c.residenza_via,
+        residenza_cap: c.residenza_cap,
+        residenza_comune: c.residenza_comune,
+        residenza_provincia: c.residenza_provincia,
+        // Sede legale
+        sede_legale_via: c.sede_legale_via,
+        sede_legale_cap: c.sede_legale_cap,
+        sede_legale_comune: c.sede_legale_comune,
+        sede_legale_provincia: c.sede_legale_provincia,
+        // Autorizzazione precedente
+        autorizzazione_precedente_data: c.autorizzazione_precedente_data,
+        autorizzazione_precedente_intestatario: c.autorizzazione_precedente_intestatario,
+        autorizzazione_precedente_pg: c.autorizzazione_precedente_pg,
+        // SCIA precedente
+        scia_precedente_comune: c.scia_precedente_comune,
+        scia_precedente_data: c.scia_precedente_data,
+        scia_precedente_numero: c.scia_precedente_numero,
+        // Altri dati
+        canone_unico: c.canone_unico,
+        attrezzature: c.attrezzature,
+        tipo_posteggio: c.tipo_posteggio
       }));
       
       setConcessions(mappedData);
@@ -920,7 +950,85 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                     </CardContent>
                   </Card>
 
-                  {/* 4. Note e Riferimenti */}
+                  {/* 4. Cedente (per subingresso) */}
+                  {(selectedConcessionDetail.cedente_ragione_sociale || selectedConcessionDetail.cedente_cf) && (
+                    <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#f59e0b]/30">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-lg">
+                          <User className="h-5 w-5 text-[#f59e0b]" />
+                          Cedente
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          <div><p className="text-xs text-gray-500 uppercase tracking-wide">Ragione Sociale</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_ragione_sociale || '-'}</p></div>
+                          <div><p className="text-xs text-gray-500 uppercase tracking-wide">Partita IVA</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_partita_iva || '-'}</p></div>
+                          <div><p className="text-xs text-gray-500 uppercase tracking-wide">Codice Fiscale</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_cf || '-'}</p></div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* 5. Autorizzazione Precedente */}
+                  {(selectedConcessionDetail.autorizzazione_precedente_pg || selectedConcessionDetail.scia_precedente_numero) && (
+                    <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#8b5cf6]/30">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-lg">
+                          <FileCheck className="h-5 w-5 text-[#8b5cf6]" />
+                          Autorizzazione / SCIA Precedente
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {selectedConcessionDetail.autorizzazione_precedente_pg && (
+                            <div><p className="text-xs text-gray-500 uppercase tracking-wide">N. Protocollo Aut.</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.autorizzazione_precedente_pg}</p></div>
+                          )}
+                          {selectedConcessionDetail.autorizzazione_precedente_data && (
+                            <div><p className="text-xs text-gray-500 uppercase tracking-wide">Data Aut.</p><p className="text-[#e8fbff] font-medium">{new Date(selectedConcessionDetail.autorizzazione_precedente_data).toLocaleDateString('it-IT')}</p></div>
+                          )}
+                          {selectedConcessionDetail.autorizzazione_precedente_intestatario && (
+                            <div><p className="text-xs text-gray-500 uppercase tracking-wide">Intestatario Aut.</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.autorizzazione_precedente_intestatario}</p></div>
+                          )}
+                          {selectedConcessionDetail.scia_precedente_numero && (
+                            <div><p className="text-xs text-gray-500 uppercase tracking-wide">N. SCIA Prec.</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.scia_precedente_numero}</p></div>
+                          )}
+                          {selectedConcessionDetail.scia_precedente_data && (
+                            <div><p className="text-xs text-gray-500 uppercase tracking-wide">Data SCIA Prec.</p><p className="text-[#e8fbff] font-medium">{new Date(selectedConcessionDetail.scia_precedente_data).toLocaleDateString('it-IT')}</p></div>
+                          )}
+                          {selectedConcessionDetail.scia_precedente_comune && (
+                            <div><p className="text-xs text-gray-500 uppercase tracking-wide">Comune SCIA Prec.</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.scia_precedente_comune}</p></div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* 6. Dati Economici */}
+                  {(selectedConcessionDetail.canone_unico || selectedConcessionDetail.attrezzature) && (
+                    <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#22c55e]/30">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-lg">
+                          <Wallet className="h-5 w-5 text-[#22c55e]" />
+                          Dati Economici e Attrezzature
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {selectedConcessionDetail.canone_unico && (
+                            <div><p className="text-xs text-gray-500 uppercase tracking-wide">Canone Unico</p><p className="text-[#22c55e] font-bold text-lg">€ {Number(selectedConcessionDetail.canone_unico).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p></div>
+                          )}
+                          {selectedConcessionDetail.attrezzature && (
+                            <div><p className="text-xs text-gray-500 uppercase tracking-wide">Attrezzature</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.attrezzature}</p></div>
+                          )}
+                          {selectedConcessionDetail.tipo_posteggio && (
+                            <div><p className="text-xs text-gray-500 uppercase tracking-wide">Tipo Posteggio</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.tipo_posteggio}</p></div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* 7. Note e Riferimenti */}
                   {(selectedConcessionDetail.notes || selectedConcessionDetail.scia_id) && (
                     <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
                       <CardHeader className="pb-3">
