@@ -617,7 +617,7 @@ export default function VetrinePage() {
           )}
         </div>
 
-        {/* Modal Modifica Vetrina */}
+        {/* Modal Modifica Vetrina - v2 fix */}
         {isEditModalOpen && (
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
