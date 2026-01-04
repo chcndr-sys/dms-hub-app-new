@@ -1398,9 +1398,90 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                         <p className="text-[#e8fbff] font-medium">{selectedConcessione.cedente_cf || '-'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Aut. Precedente</p>
-                        <p className="text-[#e8fbff] font-medium">{selectedConcessione.autorizzazione_precedente_pg || '-'}</p>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Nome</p>
+                        <p className="text-[#e8fbff] font-medium">{selectedConcessione.cedente_nome || '-'}</p>
                       </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Cognome</p>
+                        <p className="text-[#e8fbff] font-medium">{selectedConcessione.cedente_cognome || '-'}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Sezione Autorizzazione Precedente */}
+              {(selectedConcessione.autorizzazione_precedente_pg || selectedConcessione.scia_precedente_numero) && (
+                <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-[#14b8a6] flex items-center gap-2 text-lg">
+                      <FileCheck className="h-5 w-5" />
+                      Autorizzazione / SCIA Precedente
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {selectedConcessione.autorizzazione_precedente_pg && (
+                        <div><p className="text-xs text-gray-500 uppercase tracking-wide">N. Protocollo Aut.</p><p className="text-[#e8fbff] font-medium">{selectedConcessione.autorizzazione_precedente_pg}</p></div>
+                      )}
+                      {selectedConcessione.autorizzazione_precedente_data && (
+                        <div><p className="text-xs text-gray-500 uppercase tracking-wide">Data Aut.</p><p className="text-[#e8fbff] font-medium">{new Date(selectedConcessione.autorizzazione_precedente_data).toLocaleDateString('it-IT')}</p></div>
+                      )}
+                      {selectedConcessione.autorizzazione_precedente_intestatario && (
+                        <div><p className="text-xs text-gray-500 uppercase tracking-wide">Intestatario Aut.</p><p className="text-[#e8fbff] font-medium">{selectedConcessione.autorizzazione_precedente_intestatario}</p></div>
+                      )}
+                      {selectedConcessione.scia_precedente_numero && (
+                        <div><p className="text-xs text-gray-500 uppercase tracking-wide">N. SCIA Prec.</p><p className="text-[#e8fbff] font-medium">{selectedConcessione.scia_precedente_numero}</p></div>
+                      )}
+                      {selectedConcessione.scia_precedente_data && (
+                        <div><p className="text-xs text-gray-500 uppercase tracking-wide">Data SCIA Prec.</p><p className="text-[#e8fbff] font-medium">{new Date(selectedConcessione.scia_precedente_data).toLocaleDateString('it-IT')}</p></div>
+                      )}
+                      {selectedConcessione.scia_precedente_comune && (
+                        <div><p className="text-xs text-gray-500 uppercase tracking-wide">Comune SCIA Prec.</p><p className="text-[#e8fbff] font-medium">{selectedConcessione.scia_precedente_comune}</p></div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Sezione Dati Economici */}
+              {(selectedConcessione.canone_unico || selectedConcessione.attrezzature) && (
+                <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-[#14b8a6] flex items-center gap-2 text-lg">
+                      <Building2 className="h-5 w-5" />
+                      Dati Economici e Attrezzature
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {selectedConcessione.canone_unico && (
+                        <div><p className="text-xs text-gray-500 uppercase tracking-wide">Canone Unico</p><p className="text-[#14b8a6] font-bold text-lg">€ {Number(selectedConcessione.canone_unico).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p></div>
+                      )}
+                      {selectedConcessione.attrezzature && (
+                        <div><p className="text-xs text-gray-500 uppercase tracking-wide">Attrezzature</p><p className="text-[#e8fbff] font-medium">{selectedConcessione.attrezzature}</p></div>
+                      )}
+                      {selectedConcessione.tipo_posteggio && (
+                        <div><p className="text-xs text-gray-500 uppercase tracking-wide">Tipo Posteggio</p><p className="text-[#e8fbff] font-medium">{selectedConcessione.tipo_posteggio}</p></div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Sezione Note e Riferimenti */}
+              {(selectedConcessione.notes || selectedConcessione.scia_id) && (
+                <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-[#14b8a6] flex items-center gap-2 text-lg">
+                      <FileCheck className="h-5 w-5" />
+                      Note e Riferimenti
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {selectedConcessione.notes && (<div className="col-span-2 md:col-span-3"><p className="text-xs text-gray-500 uppercase tracking-wide">Note / Prescrizioni</p><p className="text-[#e8fbff] font-medium whitespace-pre-wrap">{selectedConcessione.notes}</p></div>)}
+                      {selectedConcessione.scia_id && (<div><p className="text-xs text-gray-500 uppercase tracking-wide">Riferimento SCIA</p><p className="text-[#e8fbff] font-medium">SCIA #{selectedConcessione.scia_id}</p></div>)}
                     </div>
                   </CardContent>
                 </Card>
