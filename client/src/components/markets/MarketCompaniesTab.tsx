@@ -967,6 +967,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                           <div><p className="text-xs text-gray-500 uppercase tracking-wide">Codice Fiscale</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_cf || '-'}</p></div>
                           <div><p className="text-xs text-gray-500 uppercase tracking-wide">Nome</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_nome || '-'}</p></div>
                           <div><p className="text-xs text-gray-500 uppercase tracking-wide">Cognome</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_cognome || '-'}</p></div>
+                          <div className="col-span-2 md:col-span-3"><p className="text-xs text-gray-500 uppercase tracking-wide">Sede Legale Cedente</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_sede_legale || [selectedConcessionDetail.cedente_indirizzo_via, selectedConcessionDetail.cedente_indirizzo_cap, selectedConcessionDetail.cedente_indirizzo_comune, selectedConcessionDetail.cedente_indirizzo_provincia].filter(Boolean).join(', ') || '-'}</p></div>
                         </div>
                       </CardContent>
                     </Card>
@@ -1167,7 +1168,25 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                               const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${concession.id}`);
                               const data = await response.json();
                               if (data.success && data.data) {
-                                setSelectedConcessionDetail({ ...concession, ...data.data });
+                                let concessioneData = { ...concession, ...data.data };
+                                // Se c'è cedente_impresa_id, carica anche i dati dell'impresa cedente
+                                if (data.data.cedente_impresa_id) {
+                                  try {
+                                    const cedenteResponse = await fetch(`https://orchestratore.mio-hub.me/api/imprese/${data.data.cedente_impresa_id}`);
+                                    const cedenteData = await cedenteResponse.json();
+                                    if (cedenteData.success && cedenteData.data) {
+                                      concessioneData = {
+                                        ...concessioneData,
+                                        cedente_nome: cedenteData.data.rappresentante_legale_nome || '',
+                                        cedente_cognome: cedenteData.data.rappresentante_legale_cognome || '',
+                                        cedente_sede_legale: [cedenteData.data.indirizzo_via, cedenteData.data.indirizzo_cap, cedenteData.data.comune, cedenteData.data.indirizzo_provincia].filter(Boolean).join(', ') || ''
+                                      };
+                                    }
+                                  } catch (cedenteError) {
+                                    console.error('Errore caricamento impresa cedente:', cedenteError);
+                                  }
+                                }
+                                setSelectedConcessionDetail(concessioneData);
                               } else {
                                 setSelectedConcessionDetail(concession);
                               }

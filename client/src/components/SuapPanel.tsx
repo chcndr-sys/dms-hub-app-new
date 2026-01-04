@@ -1411,6 +1411,12 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                         <p className="text-xs text-gray-500 uppercase tracking-wide">Cognome</p>
                         <p className="text-[#e8fbff] font-medium">{selectedConcessione.cedente_cognome || '-'}</p>
                       </div>
+                      <div className="col-span-2 md:col-span-4">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Sede Legale Cedente</p>
+                        <p className="text-[#e8fbff] font-medium">
+                          {selectedConcessione.cedente_sede_legale || [selectedConcessione.cedente_indirizzo_via, selectedConcessione.cedente_indirizzo_cap, selectedConcessione.cedente_indirizzo_comune, selectedConcessione.cedente_indirizzo_provincia].filter(Boolean).join(', ') || '-'}
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1713,7 +1719,8 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                                         concessioneData = {
                                           ...concessioneData,
                                           cedente_nome: cedenteData.data.rappresentante_legale_nome || '',
-                                          cedente_cognome: cedenteData.data.rappresentante_legale_cognome || ''
+                                          cedente_cognome: cedenteData.data.rappresentante_legale_cognome || '',
+                                          cedente_sede_legale: [cedenteData.data.indirizzo_via, cedenteData.data.indirizzo_cap, cedenteData.data.comune, cedenteData.data.indirizzo_provincia].filter(Boolean).join(', ') || ''
                                         };
                                       }
                                     } catch (cedenteError) {
