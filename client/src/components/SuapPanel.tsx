@@ -1268,9 +1268,9 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
               </Card>
               
               {/* Sezione Concessionario */}
-              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#22c55e]/30">
+              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-[#22c55e] flex items-center gap-2 text-lg">
+                  <CardTitle className="text-[#14b8a6] flex items-center gap-2 text-lg">
                     <User className="h-5 w-5" />
                     Concessionario
                   </CardTitle>
@@ -1306,9 +1306,9 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
               </Card>
               
               {/* Sezione Posteggio */}
-              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#a855f7]/30">
+              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-[#a855f7] flex items-center gap-2 text-lg">
+                  <CardTitle className="text-[#14b8a6] flex items-center gap-2 text-lg">
                     <MapPin className="h-5 w-5" />
                     Dati Posteggio e Mercato
                   </CardTitle>
@@ -1349,9 +1349,9 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
               
               {/* Sezione Cedente (solo per subingresso) */}
               {selectedConcessione.tipo_concessione === 'subingresso' && (
-                <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#f59e0b]/30">
+                <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-[#f59e0b] flex items-center gap-2 text-lg">
+                    <CardTitle className="text-[#14b8a6] flex items-center gap-2 text-lg">
                       <Users className="h-5 w-5" />
                       Cedente
                     </CardTitle>
