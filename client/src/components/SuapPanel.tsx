@@ -225,17 +225,21 @@ export default function SuapPanel() {
         // Usa stato_calcolato dal backend se presente, altrimenti calcola
         const oggi = new Date();
         const concessionsWithStatus = data.data.map((conc: any) => {
-          // Se il backend ha già calcolato lo stato, usalo
+          // Se il backend ha già calcolato lo stato, usalo direttamente
           if (conc.stato_calcolato) {
             return conc;
           }
+          // Se lo stato è CESSATA, mantienilo
+          if (conc.stato === 'CESSATA') {
+            return { ...conc, stato_calcolato: 'CESSATA' };
+          }
           // Altrimenti calcola lo stato basato sulla data di scadenza
-          let stato_calcolato = conc.stato;
+          let stato_calcolato = conc.stato || 'ATTIVA';
           if (conc.valid_to) {
             const scadenza = new Date(conc.valid_to);
             if (scadenza < oggi) {
               stato_calcolato = 'SCADUTA';
-            } else if (conc.stato !== 'CESSATA') {
+            } else {
               stato_calcolato = 'ATTIVA';
             }
           }
@@ -447,7 +451,7 @@ export default function SuapPanel() {
           </TabsTrigger>
           <TabsTrigger 
             value="concessioni"
-            className="data-[state=active]:bg-[#f59e0b]/20 data-[state=active]:text-[#f59e0b]"
+            className="data-[state=active]:bg-[#14b8a6]/20 data-[state=active]:text-[#14b8a6]"
           >
             <ScrollText className="mr-2 h-4 w-4" />
             Lista Concessioni
@@ -1138,11 +1142,13 @@ export default function SuapPanel() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${
-                      selectedConcessione.stato === 'ATTIVA' || selectedConcessione.stato_calcolato === 'ATTIVA'
+                      selectedConcessione.stato_calcolato === 'ATTIVA' || selectedConcessione.stato === 'ATTIVA'
                         ? 'bg-green-500' 
-                        : selectedConcessione.stato === 'SCADUTA' || selectedConcessione.stato_calcolato === 'SCADUTA'
+                        : selectedConcessione.stato_calcolato === 'SCADUTA' || selectedConcessione.stato === 'SCADUTA'
                           ? 'bg-red-500'
-                          : 'bg-yellow-500 animate-pulse'
+                          : selectedConcessione.stato_calcolato === 'CESSATA' || selectedConcessione.stato === 'CESSATA'
+                            ? 'bg-gray-500'
+                            : 'bg-orange-500 animate-pulse'
                     }`} />
                     <span className="text-sm text-gray-400">
                       {selectedConcessione.stato_calcolato || selectedConcessione.stato || 'DA_ASSOCIARE'}
@@ -1161,7 +1167,9 @@ export default function SuapPanel() {
                         ? 'bg-green-500/20 text-green-400'
                         : selectedConcessione.stato_calcolato === 'SCADUTA' || selectedConcessione.stato === 'SCADUTA'
                           ? 'bg-red-500/20 text-red-400'
-                          : 'bg-yellow-500/20 text-yellow-400'
+                          : selectedConcessione.stato_calcolato === 'CESSATA' || selectedConcessione.stato === 'CESSATA'
+                            ? 'bg-gray-500/20 text-gray-400'
+                            : 'bg-orange-500/20 text-orange-400'
                     }`}>
                       {selectedConcessione.stato_calcolato || selectedConcessione.stato || 'DA_ASSOCIARE'}
                     </Badge>
@@ -1584,7 +1592,9 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                               ? 'bg-green-500/20 text-green-400' 
                               : conc.stato_calcolato === 'SCADUTA' || conc.stato === 'SCADUTA'
                                 ? 'bg-red-500/20 text-red-400'
-                                : 'bg-yellow-500/20 text-yellow-400'
+                                : conc.stato_calcolato === 'CESSATA' || conc.stato === 'CESSATA'
+                                  ? 'bg-gray-500/20 text-gray-400'
+                                  : 'bg-orange-500/20 text-orange-400'
                           }>
                             {conc.stato_calcolato || conc.stato || 'DA_ASSOCIARE'}
                           </Badge>
@@ -1594,8 +1604,20 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                             size="sm" 
                             variant="ghost"
                             className="text-[#f59e0b] hover:bg-[#f59e0b]/10"
-                            onClick={() => {
-                              setSelectedConcessione(conc);
+                            onClick={async () => {
+                              // Carica i dettagli completi della concessione (inclusi campi cedente)
+                              try {
+                                const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`);
+                                const data = await response.json();
+                                if (data.success && data.data) {
+                                  setSelectedConcessione({ ...conc, ...data.data });
+                                } else {
+                                  setSelectedConcessione(conc);
+                                }
+                              } catch (error) {
+                                console.error('Errore caricamento dettagli concessione:', error);
+                                setSelectedConcessione(conc);
+                              }
                               setConcessioneDetailTab('dati');
                             }}
                           >
