@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.14.0  
+> **Versione:** 3.15.0  
 > **Data:** 4 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -779,6 +779,30 @@ Piano sviluppo organizzato per quarter:
 
 ## 📝 CHANGELOG
 ### v3.14.0 (4 Gennaio 2026 - Sera)
+### v3.15.0 (4 Gennaio 2026 - Notte)
+**Fix Dettaglio Concessione Multi-Vista:**
+- ✅ **Sede Legale Subentrante:** Aggiunta in tutte e 3 le tabelle (SSO SUAP, Gestione Mercati, Tab Imprese)
+- ✅ **Sede Legale Cedente:** Aggiunta nel dettaglio concessione con fetch automatico da impresa cedente
+- ✅ **Nome/Cognome Cedente:** Fetch automatico da `cedente_impresa_id` → `rappresentante_legale_nome/cognome`
+- ✅ **Semafori Stato:** Fix logica priorità `stato_calcolato` su `stato` per colori corretti
+- ✅ **Colori SSO SUAP:** Cambiato da giallo (#f59e0b) a verde (#14b8a6) in tabella, filtri, pulsanti
+
+**Fetch Impresa Cedente:**
+```javascript
+// Quando si carica dettaglio concessione con cedente_impresa_id:
+const cedenteResponse = await fetch(`/api/imprese/${cedente_impresa_id}`);
+// Recupera: rappresentante_legale_nome, rappresentante_legale_cognome, sede legale
+```
+
+**Campi Aggiunti:**
+| Campo | Descrizione | Fonte |
+|-------|-------------|-------|
+| `cedente_nome` | Nome rappresentante legale cedente | imprese.rappresentante_legale_nome |
+| `cedente_cognome` | Cognome rappresentante legale cedente | imprese.rappresentante_legale_cognome |
+| `cedente_sede_legale` | Sede legale cedente | imprese.indirizzo_* |
+| `sede_legale_*` | Sede legale subentrante | concessions.sede_legale_* |
+
+
 **Fix Concessioni Multi-Vista:**
 - ✅ **Tab Imprese:** Statistiche dinamiche (Imprese Totali, Concessioni Attive, Comuni Coperti, Media)
 - ✅ **SSO SUAP:** Colore tab Lista Concessioni cambiato da giallo a verde
