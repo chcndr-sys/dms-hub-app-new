@@ -453,18 +453,49 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
         if (json.success && Array.isArray(json.data)) {
           const mappedData = json.data.map((c: any) => ({
             id: c.id,
+            market_id: c.market_id,
             stall_id: c.stall_id,
             stall_code: c.stall_number || c.stall_code || 'N/A',
+            stall_number: c.stall_number || c.stall_id,
             company_id: c.vendor_id || c.company_id,
             company_name: c.vendor_business_name || c.company_name || 'N/A',
+            vendor_business_name: c.vendor_business_name || c.ragione_sociale,
             tipo_concessione: c.type || c.tipo_concessione || 'N/A',
             valida_dal: c.valid_from || c.valida_dal,
             valida_al: c.valid_to || c.valida_al,
-            stato: c.status || (
-              (c.valid_to && new Date(c.valid_to) < new Date()) ? 'SCADUTA' : 'ATTIVA'
+            stato: (c.stato === 'CESSATA' || c.stato === 'SOSPESA') ? c.stato : (
+              (c.valid_to && new Date(c.valid_to) < new Date()) ? 'SCADUTA' : (c.stato || 'ATTIVA')
             ),
+            stato_calcolato: (c.valid_to && new Date(c.valid_to) < new Date()) ? 'SCADUTA' : (c.stato || 'ATTIVA'),
             settore_merceologico: c.settore_merceologico || 'Alimentare',
-            comune_rilascio: c.comune_rilascio || ''
+            comune_rilascio: c.comune_rilascio || '',
+            // Campi aggiuntivi per dettaglio
+            numero_protocollo: c.numero_protocollo,
+            data_protocollazione: c.data_protocollazione,
+            oggetto: c.oggetto,
+            cf_concessionario: c.cf_concessionario,
+            partita_iva: c.partita_iva,
+            ragione_sociale: c.ragione_sociale,
+            nome: c.nome,
+            cognome: c.cognome,
+            durata_anni: c.durata_anni,
+            data_decorrenza: c.data_decorrenza,
+            fila: c.fila,
+            mq: c.mq,
+            dimensioni_lineari: c.dimensioni_lineari,
+            giorno: c.giorno,
+            ubicazione: c.ubicazione,
+            scia_id: c.scia_id,
+            cedente_impresa_id: c.cedente_impresa_id,
+            cedente_cf: c.cedente_cf,
+            cedente_partita_iva: c.cedente_partita_iva,
+            cedente_ragione_sociale: c.cedente_ragione_sociale,
+            market_name: c.market_name,
+            market_code: c.market_code,
+            vendor_code: c.vendor_code,
+            impresa_id: c.impresa_id,
+            impresa_denominazione: c.impresa_denominazione,
+            impresa_partita_iva: c.impresa_partita_iva
           }));
           setConcessions(mappedData);
         } else {

@@ -222,9 +222,14 @@ export default function SuapPanel() {
       const response = await fetch('https://orchestratore.mio-hub.me/api/concessions');
       const data = await response.json();
       if (data.success) {
-        // Calcola lo stato basato sulla data di scadenza
+        // Usa stato_calcolato dal backend se presente, altrimenti calcola
         const oggi = new Date();
         const concessionsWithStatus = data.data.map((conc: any) => {
+          // Se il backend ha già calcolato lo stato, usalo
+          if (conc.stato_calcolato) {
+            return conc;
+          }
+          // Altrimenti calcola lo stato basato sulla data di scadenza
           let stato_calcolato = conc.stato;
           if (conc.valid_to) {
             const scadenza = new Date(conc.valid_to);
