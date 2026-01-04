@@ -1142,11 +1142,11 @@ export default function SuapPanel() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${
-                      selectedConcessione.stato_calcolato === 'ATTIVA' || selectedConcessione.stato === 'ATTIVA'
+                      (selectedConcessione.stato_calcolato || selectedConcessione.stato) === 'ATTIVA'
                         ? 'bg-green-500' 
-                        : selectedConcessione.stato_calcolato === 'SCADUTA' || selectedConcessione.stato === 'SCADUTA'
+                        : (selectedConcessione.stato_calcolato || selectedConcessione.stato) === 'SCADUTA'
                           ? 'bg-red-500'
-                          : selectedConcessione.stato_calcolato === 'CESSATA' || selectedConcessione.stato === 'CESSATA'
+                          : (selectedConcessione.stato_calcolato || selectedConcessione.stato) === 'CESSATA'
                             ? 'bg-gray-500'
                             : 'bg-orange-500 animate-pulse'
                     }`} />
@@ -1163,11 +1163,11 @@ export default function SuapPanel() {
                   <h3 className="text-xl font-bold text-[#e8fbff] flex items-center gap-3">
                     Concessione {selectedConcessione.numero_protocollo || `#${selectedConcessione.id}`}
                     <Badge className={`${
-                      selectedConcessione.stato_calcolato === 'ATTIVA' || selectedConcessione.stato === 'ATTIVA'
+                      (selectedConcessione.stato_calcolato || selectedConcessione.stato) === 'ATTIVA'
                         ? 'bg-green-500/20 text-green-400'
-                        : selectedConcessione.stato_calcolato === 'SCADUTA' || selectedConcessione.stato === 'SCADUTA'
+                        : (selectedConcessione.stato_calcolato || selectedConcessione.stato) === 'SCADUTA'
                           ? 'bg-red-500/20 text-red-400'
-                          : selectedConcessione.stato_calcolato === 'CESSATA' || selectedConcessione.stato === 'CESSATA'
+                          : (selectedConcessione.stato_calcolato || selectedConcessione.stato) === 'CESSATA'
                             ? 'bg-gray-500/20 text-gray-400'
                             : 'bg-orange-500/20 text-orange-400'
                     }`}>
@@ -1327,6 +1327,12 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wide">Settore Merceologico</p>
                       <p className="text-[#e8fbff] font-medium">{selectedConcessione.settore_merceologico || '-'}</p>
+                    </div>
+                    <div className="col-span-2 md:col-span-3">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Sede Legale</p>
+                      <p className="text-[#e8fbff] font-medium">
+                        {[selectedConcessione.sede_legale_via, selectedConcessione.sede_legale_cap, selectedConcessione.sede_legale_comune, selectedConcessione.sede_legale_provincia].filter(Boolean).join(', ') || '-'}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -1669,15 +1675,17 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                         </TableCell>
                         <TableCell>
                           <Badge className={
-                            conc.stato_calcolato === 'ATTIVA' || conc.stato === 'ATTIVA' 
+                            (conc.stato_calcolato || conc.stato) === 'ATTIVA' 
                               ? 'bg-green-500/20 text-green-400' 
-                              : conc.stato_calcolato === 'SCADUTA' || conc.stato === 'SCADUTA'
+                              : (conc.stato_calcolato || conc.stato) === 'SCADUTA'
                                 ? 'bg-red-500/20 text-red-400'
-                                : conc.stato_calcolato === 'CESSATA' || conc.stato === 'CESSATA'
+                                : (conc.stato_calcolato || conc.stato) === 'CESSATA'
                                   ? 'bg-gray-500/20 text-gray-400'
-                                  : 'bg-orange-500/20 text-orange-400'
+                                  : (conc.stato_calcolato || conc.stato) === 'DA_ASSOCIARE'
+                                    ? 'bg-orange-500/20 text-orange-400'
+                                    : 'bg-gray-500/20 text-gray-400'
                           }>
-                            {conc.stato_calcolato || conc.stato || 'DA_ASSOCIARE'}
+                            {conc.stato_calcolato || conc.stato || 'N/D'}
                           </Badge>
                         </TableCell>
                         <TableCell>

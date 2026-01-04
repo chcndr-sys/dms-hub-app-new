@@ -925,6 +925,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                         <div><p className="text-xs text-gray-500 uppercase tracking-wide">Nome</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.nome || '-'}</p></div>
                         <div><p className="text-xs text-gray-500 uppercase tracking-wide">Cognome</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cognome || '-'}</p></div>
                         <div><p className="text-xs text-gray-500 uppercase tracking-wide">Settore Merceologico</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.settore_merceologico || '-'}</p></div>
+                        <div className="col-span-2 md:col-span-3"><p className="text-xs text-gray-500 uppercase tracking-wide">Sede Legale</p><p className="text-[#e8fbff] font-medium">{[selectedConcessionDetail.sede_legale_via, selectedConcessionDetail.sede_legale_cap, selectedConcessionDetail.sede_legale_comune, selectedConcessionDetail.sede_legale_provincia].filter(Boolean).join(', ') || '-'}</p></div>
                       </div>
                     </CardContent>
                   </Card>
@@ -964,6 +965,8 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                           <div><p className="text-xs text-gray-500 uppercase tracking-wide">Ragione Sociale</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_ragione_sociale || '-'}</p></div>
                           <div><p className="text-xs text-gray-500 uppercase tracking-wide">Partita IVA</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_partita_iva || '-'}</p></div>
                           <div><p className="text-xs text-gray-500 uppercase tracking-wide">Codice Fiscale</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_cf || '-'}</p></div>
+                          <div><p className="text-xs text-gray-500 uppercase tracking-wide">Nome</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_nome || '-'}</p></div>
+                          <div><p className="text-xs text-gray-500 uppercase tracking-wide">Cognome</p><p className="text-[#e8fbff] font-medium">{selectedConcessionDetail.cedente_cognome || '-'}</p></div>
                         </div>
                       </CardContent>
                     </Card>
@@ -1856,7 +1859,7 @@ function ConcessionRow({ concession, onView, onEdit }: ConcessionRowProps) {
           {formatDate(concession.valida_al)}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm">{getStatoBadge(concession.stato)}</td>
+      <td className="px-4 py-3 text-sm">{getStatoBadge(concession.stato_calcolato || concession.stato)}</td>
       <td className="px-4 py-3 text-sm text-right">
         <div className="flex items-center justify-end gap-2">
           <button
