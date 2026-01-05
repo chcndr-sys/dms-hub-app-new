@@ -407,7 +407,7 @@ export default function VetrinePage() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="bg-primary text-primary-foreground p-3 shadow-md">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="w-full px-4 md:px-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
@@ -435,7 +435,7 @@ export default function VetrinePage() {
           </div>
         </header>
 
-        <div className="max-w-7xl mx-auto py-6 px-4 space-y-6">
+        <div className="w-full px-4 md:px-8 py-6 space-y-6">
           {/* Hero Section con Immagine Principale */}
           {selectedImpresa.vetrina_immagine_principale ? (
             <div className="relative w-full h-72 md:h-96 rounded-2xl overflow-hidden shadow-2xl group">
@@ -898,7 +898,7 @@ export default function VetrinePage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-primary text-primary-foreground p-3 shadow-md">
-        <div className="max-w-7xl mx-auto flex items-center gap-4">
+        <div className="w-full px-4 md:px-8 flex items-center gap-4">
           <Link href="/">
             <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/20">
               <ArrowLeft className="h-5 w-5" />
@@ -911,7 +911,7 @@ export default function VetrinePage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto py-6 px-4 space-y-6">
+      <div className="w-full px-4 md:px-8 py-6 space-y-6">
         {/* Ricerca */}
         <Card>
           <CardContent className="pt-6">
