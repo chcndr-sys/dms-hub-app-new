@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { ArrowLeft } from 'lucide-react';
-import MappaItaliaComponent from '@/components/MappaItaliaComponent';
+import MappaItaliaPubblica from '@/components/MappaItaliaPubblica';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 import { toast } from 'sonner';
 
@@ -24,8 +24,9 @@ const API_BASE_URL = MIHUB_API_BASE_URL;
  * MappaItaliaPage - Pagina Pubblica Mappa Italia
  * Gemello Digitale del Commercio Nazionale
  * 
- * Usa il componente MappaItaliaComponent (clonato da GestioneMercati)
+ * Usa il componente MappaItaliaPubblica (versione pubblica semplificata)
  * con la logica Vista Italia/Mercato e animazione zoom
+ * SENZA accesso a dati sensibili (anagrafica, imprese, editing)
  */
 export default function MappaItaliaPage() {
   const [, navigate] = useLocation();
@@ -82,7 +83,7 @@ export default function MappaItaliaPage() {
             <p className="text-[#e8fbff]/60">Caricamento mappa...</p>
           </div>
         ) : selectedMarket ? (
-          <MappaItaliaComponent preselectedMarketId={selectedMarket.id} />
+          <MappaItaliaPubblica preselectedMarketId={selectedMarket.id} />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-[#0b1220]">
             <p className="text-[#e8fbff]/60">Nessun mercato disponibile</p>

@@ -38,6 +38,7 @@ import { SharedWorkspace } from '@/components/SharedWorkspace';
 import NotificationsPanel from '@/components/NotificationsPanel';
 import ComuniPanel from '@/components/ComuniPanel';
 import WalletPanel from '@/components/WalletPanel';
+import GestioneHubPanel from '@/components/GestioneHubPanel';
 import { BusHubEditor } from '@/components/bus-hub';
 import { MessageContent } from '@/components/MessageContent';
 import { callOrchestrator } from '@/api/orchestratorClient';
@@ -4811,15 +4812,7 @@ export default function DashboardPA() {
 
           {/* TAB: GESTIONE HUB */}
           <TabsContent value="workspace" className="space-y-6">
-            <Card className="bg-[#1a2332] border-[#06b6d4]/30">
-              <CardContent className="pt-6">
-                <div className="text-center py-12">
-                  <Globe className="h-16 w-16 text-[#06b6d4]/40 mx-auto mb-4" />
-                  <p className="text-[#e8fbff]/60 text-lg">Gestione HUB</p>
-                  <p className="text-sm text-[#e8fbff]/40 mt-2">Contenuto da definire</p>
-                </div>
-              </CardContent>
-            </Card>
+            <GestioneHubPanel />
           </TabsContent>
 
         </Tabs>
