@@ -324,29 +324,42 @@ export default function RoutePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground p-3 shadow-md">
-        <div className="container max-w-2xl flex items-center gap-4">
-          <Link href="/">
-            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/20">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Navigation className="h-6 w-6" />
-            <h1 className="text-lg font-bold">Shopping Route Etico</h1>
+      {/* Header con gradient */}
+      <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-4 shadow-lg">
+        <div className="container max-w-4xl flex items-center gap-4">
+          <button
+            onClick={() => window.history.back()}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl">
+              <Navigation className="h-7 w-7" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Shopping Route Etico</h1>
+              <p className="text-xs text-white/70">Naviga sostenibile, guadagna crediti</p>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="container py-6 max-w-4xl space-y-6">
         {/* Form Pianificazione */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pianifica il tuo Percorso</CardTitle>
-            <CardDescription>
-              Ottimizziamo il tuo itinerario per risparmiare tempo e CO₂
-            </CardDescription>
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-card to-card/80 overflow-hidden">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-primary to-emerald-500 rounded-xl shadow-lg">
+                <MapPin className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Pianifica il tuo Percorso</CardTitle>
+                <CardDescription className="text-base">
+                  Ottimizziamo il tuo itinerario per risparmiare tempo e CO₂
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Modalità trasporto */}
@@ -447,8 +460,22 @@ export default function RoutePage() {
             )}
 
             {/* Pulsante pianifica */}
-            <Button onClick={handlePlanRoute} disabled={loading} className="w-full">
-              {loading ? 'Calcolo in corso...' : 'Pianifica Percorso'}
+            <Button 
+              onClick={handlePlanRoute} 
+              disabled={loading} 
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-600 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  Calcolo in corso...
+                </>
+              ) : (
+                <>
+                  <Navigation className="h-5 w-5 mr-2" />
+                  Pianifica Percorso
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -458,35 +485,43 @@ export default function RoutePage() {
           <>
             {/* Statistiche */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500/10 to-blue-600/5">
                 <CardContent className="pt-6 text-center">
-                  <MapPin className="h-6 w-6 mx-auto mb-2 text-blue-600" />
-                  <div className="text-2xl font-bold">{plan.totalDistance}</div>
-                  <div className="text-xs text-muted-foreground">km totali</div>
+                  <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <MapPin className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-3xl font-bold text-blue-600">{plan.totalDistance}</div>
+                  <div className="text-sm text-muted-foreground font-medium">km totali</div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-purple-500/10 to-purple-600/5">
                 <CardContent className="pt-6 text-center">
-                  <Clock className="h-6 w-6 mx-auto mb-2 text-purple-600" />
-                  <div className="text-2xl font-bold">{plan.totalTime}</div>
-                  <div className="text-xs text-muted-foreground">minuti</div>
+                  <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-3xl font-bold text-purple-600">{plan.totalTime}</div>
+                  <div className="text-sm text-muted-foreground font-medium">minuti</div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-green-500/10 to-green-600/5">
                 <CardContent className="pt-6 text-center">
-                  <Leaf className="h-6 w-6 mx-auto mb-2 text-green-600" />
-                  <div className="text-2xl font-bold">{plan.co2Saved}g</div>
-                  <div className="text-xs text-muted-foreground">CO₂ evitata</div>
+                  <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Leaf className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-3xl font-bold text-green-600">{plan.co2Saved}g</div>
+                  <div className="text-sm text-muted-foreground font-medium">CO₂ evitata</div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-amber-500/10 to-amber-600/5">
                 <CardContent className="pt-6 text-center">
-                  <TrendingUp className="h-6 w-6 mx-auto mb-2 text-amber-600" />
-                  <div className="text-2xl font-bold">+{plan.creditsEarned}</div>
-                  <div className="text-xs text-muted-foreground">crediti</div>
+                  <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="text-3xl font-bold text-amber-600">+{plan.creditsEarned}</div>
+                  <div className="text-sm text-muted-foreground font-medium">crediti</div>
                 </CardContent>
               </Card>
             </div>
@@ -594,10 +629,19 @@ export default function RoutePage() {
 
             {/* Azioni */}
             <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" onClick={() => setPlan(null)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setPlan(null)}
+                className="h-14 text-lg font-semibold border-2 hover:bg-muted/50 transition-all duration-300"
+              >
+                <ArrowLeft className="h-5 w-5 mr-2" />
                 Modifica
               </Button>
-              <Button onClick={handleStartNavigation} className="bg-green-600 hover:bg-green-700">
+              <Button 
+                onClick={handleStartNavigation} 
+                className="h-14 text-lg font-semibold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+              >
+                <Navigation className="h-5 w-5 mr-2" />
                 Avvia Navigazione
               </Button>
             </div>
@@ -605,18 +649,32 @@ export default function RoutePage() {
         )}
 
         {/* Info Box */}
-        <Card className="bg-green-50 border-green-200">
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-emerald-500/10 via-green-500/5 to-teal-500/10 overflow-hidden">
           <CardContent className="pt-6">
-            <div className="flex gap-3">
-              <Leaf className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-green-900">
-                <p className="font-semibold mb-1">Perché usare Shopping Route?</p>
-                <ul className="space-y-1 list-disc list-inside">
-                  <li>Percorso ottimizzato per risparmiare tempo</li>
-                  <li>Riduci le emissioni di CO₂</li>
-                  <li>Guadagna +15 eco-crediti al completamento</li>
-                  <li>Supporta il commercio locale e sostenibile</li>
-                </ul>
+            <div className="flex gap-4">
+              <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg flex-shrink-0">
+                <Leaf className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-lg text-emerald-700 mb-3">Perché usare Shopping Route?</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 p-2 bg-white/50 rounded-lg">
+                    <Clock className="h-4 w-4 text-emerald-600" />
+                    <span className="text-sm text-emerald-800">Percorso ottimizzato per risparmiare tempo</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white/50 rounded-lg">
+                    <Leaf className="h-4 w-4 text-emerald-600" />
+                    <span className="text-sm text-emerald-800">Riduci le emissioni di CO₂</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white/50 rounded-lg">
+                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                    <span className="text-sm text-emerald-800">Guadagna +15 eco-crediti al completamento</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white/50 rounded-lg">
+                    <Store className="h-4 w-4 text-emerald-600" />
+                    <span className="text-sm text-emerald-800">Supporta il commercio locale e sostenibile</span>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
