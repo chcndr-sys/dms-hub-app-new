@@ -1,4 +1,4 @@
-import { Home, Navigation, Wallet, MessageSquare, Store } from 'lucide-react';
+import { Home, Navigation, Wallet, MessageSquare, Store, Map } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { Button } from './ui/button';
 
@@ -6,7 +6,8 @@ export default function BottomNav() {
   const [location] = useLocation();
 
   const navItems = [
-    { path: '/', icon: Home, label: 'Mappa' },
+    { path: '/', icon: Home, label: 'Home' },
+    { path: '/mappa-italia', icon: Map, label: 'Mappa' },
     { path: '/route', icon: Navigation, label: 'Route' },
     { path: '/wallet', icon: Wallet, label: 'Wallet' },
     { path: '/civic', icon: MessageSquare, label: 'Segnala' },
