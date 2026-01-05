@@ -635,9 +635,9 @@ export default function VetrinePage() {
           )}
         </div>
 
-        {/* Modal Modifica Vetrina - v2 fix */}
-        {isEditModalOpen && (
-        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        {/* Modal Modifica Vetrina - Componente separato per evitare pre-rendering */}
+        {isEditModalOpen ? (
+        <Dialog open={true} onOpenChange={setIsEditModalOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>✏️ Modifica Vetrina</DialogTitle>
@@ -825,7 +825,7 @@ export default function VetrinePage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        )}
+        ) : null}
       </div>
     );
   }
