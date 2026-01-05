@@ -383,12 +383,13 @@ function PosteggiTabPubblica({
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const listContainerRef = React.useRef<HTMLDivElement>(null);
 
-  // Reset stato quando cambia il mercato
+  // Carica nuovi dati quando cambia il mercato
+  // IMPORTANTE: NON resettare mapData a null per mantenere l'animazione flyTo
   useEffect(() => {
     console.log('[PosteggiTabPubblica] marketId cambiato:', marketId);
-    setLoading(true);
-    setMapData(null);
     setSelectedStallId(null);
+    // Carica i nuovi dati in background senza resettare mapData
+    // Questo permette all'animazione di continuare mentre i dati vengono caricati
     fetchData();
   }, [marketId]);
 
