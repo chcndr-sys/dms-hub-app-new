@@ -436,107 +436,149 @@ export default function VetrinePage() {
         </header>
 
         <div className="max-w-7xl mx-auto py-6 px-4 space-y-6">
-          {/* Immagine Principale */}
-          {selectedImpresa.vetrina_immagine_principale && (
-            <div className="w-full h-64 rounded-lg overflow-hidden shadow-lg">
+          {/* Hero Section con Immagine Principale */}
+          {selectedImpresa.vetrina_immagine_principale ? (
+            <div className="relative w-full h-72 md:h-96 rounded-2xl overflow-hidden shadow-2xl group">
               <img
                 src={selectedImpresa.vetrina_immagine_principale}
                 alt={selectedImpresa.denominazione}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              {/* Info overlay */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                <h2 className="text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg">
+                  {selectedImpresa.denominazione}
+                </h2>
+                <div className="flex items-center gap-4">
+                  <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30">
+                    {selectedImpresa.settore || 'Commercio'}
+                  </Badge>
+                  <div className="flex items-center gap-1 bg-amber-500/90 backdrop-blur-sm px-2 py-1 rounded-full">
+                    <Star className="h-4 w-4 fill-white text-white" />
+                    <span className="font-semibold text-sm">{rating.toFixed(1)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+              <div className="text-center">
+                <Store className="h-16 w-16 text-primary/40 mx-auto mb-2" />
+                <h2 className="text-2xl font-bold text-foreground">{selectedImpresa.denominazione}</h2>
+                <Badge className="mt-2">{selectedImpresa.settore || 'Commercio'}</Badge>
+              </div>
             </div>
           )}
 
-          {/* Info Negozio */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-2xl">{selectedImpresa.denominazione}</CardTitle>
-                  <CardDescription className="mt-1">{selectedImpresa.settore || 'Commercio'}</CardDescription>
-                </div>
-                <div className="flex items-center gap-1 text-amber-500">
-                  <Star className="h-5 w-5 fill-current" />
-                  <span className="font-semibold">{rating.toFixed(1)}</span>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Descrizione */}
+          {/* Info Negozio - Card principale */}
+          <Card className="border-0 shadow-lg bg-card/80 backdrop-blur-sm">
+            <CardContent className="p-6 space-y-6">
+              {/* Descrizione con stile quote */}
               {selectedImpresa.vetrina_descrizione && (
-                <p className="text-muted-foreground">{selectedImpresa.vetrina_descrizione}</p>
+                <div className="relative">
+                  <div className="absolute -left-2 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-primary/30 rounded-full" />
+                  <p className="text-lg text-foreground/80 italic pl-4">
+                    "{selectedImpresa.vetrina_descrizione}"
+                  </p>
+                </div>
               )}
 
-              {/* Certificazioni/Badge */}
-              {selectedImpresa.settore && (
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    <Leaf className="h-3 w-3 mr-1" />
+              {/* Certificazioni/Badge migliorati */}
+              <div className="flex flex-wrap gap-2">
+                {selectedImpresa.settore && (
+                  <Badge variant="secondary" className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-700 border border-green-500/30 px-3 py-1">
+                    <Leaf className="h-3.5 w-3.5 mr-1.5" />
                     {selectedImpresa.settore}
                   </Badge>
-                </div>
-              )}
+                )}
+                <Badge variant="secondary" className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-700 border border-blue-500/30 px-3 py-1">
+                  <Award className="h-3.5 w-3.5 mr-1.5" />
+                  Verificato
+                </Badge>
+              </div>
 
-              {/* Contatti */}
-              <div className="space-y-2 text-sm">
+              {/* Contatti con design migliorato */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedImpresa.indirizzo && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>{selectedImpresa.indirizzo}, {selectedImpresa.comune}</span>
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <MapPin className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Indirizzo</p>
+                      <p className="text-sm font-medium">{selectedImpresa.indirizzo}</p>
+                      <p className="text-sm text-muted-foreground">{selectedImpresa.comune}</p>
+                    </div>
                   </div>
                 )}
                 {selectedImpresa.telefono && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Phone className="h-4 w-4" />
-                    <a href={`tel:${selectedImpresa.telefono}`} className="hover:text-primary">
-                      {selectedImpresa.telefono}
-                    </a>
-                  </div>
+                  <a href={`tel:${selectedImpresa.telefono}`} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
+                    <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                      <Phone className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Telefono</p>
+                      <p className="text-sm font-medium group-hover:text-primary transition-colors">{selectedImpresa.telefono}</p>
+                    </div>
+                  </a>
                 )}
                 {selectedImpresa.email && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-4 w-4" />
-                    <a href={`mailto:${selectedImpresa.email}`} className="hover:text-primary">
-                      {selectedImpresa.email}
-                    </a>
-                  </div>
+                  <a href={`mailto:${selectedImpresa.email}`} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
+                    <div className="p-2 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                      <Mail className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Email</p>
+                      <p className="text-sm font-medium group-hover:text-primary transition-colors truncate">{selectedImpresa.email}</p>
+                    </div>
+                  </a>
                 )}
               </div>
 
-              {/* Social Media */}
+              {/* Social Media - Design migliorato */}
               {(selectedImpresa.social_facebook || selectedImpresa.social_instagram || 
                 selectedImpresa.social_website || selectedImpresa.social_whatsapp) && (
-                <div className="pt-4 border-t">
-                  <h3 className="text-sm font-semibold mb-3">Seguici su:</h3>
-                  <div className="flex gap-3">
+                <div className="pt-6">
+                  <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wide">Seguici sui Social</h3>
+                  <div className="flex flex-wrap gap-3">
                     {selectedImpresa.social_facebook && (
                       <a
-                        href={selectedImpresa.social_facebook}
+                        href={selectedImpresa.social_facebook.startsWith('http') ? selectedImpresa.social_facebook : `https://facebook.com/${selectedImpresa.social_facebook}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg hover:scale-105"
                       >
                         <Facebook className="h-5 w-5" />
+                        <span className="text-sm font-medium">Facebook</span>
                       </a>
                     )}
                     {selectedImpresa.social_instagram && (
                       <a
-                        href={selectedImpresa.social_instagram}
+                        href={selectedImpresa.social_instagram.startsWith('@') 
+                          ? `https://instagram.com/${selectedImpresa.social_instagram.slice(1)}`
+                          : selectedImpresa.social_instagram.startsWith('http')
+                            ? selectedImpresa.social_instagram
+                            : `https://instagram.com/${selectedImpresa.social_instagram}`
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-full bg-pink-100 text-pink-600 hover:bg-pink-200 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 via-purple-500 to-orange-400 text-white hover:from-pink-600 hover:via-purple-600 hover:to-orange-500 transition-all shadow-md hover:shadow-lg hover:scale-105"
                       >
                         <Instagram className="h-5 w-5" />
+                        <span className="text-sm font-medium">Instagram</span>
                       </a>
                     )}
                     {selectedImpresa.social_website && (
                       <a
-                        href={selectedImpresa.social_website}
+                        href={selectedImpresa.social_website.startsWith('http') ? selectedImpresa.social_website : `https://${selectedImpresa.social_website}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 text-white hover:from-gray-700 hover:to-gray-800 transition-all shadow-md hover:shadow-lg hover:scale-105"
                       >
                         <Globe className="h-5 w-5" />
+                        <span className="text-sm font-medium">Sito Web</span>
                       </a>
                     )}
                     {selectedImpresa.social_whatsapp && (
@@ -544,55 +586,76 @@ export default function VetrinePage() {
                         href={`https://wa.me/${selectedImpresa.social_whatsapp.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg hover:scale-105"
                       >
                         <MessageCircle className="h-5 w-5" />
+                        <span className="text-sm font-medium">WhatsApp</span>
                       </a>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Azioni */}
-              <div className="grid grid-cols-2 gap-3 pt-4">
+              {/* Azioni principali - Design migliorato */}
+              <div className="grid grid-cols-2 gap-4 pt-6">
                 {selectedImpresa.telefono && (
-                  <Button variant="outline" asChild>
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    className="h-14 rounded-xl border-2 hover:bg-green-50 hover:border-green-500 hover:text-green-700 transition-all group"
+                    asChild
+                  >
                     <a href={`tel:${selectedImpresa.telefono}`}>
-                      <Phone className="h-4 w-4 mr-2" />
-                      Chiama
+                      <Phone className="h-5 w-5 mr-2 group-hover:animate-pulse" />
+                      <span className="font-semibold">Chiama Ora</span>
                     </a>
                   </Button>
                 )}
                 <Button 
-                  variant="outline"
+                  variant="default"
+                  size="lg"
+                  className="h-14 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all group"
                   onClick={() => handleNavigate(selectedImpresa)}
                 >
-                  <Navigation className="h-4 w-4 mr-2" />
-                  Come Arrivare
+                  <Navigation className="h-5 w-5 mr-2 group-hover:animate-bounce" />
+                  <span className="font-semibold">Come Arrivare</span>
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Gallery Immagini */}
+          {/* Gallery Immagini - Design migliorato */}
           {selectedImpresa.vetrina_gallery && selectedImpresa.vetrina_gallery.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Galleria Prodotti</CardTitle>
-                <CardDescription>Le nostre specialità</CardDescription>
+            <Card className="border-0 shadow-lg bg-card/80 backdrop-blur-sm overflow-hidden">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Store className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Galleria Prodotti</CardTitle>
+                    <CardDescription>Le nostre specialità</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {selectedImpresa.vetrina_gallery.map((imageUrl, index) => (
                     <div
                       key={index}
-                      className="aspect-square rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                      className="group relative aspect-square rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
                     >
                       <img
                         src={imageUrl}
                         alt={`Prodotto ${index + 1}`}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
+                      {/* Overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      {/* Number badge */}
+                      <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-sm font-bold text-primary shadow-lg">
+                        {index + 1}
+                      </div>
                     </div>
                   ))}
                 </div>
