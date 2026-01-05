@@ -413,7 +413,7 @@ export default function VetrinePage() {
                 variant="ghost"
                 size="icon"
                 className="text-primary-foreground hover:bg-primary-foreground/20"
-                onClick={() => navigate('/vetrine')}
+                onClick={() => window.history.back()}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
