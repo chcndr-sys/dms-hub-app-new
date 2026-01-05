@@ -12,8 +12,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Globe, MapPin, Building2, Coins, Bell, FileBarChart,
-  TrendingUp, Users, Store, Leaf, Activity, BarChart3,
-  Calendar, Clock, AlertCircle, CheckCircle, Award,
+  TrendingUp, TrendingDown, Users, Store, Leaf, Activity, BarChart3,
+  Calendar, Clock, AlertCircle, CheckCircle, Award, DollarSign, Sliders,
   ArrowUpRight, ArrowDownRight, Filter, Search, Download,
   Settings, Eye, Edit, Plus, RefreshCw, Loader2
 } from 'lucide-react';
@@ -113,6 +113,7 @@ interface HubData {
 export default function GestioneHubPanel() {
   const [activeSubTab, setActiveSubTab] = useState('cruscotto');
   const [selectedProvincia, setSelectedProvincia] = useState<string>('all');
+  const [selectedRuolo, setSelectedRuolo] = useState<string>('regione');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Stati per dati reali
@@ -239,6 +240,18 @@ export default function GestioneHubPanel() {
         </div>
         
         <div className="flex items-center gap-3">
+          {/* Selettore Ruolo */}
+          <Select value={selectedRuolo} onValueChange={setSelectedRuolo}>
+            <SelectTrigger className="w-[160px] bg-[#0b1220] border-[#8b5cf6]/30 text-[#e8fbff]">
+              <SelectValue placeholder="Seleziona Ruolo" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1a2332] border-[#8b5cf6]/30">
+              <SelectItem value="regione">🏛️ Regione</SelectItem>
+              <SelectItem value="comune">🏘️ Comune</SelectItem>
+              <SelectItem value="associazione">🤝 Associazione</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select value={selectedProvincia} onValueChange={setSelectedProvincia}>
             <SelectTrigger className="w-[180px] bg-[#0b1220] border-[#06b6d4]/30 text-[#e8fbff]">
               <SelectValue placeholder="Filtra Provincia" />
@@ -556,21 +569,205 @@ export default function GestioneHubPanel() {
         </TabsContent>
 
         {/* ================================================================ */}
-        {/* TAB 4: ECOCARBON */}
+        {/* TAB 4: ECOCARBON - CARBON CREDIT */}
         {/* ================================================================ */}
-        <TabsContent value="ecocarbon" className="mt-6">
-          <Card className="bg-[#1a2332] border-[#f59e0b]/30">
+        <TabsContent value="ecocarbon" className="space-y-6 mt-6">
+          {/* Fondo Liquidità */}
+          <Card className="bg-[#1a2332] border-[#14b8a6]/30">
             <CardHeader>
               <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                <Coins className="h-5 w-5 text-[#f59e0b]" />
-                Sistema EcoCarbonCredit
+                <DollarSign className="h-5 w-5 text-[#14b8a6]" />
+                Fondo Liquidità Carbon Credit
               </CardTitle>
               <CardDescription className="text-[#e8fbff]/60">
-                Configurazione e monitoraggio crediti sostenibilità
+                Gestione e monitoraggio del fondo per i crediti sostenibilità
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <WalletPanel />
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 bg-gradient-to-br from-[#10b981]/20 to-[#10b981]/5 border border-[#10b981]/30 rounded-lg">
+                  <div className="text-sm text-[#e8fbff]/70 mb-1">Saldo Attuale</div>
+                  <div className="text-3xl font-bold text-[#10b981]">€125.000</div>
+                </div>
+                <div className="p-4 bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg">
+                  <div className="text-sm text-[#e8fbff]/70 mb-1">Burn Rate</div>
+                  <div className="text-2xl font-bold text-[#f59e0b]">€8.500<span className="text-sm text-[#e8fbff]/70">/mese</span></div>
+                </div>
+                <div className="p-4 bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg">
+                  <div className="text-sm text-[#e8fbff]/70 mb-1">Mesi Rimanenti</div>
+                  <div className="text-2xl font-bold text-[#14b8a6]">14.7</div>
+                </div>
+                <div className="p-4 bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg">
+                  <div className="text-sm text-[#e8fbff]/70 mb-1">Valuta</div>
+                  <div className="text-2xl font-bold text-[#e8fbff]">EUR</div>
+                </div>
+              </div>
+
+              {/* Entrate */}
+              <div className="mb-4">
+                <h4 className="text-[#e8fbff] font-semibold mb-3 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-[#10b981]" />
+                  Entrate Fondo
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Coins className="h-5 w-5 text-[#10b981]" />
+                      <div>
+                        <div className="text-[#e8fbff] font-medium">Contributo Regionale</div>
+                        <div className="text-xs text-[#e8fbff]/50">Gen 2026</div>
+                      </div>
+                    </div>
+                    <div className="text-[#10b981] font-semibold">+€50.000</div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Coins className="h-5 w-5 text-[#10b981]" />
+                      <div>
+                        <div className="text-[#e8fbff] font-medium">Canone Mercati</div>
+                        <div className="text-xs text-[#e8fbff]/50">Dic 2025</div>
+                      </div>
+                    </div>
+                    <div className="text-[#10b981] font-semibold">+€35.000</div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Coins className="h-5 w-5 text-[#10b981]" />
+                      <div>
+                        <div className="text-[#e8fbff] font-medium">Sponsor Sostenibilità</div>
+                        <div className="text-xs text-[#e8fbff]/50">Nov 2025</div>
+                      </div>
+                    </div>
+                    <div className="text-[#10b981] font-semibold">+€40.000</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Uscite */}
+              <div>
+                <h4 className="text-[#e8fbff] font-semibold mb-3 flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-[#ef4444]" />
+                  Uscite Fondo
+                </h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg">
+                    <div className="text-xs text-[#e8fbff]/70 mb-1">Rimborsi</div>
+                    <div className="text-xl font-bold text-[#ef4444]">€45.000</div>
+                  </div>
+                  <div className="p-3 bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg">
+                    <div className="text-xs text-[#e8fbff]/70 mb-1">Incentivi</div>
+                    <div className="text-xl font-bold text-[#f59e0b]">€25.000</div>
+                  </div>
+                  <div className="p-3 bg-[#8b5cf6]/10 border border-[#8b5cf6]/30 rounded-lg">
+                    <div className="text-xs text-[#e8fbff]/70 mb-1">Operativi</div>
+                    <div className="text-xl font-bold text-[#8b5cf6]">€5.000</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Valore TCC e Statistiche */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Valore TCC */}
+            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Coins className="h-5 w-5 text-[#14b8a6]" />
+                  Valore Token Carbon Credit (TCC)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-6">
+                  <div className="text-sm text-[#e8fbff]/70 mb-2">Valore Corrente</div>
+                  <div className="text-5xl font-bold text-[#14b8a6] mb-1">€0,85</div>
+                  <div className="text-sm text-[#e8fbff]/50">per 1 TCC</div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="text-sm text-[#e8fbff]/70 mb-3">Storico Variazioni</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-[#0b1220] rounded">
+                      <span className="text-xs text-[#e8fbff]/70">Gen 2026</span>
+                      <span className="text-sm font-semibold text-[#14b8a6]">€0,85</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-[#0b1220] rounded">
+                      <span className="text-xs text-[#e8fbff]/70">Dic 2025</span>
+                      <span className="text-sm font-semibold text-[#14b8a6]">€0,80</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-[#0b1220] rounded">
+                      <span className="text-xs text-[#e8fbff]/70">Nov 2025</span>
+                      <span className="text-sm font-semibold text-[#14b8a6]">€0,75</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Rimborsi e Top Negozi */}
+            <Card className="bg-[#1a2332] border-[#f59e0b]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Store className="h-5 w-5 text-[#f59e0b]" />
+                  Rimborsi Carbon Credit
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="p-3 bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg">
+                    <div className="text-xs text-[#e8fbff]/70 mb-1">In Attesa</div>
+                    <div className="text-2xl font-bold text-[#f59e0b]">12</div>
+                    <div className="text-xs text-[#e8fbff]/50">€3.450 da processare</div>
+                  </div>
+                  <div className="p-3 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg">
+                    <div className="text-xs text-[#e8fbff]/70 mb-1">Processati</div>
+                    <div className="text-2xl font-bold text-[#10b981]">156</div>
+                    <div className="text-xs text-[#e8fbff]/50">€45.000 totali</div>
+                  </div>
+                </div>
+
+                <h4 className="text-[#e8fbff] font-semibold mb-3">Top Negozi per Crediti Incassati</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-2 bg-[#0b1220] rounded">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-[#fbbf24] text-black">1°</Badge>
+                      <span className="text-sm text-[#e8fbff]">Bio Market Toscana</span>
+                    </div>
+                    <span className="text-sm font-semibold text-[#10b981]">€8.500</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-[#0b1220] rounded">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-[#94a3b8] text-black">2°</Badge>
+                      <span className="text-sm text-[#e8fbff]">Frutta Fresca Modena</span>
+                    </div>
+                    <span className="text-sm font-semibold text-[#10b981]">€6.200</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 bg-[#0b1220] rounded">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-[#cd7f32] text-black">3°</Badge>
+                      <span className="text-sm text-[#e8fbff]">Ortofrutta Km0</span>
+                    </div>
+                    <span className="text-sm font-semibold text-[#10b981]">€5.100</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Info TPAS */}
+          <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-[#8b5cf6]/20 rounded-lg">
+                  <Leaf className="h-6 w-6 text-[#8b5cf6]" />
+                </div>
+                <div>
+                  <h4 className="text-[#e8fbff] font-semibold mb-1">Mapping Ecocrediti TPAS</h4>
+                  <p className="text-sm text-[#e8fbff]/60">
+                    Il sistema è predisposto per l'integrazione con TPAS. Quando attivo (2027+), i TCC saranno automaticamente convertiti in Ecocrediti ufficiali e il fondo sarà alimentato dal Fondo TPAS nazionale.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
