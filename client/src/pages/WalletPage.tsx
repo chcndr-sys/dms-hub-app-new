@@ -27,24 +27,46 @@ export default function WalletPage() {
 
   return (
     <div className="min-h-screen bg-background pb-16">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground p-3 shadow-md">
-        <div className="container max-w-2xl flex items-center gap-3 justify-center">
-          <Wallet className="h-6 w-6" />
-          <h1 className="text-lg font-bold">Wallet Carbon Credit</h1>
+      {/* Header con gradient */}
+      <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-4 shadow-lg">
+        <div className="w-full px-4 md:px-8 flex items-center gap-4">
+          <button
+            onClick={() => window.history.back()}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl">
+              <Wallet className="h-7 w-7" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Wallet Carbon Credit</h1>
+              <p className="text-xs text-white/70">I tuoi eco-crediti sostenibili</p>
+            </div>
+          </div>
         </div>
       </header>
 
-      <div className="container max-w-2xl py-4 space-y-4 px-4">
+      <div className="w-full px-4 md:px-8 py-6 space-y-6">
         {/* Saldo Principale */}
-        <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-0">
-          <CardHeader>
-            <CardTitle className="text-primary-foreground">Saldo Eco-Crediti</CardTitle>
-            <CardDescription className="text-primary-foreground/70">I tuoi crediti sostenibili</CardDescription>
+        <Card className="bg-gradient-to-br from-primary via-primary/90 to-emerald-600 text-primary-foreground border-0 shadow-2xl overflow-hidden">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 rounded-xl">
+                <Wallet className="h-8 w-8" />
+              </div>
+              <div>
+                <CardTitle className="text-primary-foreground text-xl">Saldo Eco-Crediti</CardTitle>
+                <CardDescription className="text-primary-foreground/70">I tuoi crediti sostenibili</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-6xl font-bold mb-2">{balance}</div>
-            <p className="text-primary-foreground/80 text-sm">crediti disponibili</p>
+            <div className="text-7xl font-bold mb-2 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">{balance}</div>
+            <p className="text-primary-foreground/80 text-base">crediti disponibili</p>
           </CardContent>
         </Card>
 
@@ -64,28 +86,28 @@ export default function WalletPage() {
         </Card>
 
         {/* Impatto Ambientale */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center gap-2 pb-2">
-              <Leaf className="h-5 w-5 text-primary" />
-              <CardTitle className="text-sm text-foreground">CO₂ Evitata</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">{co2Saved} kg</div>
-              <p className="text-xs text-card-foreground/60">
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-green-500/10 to-green-600/5">
+            <CardContent className="pt-6 text-center">
+              <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Leaf className="h-7 w-7 text-white" />
+              </div>
+              <div className="text-4xl font-bold text-green-600">{co2Saved} kg</div>
+              <div className="text-sm text-muted-foreground font-medium">CO₂ Evitata</div>
+              <p className="text-xs text-muted-foreground mt-2">
                 Equivalente a {treesEquivalent} alberi piantati
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center gap-2 pb-2">
-              <Award className="h-5 w-5 text-secondary" />
-              <CardTitle className="text-sm text-foreground">Livello</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-secondary">Oro</div>
-              <p className="text-xs text-card-foreground/60">
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-amber-500/10 to-amber-600/5">
+            <CardContent className="pt-6 text-center">
+              <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Award className="h-7 w-7 text-white" />
+              </div>
+              <div className="text-4xl font-bold text-amber-600">Oro</div>
+              <div className="text-sm text-muted-foreground font-medium">Livello</div>
+              <p className="text-xs text-muted-foreground mt-2">
                 Top 5% utenti più sostenibili
               </p>
             </CardContent>
@@ -127,11 +149,11 @@ export default function WalletPage() {
         </Card>
 
         {/* Azioni */}
-        <div className="grid grid-cols-2 gap-3">
-          <Button className="w-full bg-primary hover:bg-primary/90">
+        <div className="grid grid-cols-2 gap-4">
+          <Button className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-600 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
             Riscatta Crediti
           </Button>
-          <Button variant="outline" className="w-full border-border text-foreground hover:bg-card">
+          <Button variant="outline" className="w-full h-14 text-lg font-semibold border-2 hover:bg-muted/50 transition-all duration-300">
             Classifica
           </Button>
         </div>
