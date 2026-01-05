@@ -382,14 +382,14 @@ function PosteggiTabPubblica({
   const [selectedStallId, setSelectedStallId] = useState<number | null>(null);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const listContainerRef = React.useRef<HTMLDivElement>(null);
+  // Flag per tracciare se il cambio mercato è stato triggato da un click sul marker
+  const pendingMarkerClickRef = React.useRef<boolean>(false);
 
   // Carica nuovi dati quando cambia il mercato
-  // IMPORTANTE: NON resettare mapData a null per mantenere l'animazione flyTo
   useEffect(() => {
-    console.log('[PosteggiTabPubblica] marketId cambiato:', marketId);
+    console.log('[PosteggiTabPubblica] marketId cambiato:', marketId, 'pendingMarkerClick:', pendingMarkerClickRef.current);
     setSelectedStallId(null);
-    // Carica i nuovi dati in background senza resettare mapData
-    // Questo permette all'animazione di continuare mentre i dati vengono caricati
+    // Carica i nuovi dati - l'animazione partirà DOPO che i dati sono pronti
     fetchData();
   }, [marketId]);
 
@@ -409,13 +409,37 @@ function PosteggiTabPubblica({
       }
       if (mapDataRes.success) {
         setMapData(mapDataRes.data);
+        // Se c'è un click marker pendente, triggera l'animazione ORA che i dati sono pronti
+        if (pendingMarkerClickRef.current) {
+          console.log('[PosteggiTabPubblica] Dati GIS pronti, triggero animazione');
+          pendingMarkerClickRef.current = false;
+          setViewMode('mercato');
+          // Piccolo delay per assicurarsi che React abbia aggiornato lo stato
+          setTimeout(() => {
+            setViewTrigger(prev => prev + 1);
+          }, 50);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Errore nel caricamento dei dati');
+      pendingMarkerClickRef.current = false;
     } finally {
       setLoading(false);
     }
+  };
+
+  // Funzione per gestire il click su un marker - chiamata da MarketMapComponent
+  const handleMarkerClick = (clickedMarketId: number) => {
+    console.log('[PosteggiTabPubblica] handleMarkerClick:', clickedMarketId);
+    // Imposta il flag PRIMA di cambiare mercato
+    pendingMarkerClickRef.current = true;
+    // Aggiorna il mercato nel componente padre - questo triggererà il fetch
+    if (onMarketChange) {
+      onMarketChange(clickedMarketId);
+    }
+    // NON chiamare setViewMode/setViewTrigger qui!
+    // L'animazione partirà in fetchData quando i dati sono pronti
   };
 
   // Calcola statistiche
@@ -512,15 +536,7 @@ function PosteggiTabPubblica({
               showItalyView={viewMode === 'italia'}
               viewTrigger={viewTrigger}
               marketCenterFixed={marketCenter}
-              onMarketClick={(clickedMarketId) => {
-                // Prima aggiorna il mercato selezionato nel componente padre
-                if (onMarketChange) {
-                  onMarketChange(clickedMarketId);
-                }
-                // Poi passa alla vista mercato
-                setViewMode('mercato');
-                setViewTrigger(prev => prev + 1);
-              }}
+              onMarketClick={handleMarkerClick}
             />
           );
         })()}
