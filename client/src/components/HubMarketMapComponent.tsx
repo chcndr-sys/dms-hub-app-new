@@ -287,6 +287,35 @@ export function HubMarketMapComponent({
     return bounds;
   }, [mapData]);
   
+  // Calcola bounds dinamici dall'area_geojson dell'HUB selezionato
+  const hubBounds = React.useMemo(() => {
+    if (!selectedHub?.area_geojson) return null;
+    
+    try {
+      // Parse area_geojson se è una stringa
+      const areaGeojson = typeof selectedHub.area_geojson === 'string' 
+        ? JSON.parse(selectedHub.area_geojson) 
+        : selectedHub.area_geojson;
+      
+      if (areaGeojson?.type !== 'Polygon' || !areaGeojson.coordinates?.[0]) return null;
+      
+      // Converti coordinate GeoJSON [lng, lat] in Leaflet [lat, lng]
+      const allCoords: [number, number][] = areaGeojson.coordinates[0].map(
+        (c: number[]) => [c[1], c[0]] as [number, number]
+      );
+      
+      if (allCoords.length === 0) return null;
+      
+      // Crea LatLngBounds da tutte le coordinate
+      const bounds = L.latLngBounds(allCoords);
+      console.log('[DEBUG] Bounds HUB calcolati:', bounds.toBBoxString());
+      return bounds;
+    } catch (e) {
+      console.error('[DEBUG] Errore parsing area_geojson HUB:', e);
+      return null;
+    }
+  }, [selectedHub]);
+  
   console.log('[DEBUG MarketMapComponent] RICEVUTO:', {
     refreshKey,
     stallsDataLength: stallsData.length,
@@ -383,12 +412,12 @@ export function HubMarketMapComponent({
           {/* Componente per aggiornare font size dinamicamente con zoom */}
           <ZoomFontUpdater minZoom={18} baseFontSize={8} scaleFactor={1.5} />
           
-          {/* Controller per centrare mappa programmaticamente (cambio vista Italia/Mercato) */}
+          {/* Controller per centrare mappa programmaticamente (cambio vista Italia/Mercato/HUB) */}
           <MapCenterController 
             center={mapCenter} 
             zoom={effectiveZoom} 
             trigger={viewTrigger}
-            bounds={marketBounds || undefined}
+            bounds={mode === 'hub' ? (hubBounds || undefined) : (marketBounds || undefined)}
             isMarketView={!showItalyView}
           />
           
