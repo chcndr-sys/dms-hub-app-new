@@ -177,16 +177,16 @@ export default function GestioneHubMapWrapper() {
     toast.info(`Negozio ${shop.letter}: ${shop.name}`);
   };
 
-  // Filtra elementi in base alla ricerca
-  const filteredMarkets = markets.filter(m => 
-    m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  // Filtra elementi in base alla ricerca (con controllo array)
+  const filteredMarkets = Array.isArray(markets) ? markets.filter(m => 
+    m.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.comune?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
 
-  const filteredHubs = hubs.filter(h => 
-    h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredHubs = Array.isArray(hubs) ? hubs.filter(h => 
+    h.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     h.city?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
 
   // Lista elementi da mostrare
   const currentList = mode === 'mercato' ? filteredMarkets : filteredHubs;
@@ -342,13 +342,13 @@ export default function GestioneHubMapWrapper() {
                   <div className="p-3 bg-[#0b1220] rounded-lg border border-[#10b981]/30">
                     <div className="text-[#e8fbff]/60 text-xs">Occupati</div>
                     <div className="text-[#10b981] text-xl font-bold">
-                      {stallsData.filter(s => s.status === 'occupied').length}
+                      {Array.isArray(stallsData) ? stallsData.filter(s => s.status === 'occupied').length : 0}
                     </div>
                   </div>
                   <div className="p-3 bg-[#0b1220] rounded-lg border border-[#6b7280]/30">
                     <div className="text-[#e8fbff]/60 text-xs">Liberi</div>
                     <div className="text-[#6b7280] text-xl font-bold">
-                      {stallsData.filter(s => s.status === 'free').length}
+                      {Array.isArray(stallsData) ? stallsData.filter(s => s.status === 'free').length : 0}
                     </div>
                   </div>
                 </>
