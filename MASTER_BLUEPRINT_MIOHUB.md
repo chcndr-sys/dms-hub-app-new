@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.16.1  
-> **Data:** 4 Gennaio 2026  
+> **Versione:** 3.17.0  
+> **Data:** 6 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1247,3 +1247,69 @@ const cedenteResponse = await fetch(`/api/imprese/${cedente_impresa_id}`);
 > **Nota:** Questo documento è la fonte di verità per il sistema MIO HUB.
 > Ogni agente AI deve leggerlo prima di effettuare modifiche.
 > Per documentazione dettagliata, consultare le cartelle LIVE_SYSTEM_DEC2025 e 00_LEGACY_ARCHIVE.
+
+
+---
+
+## 🛠️ TOOLS DI DIGITALIZZAZIONE MERCATI
+
+### ⚠️ IMPORTANTE - POSIZIONE UFFICIALE DEI TOOLS
+
+**TUTTI i tools di digitalizzazione mercati sono ospitati su HETZNER (api.mio-hub.me).**
+
+La versione su GitHub Pages (chcndr.github.io) è **DEPRECATA** e fa redirect automatico a Hetzner.
+
+### URL Ufficiali dei Tools
+
+| Tool | URL Ufficiale | Descrizione |
+|------|---------------|-------------|
+| **BUS HUB** | https://api.mio-hub.me/tools/bus_hub.html | Centro di controllo workflow digitalizzazione |
+| **Slot Editor V3** | https://api.mio-hub.me/tools/slot_editor_v3_unified.html | Editor principale per piante mercati, posteggi, HUB |
+| **PNG Transparent Tool** | https://api.mio-hub.me/tools/stalls_alpha_tool.html | Rimozione sfondo piante mercato |
+
+### ❌ URL Deprecati (NON USARE)
+
+| URL Deprecato | Stato |
+|---------------|-------|
+| chcndr.github.io/dms-gemello-core/tools/bus_hub.html | ⚠️ Redirect a Hetzner |
+| chcndr.github.io/dms-gemello-core/tools/slot_editor_v3_unified.html | ⚠️ Redirect a Hetzner |
+
+### Workflow Digitalizzazione Mercato
+
+```
+1. BUS HUB → Configura nome mercato, coordinate, città
+      ↓
+2. PNG Transparent Tool → Carica pianta e rimuovi sfondo
+      ↓
+3. Slot Editor V3 → Georeferenzia pianta, crea posteggi, marker, aree
+      ↓
+4. Salva nel Database → Esporta in PostgreSQL (Neon)
+```
+
+### Funzionalità Slot Editor V3
+
+- **Posteggi:** Crea/modifica/elimina posteggi con dimensioni e rotazione
+- **Marker:** Aggiungi marker personalizzati (servizi, ingressi, etc.)
+- **Negozi (Shops):** Aggiungi negozi fissi come Point scalabili
+- **Aree:** Disegna aree personalizzate (zone, settori)
+- **HUB:** Crea HUB indipendenti con centro e area poligonale
+- **Esporta:** GeoJSON, Dashboard Admin, Database PostgreSQL
+
+### Storage Dati
+
+| Tipo | Storage | Chiave |
+|------|---------|--------|
+| Autosave completo | localStorage | `v3_autosave` |
+| Dati HUB | localStorage | `dms_hub_data` |
+| Posizione pianta | localStorage | `plant_marker_position` |
+| Posizioni posteggi | localStorage | `slots_positions` |
+
+### Accesso dalla Dashboard PA
+
+Il pulsante **"BUS HUB"** nella Dashboard PA (dms-hub-app-new.vercel.app/dashboard-pa) apre direttamente:
+```
+https://api.mio-hub.me/tools/bus_hub.html
+```
+
+---
+
