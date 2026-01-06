@@ -1409,7 +1409,7 @@ export default function DashboardPA() {
             <QuickAccessButton href="/vetrine" icon={<Store className="h-5 w-5" />} label="Vetrine" />
             <QuickAccessButton href="/hub-operatore" icon={<Activity className="h-5 w-5" />} label="Hub Operatore" color="orange" />
             <button
-              onClick={() => window.open('https://chcndr.github.io/dms-gemello-core/tools/bus_hub.html', '_blank')}
+              onClick={() => window.open('https://api.mio-hub.me/tools/bus_hub.html', '_blank')}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/20 text-[#8b5cf6]"
             >
               <Wrench className="h-5 w-5" />
