@@ -27,6 +27,7 @@ import CouncilPage from "./pages/CouncilPage";
 import SuapDashboard from "./pages/suap/SuapDashboard";
 import SuapList from "./pages/suap/SuapList";
 import SuapDetail from "./pages/suap/SuapDetail";
+import HubMapTestPage from "./pages/HubMapTestPage";
 
 function Router() {
   return (
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/suap" component={SuapDashboard} />
       <Route path="/suap/list" component={SuapList} />
       <Route path="/suap/detail/:id" component={SuapDetail} />
+      <Route path="/hub-map-test" component={HubMapTestPage} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

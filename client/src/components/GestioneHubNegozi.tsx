@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Building2, Store, Wrench, MapPin, Phone, Mail, Clock, Plus, Edit, Trash2, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 import { MarketMapComponent } from './MarketMapComponent';
+import { HubMapComponent } from './HubMapComponent';
+import { MIHUB_API_BASE_URL } from '@/config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -27,11 +29,17 @@ export default function GestioneHubNegozi() {
   const [selectedTab, setSelectedTab] = useState('anagrafica');
   
   // MAP STATE - Unified Logic
-  const [viewMode, setViewMode] = useState<'italia' | 'mercato'>('italia');
+  const [viewMode, setViewMode] = useState<'italia' | 'mercato' | 'hub'>('italia');
+  const [mapType, setMapType] = useState<'mercati' | 'hub'>('mercati'); // Selettore tipo mappa
   const [selectedMarketId, setSelectedMarketId] = useState<number | null>(null);
   const [mapData, setMapData] = useState<any>(null);
   const [stallsData, setStallsData] = useState<any[]>([]);
   const [mapRefreshKey, setMapRefreshKey] = useState(0);
+  
+  // HUB MAP STATE
+  const [allHubLocations, setAllHubLocations] = useState<any[]>([]);
+  const [selectedHubLocation, setSelectedHubLocation] = useState<any>(null);
+  const [hubMapLoading, setHubMapLoading] = useState(false);
   
   // Default HUB selection (kept for backward compatibility with tabs)
   const [selectedHubId, setSelectedHubId] = useState(1); 
@@ -288,7 +296,71 @@ export default function GestioneHubNegozi() {
   const handleBackToItaly = () => {
     setViewMode('italia');
     setSelectedMarketId(null);
+    setSelectedHubLocation(null);
     setStallsData([]);
+    setMapRefreshKey(prev => prev + 1);
+  };
+
+  // ============ HUB MAP FUNCTIONS ============
+  
+  // Load all HUB locations
+  useEffect(() => {
+    if (mapType === 'hub') {
+      loadAllHubs();
+    }
+  }, [mapType]);
+
+  const loadAllHubs = async () => {
+    setHubMapLoading(true);
+    try {
+      const response = await fetch(`${MIHUB_API_BASE_URL}/api/hub/locations`);
+      const json = await response.json();
+      console.log('[GestioneHubNegozi] Loaded HUBs:', json);
+      if (json.success && Array.isArray(json.data)) {
+        setAllHubLocations(json.data);
+      }
+    } catch (error) {
+      console.error('[GestioneHubNegozi] Error loading HUBs:', error);
+    } finally {
+      setHubMapLoading(false);
+    }
+  };
+
+  // Load single HUB details
+  const loadHubDetails = async (hubId: number) => {
+    setHubMapLoading(true);
+    try {
+      const response = await fetch(`${MIHUB_API_BASE_URL}/api/hub/locations/${hubId}`);
+      const json = await response.json();
+      console.log('[GestioneHubNegozi] HUB Details:', json);
+      if (json.success && json.data) {
+        setSelectedHubLocation(json.data);
+        setViewMode('hub');
+        setMapRefreshKey(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('[GestioneHubNegozi] Error loading HUB details:', error);
+    } finally {
+      setHubMapLoading(false);
+    }
+  };
+
+  // Handle HUB click from map
+  const handleHubClick = (hubId: number) => {
+    loadHubDetails(hubId);
+  };
+
+  // Handle shop click from map
+  const handleShopClick = (shop: any) => {
+    console.log('[GestioneHubNegozi] Shop clicked:', shop);
+  };
+
+  // Handle map type change
+  const handleMapTypeChange = (type: 'mercati' | 'hub') => {
+    setMapType(type);
+    setViewMode('italia');
+    setSelectedMarketId(null);
+    setSelectedHubLocation(null);
     setMapRefreshKey(prev => prev + 1);
   };
 
@@ -1050,23 +1122,57 @@ export default function GestioneHubNegozi() {
       <Card className="bg-[#1a2332] border-[#14b8a6]/30">
         <CardHeader className="flex flex-col gap-4">
           <div className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                {viewMode === 'italia' ? 'Pianta Mercati - Vista Italia' : `Pianta Mercato ${selectedMarketId === 1 ? 'Grosseto' : 'Modena'} - GIS Interattiva`}
-              </CardTitle>
-              <CardDescription className="text-[#e8fbff]/70">
-                {viewMode === 'italia' 
-                  ? 'Seleziona un mercato dalla mappa per visualizzare i dettagli' 
-                  : 'Visualizzazione geografica dei posteggi e delle concessioni'}
-              </CardDescription>
+            <div className="flex items-center gap-4">
+              {/* SELETTORE TIPO MAPPA */}
+              <div className="flex bg-[#0b1220] rounded-lg p-1 border border-[#14b8a6]/30">
+                <button
+                  onClick={() => handleMapTypeChange('mercati')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    mapType === 'mercati'
+                      ? 'bg-[#ef4444] text-white shadow-lg'
+                      : 'text-[#e8fbff]/70 hover:text-white hover:bg-[#1a2332]'
+                  }`}
+                >
+                  🏪 Mercati
+                </button>
+                <button
+                  onClick={() => handleMapTypeChange('hub')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    mapType === 'hub'
+                      ? 'bg-[#9C27B0] text-white shadow-lg'
+                      : 'text-[#e8fbff]/70 hover:text-white hover:bg-[#1a2332]'
+                  }`}
+                >
+                  🏢 HUB
+                </button>
+              </div>
+              
+              <div>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  {mapType === 'mercati' 
+                    ? (viewMode === 'italia' ? 'Pianta Mercati - Vista Italia' : `Pianta Mercato ${selectedMarketId === 1 ? 'Grosseto' : 'Modena'} - GIS Interattiva`)
+                    : (viewMode === 'italia' ? 'Mappa HUB - Vista Italia' : `HUB: ${selectedHubLocation?.name || ''} - Negozi`)
+                  }
+                </CardTitle>
+                <CardDescription className="text-[#e8fbff]/70">
+                  {mapType === 'mercati'
+                    ? (viewMode === 'italia' 
+                        ? 'Seleziona un mercato dalla mappa per visualizzare i dettagli' 
+                        : 'Visualizzazione geografica dei posteggi e delle concessioni')
+                    : (viewMode === 'italia'
+                        ? `${allHubLocations.length} HUB disponibili - Clicca per vedere i negozi`
+                        : `${selectedHubLocation?.shops?.length || 0} negozi in questo HUB`)
+                  }
+                </CardDescription>
+              </div>
             </div>
             
             {/* Pulsante Torna alla Vista Italia */}
-            {viewMode === 'mercato' && (
+            {(viewMode === 'mercato' || viewMode === 'hub') && (
               <Button 
                 variant="outline" 
-                className="border-[#14b8a6]/50 text-[#14b8a6] hover:bg-[#14b8a6]/10"
+                className={`border-${mapType === 'hub' ? '[#9C27B0]' : '[#14b8a6]'}/50 text-${mapType === 'hub' ? '[#9C27B0]' : '[#14b8a6]'} hover:bg-${mapType === 'hub' ? '[#9C27B0]' : '[#14b8a6]'}/10`}
                 onClick={handleBackToItaly}
               >
                 🌍 Torna alla Vista Italia
@@ -1102,35 +1208,62 @@ export default function GestioneHubNegozi() {
           </div>
         </CardHeader>
         <CardContent>
-          {mapData ? (
-            <div className="h-[600px] rounded-lg overflow-hidden relative">
+          <div className="h-[600px] rounded-lg overflow-hidden relative">
+            {/* MAPPA MERCATI */}
+            {mapType === 'mercati' && mapData && (
               <MarketMapComponent
                 refreshKey={mapRefreshKey}
                 mapData={mapData}
                 stallsData={stallsData}
-                // Se siamo in vista Italia, usa zoom basso e centro Italia. Se mercato, zoom alto e centro mercato.
                 center={viewMode === 'mercato' ? undefined : [42.5, 12.5]} 
                 zoom={viewMode === 'mercato' ? 18 : 6}
                 showItalyView={viewMode === 'italia'}
                 onMarketClick={handleMarketSelect}
                 height="100%"
               />
-              
-              {/* Overlay caricamento se stiamo cambiando mercato */}
-              {viewMode === 'mercato' && stallsData.length === 0 && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[1000]">
-                  <div className="bg-[#1e293b] p-4 rounded-lg shadow-xl flex items-center gap-3 border border-[#14b8a6]/30">
-                    <Loader2 className="h-6 w-6 animate-spin text-[#14b8a6]" />
-                    <span className="text-white font-medium">Caricamento mercato...</span>
-                  </div>
+            )}
+            
+            {/* MAPPA HUB */}
+            {mapType === 'hub' && (
+              <HubMapComponent
+                refreshKey={mapRefreshKey}
+                hubData={selectedHubLocation}
+                allHubs={allHubLocations}
+                showItalyView={viewMode === 'italia'}
+                onHubClick={handleHubClick}
+                onShopClick={handleShopClick}
+                zoom={viewMode === 'hub' ? 18 : 6}
+                height="100%"
+              />
+            )}
+            
+            {/* Overlay caricamento Mercati */}
+            {mapType === 'mercati' && viewMode === 'mercato' && stallsData.length === 0 && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[1000]">
+                <div className="bg-[#1e293b] p-4 rounded-lg shadow-xl flex items-center gap-3 border border-[#14b8a6]/30">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#14b8a6]" />
+                  <span className="text-white font-medium">Caricamento mercato...</span>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="h-[600px] flex items-center justify-center bg-[#0b1220] rounded-lg">
-              <Loader2 className="h-8 w-8 animate-spin text-[#14b8a6]" />
-            </div>
-          )}
+              </div>
+            )}
+            
+            {/* Overlay caricamento HUB */}
+            {mapType === 'hub' && hubMapLoading && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-[1000]">
+                <div className="bg-[#1e293b] p-4 rounded-lg shadow-xl flex items-center gap-3 border border-[#9C27B0]/30">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#9C27B0]" />
+                  <span className="text-white font-medium">Caricamento HUB...</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Loading iniziale */}
+            {mapType === 'mercati' && !mapData && (
+              <div className="h-full flex items-center justify-center bg-[#0b1220]">
+                <Loader2 className="h-8 w-8 animate-spin text-[#14b8a6]" />
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
