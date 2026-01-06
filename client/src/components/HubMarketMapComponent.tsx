@@ -62,8 +62,10 @@ interface MapData {
 interface HubLocation {
   id: number;
   name: string;
-  latitude: number;
-  longitude: number;
+  lat: number | string;  // API restituisce lat/lng
+  lng: number | string;
+  latitude?: number;  // Fallback per compatibilità
+  longitude?: number;
   address?: string;
   city?: string;
   area_geojson?: any;

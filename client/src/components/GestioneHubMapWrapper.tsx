@@ -28,8 +28,10 @@ interface Market {
 interface HubLocation {
   id: number;
   name: string;
-  latitude: number;
-  longitude: number;
+  lat: number | string;  // API restituisce lat/lng, non latitude/longitude
+  lng: number | string;
+  latitude?: number;  // Fallback per compatibilità
+  longitude?: number;
   address?: string;
   city?: string;
   area_geojson?: any;
@@ -403,7 +405,7 @@ export default function GestioneHubMapWrapper() {
           viewTrigger={viewTrigger}
           height="100%"
           marketCenterFixed={selectedMarket ? [selectedMarket.latitude, selectedMarket.longitude] : undefined}
-          hubCenterFixed={selectedHub ? [parseFloat(String(selectedHub.latitude || selectedHub.lat)), parseFloat(String(selectedHub.longitude || selectedHub.lng))] : undefined}
+          hubCenterFixed={selectedHub ? [parseFloat(String(selectedHub.lat || selectedHub.latitude)), parseFloat(String(selectedHub.lng || selectedHub.longitude))] : undefined}
         />
       </div>
     </div>
