@@ -90,14 +90,17 @@ export default function GestioneHubMapWrapper() {
       const marketsRes = await fetch(`${MIHUB_API_BASE_URL}/api/markets`);
       if (marketsRes.ok) {
         const marketsData = await marketsRes.json();
-        setMarkets(marketsData);
+        // L'API markets restituisce direttamente un array
+        setMarkets(Array.isArray(marketsData) ? marketsData : (marketsData.data || []));
       }
 
       // Carica HUB
       const hubsRes = await fetch(`${MIHUB_API_BASE_URL}/api/hub/locations`);
       if (hubsRes.ok) {
-        const hubsData = await hubsRes.json();
-        setHubs(hubsData);
+        const hubsResponse = await hubsRes.json();
+        // L'API hub/locations restituisce {success: true, data: [...], count: N}
+        const hubsData = hubsResponse.data || hubsResponse || [];
+        setHubs(Array.isArray(hubsData) ? hubsData : []);
         console.log('[GestioneHubMapWrapper] Loaded', hubsData.length, 'HUBs');
       }
     } catch (error) {
@@ -149,7 +152,9 @@ export default function GestioneHubMapWrapper() {
     try {
       const res = await fetch(`${MIHUB_API_BASE_URL}/api/hub/locations/${hubId}`);
       if (res.ok) {
-        const hubData = await res.json();
+        const hubResponse = await res.json();
+        // L'API restituisce {success: true, data: {...}}
+        const hubData = hubResponse.data || hubResponse;
         setSelectedHub(hubData);
         console.log('[GestioneHubMapWrapper] Loaded HUB with', hubData.shops?.length || 0, 'shops');
       }
