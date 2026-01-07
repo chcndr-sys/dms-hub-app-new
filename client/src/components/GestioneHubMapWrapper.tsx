@@ -128,10 +128,9 @@ export default function GestioneHubMapWrapper() {
     if (!market) return;
 
     setSelectedMarket(market);
-    setShowItalyView(false);
-    setViewTrigger(prev => prev + 1);
+    // NON triggerare animazione qui - aspetta che mapData sia caricato
 
-    // Carica dati mappa mercato
+    // Carica dati mappa mercato PRIMA di triggerare l'animazione
     try {
       const res = await fetch(`${MIHUB_API_BASE_URL}/api/gis/market-map/${marketId}`);
       if (res.ok) {
@@ -141,8 +140,14 @@ export default function GestioneHubMapWrapper() {
         if (response.success && response.data) {
           setMapData(response.data);
           console.log('[GestioneHubMapWrapper] Loaded mapData with', response.data?.stalls_geojson?.features?.length || 0, 'features');
+          // ORA triggera l'animazione DOPO che mapData è caricato
+          setShowItalyView(false);
+          setViewTrigger(prev => prev + 1);
         } else {
           console.warn('[GestioneHubMapWrapper] API returned success=false or no data');
+          // Anche se non ci sono dati, permetti comunque lo zoom alle coordinate del mercato
+          setShowItalyView(false);
+          setViewTrigger(prev => prev + 1);
         }
       }
 
