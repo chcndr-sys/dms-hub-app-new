@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Building2, Store, Wrench, MapPin, Phone, Mail, Clock, Plus, Edit, Trash2, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Building2, Store, Wrench, MapPin, Phone, Mail, Clock, Plus, Edit, Trash2, Loader2, AlertCircle, AlertTriangle, Users } from 'lucide-react';
+import { MarketCompaniesTab } from './markets/MarketCompaniesTab';
 import { MarketMapComponent } from './MarketMapComponent';
 import { HubMapComponent } from './HubMapComponent';
 import { MIHUB_API_BASE_URL } from '@/config/api';
@@ -394,13 +395,20 @@ export default function GestioneHubNegozi() {
 
       {/* Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-[#1a2332] border-[#14b8a6]/30">
+        <TabsList className="grid w-full grid-cols-4 bg-[#1a2332] border-[#14b8a6]/30">
           <TabsTrigger 
             value="anagrafica"
             className="data-[state=active]:bg-[#14b8a6] data-[state=active]:text-white"
           >
             <Building2 className="h-4 w-4 mr-2" />
             Anagrafica HUB
+          </TabsTrigger>
+          <TabsTrigger 
+            value="imprese"
+            className="data-[state=active]:bg-[#14b8a6] data-[state=active]:text-white"
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Imprese
           </TabsTrigger>
           <TabsTrigger 
             value="negozi"
@@ -699,7 +707,16 @@ export default function GestioneHubNegozi() {
           )}
         </TabsContent>
 
-        {/* Tab 2: Negozi */}
+        {/* Tab 2: Imprese */}
+        <TabsContent value="imprese" className="space-y-4">
+          <MarketCompaniesTab 
+            marketId={currentHub?.market_id || 1}
+            marketName={currentHub?.name || 'HUB'}
+            municipality={currentHub?.city || 'Grosseto'}
+          />
+        </TabsContent>
+
+        {/* Tab 3: Negozi */}
         <TabsContent value="negozi" className="space-y-4">
           <Card className="bg-[#1a2332] border-[#14b8a6]/30">
             <CardHeader>

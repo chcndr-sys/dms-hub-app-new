@@ -34,7 +34,8 @@ import {
   XCircle,
   Users,
   User,
-  Wallet
+  Wallet,
+  Store
 } from 'lucide-react';
 import { MarketAutorizzazioniTab } from './MarketAutorizzazioniTab';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -44,10 +45,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 // ============================================================================
 
 export interface MarketCompaniesTabProps {
-  marketId: string;              // es. "GRO001"
+  marketId: string | number;     // es. "GRO001" o 1
   marketName?: string;
   municipality?: string;
-  stalls: { id: string; code: string }[]; // lista posteggi già caricata dalla pagina
+  stalls?: { id: string; code: string }[]; // lista posteggi già caricata dalla pagina
+  filterType?: 'all' | 'ambulanti' | 'negozi_hub'; // filtro per tipo impresa
 }
 
 export type CompanyRow = {
@@ -256,7 +258,7 @@ export const STATO_IMPRESA_OPTIONS = [
 // ============================================================================
 
 export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
-  const { marketId, marketName, municipality, stalls } = props;
+  const { marketId, marketName, municipality, stalls, filterType = 'all' } = props;
   
   console.log('[MarketCompaniesTab] props', { marketId, stallsLength: stalls?.length });
 
@@ -283,9 +285,22 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'impresa' | 'concessione' | 'qualificazione' | 'autorizzazione'>('impresa');
+  const [impresaFilter, setImpresaFilter] = useState<'all' | 'ambulanti' | 'negozi_hub'>(filterType);
   
   // Filtered data
   const filteredCompanies = companies.filter(c => {
+    // Filtro per tipo impresa (ambulanti = hanno concessioni mercato, negozi_hub = hanno hub_shop)
+    if (impresaFilter === 'ambulanti') {
+      // Ambulanti: imprese con concessioni mercato attive
+      const hasConcessioni = c.concessioni && c.concessioni.length > 0;
+      if (!hasConcessioni) return false;
+    } else if (impresaFilter === 'negozi_hub') {
+      // Negozi HUB: imprese senza concessioni mercato (sono negozi fissi HUB)
+      const hasConcessioni = c.concessioni && c.concessioni.length > 0;
+      if (hasConcessioni) return false;
+    }
+    
+    // Filtro per ricerca testuale
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -713,6 +728,43 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
       {/* Content */}
       {!loading && (
         <>
+          {/* Filtro Tipo Impresa */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setImpresaFilter('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                impresaFilter === 'all'
+                  ? 'bg-[#14b8a6] text-white'
+                  : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              Tutte le Imprese
+            </button>
+            <button
+              onClick={() => setImpresaFilter('ambulanti')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                impresaFilter === 'ambulanti'
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              <Store className="w-4 h-4" />
+              Ambulanti Mercato
+            </button>
+            <button
+              onClick={() => setImpresaFilter('negozi_hub')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                impresaFilter === 'negozi_hub'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              <MapPin className="w-4 h-4" />
+              Negozi HUB
+            </button>
+          </div>
+
           {/* Barra Ricerca */}
           <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
