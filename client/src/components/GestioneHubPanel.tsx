@@ -128,6 +128,8 @@ export default function GestioneHubPanel() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [stalls, setStalls] = useState<Stall[]>([]);
   const [concessions, setConcessions] = useState<Concession[]>([]);
+  const [imprese, setImprese] = useState<any[]>([]);
+  const [impresaFilter, setImpresaFilter] = useState<'all' | 'ambulanti' | 'negozi_hub'>('all');
 
   // Stati per Carbon Credit (EcoCarbon tab)
   const [tccValue, setTccValue] = useState(1.50);
@@ -200,24 +202,27 @@ export default function GestioneHubPanel() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [marketsRes, vendorsRes, stallsRes, concessionsRes] = await Promise.all([
+      const [marketsRes, vendorsRes, stallsRes, concessionsRes, impreseRes] = await Promise.all([
         fetch(`${MIHUB_API_BASE_URL}/api/markets`),
         fetch(`${MIHUB_API_BASE_URL}/api/vendors`),
         fetch(`${MIHUB_API_BASE_URL}/api/stalls`),
-        fetch(`${MIHUB_API_BASE_URL}/api/concessions`)
+        fetch(`${MIHUB_API_BASE_URL}/api/concessions`),
+        fetch(`${MIHUB_API_BASE_URL}/api/imprese`)
       ]);
 
-      const [marketsData, vendorsData, stallsData, concessionsData] = await Promise.all([
+      const [marketsData, vendorsData, stallsData, concessionsData, impreseData] = await Promise.all([
         marketsRes.json(),
         vendorsRes.json(),
         stallsRes.json(),
-        concessionsRes.json()
+        concessionsRes.json(),
+        impreseRes.json()
       ]);
 
       if (marketsData.success) setMarkets(marketsData.data);
       if (vendorsData.success) setVendors(vendorsData.data);
       if (stallsData.success) setStalls(stallsData.data);
       if (concessionsData.success) setConcessions(concessionsData.data);
+      if (impreseData.success) setImprese(impreseData.data);
 
     } catch (error) {
       console.error('Errore caricamento dati:', error);
@@ -612,45 +617,71 @@ export default function GestioneHubPanel() {
         {/* TAB 3: IMPRESE */}
         {/* ================================================================ */}
         <TabsContent value="imprese" className="mt-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="p-4 bg-gradient-to-br from-[#14b8a6]/20 to-[#14b8a6]/5 border border-[#14b8a6]/30 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-[#14b8a6] mb-1">
-                <Building2 className="h-4 w-4" />
-                Imprese Totali
+          {/* Stats Cards - Filtrate in base al tipo impresa selezionato */}
+          {(() => {
+            // Filtra imprese in base al filtro selezionato
+            const filteredImprese = imprese.filter(i => {
+              if (impresaFilter === 'negozi_hub') return i.hub_shop_id;
+              if (impresaFilter === 'ambulanti') return !i.hub_shop_id;
+              return true;
+            });
+            
+            // Conta concessioni attive per le imprese filtrate
+            const filteredImpreseIds = new Set(filteredImprese.map(i => i.id));
+            const filteredConcessions = concessions.filter(c => {
+              // Se filtro negozi_hub, le concessioni sono 0 (negozi non hanno concessioni mercato)
+              if (impresaFilter === 'negozi_hub') return false;
+              return c.status === 'ATTIVA' || c.status === 'attiva';
+            });
+            
+            // Conta comuni unici
+            const uniqueComuni = new Set(filteredImprese.map(i => i.comune).filter(Boolean));
+            
+            // Media concessioni per impresa
+            const mediaConcessioni = filteredImprese.length > 0 
+              ? (filteredConcessions.length / filteredImprese.length).toFixed(1) 
+              : '0';
+            
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 bg-gradient-to-br from-[#14b8a6]/20 to-[#14b8a6]/5 border border-[#14b8a6]/30 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-[#14b8a6] mb-1">
+                    <Building2 className="h-4 w-4" />
+                    {impresaFilter === 'all' ? 'Imprese Totali' : impresaFilter === 'ambulanti' ? 'Ambulanti' : 'Negozi HUB'}
+                  </div>
+                  <div className="text-3xl font-bold text-white">{filteredImprese.length}</div>
+                </div>
+                <div className="p-4 bg-gradient-to-br from-[#10b981]/20 to-[#10b981]/5 border border-[#10b981]/30 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-[#10b981] mb-1">
+                    <Coins className="h-4 w-4" />
+                    Concessioni Attive
+                  </div>
+                  <div className="text-3xl font-bold text-white">{filteredConcessions.length}</div>
+                </div>
+                <div className="p-4 bg-gradient-to-br from-[#06b6d4]/20 to-[#06b6d4]/5 border border-[#06b6d4]/30 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-[#06b6d4] mb-1">
+                    <Users className="h-4 w-4" />
+                    Comuni Coperti
+                  </div>
+                  <div className="text-3xl font-bold text-white">{uniqueComuni.size}</div>
+                </div>
+                <div className="p-4 bg-gradient-to-br from-[#f59e0b]/20 to-[#f59e0b]/5 border border-[#f59e0b]/30 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-[#f59e0b] mb-1">
+                    <TrendingUp className="h-4 w-4" />
+                    Media Concess./Impresa
+                  </div>
+                  <div className="text-3xl font-bold text-white">{mediaConcessioni}</div>
+                </div>
               </div>
-              <div className="text-3xl font-bold text-white">{vendors.length}</div>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-[#10b981]/20 to-[#10b981]/5 border border-[#10b981]/30 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-[#10b981] mb-1">
-                <Coins className="h-4 w-4" />
-                Concessioni Attive
-              </div>
-              <div className="text-3xl font-bold text-white">{concessions.filter(c => c.status === 'ATTIVA' || c.status === 'attiva').length}</div>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-[#06b6d4]/20 to-[#06b6d4]/5 border border-[#06b6d4]/30 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-[#06b6d4] mb-1">
-                <Users className="h-4 w-4" />
-                Comuni Coperti
-              </div>
-              <div className="text-3xl font-bold text-white">{new Set(markets.map(m => m.municipality)).size}</div>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-[#f59e0b]/20 to-[#f59e0b]/5 border border-[#f59e0b]/30 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-[#f59e0b] mb-1">
-                <TrendingUp className="h-4 w-4" />
-                Media Concess./Impresa
-              </div>
-              <div className="text-3xl font-bold text-white">
-                {vendors.length > 0 ? (concessions.filter(c => c.status === 'ATTIVA' || c.status === 'attiva').length / vendors.length).toFixed(1) : '0'}
-              </div>
-            </div>
-          </div>
+            );
+          })()}
           
-          {/* Componente Imprese Completo con Filtri */}
+          {/* Componente Imprese Completo con Filtri - passa callback per aggiornare filtro */}
           <MarketCompaniesTab 
             marketId="all" 
             marketName="Tutti gli HUB" 
-            filterType="all"
+            filterType={impresaFilter}
+            onFilterChange={setImpresaFilter}
           />
         </TabsContent>
 
