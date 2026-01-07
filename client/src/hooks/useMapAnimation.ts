@@ -28,8 +28,9 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
       if (isMarketView && bounds) {
         try {
           const targetZoom = map.getBoundsZoom(bounds, false, [10, 10]);
-          // Limita lo zoom massimo a 16.5 per avere una vista più ampia della pianta
-          const forcedZoom = Math.min(targetZoom + 0.5, 16.5);
+          // Limita lo zoom massimo a 17.5 per avere una vista bilanciata della pianta
+          // Usa padding più generoso per i bounds
+          const forcedZoom = Math.min(targetZoom + 0.5, 17.5);
           const currentZoom = map.getZoom();
           const zoomDiff = Math.abs(forcedZoom - currentZoom);
           const dynamicDuration = zoomDiff > 4 ? 6 : 1.5;

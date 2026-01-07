@@ -371,25 +371,32 @@ export default function GestioneHubMapWrapper() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-4 gap-4 mb-4">
               {mode === 'mercato' ? (
                 <>
                   <div className="p-3 bg-[#0b1220] rounded-lg border border-[#ef4444]/30">
                     <div className="text-[#e8fbff]/60 text-xs">Posteggi Totali</div>
                     <div className="text-[#ef4444] text-xl font-bold">
-                      {Array.isArray(stallsData) ? stallsData.length : 0}
+                      {/* Filtra solo posteggi attivi (is_active = true) */}
+                      {Array.isArray(stallsData) ? stallsData.filter(s => s.is_active === true || s.is_active === 'true').length : 0}
                     </div>
                   </div>
                   <div className="p-3 bg-[#0b1220] rounded-lg border border-[#10b981]/30">
                     <div className="text-[#e8fbff]/60 text-xs">Occupati</div>
                     <div className="text-[#10b981] text-xl font-bold">
-                      {Array.isArray(stallsData) ? stallsData.filter(s => s.status === 'occupato' || s.status === 'occupied').length : 0}
+                      {Array.isArray(stallsData) ? stallsData.filter(s => (s.is_active === true || s.is_active === 'true') && (s.status === 'occupato' || s.status === 'occupied')).length : 0}
+                    </div>
+                  </div>
+                  <div className="p-3 bg-[#0b1220] rounded-lg border border-[#f59e0b]/30">
+                    <div className="text-[#e8fbff]/60 text-xs">In Assegnazione</div>
+                    <div className="text-[#f59e0b] text-xl font-bold">
+                      {Array.isArray(stallsData) ? stallsData.filter(s => (s.is_active === true || s.is_active === 'true') && s.status === 'riservato').length : 0}
                     </div>
                   </div>
                   <div className="p-3 bg-[#0b1220] rounded-lg border border-[#6b7280]/30">
                     <div className="text-[#e8fbff]/60 text-xs">Liberi</div>
                     <div className="text-[#6b7280] text-xl font-bold">
-                      {Array.isArray(stallsData) ? stallsData.filter(s => s.status === 'libero' || s.status === 'free').length : 0}
+                      {Array.isArray(stallsData) ? stallsData.filter(s => (s.is_active === true || s.is_active === 'true') && (s.status === 'libero' || s.status === 'free')).length : 0}
                     </div>
                   </div>
                 </>
