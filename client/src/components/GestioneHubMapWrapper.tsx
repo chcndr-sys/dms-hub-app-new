@@ -18,8 +18,8 @@ import { toast } from 'sonner';
 interface Market {
   id: number;
   name: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | string;  // API restituisce stringhe
+  longitude: number | string;
   comune?: string;
   giorno?: string;
   posteggi_totali?: number;
@@ -421,7 +421,10 @@ export default function GestioneHubMapWrapper() {
           showItalyView={showItalyView}
           viewTrigger={viewTrigger}
           height="100%"
-          marketCenterFixed={selectedMarket ? [selectedMarket.latitude, selectedMarket.longitude] : undefined}
+          marketCenterFixed={selectedMarket && selectedMarket.latitude && selectedMarket.longitude ? [
+            parseFloat(String(selectedMarket.latitude)) || 42.5,
+            parseFloat(String(selectedMarket.longitude)) || 12.5
+          ] : undefined}
           hubCenterFixed={selectedHub && selectedHub.lat && selectedHub.lng ? [
             parseFloat(String(selectedHub.lat)) || 42.5,
             parseFloat(String(selectedHub.lng)) || 12.5
