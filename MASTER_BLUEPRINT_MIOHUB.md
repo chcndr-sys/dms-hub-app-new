@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.17.3  
+> **Versione:** 3.21.0  
 > **Data:** 7 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -894,7 +894,34 @@ Per il point GIS del nuovo negozio:
 - [ ] Deploy: Push e verifica su produzione
 
 
-## 📝 CHANGELOG
+### 📝 CHANGELOG
+
+### v3.21.0 (07/01/2026) - Fix Connessione Posteggi-Imprese e Pulizia Dati
+
+**Fix API Stalls - Connessione Posteggi → Imprese:**
+- ✅ **JOIN Corretto:** Aggiunto JOIN con tabella `vendors` per ottenere `impresa_id` anche quando `concessions.impresa_id` è NULL
+- ✅ **COALESCE:** Usa `COALESCE(c.impresa_id, v.impresa_id)` per prendere impresa_id da vendors se non presente in concessions
+- ✅ **vendor_name:** Usa `COALESCE(i.denominazione, v.business_name)` per fallback su business_name
+- ✅ **Posteggio #78:** Ora mostra correttamente "Intim8" e impresa_id: 9
+
+**Fix Tasto Visita Vetrina per Negozi HUB:**
+- ✅ **owner_id:** Il tasto "Visita Vetrina" ora usa `shop.owner_id` (impresa_id) invece di `shop.id`
+- ✅ **Farmacia Severi:** Link corretto a `/vetrine/33` (impresa Farmacia Severi)
+
+**Pulizia Database:**
+- ✅ **Eliminati Negozi Test:** Rimossi 10 negozi di test (ID 1-10) senza owner_id
+- ✅ **Negozi Validi:** Rimasti solo Fruttivendolo Mario (#11) e Farmacia Severi (#12)
+
+**Stato Posteggi Grosseto:**
+- 160 posteggi attivi (numeri 1-185 con 22 gap)
+- 14 posteggi con concessione attiva e impresa collegata
+- 89 posteggi "occupati" senza concessione nel DB (da creare)
+
+**Commit:**
+- Backend: `373b0ad` - fix: JOIN stalls con vendors per ottenere impresa_id corretto
+- Frontend: `05e9f56` - fix: Tasto Visita Vetrina usa owner_id per negozi HUB
+
+---
 
 ### v3.20.0 (07/01/2026) - Fix Popup Posteggi e Negozi HUB
 - **Fix Popup Posteggi Mercato**: Dimensioni ora corrette usando width/depth dal DB invece del calcolo geometrico
