@@ -896,6 +896,26 @@ Per il point GIS del nuovo negozio:
 
 ## 📝 CHANGELOG
 
+### v3.18.0 (7 Gennaio 2026) - Funzionalità Nuovo Negozio per HUB
+
+**Nuova Funzionalità Completa:**
+- ✅ Tab "Nuovo Negozio" nella pagina Vetrine Commercianti
+- ✅ Form completo con validazione: Ragione Sociale, P.IVA, CF, Comune, HUB, Categoria, Telefono, Email
+- ✅ API REST `/api/hub/shops/create-with-impresa` su Hetzner
+- ✅ Transazione atomica: crea impresa + hub_shop + point GIS in un'unica operazione
+- ✅ Endpoint registrato in MIO-hub/api/index.json (v8)
+- ✅ Test endpoint disponibile in Dashboard PA → Integrazioni → API Dashboard
+
+**Flusso Implementato:**
+```
+Lista Vetrine → Tab "Nuovo Negozio" → Compila Form → Salva
+                                                      ↓
+                                      1. Crea record imprese
+                                      2. Crea record hub_shops
+                                      3. Genera point GIS con coordinate HUB
+```
+
+
 ### v3.17.3 (7 Gennaio 2026) - Fix Conteggi Posteggi e Zoom fitBounds
 
 **Fix Conteggi Posteggi GestioneHubMapWrapper:**
