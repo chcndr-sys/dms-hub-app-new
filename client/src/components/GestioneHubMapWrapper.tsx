@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { HubMarketMapComponent } from './HubMarketMapComponent';
+import MarketMapComponent from './MarketMapComponent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { MapPin, Building2, Store, Loader2, RefreshCw } from 'lucide-react';
@@ -422,28 +423,70 @@ export default function GestioneHubMapWrapper() {
 
       {/* Mappa */}
       <div className="h-[700px] rounded-lg overflow-hidden border border-[#14b8a6]/30">
-        <HubMarketMapComponent
-          mode={mode}
-          mapData={mapData || undefined}
-          stallsData={stallsData}
-          allMarkets={mode === 'mercato' ? filteredMarkets : []}
-          allHubs={mode === 'hub' ? filteredHubs : []}
-          selectedHub={mode === 'hub' ? selectedHub || undefined : undefined}
-          onMarketClick={handleMarketClick}
-          onHubClick={handleHubClick}
-          onShopClick={handleShopClick}
-          showItalyView={showItalyView}
-          viewTrigger={viewTrigger}
-          height="100%"
-          marketCenterFixed={selectedMarket && selectedMarket.latitude && selectedMarket.longitude ? [
-            parseFloat(String(selectedMarket.latitude)) || 42.5,
-            parseFloat(String(selectedMarket.longitude)) || 12.5
-          ] : undefined}
-          hubCenterFixed={selectedHub && selectedHub.lat && selectedHub.lng ? [
-            parseFloat(String(selectedHub.lat)) || 42.5,
-            parseFloat(String(selectedHub.lng)) || 12.5
-          ] : undefined}
-        />
+        {mode === 'mercato' && mapData ? (
+          // Usa MarketMapComponent originale per i mercati (testato e funzionante)
+          <MarketMapComponent
+            mapData={mapData}
+            center={showItalyView ? [42.5, 12.5] : [
+              parseFloat(String(selectedMarket?.latitude)) || 42.5,
+              parseFloat(String(selectedMarket?.longitude)) || 12.5
+            ]}
+            zoom={showItalyView ? 6 : 17}
+            height="100%"
+            stallsData={stallsData.map(s => ({
+              id: s.id,
+              number: s.number,
+              status: s.status,
+              type: s.type,
+              vendor_name: s.vendor_business_name || undefined
+            }))}
+            allMarkets={filteredMarkets.map(m => ({
+              id: m.id,
+              name: m.name,
+              latitude: parseFloat(String(m.latitude)),
+              longitude: parseFloat(String(m.longitude))
+            }))}
+            onMarketClick={handleMarketClick}
+            showItalyView={showItalyView}
+            viewTrigger={viewTrigger}
+            marketCenterFixed={selectedMarket ? [
+              parseFloat(String(selectedMarket.latitude)) || 42.5,
+              parseFloat(String(selectedMarket.longitude)) || 12.5
+            ] : undefined}
+          />
+        ) : mode === 'mercato' && !mapData ? (
+          // Vista Italia senza mapData - mostra solo marker mercati
+          <HubMarketMapComponent
+            mode="mercato"
+            mapData={undefined}
+            stallsData={[]}
+            allMarkets={filteredMarkets}
+            allHubs={[]}
+            onMarketClick={handleMarketClick}
+            showItalyView={true}
+            viewTrigger={viewTrigger}
+            height="100%"
+          />
+        ) : (
+          // Modalità HUB - usa HubMarketMapComponent
+          <HubMarketMapComponent
+            mode="hub"
+            mapData={undefined}
+            stallsData={[]}
+            allMarkets={[]}
+            allHubs={filteredHubs}
+            selectedHub={selectedHub || undefined}
+            onHubClick={handleHubClick}
+            onShopClick={handleShopClick}
+            showItalyView={showItalyView}
+            viewTrigger={viewTrigger}
+            height="100%"
+            hubCenterFixed={selectedHub && selectedHub.lat && selectedHub.lng ? [
+              parseFloat(String(selectedHub.lat)) || 42.5,
+              parseFloat(String(selectedHub.lng)) || 12.5
+            ] : undefined}
+          />
+        )}
       </div>
     </div>
   );
