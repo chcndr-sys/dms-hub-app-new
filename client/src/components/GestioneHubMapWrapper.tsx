@@ -134,8 +134,11 @@ export default function GestioneHubMapWrapper() {
     try {
       const res = await fetch(`${MIHUB_API_BASE_URL}/api/gis/market-map/${marketId}`);
       if (res.ok) {
-        const data = await res.json();
-        setMapData(data);
+        const response = await res.json();
+        // L'API restituisce {success: true, data: {...}, meta: {...}}
+        const mapDataFromApi = response.data || response;
+        setMapData(mapDataFromApi);
+        console.log('[GestioneHubMapWrapper] Loaded mapData with', mapDataFromApi?.stalls_geojson?.features?.length || 0, 'features');
       }
 
       // Carica posteggi
