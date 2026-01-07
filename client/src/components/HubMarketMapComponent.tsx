@@ -220,26 +220,31 @@ export function HubMarketMapComponent({
   
   // Se showItalyView è true, usa coordinate Italia
   // Se mode è 'hub' e c'è hubCenterFixed, usa quello
+  // Se mode è 'mercato' e c'è marketCenterFixed, usa quello
   // Altrimenti usa mapData.center o fallback Italia
   const mapCenter: [number, number] = center || (
     showItalyView 
       ? [42.5, 12.5]  // Centro Italia fisso
       : mode === 'hub' && hubCenterFixed
         ? hubCenterFixed  // Centro HUB selezionato
-        : mapData?.center 
-          ? [mapData.center.lat, mapData.center.lng] 
-          : [42.5, 12.5]  // Fallback Italia
+        : mode === 'mercato' && marketCenterFixed
+          ? marketCenterFixed  // Centro Mercato selezionato
+          : mapData?.center 
+            ? [mapData.center.lat, mapData.center.lng] 
+            : [42.5, 12.5]  // Fallback Italia
   );
   
   // Calcola zoom in base alla vista
   // Vista Italia: zoom 6 per vedere tutta Italia
   // Vista HUB: zoom 16 per vedere i negozi
-  // Vista Mercato: usa zoom passato (default 17)
+  // Vista Mercato: zoom 17 per vedere i posteggi
   const effectiveZoom = showItalyView 
     ? 6 
     : mode === 'hub' && hubCenterFixed 
       ? 16 
-      : zoom;
+      : mode === 'mercato' && marketCenterFixed
+        ? 17  // Zoom mercato
+        : zoom;
   
   // Rimosso stato locale ridondante che causava loop
   // L'animazione è gestita direttamente da MapCenterController tramite useAnimation
