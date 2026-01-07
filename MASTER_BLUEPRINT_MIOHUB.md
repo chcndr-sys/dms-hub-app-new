@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.17.1  
+> **Versione:** 3.17.2  
 > **Data:** 7 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -778,6 +778,36 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+
+### v3.17.2 (7 Gennaio 2026) - Fix Zoom Mappa e Logica Vista Italia/Mercato
+
+**Fix Critici Mappa HUB/Mercati:**
+- ✅ **Coordinate Hub Centro:** Aggiornate a centro calcolato dal poligono (42.7609, 11.1137)
+- ✅ **Mercato HUB Duplicato:** Rimosso dalla tabella markets (era duplicato di Hub Centro)
+- ✅ **Validazione Coordinate:** Aggiunto `parseFloat()` e controllo `!isNaN()` per evitare errori
+- ✅ **Fallback Italia:** Se coordinate invalide, usa centro Italia (42.5, 12.5)
+
+**Fix Zoom Mercato:**
+- ✅ **marketCenterFixed:** Ora usato nel calcolo di `mapCenter` per zoom corretto
+- ✅ **effectiveZoom:** Aggiunto zoom 17 specifico per mercati con `marketCenterFixed`
+- ✅ **Conversione Stringhe:** Coordinate mercato convertite da stringa a numero
+
+**Fix Logica Pulsante Vista:**
+- ✅ **Invertita Logica:** Quando in Vista Italia → pulsante dice "Vista Mercato/HUB"
+- ✅ **Invertita Logica:** Quando in Vista Mercato → pulsante dice "Vista Italia"
+- ✅ **handleGoToDetail():** Nuova funzione per zoomare al mercato/HUB selezionato
+- ✅ **Disabilitato Corretto:** Pulsante disabilitato solo se Vista Italia E nessuna selezione
+
+**Box Coordinate GPS:**
+- ✅ **Scheda Mercato/HUB:** Aggiunto box con Lat/Lng nella scheda selezionato
+- ✅ **Formato:** `Lat: xx.xxxxxx | Lng: xx.xxxxxx`
+
+**File Modificati:**
+- `client/src/components/GestioneHubMapWrapper.tsx`
+- `client/src/components/HubMarketMapComponent.tsx`
+- `client/src/hooks/useMapAnimation.ts`
+
+---
 
 ### v3.17.1 (7 Gennaio 2026) - Sistema HUB Market e Negozi GIS
 
