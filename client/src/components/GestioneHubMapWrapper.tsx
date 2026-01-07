@@ -140,9 +140,11 @@ export default function GestioneHubMapWrapper() {
         if (response.success && response.data) {
           setMapData(response.data);
           console.log('[GestioneHubMapWrapper] Loaded mapData with', response.data?.stalls_geojson?.features?.length || 0, 'features');
-          // ORA triggera l'animazione DOPO che mapData è caricato
+          // TEST: Disabilita animazione per verificare se la pianta si crea
+          // Cambia vista senza triggerare animazione flyTo
           setShowItalyView(false);
-          setViewTrigger(prev => prev + 1);
+          // NON incrementare viewTrigger per evitare animazione
+          // setViewTrigger(prev => prev + 1);
         } else {
           console.warn('[GestioneHubMapWrapper] API returned success=false or no data');
           // Anche se non ci sono dati, permetti comunque lo zoom alle coordinate del mercato
