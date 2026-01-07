@@ -33,9 +33,9 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
           
           // Calcola lo zoom ottimale per i bounds
           const targetZoom = map.getBoundsZoom(latLngBounds, false, [50, 50]);
-          // Non aggiungere zoom extra, usa quello calcolato dai bounds
-          // Limita tra 16 e 18 per avere una vista bilanciata
-          const forcedZoom = Math.min(Math.max(targetZoom, 16), 18);
+          // Aggiungi +1 allo zoom calcolato per avere una vista più ravvicinata
+          // Limita tra 17 e 19 per avere una vista bilanciata
+          const forcedZoom = Math.min(Math.max(targetZoom + 1, 17), 19);
           
           const currentZoom = map.getZoom();
           const zoomDiff = Math.abs(forcedZoom - currentZoom);
@@ -53,7 +53,7 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
             duration: dynamicDuration,
             easeLinearity: 0.25,
             padding: [30, 30], // Padding in pixel per non tagliare i bordi
-            maxZoom: 18 // Zoom massimo
+            maxZoom: 19 // Zoom massimo aumentato di 1
           });
         } catch (e) {
           console.error('[useMapAnimation] Error with bounds:', e);
