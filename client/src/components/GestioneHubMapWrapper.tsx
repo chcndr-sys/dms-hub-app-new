@@ -156,8 +156,12 @@ export default function GestioneHubMapWrapper() {
       // Carica posteggi
       const stallsRes = await fetch(`${MIHUB_API_BASE_URL}/api/stalls?market_id=${marketId}`);
       if (stallsRes.ok) {
-        const stalls = await stallsRes.json();
-        setStallsData(stalls);
+        const stallsResponse = await stallsRes.json();
+        // L'API restituisce {success, data, count} - estrarre solo data
+        if (stallsResponse.success && stallsResponse.data) {
+          setStallsData(stallsResponse.data);
+          console.log('[GestioneHubMapWrapper] Loaded stallsData with', stallsResponse.data.length, 'stalls');
+        }
       }
     } catch (error) {
       console.error('[GestioneHubMapWrapper] Error loading market data:', error);
