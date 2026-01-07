@@ -140,11 +140,12 @@ export default function GestioneHubMapWrapper() {
         if (response.success && response.data) {
           setMapData(response.data);
           console.log('[GestioneHubMapWrapper] Loaded mapData with', response.data?.stalls_geojson?.features?.length || 0, 'features');
-          // TEST: Disabilita animazione per verificare se la pianta si crea
-          // Cambia vista senza triggerare animazione flyTo
-          setShowItalyView(false);
-          // NON incrementare viewTrigger per evitare animazione
-          // setViewTrigger(prev => prev + 1);
+          // Aspetta che React aggiorni lo stato prima di triggerare l'animazione
+          // Delay di 500ms per assicurarsi che mapData sia disponibile nel componente figlio
+          setTimeout(() => {
+            setShowItalyView(false);
+            setViewTrigger(prev => prev + 1);
+          }, 500);
         } else {
           console.warn('[GestioneHubMapWrapper] API returned success=false or no data');
           // Anche se non ci sono dati, permetti comunque lo zoom alle coordinate del mercato
