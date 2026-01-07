@@ -377,19 +377,19 @@ export default function GestioneHubMapWrapper() {
                   <div className="p-3 bg-[#0b1220] rounded-lg border border-[#ef4444]/30">
                     <div className="text-[#e8fbff]/60 text-xs">Posteggi Totali</div>
                     <div className="text-[#ef4444] text-xl font-bold">
-                      {(selectedItem as Market).posteggi_totali || 0}
+                      {Array.isArray(stallsData) ? stallsData.length : 0}
                     </div>
                   </div>
                   <div className="p-3 bg-[#0b1220] rounded-lg border border-[#10b981]/30">
                     <div className="text-[#e8fbff]/60 text-xs">Occupati</div>
                     <div className="text-[#10b981] text-xl font-bold">
-                      {Array.isArray(stallsData) ? stallsData.filter(s => s.status === 'occupied').length : 0}
+                      {Array.isArray(stallsData) ? stallsData.filter(s => s.status === 'occupato' || s.status === 'occupied').length : 0}
                     </div>
                   </div>
                   <div className="p-3 bg-[#0b1220] rounded-lg border border-[#6b7280]/30">
                     <div className="text-[#e8fbff]/60 text-xs">Liberi</div>
                     <div className="text-[#6b7280] text-xl font-bold">
-                      {Array.isArray(stallsData) ? stallsData.filter(s => s.status === 'free').length : 0}
+                      {Array.isArray(stallsData) ? stallsData.filter(s => s.status === 'libero' || s.status === 'free').length : 0}
                     </div>
                   </div>
                 </>
