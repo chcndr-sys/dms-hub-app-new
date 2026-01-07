@@ -27,17 +27,33 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
       
       if (isMarketView && bounds) {
         try {
-          const targetZoom = map.getBoundsZoom(bounds, false, [10, 10]);
-          // Limita lo zoom massimo a 17.5 per avere una vista bilanciata della pianta
-          // Usa padding più generoso per i bounds
-          const forcedZoom = Math.min(targetZoom + 0.5, 17.5);
+          // Usa fitBounds per adattare la mappa ai bounds della pianta
+          // con padding per non tagliare i bordi
+          const latLngBounds = bounds instanceof L.LatLngBounds ? bounds : L.latLngBounds(bounds as L.LatLngBoundsLiteral);
+          
+          // Calcola lo zoom ottimale per i bounds
+          const targetZoom = map.getBoundsZoom(latLngBounds, false, [50, 50]);
+          // Non aggiungere zoom extra, usa quello calcolato dai bounds
+          // Limita tra 16 e 18 per avere una vista bilanciata
+          const forcedZoom = Math.min(Math.max(targetZoom, 16), 18);
+          
           const currentZoom = map.getZoom();
           const zoomDiff = Math.abs(forcedZoom - currentZoom);
           const dynamicDuration = zoomDiff > 4 ? 6 : 1.5;
 
-          map.flyTo(bounds.getCenter(), forcedZoom, {
+          console.log('[useMapAnimation] Animating to bounds:', {
+            targetZoom,
+            forcedZoom,
+            currentZoom,
+            boundsCenter: latLngBounds.getCenter()
+          });
+
+          // Usa flyToBounds per animazione fluida che rispetta i bounds
+          map.flyToBounds(latLngBounds, {
             duration: dynamicDuration,
-            easeLinearity: 0.25
+            easeLinearity: 0.25,
+            padding: [30, 30], // Padding in pixel per non tagliare i bordi
+            maxZoom: 18 // Zoom massimo
           });
         } catch (e) {
           console.error('[useMapAnimation] Error with bounds:', e);
