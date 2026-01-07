@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.17.2  
+> **Versione:** 3.17.3  
 > **Data:** 7 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -778,6 +778,29 @@ Piano sviluppo organizzato per quarter:
 ---
 
 ## 📝 CHANGELOG
+
+### v3.17.3 (7 Gennaio 2026) - Fix Conteggi Posteggi e Zoom fitBounds
+
+**Fix Conteggi Posteggi GestioneHubMapWrapper:**
+- ✅ **Conteggi Semplificati:** Rimosso filtro `is_active` problematico, usa stessa logica di GestioneMercati
+- ✅ **4 Colonne Stats:** Totali (rosso), Occupati (verde), In Assegnazione (giallo), Liberi (grigio)
+- ✅ **Status Italiano:** Filtra per `occupato`, `libero`, `riservato` (non inglese)
+
+**Fix Zoom Mappa con fitBounds:**
+- ✅ **flyToBounds:** Sostituito `flyTo` con `flyToBounds` per adattare mappa ai bounds della pianta
+- ✅ **Padding 30px:** Aggiunto padding [30, 30] pixel per non tagliare i bordi
+- ✅ **Zoom Range 16-18:** Limita zoom tra 16 (minimo) e 18 (massimo) per vista bilanciata
+- ✅ **Bounds dai Corner:** La mappa si adatta automaticamente ai 4 corner della pianta mercato
+
+**Backend API Stalls:**
+- ✅ **is_active in Query:** Aggiunto campo `is_active` alla SELECT per future implementazioni
+
+**File Modificati:**
+- `client/src/components/GestioneHubMapWrapper.tsx`
+- `client/src/hooks/useMapAnimation.ts`
+- `mihub-backend-rest/routes/stalls.js`
+
+---
 
 ### v3.17.2 (7 Gennaio 2026) - Fix Zoom Mappa e Logica Vista Italia/Mercato
 
