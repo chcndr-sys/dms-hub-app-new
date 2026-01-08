@@ -154,11 +154,37 @@ export default function GestioneHubMapWrapper() {
   const [customCenter, setCustomCenter] = useState<[number, number] | null>(null);
   const [customZoom, setCustomZoom] = useState<number | null>(null);
 
+  // Statistiche aggregate Italia
+  const [italyStats, setItalyStats] = useState<{
+    markets: number;
+    totali: number;
+    occupati: number;
+    assegnazione: number;
+    liberi: number;
+  } | null>(null);
+
   // Carica dati iniziali
   useEffect(() => {
     loadData();
     loadRegioni();
+    loadItalyStats();
   }, []);
+
+  // Carica statistiche aggregate Italia
+  const loadItalyStats = async () => {
+    try {
+      const res = await fetch(`${MIHUB_API_BASE_URL}/api/stalls/stats/totals`);
+      if (res.ok) {
+        const response = await res.json();
+        if (response.success && response.data) {
+          setItalyStats(response.data);
+          console.log('[GestioneHubMapWrapper] Loaded Italy stats:', response.data);
+        }
+      }
+    } catch (error) {
+      console.error('[GestioneHubMapWrapper] Error loading Italy stats:', error);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -432,7 +458,16 @@ export default function GestioneHubMapWrapper() {
           liberi: activeStalls.filter(s => s.status === 'libero').length,
         };
       } else {
-        // Statistiche totali Italia (placeholder - da implementare API)
+        // Statistiche totali Italia (da API /api/stalls/stats/totals)
+        if (italyStats) {
+          return {
+            mercati: italyStats.markets,
+            totali: italyStats.totali,
+            occupati: italyStats.occupati,
+            assegnazione: italyStats.assegnazione,
+            liberi: italyStats.liberi,
+          };
+        }
         return {
           mercati: markets.length,
           totali: markets.reduce((acc, m) => acc + (m.posteggi_totali || 0), 0) || '—',
@@ -462,7 +497,7 @@ export default function GestioneHubMapWrapper() {
         };
       }
     }
-  }, [mode, selectedMarket, selectedHub, stallsData, markets, hubs]);
+  }, [mode, selectedMarket, selectedHub, stallsData, markets, hubs, italyStats]);
 
   // Coordinate correnti
   const currentCoords = useMemo(() => {
