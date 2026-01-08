@@ -53,6 +53,9 @@ interface HubLocation {
   livello?: 'capoluogo' | 'provincia' | 'comune';
   tipo?: 'urbano' | 'prossimita';
   provincia_sigla?: string;
+  // Coordinate centro HUB per animazione zoom
+  center_lat?: number | string;
+  center_lng?: number | string;
 }
 
 interface HubShop {
@@ -864,10 +867,16 @@ export default function GestioneHubMapWrapper() {
             parseFloat(String(selectedMarket.latitude)) || 42.5,
             parseFloat(String(selectedMarket.longitude)) || 12.5
           ] : customCenter || undefined}
-          hubCenterFixed={selectedHub && selectedHub.lat && selectedHub.lng ? [
-            parseFloat(String(selectedHub.lat)) || 42.5,
-            parseFloat(String(selectedHub.lng)) || 12.5
-          ] : customCenter || undefined}
+          hubCenterFixed={selectedHub ? (
+            // Usa center_lat/center_lng se disponibili, altrimenti lat/lng
+            selectedHub.center_lat && selectedHub.center_lng ? [
+              parseFloat(String(selectedHub.center_lat)) || 42.5,
+              parseFloat(String(selectedHub.center_lng)) || 12.5
+            ] : selectedHub.lat && selectedHub.lng ? [
+              parseFloat(String(selectedHub.lat)) || 42.5,
+              parseFloat(String(selectedHub.lng)) || 12.5
+            ] : customCenter || undefined
+          ) : customCenter || undefined}
           customZoom={customZoom || undefined}
         />
       </div>
