@@ -525,17 +525,26 @@ export default function GestioneHubMapWrapper() {
           liberi: shops.filter(s => s.status !== 'active').length,
         };
       } else {
-        // Usa hubs.length per mostrare il totale nazionale HUB
+        // Statistiche dinamiche in base alla vista:
+        // - Vista Italia: totale nazionale (hubs.length)
+        // - Vista Regione: HUB della regione (filtrati per regione_id)
+        // - Vista Provincia: HUB della provincia (filtrati per provincia_id)
+        const hubsToCount = selectedProvincia 
+          ? hubs.filter(h => h.provincia_id === selectedProvincia.id)
+          : selectedRegione 
+            ? hubs.filter(h => h.regione_id === selectedRegione.id)
+            : hubs;
+        
         return {
-          mercati: hubs.length,
-          totali: hubs.reduce((acc, h) => acc + (h.shops?.length || 0), 0),
+          mercati: hubsToCount.length,
+          totali: hubsToCount.reduce((acc, h) => acc + (h.shops?.length || 0), 0),
           occupati: '—',
           assegnazione: '—',
           liberi: '—',
         };
       }
     }
-  }, [mode, selectedMarket, selectedHub, stallsData, markets, hubs, italyStats, filteredHubs]);
+  }, [mode, selectedMarket, selectedHub, stallsData, markets, hubs, italyStats, filteredHubs, selectedRegione, selectedProvincia]);
 
   // Coordinate correnti
   const currentCoords = useMemo(() => {
