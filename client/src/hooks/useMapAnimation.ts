@@ -32,10 +32,10 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
           const latLngBounds = bounds instanceof L.LatLngBounds ? bounds : L.latLngBounds(bounds as L.LatLngBoundsLiteral);
           
           // Calcola lo zoom ottimale per i bounds
-          const targetZoom = map.getBoundsZoom(latLngBounds, false, [50, 50]);
-          // Usa lo zoom calcolato senza offset aggiuntivo
-          // per mantenere la pianta visibile con 1 scatto in più rispetto a prima
-          const forcedZoom = Math.min(Math.max(targetZoom, 17), 19);
+          const rawZoom = map.getBoundsZoom(latLngBounds, false, [50, 50]);
+          // Arrotonda a intero (Leaflet può restituire decimali) e aggiungi +1 scatto
+          const targetZoom = Math.floor(rawZoom);
+          const forcedZoom = Math.min(Math.max(targetZoom + 1, 17), 19);
           
           const currentZoom = map.getZoom();
           const zoomDiff = Math.abs(forcedZoom - currentZoom);
@@ -45,6 +45,7 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
           const boundsCenter = latLngBounds.getCenter();
 
           console.log('[useMapAnimation] Animating to bounds center with forced zoom:', {
+            rawZoom,
             targetZoom,
             forcedZoom,
             currentZoom,
