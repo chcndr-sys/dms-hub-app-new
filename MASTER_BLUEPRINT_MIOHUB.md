@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.21.0  
-> **Data:** 7 Gennaio 2026  
+> **Versione:** 3.22.0  
+> **Data:** 8 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -895,6 +895,29 @@ Per il point GIS del nuovo negozio:
 
 
 ### 📝 CHANGELOG
+
+### v3.22.0 (08/01/2026) - Sistema Navigazione Geografica Regioni/Province
+
+**Nuove Funzionalità:**
+- **Database Regioni/Province**: Tabelle con tutte le 20 regioni italiane e 107 province con coordinate GPS
+- **Dropdown Regione**: Selezione regione con zoom automatico sulla mappa (zoom 8)
+- **Dropdown Provincia**: Selezione provincia con zoom automatico (zoom 10)
+- **Badge Navigazione**: Mostra percorso selezionato (es. "Toscana → Grosseto (GR)")
+- **Pulsante Reset (X)**: Torna alla vista Italia completa
+- **API Endpoints**: `/api/regioni`, `/api/regioni/:id`, `/api/regioni/:id/province`, `/api/regioni/provinces/all`
+- **Integrazione Guardian**: Endpoint registrati nel tab Integrazioni
+
+**File Modificati:**
+- `client/src/components/GestioneHubMapWrapper.tsx` - Nuovi dropdown e logica navigazione
+- `client/src/components/HubMarketMapComponent.tsx` - Supporto customZoom
+- `server/routes/regioni.js` - Nuovi endpoint API
+- `migrations/create_regioni_province.sql` - Schema database
+
+**Database:**
+- Tabella `regioni`: 20 record con nome, codice, lat, lng, zoom
+- Tabella `province`: 107 record con nome, sigla, regione_id, lat, lng, zoom
+
+---
 
 ### v3.21.0 (07/01/2026) - Fix Connessione Posteggi-Imprese e Pulizia Dati
 
