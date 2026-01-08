@@ -163,7 +163,9 @@ export default function NuovoNegozioForm({ onSuccess, onCancel }: NuovoNegozioFo
   };
 
   // Categorie disponibili
+  // N = Negozio (Commercio), S = Servizio
   const categorie = [
+    // Negozi (N)
     'Alimentari',
     'Abbigliamento',
     'Calzature',
@@ -175,6 +177,18 @@ export default function NuovoNegozioForm({ onSuccess, onCancel }: NuovoNegozioFo
     'Formaggi e Salumi',
     'Prodotti Biologici',
     'Artigianato',
+    'Farmacia',
+    'Edicola',
+    'Tabacchi',
+    // Servizi (S)
+    'Bar',
+    'Ristorante',
+    'Pizzeria',
+    'Caffetteria',
+    'Gelateria',
+    'Parrucchiere',
+    'Estetista',
+    'Servizi',
     'Altro',
   ];
 
