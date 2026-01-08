@@ -693,7 +693,7 @@ export function HubMarketMapComponent({
                     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                     border: 2px solid white;
                     cursor: pointer;
-                  ">${shop.letter}</div>`,
+                  ">${shop.letter || 'N'}</div>`,
                   iconSize: [28, 28],
                   iconAnchor: [14, 14],
                 })}
@@ -783,7 +783,8 @@ export function HubMarketMapComponent({
           })}
 
           {/* ============ POLIGONO AREA HUB ============ */}
-          {mode === 'hub' && selectedHub && selectedHub.area_geojson && (() => {
+          {/* Nasconde area durante animazione zoom per evitare macchia viola */}
+          {mode === 'hub' && selectedHub && selectedHub.area_geojson && !isAnimating && (() => {
             try {
               const areaData = typeof selectedHub.area_geojson === 'string' 
                 ? JSON.parse(selectedHub.area_geojson) 
