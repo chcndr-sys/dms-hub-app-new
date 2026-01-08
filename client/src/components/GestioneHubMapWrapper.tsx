@@ -515,10 +515,10 @@ export default function GestioneHubMapWrapper() {
           liberi: shops.filter(s => s.status !== 'active').length,
         };
       } else {
-        // Usa filteredHubs per mostrare statistiche in base alla vista corrente
+        // Usa hubs.length per mostrare il totale nazionale HUB
         return {
-          mercati: filteredHubs.length,
-          totali: filteredHubs.reduce((acc, h) => acc + (h.shops?.length || 0), 0),
+          mercati: hubs.length,
+          totali: hubs.reduce((acc, h) => acc + (h.shops?.length || 0), 0),
           occupati: '—',
           assegnazione: '—',
           liberi: '—',
