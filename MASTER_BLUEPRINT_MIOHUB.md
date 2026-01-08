@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.24.0  
+> **Versione:** 3.25.0  
 > **Data:** 8 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -895,6 +895,37 @@ Per il point GIS del nuovo negozio:
 
 
 ### 📝 CHANGELOG
+
+### v3.25.0 (08/01/2026) - Come Arrivare per Negozi HUB
+
+**Nuova Funzionalità:**
+- **Come Arrivare per Negozi HUB**: Il pulsante "Come Arrivare" nella vetrina ora funziona anche per i negozi HUB
+  - Prima cerca se l'impresa ha un negozio HUB (tramite `owner_id` in `hub_shops`)
+  - Se trova un negozio HUB con coordinate, naviga a `/route` con quelle coordinate
+  - Altrimenti cerca nei posteggi del mercato (logica esistente)
+
+**Logica Implementata:**
+```javascript
+// 1. Prima cerca negozio HUB
+const hubShop = hubShopsResult.data.find(shop => shop.owner_id === impresa.id);
+if (hubShop && hubShop.lat && hubShop.lng) {
+  // Usa coordinate negozio HUB
+  navigate(`/route?destinationLat=${hubShop.lat}&destinationLng=${hubShop.lng}&destinationName=${impresa.denominazione} - Negozio HUB`);
+}
+// 2. Altrimenti cerca posteggio mercato
+```
+
+**Risultato:**
+- Farmacia Severi (id=33) → `Farmacia Severi - Negozio HUB (42.7597911, 11.1133894)`
+- Ritual (id=34) → `Ritual - Negozio HUB (42.7588200, 11.1156698)`
+
+**File Modificati:**
+- `client/src/pages/VetrinePage.tsx` - handleNavigate supporta negozi HUB
+
+**Commit:**
+- `3becd74` - feat: handleNavigate ora supporta negozi HUB con coordinate
+
+---
 
 ### v3.24.0 (08/01/2026) - Fix Zoom Mappa con Quarti di Scatto
 
