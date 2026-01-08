@@ -413,6 +413,17 @@ export function getAPIInventory(): APIEndpoint[] {
       documentation: 'Ritorna gli stati in tempo reale di tutti i posteggi',
       testParams: { marketId: 1 },
     },
+    {
+      id: 'stalls.stats.totals',
+      method: 'GET',
+      path: '/api/stalls/stats/totals',
+      description: 'Statistiche aggregate posteggi: totali, occupati, liberi, in assegnazione',
+      category: 'dms',
+      status: 'active',
+      version: '1.0',
+      requiresAuth: false,
+      documentation: 'Ritorna le statistiche aggregate di tutti i posteggi (REST endpoint su Hetzner)',
+    },
     // DMS HUB - Vendors
     {
       id: 'dmsHub.vendors.list',

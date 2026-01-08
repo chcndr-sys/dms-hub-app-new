@@ -510,6 +510,13 @@ function APIDashboard() {
           break;
 
         // GIS & ABACUS
+        case '/api/stalls/stats/totals':
+          const stallsStatsRes = await fetch('https://mihub.157-90-29-66.nip.io/api/stalls/stats/totals', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          data = await stallsStatsRes.json();
+          break;
         case '/api/gis/markets':
           const gisRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/gis/markets`, {
             method: 'GET',
