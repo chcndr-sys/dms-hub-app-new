@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.22.0  
+> **Versione:** 3.23.0  
 > **Data:** 8 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -895,6 +895,41 @@ Per il point GIS del nuovo negozio:
 
 
 ### 📝 CHANGELOG
+
+### v3.23.0 (08/01/2026) - Statistiche Aggregate Italia e Fix Zoom Mappa
+
+**Nuove Funzionalità:**
+- **Endpoint Statistiche Aggregate**: `/api/stalls/stats/totals` per statistiche posteggi Italia
+  - Restituisce: markets, totali, occupati, assegnazione, liberi
+  - Esempio: `{"markets":2,"totali":542,"occupati":126,"assegnazione":24,"liberi":392}`
+- **Indicatori Vista Italia**: Mostra totali aggregati quando nessun mercato è selezionato
+- **Integrazione Guardian**: Endpoint `stalls.stats.totals` monitorato
+
+**Fix Mappa GIS:**
+- **Zoom Mercato**: Corretto calcolo zoom usando `flyTo` invece di `flyToBounds`
+  - `flyToBounds` ignorava lo zoom calcolato
+  - Ora usa centro bounds + zoom forzato per controllo preciso
+- **Area HUB durante animazione**: Nascosto poligono viola durante zoom (evita "macchia")
+- **Marker Negozi**: Fix fallback lettera "N" quando `shop.letter` è null
+- **Shops in Hub**: Endpoint `/api/hub/locations` ora include array `shops` per ogni HUB
+
+**File Modificati:**
+- `client/src/hooks/useMapAnimation.ts` - Logica zoom con flyTo
+- `client/src/components/GestioneHubMapWrapper.tsx` - Fetch statistiche Italia
+- `client/src/components/HubMarketMapComponent.tsx` - !isAnimating per area HUB
+- `client/src/components/Integrazioni.tsx` - Nuovo endpoint nel playground
+- `server/services/apiInventoryService.ts` - Endpoint in Guardian
+- `mihub-backend-rest/routes/stalls.js` - Nuovo endpoint stats/totals
+- `mihub-backend-rest/routes/hub.js` - Include shops in locations
+
+**Commit:**
+- Backend Hetzner: `0d580b8` - Include shops in hub/locations
+- Backend Hetzner: `1219083` - Endpoint stalls/stats/totals
+- Frontend Vercel: `805d276` - Fix zoom con flyTo
+- MIO-hub: `68e559f` - Aggiunto endpoint in api/index.json
+
+---
+
 
 ### v3.22.0 (08/01/2026) - Sistema Navigazione Geografica Regioni/Province
 
