@@ -250,7 +250,7 @@ export function HubMarketMapComponent({
       : mode === 'hub' && hubCenterFixed 
         ? 16 
         : mode === 'mercato' && marketCenterFixed
-          ? 18  // Zoom mercato (aumentato di 1 scatto)
+          ? 19  // Zoom mercato (aumentato a 19)
           : zoom;
   
   // Rimosso stato locale ridondante che causava loop
