@@ -47,6 +47,12 @@ interface HubLocation {
   city?: string;
   area_geojson?: any;
   shops?: HubShop[];
+  // Nuovi campi per sistema multi-livello Emilia Romagna
+  provincia_id?: number;
+  regione_id?: number;
+  livello?: 'capoluogo' | 'provincia' | 'comune';
+  tipo?: 'urbano' | 'prossimita';
+  provincia_sigla?: string;
 }
 
 interface HubShop {
@@ -435,11 +441,32 @@ export default function GestioneHubMapWrapper() {
   }, [markets, searchQuery]);
 
   const filteredHubs = useMemo(() => {
-    return hubs.filter(h => 
+    // Prima filtra per ricerca
+    let filtered = hubs.filter(h => 
       h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (h.city && h.city.toLowerCase().includes(searchQuery.toLowerCase()))
     );
-  }, [hubs, searchQuery]);
+    
+    // Poi filtra per visibilità in base a regione/provincia selezionata
+    // Vista Italia: mostra solo capoluoghi
+    // Vista Regione: mostra capoluoghi + province della regione
+    // Vista Provincia: mostra tutti gli HUB della provincia
+    if (selectedProvincia) {
+      // Vista Provincia: mostra tutti gli HUB di quella provincia
+      filtered = filtered.filter(h => h.provincia_id === selectedProvincia.id);
+    } else if (selectedRegione) {
+      // Vista Regione: mostra capoluoghi + province (livello != 'comune')
+      filtered = filtered.filter(h => 
+        h.regione_id === selectedRegione.id && 
+        (h.livello === 'capoluogo' || h.livello === 'provincia')
+      );
+    } else {
+      // Vista Italia: mostra solo capoluoghi
+      filtered = filtered.filter(h => h.livello === 'capoluogo' || !h.livello);
+    }
+    
+    return filtered;
+  }, [hubs, searchQuery, selectedRegione, selectedProvincia]);
 
   const currentList = mode === 'mercato' ? filteredMarkets : filteredHubs;
   const selectedItem = mode === 'mercato' ? selectedMarket : selectedHub;

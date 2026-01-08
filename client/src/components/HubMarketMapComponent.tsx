@@ -70,6 +70,12 @@ interface HubLocation {
   city?: string;
   area_geojson?: any;
   shops?: HubShop[];
+  // Nuovi campi per sistema multi-livello Emilia Romagna
+  provincia_id?: number;
+  regione_id?: number;
+  livello?: 'capoluogo' | 'provincia' | 'comune';
+  tipo?: 'urbano' | 'prossimita';
+  provincia_sigla?: string;
 }
 
 // Interfaccia per Shop (negozio)
@@ -583,12 +589,40 @@ export function HubMarketMapComponent({
           );
           })}
 
-          {/* ============ MARKER HUB (Vista Italia) ============ */}
+          {/* ============ MARKER HUB (Vista Italia/Regione/Provincia) ============ */}
           {mode === 'hub' && allHubs.length > 0 && allHubs.map((hub) => {
             // Converti le coordinate da stringa a numero
             const hubLat = parseFloat(hub.lat || hub.latitude) || 0;
             const hubLng = parseFloat(hub.lng || hub.longitude) || 0;
             if (!hubLat || !hubLng) return null;
+            
+            // Determina colore in base al livello
+            // Capoluogo: viola pieno (#9C27B0)
+            // Provincia: viola chiaro (#BA68C8) 
+            // Comune: viola pallido (#CE93D8)
+            const getHubColor = (livello?: string) => {
+              switch (livello) {
+                case 'capoluogo': return '#9C27B0'; // Viola pieno
+                case 'provincia': return '#BA68C8'; // Viola chiaro
+                case 'comune': return '#CE93D8';    // Viola pallido
+                default: return '#9C27B0';          // Default viola pieno
+              }
+            };
+            
+            // Determina dimensione in base al livello
+            const getHubSize = (livello?: string) => {
+              switch (livello) {
+                case 'capoluogo': return 32;
+                case 'provincia': return 28;
+                case 'comune': return 24;
+                default: return 32;
+              }
+            };
+            
+            const hubColor = getHubColor(hub.livello);
+            const hubSize = getHubSize(hub.livello);
+            const fontSize = hub.livello === 'capoluogo' ? 18 : hub.livello === 'provincia' ? 16 : 14;
+            
             return (
             <Marker
               key={`hub-${hub.id}`}
@@ -596,22 +630,23 @@ export function HubMarketMapComponent({
               icon={L.divIcon({
                 className: 'hub-center-marker',
                 html: `<div style="
-                  background: #9C27B0;
+                  background: ${hubColor};
                   color: white;
-                  width: 32px;
-                  height: 32px;
+                  width: ${hubSize}px;
+                  height: ${hubSize}px;
                   border-radius: 50%;
                   display: flex;
                   align-items: center;
                   justify-content: center;
-                  font-size: 18px;
+                  font-size: ${fontSize}px;
                   font-weight: bold;
                   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                  border: 3px solid white;
+                  border: ${hub.livello === 'capoluogo' ? 3 : 2}px solid white;
                   cursor: pointer;
+                  opacity: ${hub.livello === 'capoluogo' ? 1 : hub.livello === 'provincia' ? 0.9 : 0.8};
                 ">H</div>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16],
+                iconSize: [hubSize, hubSize],
+                iconAnchor: [hubSize/2, hubSize/2],
               })}
               eventHandlers={{
                 click: (e) => {
@@ -625,11 +660,16 @@ export function HubMarketMapComponent({
             >
               <Popup className="hub-popup" minWidth={280}>
                 <div className="p-0 bg-[#0b1220] text-gray-100 rounded-md overflow-hidden" style={{ minWidth: '280px' }}>
-                  <div className="bg-[#9C27B0] p-3 border-b border-purple-800 flex justify-between items-center">
+                  <div style={{ background: hubColor }} className="p-3 border-b border-purple-800 flex justify-between items-center">
                     <div className="font-bold text-lg text-white flex items-center gap-2">
-                      <span className="bg-white text-[#9C27B0] rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold border border-purple-800">H</span>
+                      <span className="bg-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold border border-purple-800" style={{ color: hubColor }}>H</span>
                       {hub.name}
                     </div>
+                    {hub.livello && (
+                      <span className="px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold bg-white/20 text-white">
+                        {hub.livello}
+                      </span>
+                    )}
                   </div>
                   
                   <div className="p-4 space-y-3 text-sm">
@@ -638,14 +678,23 @@ export function HubMarketMapComponent({
                       <span className="font-medium text-white">{hub.city || 'Non specificato'}</span>
                     </div>
                     
-                    <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                      <span className="text-gray-400">Indirizzo:</span>
-                      <span className="font-medium text-white">{hub.address || '-'}</span>
-                    </div>
+                    {hub.provincia_sigla && (
+                      <div className="flex justify-between items-center border-b border-gray-800 pb-2">
+                        <span className="text-gray-400">Provincia:</span>
+                        <span className="font-medium text-white">{hub.provincia_sigla}</span>
+                      </div>
+                    )}
+                    
+                    {hub.tipo && (
+                      <div className="flex justify-between items-center border-b border-gray-800 pb-2">
+                        <span className="text-gray-400">Tipo:</span>
+                        <span className="font-medium text-white capitalize">{hub.tipo === 'urbano' ? 'Hub Urbano' : 'Hub Prossimità'}</span>
+                      </div>
+                    )}
                     
                     <div className="flex justify-between items-center border-b border-gray-800 pb-2">
                       <span className="text-gray-400">Negozi:</span>
-                      <span className="font-bold text-[#9C27B0]">{hub.shops?.length || 0}</span>
+                      <span className="font-bold" style={{ color: hubColor }}>{hub.shops?.length || 0}</span>
                     </div>
                     
                     <div className="bg-[#1e293b] p-2 rounded border border-gray-700 mt-2">
