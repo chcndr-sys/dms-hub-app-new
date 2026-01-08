@@ -623,6 +623,11 @@ export function HubMarketMapComponent({
             const hubSize = getHubSize(hub.livello);
             const fontSize = hub.livello === 'capoluogo' ? 18 : hub.livello === 'provincia' ? 16 : 14;
             
+            // Contorno diverso per tipo: urbano = bianco, prossimità = viola scuro
+            const isProssimita = hub.tipo === 'prossimita';
+            const borderColor = isProssimita ? '#6A1B9A' : 'white'; // Viola scuro per prossimità
+            const borderWidth = isProssimita ? 3 : (hub.livello === 'capoluogo' ? 3 : 2);
+            
             return (
             <Marker
               key={`hub-${hub.id}`}
@@ -641,7 +646,7 @@ export function HubMarketMapComponent({
                   font-size: ${fontSize}px;
                   font-weight: bold;
                   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                  border: ${hub.livello === 'capoluogo' ? 3 : 2}px solid white;
+                  border: ${borderWidth}px solid ${borderColor};
                   cursor: pointer;
                   opacity: ${hub.livello === 'capoluogo' ? 1 : hub.livello === 'provincia' ? 0.9 : 0.8};
                 ">H</div>`,
