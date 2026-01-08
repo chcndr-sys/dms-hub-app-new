@@ -391,8 +391,8 @@ export function HubMarketMapComponent({
           zoom={effectiveZoom}
           scrollWheelZoom={false}
           doubleClickZoom={false}
-          zoomDelta={0.5}
-          zoomSnap={0.5}
+          zoomDelta={0.25}
+          zoomSnap={0.25}
           className="h-full w-full"
           style={{ height: '100%', width: '100%' }}
           ref={mapRef}
