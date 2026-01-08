@@ -33,9 +33,9 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
           
           // Calcola lo zoom ottimale per i bounds
           const rawZoom = map.getBoundsZoom(latLngBounds, false, [50, 50]);
-          // Arrotonda a intero (Leaflet può restituire decimali) e aggiungi +1 scatto
-          const targetZoom = Math.floor(rawZoom);
-          const forcedZoom = Math.min(Math.max(targetZoom + 1, 17), 19);
+          // Arrotonda al più vicino (Math.round) per zoom bilanciato su piante di diverse dimensioni
+          // Grosseto (piccola) e Modena (grande) avranno zoom appropriati
+          const forcedZoom = Math.min(Math.max(Math.round(rawZoom), 17), 19);
           
           const currentZoom = map.getZoom();
           const zoomDiff = Math.abs(forcedZoom - currentZoom);
@@ -46,7 +46,6 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
 
           console.log('[useMapAnimation] Animating to bounds center with forced zoom:', {
             rawZoom,
-            targetZoom,
             forcedZoom,
             currentZoom,
             boundsCenter: [boundsCenter.lat, boundsCenter.lng]
