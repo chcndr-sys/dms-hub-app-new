@@ -430,7 +430,7 @@ export default function GestioneHubMapWrapper() {
               <ChevronDown className="h-4 w-4 ml-2" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-[#1a2332] border-[#14b8a6]/30 max-h-[400px] overflow-y-auto">
+          <DropdownMenuContent className="bg-[#1a2332] border-[#14b8a6]/30 max-h-[300px] overflow-y-auto z-[9999]" style={{ maxHeight: '300px', overflowY: 'auto' }}>
             <DropdownMenuLabel className="text-[#e8fbff]/60">Seleziona Regione</DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-[#14b8a6]/20" />
             {loadingRegioni ? (
@@ -472,7 +472,7 @@ export default function GestioneHubMapWrapper() {
               <ChevronDown className="h-4 w-4 ml-2" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-[#1a2332] border-[#14b8a6]/30 max-h-[400px] overflow-y-auto">
+          <DropdownMenuContent className="bg-[#1a2332] border-[#14b8a6]/30 max-h-[300px] overflow-y-auto z-[9999]" style={{ maxHeight: '300px', overflowY: 'auto' }}>
             <DropdownMenuLabel className="text-[#e8fbff]/60">
               Province di {selectedRegione?.nome || '...'}
             </DropdownMenuLabel>
