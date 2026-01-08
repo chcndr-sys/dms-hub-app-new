@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.25.0  
+> **Versione:** 3.26.0  
 > **Data:** 8 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -895,6 +895,48 @@ Per il point GIS del nuovo negozio:
 
 
 ### 📝 CHANGELOG
+
+### v3.26.0 (08/01/2026) - Sistema HUB Multi-Livello Emilia Romagna
+
+**Nuova Funzionalità Maestrale:**
+- **59 HUB Emilia Romagna** inseriti nel database con coordinate GPS
+- **Sistema 3 Livelli di Colore:**
+  - **Capoluogo** (viola pieno #9C27B0): Sempre visibile, marker grande 32px
+  - **Provincia** (viola chiaro #BA68C8): Visibile in Vista Regione, marker medio 28px
+  - **Comune** (viola pallido #CE93D8): Visibile in Vista Provincia, marker piccolo 24px
+
+**Province Coperte (9):**
+| Provincia | Sigla | N. HUB | Capoluogo |
+|-----------|-------|--------|----------|
+| Bologna | BO | 6 | Bologna |
+| Modena | MO | 12 | Modena |
+| Reggio Emilia | RE | 10 | Reggio Emilia |
+| Parma | PR | 4 | Parma |
+| Piacenza | PC | 3 | Piacenza |
+| Ferrara | FE | 6 | Ferrara |
+| Ravenna | RA | 2 | Ravenna |
+| Forlì-Cesena | FC | 9 | Cesena |
+| Rimini | RN | 7 | Rimini |
+
+**Logica Visibilità:**
+- Vista Italia → Solo capoluoghi
+- Vista Regione (Emilia-Romagna) → Capoluoghi + Province
+- Vista Provincia (es. Bologna) → Tutti gli HUB della provincia
+
+**Database:**
+- Nuove colonne in `hub_locations`: `provincia_id`, `regione_id`, `livello`, `tipo`, `provincia_sigla`
+- Migration: `extend_hub_locations_emilia_romagna.sql`
+
+**File Modificati:**
+- `client/src/components/GestioneHubMapWrapper.tsx` - Filtro HUB per regione/provincia
+- `client/src/components/HubMarketMapComponent.tsx` - Marker con colori dinamici
+- `server/routes/hub.js` - API con nuovi campi
+
+**Commit:**
+- Frontend: `8a9d066` - feat: Sistema HUB multi-livello Emilia Romagna
+- Backend: `4549856` - feat: API hub_locations con campi provincia_id, regione_id, livello, tipo
+
+---
 
 ### v3.25.0 (08/01/2026) - Come Arrivare per Negozi HUB
 
