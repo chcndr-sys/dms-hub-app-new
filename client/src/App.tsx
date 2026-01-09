@@ -30,6 +30,7 @@ import SuapDetail from "./pages/suap/SuapDetail";
 import HubMapTestPage from "./pages/HubMapTestPage";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
+import DashboardImpresa from "./pages/DashboardImpresa";
 
 function Router() {
   return (
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/hub-map-test" component={HubMapTestPage} />
       <Route path="/login" component={Login} />
       <Route path="/auth/callback" component={AuthCallback} />
+      <Route path="/dashboard-impresa" component={DashboardImpresa} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
