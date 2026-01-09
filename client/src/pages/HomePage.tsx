@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
+import LoginModal from '@/components/LoginModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -22,6 +23,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Dati demo per la ricerca
   const allResults: SearchResult[] = [
@@ -117,7 +119,7 @@ export default function HomePage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setLocation('/login')}
+              onClick={() => setShowLoginModal(true)}
               className="bg-primary-foreground/10 border-primary-foreground/30 hover:bg-primary-foreground/20 text-primary-foreground"
             >
               <LogIn className="w-4 h-4 mr-2" />
@@ -262,6 +264,12 @@ export default function HomePage() {
           <p>PA Digitale 2026 • Cloud First • Rete Mercati Made in Italy</p>
         </footer>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
     </div>
   );
 }
