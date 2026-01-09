@@ -569,12 +569,18 @@ export default function GestioneHubMapWrapper() {
             ? hubs.filter(h => h.regione_id === selectedRegione.id)
             : hubs;
         
+        // Calcola totale negozi e attivi/inattivi sommando tutti gli HUB filtrati
+        const allShops = hubsToCount.flatMap(h => h.shops || []);
+        const totaleNegozi = allShops.length;
+        const negoziAttivi = allShops.filter(s => s.status === 'active').length;
+        const negoziInattivi = allShops.filter(s => s.status !== 'active').length;
+        
         return {
           mercati: hubsToCount.length,
-          totali: hubsToCount.reduce((acc, h) => acc + (h.shops?.length || 0), 0),
-          occupati: '—',
-          assegnazione: '—',
-          liberi: '—',
+          totali: totaleNegozi,
+          occupati: negoziAttivi,
+          assegnazione: 0,
+          liberi: negoziInattivi,
         };
       }
     }
@@ -658,10 +664,11 @@ export default function GestioneHubMapWrapper() {
     }
   }, [mode, selectedMarket, selectedHub, stallsData, allStallsData, hubs, selectedRegione, selectedProvincia]);
 
-  // Formatta area con separatore migliaia
+  // Formatta area con separatore migliaia (senza decimali)
   const formatArea = (area: number): string => {
     if (area === 0) return '—';
-    return area.toLocaleString('it-IT');
+    // Arrotonda a intero e formatta con punto come separatore migliaia
+    return Math.round(area).toLocaleString('it-IT', { maximumFractionDigits: 0 });
   };
 
   if (loading) {
