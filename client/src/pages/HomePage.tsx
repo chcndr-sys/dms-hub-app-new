@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Search, MapPin, Store, Building2, Leaf, TrendingUp, BarChart3 } from 'lucide-react';
+import { Search, MapPin, Store, Building2, Leaf, TrendingUp, BarChart3, LogIn } from 'lucide-react';
 import { geoAPI } from '@/utils/api';
 
 interface SearchResult {
@@ -114,7 +114,15 @@ export default function HomePage() {
                 <p className="text-xs opacity-90">Gemello Digitale del Commercio</p>
               </div>
             </div>
-            <Leaf className="w-6 h-6 opacity-80" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation('/login')}
+              className="bg-primary-foreground/10 border-primary-foreground/30 hover:bg-primary-foreground/20 text-primary-foreground"
+            >
+              <LogIn className="w-4 h-4 mr-2" />
+              Accedi
+            </Button>
           </div>
         </header>
 

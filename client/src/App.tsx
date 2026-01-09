@@ -28,6 +28,8 @@ import SuapDashboard from "./pages/suap/SuapDashboard";
 import SuapList from "./pages/suap/SuapList";
 import SuapDetail from "./pages/suap/SuapDetail";
 import HubMapTestPage from "./pages/HubMapTestPage";
+import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
 
 function Router() {
   return (
@@ -54,6 +56,8 @@ function Router() {
       <Route path="/suap/list" component={SuapList} />
       <Route path="/suap/detail/:id" component={SuapDetail} />
       <Route path="/hub-map-test" component={HubMapTestPage} />
+      <Route path="/login" component={Login} />
+      <Route path="/auth/callback" component={AuthCallback} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
