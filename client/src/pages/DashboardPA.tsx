@@ -38,6 +38,7 @@ import { SharedWorkspace } from '@/components/SharedWorkspace';
 import NotificationsPanel from '@/components/NotificationsPanel';
 import ComuniPanel from '@/components/ComuniPanel';
 import WalletPanel from '@/components/WalletPanel';
+import SecurityTab from '@/components/SecurityTab';
 import GestioneHubPanel from '@/components/GestioneHubPanel';
 import { BusHubEditor } from '@/components/bus-hub';
 import { MessageContent } from '@/components/MessageContent';
@@ -3031,73 +3032,7 @@ export default function DashboardPA() {
 
           {/* TAB 10: SICUREZZA */}
           <TabsContent value="security" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-[#e8fbff]/70">Accessi Totali</CardTitle>
-                  <UserCheck className="h-5 w-5 text-[#14b8a6]" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-[#e8fbff]">{mockData.security.totalAccesses.toLocaleString()}</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#ef4444]/30">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-[#e8fbff]/70">Login Falliti</CardTitle>
-                  <AlertCircle className="h-5 w-5 text-[#ef4444]" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-[#ef4444]">{mockData.security.failedLogins}</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#f59e0b]/30">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-[#e8fbff]/70">Attività Sospette</CardTitle>
-                  <Shield className="h-5 w-5 text-[#f59e0b]" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-[#f59e0b]">{mockData.security.suspiciousActivity}</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-[#e8fbff]/70">Utenti Attivi</CardTitle>
-                  <Users className="h-5 w-5 text-[#14b8a6]" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-[#14b8a6]">{mockData.security.activeUsers}</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-[#14b8a6]" />
-                  Vulnerabilità Rilevate
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="p-4 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg">
-                    <div className="text-2xl font-bold text-[#ef4444] mb-1">{mockData.security.vulnerabilities.critical}</div>
-                    <div className="text-sm text-[#e8fbff]/70">Critical</div>
-                  </div>
-                  <div className="p-4 bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg">
-                    <div className="text-2xl font-bold text-[#f59e0b] mb-1">{mockData.security.vulnerabilities.high}</div>
-                    <div className="text-sm text-[#e8fbff]/70">High</div>
-                  </div>
-                  <div className="p-4 bg-[#eab308]/10 border border-[#eab308]/30 rounded-lg">
-                    <div className="text-2xl font-bold text-[#eab308] mb-1">{mockData.security.vulnerabilities.medium}</div>
-                    <div className="text-sm text-[#e8fbff]/70">Medium</div>
-                  </div>
-                  <div className="p-4 bg-[#14b8a6]/10 border border-[#14b8a6]/30 rounded-lg">
-                    <div className="text-2xl font-bold text-[#14b8a6] mb-1">{mockData.security.vulnerabilities.low}</div>
-                    <div className="text-sm text-[#e8fbff]/70">Low</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <SecurityTab />
           </TabsContent>
 
           {/* TAB: SSO SUAP - Pratiche Ente Sussidiario */}
