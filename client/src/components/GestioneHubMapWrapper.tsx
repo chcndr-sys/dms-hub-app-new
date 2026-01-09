@@ -12,7 +12,7 @@ import { HubMarketMapComponent } from './HubMarketMapComponent';
 import { MarketMapComponent } from './MarketMapComponent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { MapPin, Building2, Store, Loader2, RefreshCw, Map, Navigation, ChevronDown, ChevronLeft, X, Home } from 'lucide-react';
+import { MapPin, Building2, Store, Loader2, Map, Navigation, ChevronDown, ChevronLeft, X, Home } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 import { toast } from 'sonner';
@@ -56,6 +56,8 @@ interface HubLocation {
   // Coordinate centro HUB per animazione zoom
   center_lat?: number | string;
   center_lng?: number | string;
+  // Area in metri quadri
+  area_sqm?: number;
 }
 
 interface HubShop {
@@ -141,7 +143,8 @@ export default function GestioneHubMapWrapper() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [mapData, setMapData] = useState<MapData | null>(null);
-  const [stallsData, setStallsData] = useState<any[]>([]);
+  const [stallsData, setStallsData] = useState<any[]>([]); // Posteggi del mercato selezionato
+  const [allStallsData, setAllStallsData] = useState<any[]>([]); // TUTTI i posteggi di TUTTI i mercati
   
   // Dati HUB
   const [hubs, setHubs] = useState<HubLocation[]>([]);
@@ -163,35 +166,54 @@ export default function GestioneHubMapWrapper() {
   const [customCenter, setCustomCenter] = useState<[number, number] | null>(null);
   const [customZoom, setCustomZoom] = useState<number | null>(null);
 
-  // Statistiche aggregate Italia
-  const [italyStats, setItalyStats] = useState<{
+  // Statistiche aggregate (Italia/Regione/Provincia)
+  const [marketStats, setMarketStats] = useState<{
     markets: number;
     totali: number;
     occupati: number;
     assegnazione: number;
     liberi: number;
+    area_totale: number;
   } | null>(null);
 
   // Carica dati iniziali
   useEffect(() => {
     loadData();
     loadRegioni();
-    loadItalyStats();
+    loadMarketStats();
   }, []);
 
-  // Carica statistiche aggregate Italia
-  const loadItalyStats = async () => {
+  // Ricarica statistiche quando cambia regione/provincia selezionata
+  useEffect(() => {
+    if (mode === 'mercato') {
+      loadMarketStats(selectedRegione?.id, selectedProvincia?.id);
+    }
+  }, [mode, selectedRegione?.id, selectedProvincia?.id]);
+
+  // Carica statistiche aggregate mercati (con filtri opzionali)
+  const loadMarketStats = async (regioneId?: number, provinciaId?: number) => {
     try {
-      const res = await fetch(`${MIHUB_API_BASE_URL}/api/stalls/stats/totals`);
+      let url = `${MIHUB_API_BASE_URL}/api/stalls/stats/totals`;
+      const params = new URLSearchParams();
+      if (provinciaId) {
+        params.append('provincia_id', provinciaId.toString());
+      } else if (regioneId) {
+        params.append('regione_id', regioneId.toString());
+      }
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const res = await fetch(url);
       if (res.ok) {
         const response = await res.json();
         if (response.success && response.data) {
-          setItalyStats(response.data);
-          console.log('[GestioneHubMapWrapper] Loaded Italy stats:', response.data);
+          setMarketStats(response.data);
+          console.log('[GestioneHubMapWrapper] Loaded market stats:', response.data);
         }
       }
     } catch (error) {
-      console.error('[GestioneHubMapWrapper] Error loading Italy stats:', error);
+      console.error('[GestioneHubMapWrapper] Error loading market stats:', error);
     }
   };
 
@@ -219,6 +241,18 @@ export default function GestioneHubMapWrapper() {
           console.log('[GestioneHubMapWrapper] Loaded', hubsResponse.data.length, 'hubs');
         } else {
           setHubs([]);
+        }
+      }
+
+      // Carica TUTTI i posteggi di TUTTI i mercati (per calcolo Area mq)
+      const allStallsRes = await fetch(`${MIHUB_API_BASE_URL}/api/stalls`);
+      if (allStallsRes.ok) {
+        const allStallsResponse = await allStallsRes.json();
+        if (allStallsResponse.success && Array.isArray(allStallsResponse.data)) {
+          setAllStallsData(allStallsResponse.data);
+          console.log('[GestioneHubMapWrapper] Loaded', allStallsResponse.data.length, 'total stalls for area calculation');
+        } else {
+          setAllStallsData([]);
         }
       }
     } catch (error) {
@@ -495,14 +529,14 @@ export default function GestioneHubMapWrapper() {
           liberi: activeStalls.filter(s => s.status === 'libero').length,
         };
       } else {
-        // Statistiche totali Italia (da API /api/stalls/stats/totals)
-        if (italyStats) {
+        // Statistiche aggregate (Italia/Regione/Provincia) da API
+        if (marketStats) {
           return {
-            mercati: italyStats.markets,
-            totali: italyStats.totali,
-            occupati: italyStats.occupati,
-            assegnazione: italyStats.assegnazione,
-            liberi: italyStats.liberi,
+            mercati: marketStats.markets,
+            totali: marketStats.totali,
+            occupati: marketStats.occupati,
+            assegnazione: marketStats.assegnazione,
+            liberi: marketStats.liberi,
           };
         }
         return {
@@ -544,7 +578,7 @@ export default function GestioneHubMapWrapper() {
         };
       }
     }
-  }, [mode, selectedMarket, selectedHub, stallsData, markets, hubs, italyStats, filteredHubs, selectedRegione, selectedProvincia]);
+  }, [mode, selectedMarket, selectedHub, stallsData, markets, hubs, marketStats, filteredHubs, selectedRegione, selectedProvincia]);
 
   // Coordinate correnti
   const currentCoords = useMemo(() => {
@@ -583,6 +617,62 @@ export default function GestioneHubMapWrapper() {
     if (selectedRegione) return selectedRegione.nome;
     return 'Italia';
   }, [selectedMarket, selectedHub, selectedProvincia, selectedRegione]);
+
+  // Calcolo Area (mq) dinamico - 8 modalità
+  // HUB: somma area_sqm degli HUB filtrati
+  // Mercato: somma width * depth dei posteggi filtrati
+  const areaTotal = useMemo(() => {
+    // Funzione per calcolare area di un posteggio: width * depth
+    const calcStallArea = (s: any): number => {
+      const width = parseFloat(s.width) || 0;
+      const depth = parseFloat(s.depth) || 0;
+      return width * depth;
+    };
+
+    if (mode === 'mercato') {
+      // Modalità MERCATO: Σ (stall.width * stall.depth) per posteggi attivi
+      if (selectedMarket && stallsData.length > 0) {
+        // Mercato singolo: somma mq dei posteggi del mercato selezionato
+        const activeStalls = stallsData.filter(s => s.is_active === true);
+        return activeStalls.reduce((acc, s) => acc + calcStallArea(s), 0);
+      } else {
+        // Vista Italia/Regione/Provincia: filtra allStallsData
+        let stallsToSum = allStallsData.filter(s => s.is_active === true);
+        
+        if (selectedProvincia) {
+          // Filtra per provincia
+          stallsToSum = stallsToSum.filter(s => s.provincia_id === selectedProvincia.id);
+        } else if (selectedRegione) {
+          // Filtra per regione
+          stallsToSum = stallsToSum.filter(s => s.regione_id === selectedRegione.id);
+        }
+        // Se nessun filtro, somma tutti (Vista Italia)
+        
+        return stallsToSum.reduce((acc, s) => acc + calcStallArea(s), 0);
+      }
+    } else {
+      // Modalità HUB: somma area_sqm degli HUB
+      if (selectedHub) {
+        // HUB singolo: mostra area_sqm dell'HUB
+        return selectedHub.area_sqm || 0;
+      } else {
+        // Vista aggregata: somma area_sqm degli HUB filtrati
+        const hubsToSum = selectedProvincia 
+          ? hubs.filter(h => h.provincia_id === selectedProvincia.id)
+          : selectedRegione 
+            ? hubs.filter(h => h.regione_id === selectedRegione.id)
+            : hubs;
+        
+        return hubsToSum.reduce((acc, h) => acc + (h.area_sqm || 0), 0);
+      }
+    }
+  }, [mode, selectedMarket, selectedHub, stallsData, allStallsData, hubs, selectedRegione, selectedProvincia]);
+
+  // Formatta area con separatore migliaia
+  const formatArea = (area: number): string => {
+    if (area === 0) return '—';
+    return area.toLocaleString('it-IT');
+  };
 
   if (loading) {
     return (
@@ -778,6 +868,12 @@ export default function GestioneHubMapWrapper() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Indicatore Area (mq) - sempre visibile, calcolo dinamico come HUB */}
+        <div className="px-3 py-1 bg-[#0b1220] rounded border border-[#14b8a6]/40 text-center h-8 flex items-center gap-2">
+          <span className="text-[10px] text-[#e8fbff]/50 uppercase tracking-wider">Area:</span>
+          <span className="text-sm font-bold text-[#14b8a6]">{formatArea(areaTotal)} mq</span>
+        </div>
+
         {/* Pulsante Indietro */}
         {canGoBack && (
           <Button
@@ -791,15 +887,7 @@ export default function GestioneHubMapWrapper() {
           </Button>
         )}
 
-        {/* Refresh */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={loadData}
-          className="text-[#14b8a6] h-7"
-        >
-          <RefreshCw className="h-3 w-3" />
-        </Button>
+
       </div>
 
       {/* Lista elementi - Card più grandi con colori per livello HUB */}
