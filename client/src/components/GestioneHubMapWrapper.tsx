@@ -858,12 +858,6 @@ export default function GestioneHubMapWrapper() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Indicatore Area (mq) - sempre visibile, calcolo dinamico come HUB */}
-        <div className="px-3 py-1 bg-[#0b1220] rounded border border-[#14b8a6]/40 text-center h-8 flex items-center gap-2">
-          <span className="text-[10px] text-[#e8fbff]/50 uppercase tracking-wider">Area:</span>
-          <span className="text-sm font-bold text-[#14b8a6]">{formatArea(areaTotal)} mq</span>
-        </div>
-
         {/* Pulsante Indietro */}
         {canGoBack && (
           <Button
@@ -877,12 +871,18 @@ export default function GestioneHubMapWrapper() {
           </Button>
         )}
 
+        {/* Indicatore Area (mq) - sempre visibile, calcolo dinamico - ULTIMO elemento */}
+        <div className="px-3 py-1 bg-[#0b1220] rounded border border-[#14b8a6]/40 text-center h-8 flex items-center gap-2">
+          <span className="text-[10px] text-[#e8fbff]/50 uppercase tracking-wider">Area:</span>
+          <span className="text-sm font-bold text-[#14b8a6]">{formatArea(areaTotal)} mq</span>
+        </div>
+
 
       </div>
 
       {/* Lista elementi - Card più grandi con colori per livello HUB */}
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {currentList.slice(0, 12).map((item) => {
+        {currentList.map((item) => {
           // Determina colore in base al livello HUB
           const getHubCardColor = (hub: HubLocation) => {
             switch (hub.livello) {
