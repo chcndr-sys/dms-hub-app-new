@@ -371,28 +371,40 @@ export default function WalletPage() {
   // Camera Scanner Functions
   const startCameraScanner = async () => {
     try {
-      if (!scannerContainerRef.current) return;
+      if (!scannerContainerRef.current) {
+        console.error('Scanner container not found');
+        return;
+      }
       
+      console.log('Starting camera scanner...');
       const html5QrCode = new Html5Qrcode('qr-reader');
       html5QrCodeRef.current = html5QrCode;
       
       await html5QrCode.start(
         { facingMode: 'environment' },
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 }
+          fps: 15,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0
         },
         (decodedText) => {
           // QR Code scansionato con successo
-          handleQRInput(decodedText);
+          console.log('QR Code scansionato:', decodedText);
+          alert('QR Code letto: ' + decodedText);
+          setQrInput(decodedText);
           validateQR(decodedText);
           stopCameraScanner();
+          setInputMode('manual');
         },
-        () => {}
+        (errorMessage) => {
+          // Ignora errori di scansione continua (normale)
+        }
       );
       setCameraActive(true);
+      console.log('Camera scanner started successfully');
     } catch (err) {
       console.error('Errore avvio camera:', err);
+      alert('Errore avvio fotocamera: ' + (err as Error).message);
       setInputMode('manual');
     }
   };
@@ -699,22 +711,44 @@ export default function WalletPage() {
 
                         {inputMode === 'camera' ? (
                           <div className="space-y-4">
-                            <div 
-                              ref={scannerContainerRef}
-                              id="qr-reader" 
-                              className="w-full aspect-square bg-black rounded-lg overflow-hidden"
-                            />
-                            {cameraActive && (
-                              <p className="text-center text-sm text-muted-foreground">
-                                Inquadra il QR Code del cliente
-                              </p>
-                            )}
-                            {!cameraActive && (
-                              <div className="text-center py-8">
-                                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                                <p className="text-sm text-muted-foreground">Avvio fotocamera...</p>
+                            <div className="relative">
+                              <div 
+                                ref={scannerContainerRef}
+                                id="qr-reader" 
+                                className="w-full aspect-square bg-black rounded-lg overflow-hidden"
+                                style={{ minHeight: '300px' }}
+                              />
+                              {/* Area di mira overlay */}
+                              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                                <div className="w-64 h-64 border-4 border-green-400 rounded-lg relative">
+                                  <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-green-400 rounded-tl-lg"></div>
+                                  <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-green-400 rounded-tr-lg"></div>
+                                  <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-green-400 rounded-bl-lg"></div>
+                                  <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-green-400 rounded-br-lg"></div>
+                                </div>
                               </div>
-                            )}
+                            </div>
+                            <div className="text-center">
+                              {cameraActive ? (
+                                <p className="text-sm text-green-400 font-medium">
+                                  📷 Fotocamera attiva - Inquadra il QR Code
+                                </p>
+                              ) : (
+                                <div className="py-4">
+                                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-green-400" />
+                                  <p className="text-sm text-muted-foreground">Avvio fotocamera...</p>
+                                </div>
+                              )}
+                            </div>
+                            <Button 
+                              type="button"
+                              variant="outline" 
+                              onClick={() => setInputMode('manual')}
+                              className="w-full"
+                            >
+                              <Keyboard className="h-4 w-4 mr-2" />
+                              Passa a inserimento manuale
+                            </Button>
                           </div>
                         ) : (
                           <>
