@@ -39,6 +39,7 @@ import NotificationsPanel from '@/components/NotificationsPanel';
 import ComuniPanel from '@/components/ComuniPanel';
 import WalletPanel from '@/components/WalletPanel';
 import SecurityTab from '@/components/SecurityTab';
+import ClientiTab from '@/components/ClientiTab';
 import GestioneHubPanel from '@/components/GestioneHubPanel';
 import { BusHubEditor } from '@/components/bus-hub';
 import { MessageContent } from '@/components/MessageContent';
@@ -1991,88 +1992,9 @@ export default function DashboardPA() {
             )}
           </TabsContent>
 
-          {/* TAB 2: CLIENTI */}
+          {/* TAB: CLIENTI - Anagrafica Cittadini */}
           <TabsContent value="users" className="space-y-6">
-            {/* Mezzi di Trasporto */}
-            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <Bike className="h-5 w-5 text-[#14b8a6]" />
-                  Mezzi di Trasporto
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {mockData.transport.map((item, i) => (
-                  <div key={i} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        {item.mode === 'A piedi' && <Footprints className="h-4 w-4" style={{ color: item.color }} />}
-                        {item.mode === 'Bicicletta' && <Bike className="h-4 w-4" style={{ color: item.color }} />}
-                        {item.mode === 'Bus' && <Bus className="h-4 w-4" style={{ color: item.color }} />}
-                        {item.mode === 'Auto' && <Car className="h-4 w-4" style={{ color: item.color }} />}
-                        {item.mode === 'Elettrico' && <Zap className="h-4 w-4" style={{ color: item.color }} />}
-                        <span className="text-[#e8fbff]">{item.mode}</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-[#e8fbff]/70">{item.count.toLocaleString()}</span>
-                        <span className="font-semibold text-[#14b8a6]">{item.percentage}%</span>
-                        {item.co2 > 0 && (
-                          <span className="text-xs text-[#10b981]">💚 {item.co2} kg CO₂</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="w-full bg-[#0b1220] rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full transition-all"
-                        style={{ width: `${item.percentage}%`, backgroundColor: item.color }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-                <div className="mt-6 p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg">
-                  <div className="flex items-center gap-2 text-[#10b981]">
-                    <Leaf className="h-5 w-5" />
-                    <span className="font-semibold">CO₂ Risparmiata: {mockData.overview.co2Saved} kg questo mese</span>
-                  </div>
-                  <p className="text-sm text-[#e8fbff]/70 mt-2">Equivalente a 200 alberi piantati</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Provenienza Geografica */}
-            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-[#14b8a6]" />
-                  Provenienza Geografica
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
-                    <span className="text-[#e8fbff]">Grosseto</span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-[#e8fbff]/70">8,500 utenti</span>
-                      <span className="font-semibold text-[#14b8a6]">53.6%</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
-                    <span className="text-[#e8fbff]">Follonica</span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-[#e8fbff]/70">2,300 utenti</span>
-                      <span className="font-semibold text-[#14b8a6]">14.5%</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
-                    <span className="text-[#e8fbff]">Orbetello</span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-[#e8fbff]/70">1,800 utenti</span>
-                      <span className="font-semibold text-[#14b8a6]">11.4%</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <ClientiTab />
           </TabsContent>
 
           {/* TAB: WALLET / PAGOPA - Borsellino Elettronico Prepagato */}
