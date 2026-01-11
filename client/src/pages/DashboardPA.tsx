@@ -494,32 +494,93 @@ export default function DashboardPA() {
   const [fundStats, setFundStats] = useState<any>(null);
   const [fundLoading, setFundLoading] = useState(true);
   
+  // TCC v2.1 - Comuni e Regole
+  const [tccComuni, setTccComuni] = useState<any[]>([]);
+  const [selectedComuneId, setSelectedComuneId] = useState<number | null>(null);
+  const [tccRules, setTccRules] = useState<any[]>([]);
+  const [tccRulesLoading, setTccRulesLoading] = useState(false);
+  
   // Documentation Modal state
   const [docModalContent, setDocModalContent] = useState<{ title: string; content: string } | null>(null);
   
   // Statistiche Imprese
   const [impreseStats, setImpreseStats] = useState({ total: 0, concessioni: 0, comuni: 0, media: '0' });
   
-  // Carica statistiche fondo TCC
+  // Carica lista comuni con hub attivo (TCC v2.1)
+  useEffect(() => {
+    const loadComuni = async () => {
+      try {
+        const response = await fetch('https://orchestratore.mio-hub.me/api/tcc/v2/comuni');
+        const data = await response.json();
+        if (data.success && data.comuni) {
+          setTccComuni(data.comuni);
+          // Imposta il comune di default (primo con area definita, es. Grosseto)
+          if (data.default_hub_id && !selectedComuneId) {
+            setSelectedComuneId(data.default_hub_id);
+          } else if (data.comuni.length > 0 && !selectedComuneId) {
+            setSelectedComuneId(data.comuni[0].hub_id);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading comuni:', error);
+      }
+    };
+    loadComuni();
+  }, []);
+  
+  // Carica regole boost per il comune selezionato (TCC v2.1)
+  useEffect(() => {
+    const loadRules = async () => {
+      if (!selectedComuneId) return;
+      try {
+        setTccRulesLoading(true);
+        const response = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/rules?comune_id=${selectedComuneId}`);
+        const data = await response.json();
+        if (data.success && data.rules) {
+          setTccRules(data.rules);
+          // Aggiorna i boost editabili con i dati reali
+          const areaRules = data.rules.filter((r: any) => r.type === 'area');
+          const categoryRules = data.rules.filter((r: any) => r.type === 'category');
+          setEditableParams(prev => ({
+            ...prev,
+            areaBoosts: areaRules.length > 0 
+              ? areaRules.map((r: any) => ({ area: r.name, boost: (parseFloat(r.multiplier_boost) - 1) * 100, ruleId: r.id }))
+              : prev.areaBoosts,
+            categoryBoosts: categoryRules.length > 0
+              ? categoryRules.map((r: any) => ({ category: r.value, boost: (parseFloat(r.multiplier_boost) - 1) * 100, ruleId: r.id }))
+              : prev.categoryBoosts
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading TCC rules:', error);
+      } finally {
+        setTccRulesLoading(false);
+      }
+    };
+    loadRules();
+  }, [selectedComuneId]);
+  
+  // Carica statistiche fondo TCC per il comune selezionato
   useEffect(() => {
     const loadFundStats = async () => {
+      if (!selectedComuneId) return;
       try {
         setFundLoading(true);
-        const response = await fetch('https://orchestratore.mio-hub.me/api/tcc/v2/fund/stats');
+        const response = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/fund/stats/${selectedComuneId}`);
         const data = await response.json();
         if (data.success) {
           setFundStats(data.fund);
           // Aggiorna anche i parametri editabili con i dati reali
           setEditableParams(prev => ({
             ...prev,
-            tccIssued: data.fund.total_issued,
-            tccSpent: data.fund.total_redeemed,
-            fundBalance: parseFloat(data.fund.fund_requirement_eur) * 100 // Simula fondo disponibile
+            tccIssued: data.fund.total_issued || 0,
+            tccSpent: data.fund.total_redeemed || 0,
+            fundBalance: parseFloat(data.fund.fund_requirement_eur || '0') * 100
           }));
           // Aggiorna il valore TCC applicato
           if (data.fund.config?.tcc_value) {
-            setAppliedTccValue(data.fund.config.tcc_value);
-            setTccValue(data.fund.config.tcc_value);
+            setAppliedTccValue(parseFloat(data.fund.config.tcc_value));
+            setTccValue(parseFloat(data.fund.config.tcc_value));
           }
         }
       } catch (error) {
@@ -532,7 +593,7 @@ export default function DashboardPA() {
     // Refresh ogni 30 secondi
     const interval = setInterval(loadFundStats, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedComuneId]);
   
   // Carica statistiche imprese
   useEffect(() => {
@@ -2291,6 +2352,44 @@ export default function DashboardPA() {
 
           {/* TAB 7: CARBON CREDITS */}
           <TabsContent value="carboncredits" className="space-y-6">
+            {/* SELETTORE COMUNE - TCC v2.1 */}
+            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-[#14b8a6]" />
+                  Seleziona Comune
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <select
+                    value={selectedComuneId || ''}
+                    onChange={(e) => setSelectedComuneId(parseInt(e.target.value))}
+                    className="flex-1 p-3 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+                  >
+                    {tccComuni.length === 0 && (
+                      <option value="">Caricamento comuni...</option>
+                    )}
+                    {tccComuni.map((comune) => (
+                      <option key={comune.hub_id} value={comune.hub_id}>
+                        {comune.nome} ({comune.provincia}) - {comune.hub_name}
+                      </option>
+                    ))}
+                  </select>
+                  {tccComuni.length > 0 && (
+                    <div className="text-sm text-[#e8fbff]/70">
+                      <span className="text-[#14b8a6] font-semibold">{tccComuni.length}</span> hub attivi
+                    </div>
+                  )}
+                </div>
+                {tccComuni.length === 0 && (
+                  <div className="mt-2 text-sm text-[#f59e0b]">
+                    Nessun comune con area geografica definita. Crea prima un'area hub.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
             {/* DATI REALI DAL DATABASE */}
             {fundStats && (
               <Card className="bg-[#1a2332] border-[#14b8a6]/30">
@@ -2406,7 +2505,7 @@ export default function DashboardPA() {
                   <div className="p-4 bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg">
                     <div className="text-sm text-[#e8fbff]/70 mb-1">Valuta</div>
                     <div className="text-2xl font-bold text-[#e8fbff]">
-                      {mockData.carbonCredits.fund.currency}
+                      EUR
                     </div>
                   </div>
                 </div>
@@ -2418,7 +2517,9 @@ export default function DashboardPA() {
                     Entrate Fondo
                   </h4>
                   <div className="space-y-2">
-                    {mockData.carbonCredits.fund.sources.map((source, idx) => (
+                    {(fundStats?.sources || [
+                      { name: 'Fondo Comunale', amount: editableParams.fundBalance, date: new Date().toISOString().split('T')[0] }
+                    ]).map((source: any, idx: number) => (
                       <div key={idx} className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
                         <div className="flex items-center gap-3">
                           <Coins className="h-5 w-5 text-[#10b981]" />
@@ -2427,7 +2528,7 @@ export default function DashboardPA() {
                             <div className="text-xs text-[#e8fbff]/50">{source.date}</div>
                           </div>
                         </div>
-                        <div className="text-[#10b981] font-semibold">+€{source.amount.toLocaleString()}</div>
+                        <div className="text-[#10b981] font-semibold">+€{(source.amount || 0).toLocaleString()}</div>
                       </div>
                     ))}
                   </div>
@@ -2443,19 +2544,19 @@ export default function DashboardPA() {
                     <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg">
                       <div className="text-xs text-[#e8fbff]/70 mb-1">Rimborsi</div>
                       <div className="text-xl font-bold text-[#ef4444]">
-                        €{mockData.carbonCredits.fund.expenses.reimbursements.toLocaleString()}
+                        €{(fundStats?.expenses?.reimbursements || parseFloat(calculateReimbursementNeeded())).toLocaleString()}
                       </div>
                     </div>
                     <div className="p-3 bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg">
                       <div className="text-xs text-[#e8fbff]/70 mb-1">Incentivi</div>
                       <div className="text-xl font-bold text-[#f59e0b]">
-                        €{mockData.carbonCredits.fund.expenses.incentives.toLocaleString()}
+                        €{(fundStats?.expenses?.incentives || 0).toLocaleString()}
                       </div>
                     </div>
                     <div className="p-3 bg-[#8b5cf6]/10 border border-[#8b5cf6]/30 rounded-lg">
                       <div className="text-xs text-[#e8fbff]/70 mb-1">Operativi</div>
                       <div className="text-xl font-bold text-[#8b5cf6]">
-                        €{mockData.carbonCredits.fund.expenses.operations.toLocaleString()}
+                        €{(fundStats?.expenses?.operations || 0).toLocaleString()}
                       </div>
                     </div>
                   </div>
@@ -2485,10 +2586,12 @@ export default function DashboardPA() {
                   <div className="mb-4">
                     <div className="text-sm text-[#e8fbff]/70 mb-3">Storico Variazioni</div>
                     <div className="space-y-2">
-                      {mockData.carbonCredits.value.history.map((item, idx) => (
+                      {(fundStats?.value_history || [
+                        { date: new Date().toISOString().split('T')[0], value: appliedTccValue }
+                      ]).map((item: any, idx: number) => (
                         <div key={idx} className="flex items-center justify-between p-2 bg-[#0b1220] rounded">
                           <span className="text-xs text-[#e8fbff]/70">{item.date}</span>
-                          <span className="text-sm font-semibold text-[#14b8a6]">€{item.value.toFixed(2)}</span>
+                          <span className="text-sm font-semibold text-[#14b8a6]">€{parseFloat(item.value || 0).toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
@@ -2542,11 +2645,35 @@ export default function DashboardPA() {
                   </div>
 
                   <Button 
-                    onClick={() => {
-                      setAppliedTccValue(tccValue);
-                      alert(`Valore TCC aggiornato a €${tccValue.toFixed(2).replace('.', ',')}!\n\nLa modifica è stata applicata con successo.`);
+                    onClick={async () => {
+                      if (!selectedComuneId) {
+                        alert('Seleziona prima un comune!');
+                        return;
+                      }
+                      try {
+                        const response = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/config/update/${selectedComuneId}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            policy_multiplier: tccValue / 0.01, // Calcola moltiplicatore rispetto al valore base
+                            tcc_value: tccValue,
+                            policy_notes: `Aggiornato da Dashboard PA il ${new Date().toLocaleDateString('it-IT')}`
+                          })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          setAppliedTccValue(tccValue);
+                          alert(`Valore TCC aggiornato a €${tccValue.toFixed(2).replace('.', ',')}!\n\nLa modifica è stata salvata nel database.`);
+                        } else {
+                          alert(`Errore: ${data.error || 'Impossibile salvare la modifica'}`);
+                        }
+                      } catch (error) {
+                        console.error('Error updating TCC config:', error);
+                        alert('Errore di connessione al server');
+                      }
                     }}
                     className="w-full bg-[#8b5cf6] hover:bg-[#8b5cf6]/80"
+                    disabled={!selectedComuneId}
                   >
                     <Settings className="h-4 w-4 mr-2" />
                     Applica Modifica
@@ -2655,10 +2782,10 @@ export default function DashboardPA() {
                       <span className="text-[#e8fbff] font-semibold">Pending</span>
                     </div>
                     <div className="text-3xl font-bold text-[#f59e0b] mb-1">
-                      {mockData.carbonCredits.reimbursements.pending.count}
+                      {fundStats?.reimbursements?.pending?.count || 0}
                     </div>
                     <div className="text-sm text-[#e8fbff]/70">
-                      €{mockData.carbonCredits.reimbursements.pending.amount.toLocaleString()} da processare
+                      €{(fundStats?.reimbursements?.pending?.amount || 0).toLocaleString()} da processare
                     </div>
                   </div>
                   <div className="p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg">
@@ -2667,10 +2794,10 @@ export default function DashboardPA() {
                       <span className="text-[#e8fbff] font-semibold">Processati</span>
                     </div>
                     <div className="text-3xl font-bold text-[#10b981] mb-1">
-                      {mockData.carbonCredits.reimbursements.processed.count}
+                      {fundStats?.reimbursements?.processed?.count || 0}
                     </div>
                     <div className="text-sm text-[#e8fbff]/70">
-                      €{mockData.carbonCredits.reimbursements.processed.amount.toLocaleString()} totali
+                      €{(fundStats?.reimbursements?.processed?.amount || 0).toLocaleString()} totali
                     </div>
                   </div>
                 </div>
@@ -2678,17 +2805,17 @@ export default function DashboardPA() {
                 <div className="mb-4">
                   <h4 className="text-[#e8fbff] font-semibold mb-3">Top Negozi per Crediti Incassati</h4>
                   <div className="space-y-2">
-                    {mockData.carbonCredits.reimbursements.topShops.map((shop, idx) => (
+                    {(fundStats?.top_operators || []).map((shop: any, idx: number) => (
                       <div key={idx} className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-[#14b8a6]/20 flex items-center justify-center">
                             <span className="text-[#14b8a6] font-bold">#{idx + 1}</span>
                           </div>
-                          <span className="text-[#e8fbff]">{shop.name}</span>
+                          <span className="text-[#e8fbff]">{shop.name || shop.operator_name || 'Operatore'}</span>
                         </div>
                         <div className="text-right">
-                          <div className="text-[#14b8a6] font-semibold">{shop.credits.toLocaleString()} TCC</div>
-                          <div className="text-xs text-[#e8fbff]/50">€{shop.euros.toLocaleString()}</div>
+                          <div className="text-[#14b8a6] font-semibold">{(shop.credits || shop.total_issued || 0).toLocaleString()} TCC</div>
+                          <div className="text-xs text-[#e8fbff]/50">€{(shop.euros || (shop.total_issued * appliedTccValue) || 0).toLocaleString()}</div>
                         </div>
                       </div>
                     ))}
