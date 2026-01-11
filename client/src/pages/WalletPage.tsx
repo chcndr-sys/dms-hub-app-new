@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
+import LoginModal from '@/components/LoginModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -74,6 +75,49 @@ interface ScanResult {
 // ============================================================================
 
 export default function WalletPage() {
+  // ============================================================================
+  // AUTENTICAZIONE
+  // ============================================================================
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{id: number; name: string; email: string} | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  
+  // Controlla autenticazione all'avvio
+  useEffect(() => {
+    const checkAuth = () => {
+      const userStr = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      if (userStr && token) {
+        try {
+          const user = JSON.parse(userStr);
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        } catch (e) {
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+      }
+    };
+    checkAuth();
+    // Ascolta cambiamenti localStorage (per login da altre tab)
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
+  }, []);
+  
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setWalletData(null);
+    setTransactions([]);
+    setQrData(null);
+  };
+  
   // Rimosso tab Impresa - ora solo Cliente con funzione Paga con TCC
   const [activeTab] = useState<'cliente'>('cliente');
   
@@ -115,8 +159,8 @@ export default function WalletPage() {
   const [redeeming, setRedeeming] = useState(false);
   const [redeemResult, setRedeemResult] = useState<any>(null);
 
-  // Per demo, usiamo userId 30 (Anna Neri Test) e shopId 1 (Banco Frutta BIO Mario)
-  const userId = 30;
+  // Usa l'utente loggato invece di userId hardcoded
+  const userId = currentUser?.id || 0;
   const shopId = 1;
 
   // ============================================================================
@@ -492,9 +536,14 @@ export default function WalletPage() {
   // EFFECTS
   // ============================================================================
 
+  // Carica dati wallet solo se autenticato
   useEffect(() => {
-    fetchWalletData();
-  }, []);
+    if (isAuthenticated && currentUser?.id) {
+      fetchWalletData();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated, currentUser?.id]);
 
   useEffect(() => {
     // Tab Impresa rimosso - fetchMerchantData non piu necessario
@@ -532,30 +581,129 @@ export default function WalletPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-4 shadow-lg">
-        <div className="w-full px-4 md:px-8 flex items-center gap-4">
-          <button
-            onClick={() => window.history.back()}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-xl">
-              <Wallet className="h-7 w-7" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Wallet Carbon Credit</h1>
-              <p className="text-xs text-white/70">
-                {activeTab === 'cliente' ? walletData?.user?.name || 'I tuoi eco-crediti' : merchantData?.name || 'Area Commerciante'}
-              </p>
+  // Se non autenticato, mostra schermata di benvenuto con login
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        {/* Header */}
+        <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-4 shadow-lg">
+          <div className="w-full px-4 md:px-8 flex items-center gap-4">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-xl">
+                <Wallet className="h-7 w-7" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Wallet Carbon Credit</h1>
+                <p className="text-xs text-white/70">Accedi per vedere i tuoi crediti</p>
+              </div>
             </div>
           </div>
+        </header>
+        
+        {/* Contenuto non autenticato */}
+        <div className="w-full px-4 md:px-8 pt-8">
+          <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-emerald-600/10 border-primary/30">
+            <CardContent className="pt-8 pb-8 text-center">
+              <div className="p-4 bg-primary/20 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                <Wallet className="h-10 w-10 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Benvenuto nel Wallet TCC</h2>
+              <p className="text-muted-foreground mb-6">
+                Accedi o registrati per iniziare a guadagnare Token Carbon Credit con i tuoi acquisti sostenibili.
+              </p>
+              <div className="space-y-3">
+                <Button 
+                  onClick={() => setShowLoginModal(true)}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg"
+                >
+                  <User className="h-5 w-5 mr-2" />
+                  Accedi o Registrati
+                </Button>
+              </div>
+              
+              {/* Info sui vantaggi */}
+              <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+                <div className="p-3 bg-background/50 rounded-lg">
+                  <Leaf className="h-6 w-6 text-green-500 mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Guadagna TCC</p>
+                </div>
+                <div className="p-3 bg-background/50 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-blue-500 mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Risparmia CO₂</p>
+                </div>
+                <div className="p-3 bg-background/50 rounded-lg">
+                  <Award className="h-6 w-6 text-amber-500 mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Sali di livello</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Login Modal */}
+        <LoginModal isOpen={showLoginModal} onClose={() => {
+          setShowLoginModal(false);
+          // Ricontrolla autenticazione dopo chiusura modal
+          const userStr = localStorage.getItem('user');
+          const token = localStorage.getItem('token');
+          if (userStr && token) {
+            try {
+              const user = JSON.parse(userStr);
+              setCurrentUser(user);
+              setIsAuthenticated(true);
+            } catch (e) {}
+          }
+        }} />
+        
+        <BottomNav />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      {/* Header con logout */}
+      <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-4 shadow-lg">
+        <div className="w-full px-4 md:px-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-xl">
+                <Wallet className="h-7 w-7" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Wallet Carbon Credit</h1>
+                <p className="text-xs text-white/70">
+                  {currentUser?.name || walletData?.user?.name || 'I tuoi eco-crediti'}
+                </p>
+              </div>
+            </div>
+          </div>
+          {/* Pulsante Logout */}
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-full bg-white/10 hover:bg-red-500/50 transition-all text-white/80 hover:text-white"
+            title="Esci"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
         </div>
       </header>
 
