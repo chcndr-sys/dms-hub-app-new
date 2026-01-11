@@ -93,11 +93,14 @@ export default function HubOperatore() {
     try {
       const res = await fetch(`${API_BASE}/operator/transactions/${operatore.id}?limit=20`);
       const data = await res.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.transactions)) {
         setTransactions(data.transactions);
+      } else {
+        setTransactions([]);
       }
     } catch (error) {
       console.error('Errore caricamento transazioni:', error);
+      setTransactions([]);
     }
   };
 
@@ -188,9 +191,11 @@ export default function HubOperatore() {
         setSelectedCerts([]);
         setScannedData(null);
         setValidatedCustomer(null);
-        // Ricarica dati
-        loadOperatorWallet();
-        loadTransactions();
+        // Ricarica dati con piccolo delay per evitare race condition
+        setTimeout(() => {
+          loadOperatorWallet();
+          loadTransactions();
+        }, 500);
       } else {
         toast.error(data.error || 'Errore assegnazione TCC');
       }
@@ -223,8 +228,11 @@ export default function HubOperatore() {
       if (data.success) {
         toast.success(data.message);
         setScannedData(null);
-        loadOperatorWallet();
-        loadTransactions();
+        // Ricarica dati con piccolo delay per evitare race condition
+        setTimeout(() => {
+          loadOperatorWallet();
+          loadTransactions();
+        }, 500);
       } else {
         toast.error(data.error || 'Errore incasso TCC');
       }
