@@ -154,8 +154,9 @@ export default function GestioneHubPanel() {
   });
 
   // Funzioni calcolo Carbon Credit
-  const CO2_PER_TCC = 0.06;
-  const CO2_PER_TREE = 22;
+  // NUOVA FORMULA: 1 TCC = 1 kg CO2 (basato su EU ETS)
+  const CO2_PER_TCC = 1; // 1 TCC = 1 kg CO2
+  const CO2_PER_TREE = 22; // 1 albero assorbe 22 kg CO2/anno (fonte: USDA)
 
   const calculateAreaValues = () => {
     return editableParams.areaBoosts.map(item => ({
@@ -186,12 +187,13 @@ export default function GestioneHubPanel() {
   };
 
   const calculateCO2Saved = () => {
+    // TCC riscattati = kg CO2 evitata
     return (editableParams.tccSpent * CO2_PER_TCC).toFixed(0);
   };
 
   const calculateTreesEquivalent = () => {
     const co2Saved = parseFloat(calculateCO2Saved());
-    return Math.round(co2Saved / CO2_PER_TREE);
+    return (co2Saved / CO2_PER_TREE).toFixed(1);
   };
 
   // Carica dati reali all'avvio
@@ -1155,7 +1157,7 @@ export default function GestioneHubPanel() {
                   <div>
                     <div className="text-xs text-[#e8fbff]/70 mb-1">CO₂ Risparmiata</div>
                     <div className="text-xl font-bold text-[#10b981]">{calculateCO2Saved()} kg</div>
-                    <div className="text-xs text-[#e8fbff]/50 mt-1">(TCC Spesi × 0.06 kg)</div>
+                    <div className="text-xs text-[#e8fbff]/50 mt-1">(1 TCC = 1 kg CO₂)</div>
                   </div>
                   <div>
                     <div className="text-xs text-[#e8fbff]/70 mb-1">Alberi Equivalenti</div>

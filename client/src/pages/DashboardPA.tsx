@@ -488,18 +488,19 @@ export default function DashboardPA() {
     return (editableParams.tccSpent * tccValue).toFixed(0);
   };
 
-  // Fattore conversione: 1 TCC speso = 0.06 kg CO₂ risparmiati (media shopping locale vs e-commerce)
-  const CO2_PER_TCC = 0.06;
-  // 1 albero assorbe circa 22 kg CO₂ all'anno
+  // NUOVA FORMULA: 1 TCC = 1 kg CO2 (basato su EU ETS: 1 TCC rappresenta 1 kg di CO2)
+  const CO2_PER_TCC = 1; // 1 TCC = 1 kg CO2
+  // 1 albero assorbe circa 22 kg CO₂ all'anno (fonte: USDA)
   const CO2_PER_TREE = 22;
 
   const calculateCO2Saved = () => {
+    // TCC riscattati = kg CO2 evitata
     return (editableParams.tccSpent * CO2_PER_TCC).toFixed(0);
   };
 
   const calculateTreesEquivalent = () => {
     const co2Saved = parseFloat(calculateCO2Saved());
-    return Math.round(co2Saved / CO2_PER_TREE);
+    return (co2Saved / CO2_PER_TREE).toFixed(1);
   };
 
   // Chat AI
@@ -3031,11 +3032,35 @@ export default function DashboardPA() {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button className="flex-1 bg-[#14b8a6] hover:bg-[#14b8a6]/80">
+                  <Button 
+                    className="flex-1 bg-[#14b8a6] hover:bg-[#14b8a6]/80"
+                    onClick={() => {
+                      // Export CSV dei rimborsi
+                      const data = fundStats?.top_operators || [];
+                      if (data.length === 0) {
+                        toast.info('Nessun dato da esportare');
+                        return;
+                      }
+                      const csv = 'Operatore,TCC Rilasciati,TCC Riscattati,Vendite EUR\n' + 
+                        data.map((op: any) => `${op.operator_name || op.operator_id},${op.total_issued || 0},${op.total_redeemed || 0},${op.total_sales || 0}`).join('\n');
+                      const blob = new Blob([csv], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `rimborsi_tcc_${new Date().toISOString().split('T')[0]}.csv`;
+                      a.click();
+                      toast.success('CSV esportato!');
+                    }}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Export CSV
                   </Button>
-                  <Button className="flex-1 bg-[#8b5cf6] hover:bg-[#8b5cf6]/80">
+                  <Button 
+                    className="flex-1 bg-[#8b5cf6] hover:bg-[#8b5cf6]/80"
+                    onClick={() => {
+                      toast.info('Funzionalità Processa Batch in sviluppo - Richiede approvazione admin');
+                    }}
+                  >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Processa Batch
                   </Button>
@@ -3097,7 +3122,7 @@ export default function DashboardPA() {
                         {parseFloat(calculateCO2Saved()).toLocaleString('it-IT')} kg
                       </div>
                       <div className="text-xs text-[#e8fbff]/50 mt-1">
-                        (TCC Spesi × 0.06 kg)
+                        (1 TCC = 1 kg CO₂)
                       </div>
                     </div>
                     <div>
@@ -3136,13 +3161,21 @@ export default function DashboardPA() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-[#e8fbff]/70">Copertura Fondo</span>
                       <span className="text-lg font-bold text-[#10b981]">
-                        {((editableParams.fundBalance / parseFloat(calculateReimbursementNeeded())) * 100).toFixed(1)}%
+                        {(() => {
+                          const reimbursement = parseFloat(calculateReimbursementNeeded()) || 0;
+                          if (reimbursement === 0) return '100.0';
+                          const coverage = (editableParams.fundBalance / reimbursement) * 100;
+                          return coverage > 1000 ? '>1000' : coverage.toFixed(1);
+                        })()}%
                       </span>
                     </div>
                     <div className="mt-2 h-2 bg-[#0b1220] rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-[#10b981] to-[#14b8a6] transition-all duration-300"
-                        style={{ width: `${Math.min(100, (editableParams.fundBalance / parseFloat(calculateReimbursementNeeded())) * 100)}%` }}
+                        style={{ width: `${Math.min(100, (() => {
+                          const reimbursement = parseFloat(calculateReimbursementNeeded()) || 1;
+                          return (editableParams.fundBalance / reimbursement) * 100;
+                        })())}%` }}
                       />
                     </div>
                   </div>
