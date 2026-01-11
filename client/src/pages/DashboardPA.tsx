@@ -490,11 +490,49 @@ export default function DashboardPA() {
   // Guardian Logs for MIO Agent tab
   const [guardianLogs, setGuardianLogs] = useState<any[]>([]);
   
+  // Fund TCC Stats - Dati reali dal backend
+  const [fundStats, setFundStats] = useState<any>(null);
+  const [fundLoading, setFundLoading] = useState(true);
+  
   // Documentation Modal state
   const [docModalContent, setDocModalContent] = useState<{ title: string; content: string } | null>(null);
   
   // Statistiche Imprese
   const [impreseStats, setImpreseStats] = useState({ total: 0, concessioni: 0, comuni: 0, media: '0' });
+  
+  // Carica statistiche fondo TCC
+  useEffect(() => {
+    const loadFundStats = async () => {
+      try {
+        setFundLoading(true);
+        const response = await fetch('https://orchestratore.mio-hub.me/api/tcc/v2/fund/stats');
+        const data = await response.json();
+        if (data.success) {
+          setFundStats(data.fund);
+          // Aggiorna anche i parametri editabili con i dati reali
+          setEditableParams(prev => ({
+            ...prev,
+            tccIssued: data.fund.total_issued,
+            tccSpent: data.fund.total_redeemed,
+            fundBalance: parseFloat(data.fund.fund_requirement_eur) * 100 // Simula fondo disponibile
+          }));
+          // Aggiorna il valore TCC applicato
+          if (data.fund.config?.tcc_value) {
+            setAppliedTccValue(data.fund.config.tcc_value);
+            setTccValue(data.fund.config.tcc_value);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading fund stats:', error);
+      } finally {
+        setFundLoading(false);
+      }
+    };
+    loadFundStats();
+    // Refresh ogni 30 secondi
+    const interval = setInterval(loadFundStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
   
   // Carica statistiche imprese
   useEffect(() => {
@@ -2253,7 +2291,78 @@ export default function DashboardPA() {
 
           {/* TAB 7: CARBON CREDITS */}
           <TabsContent value="carboncredits" className="space-y-6">
-            {/* Fondo Liquidità */}
+            {/* DATI REALI DAL DATABASE */}
+            {fundStats && (
+              <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+                <CardHeader>
+                  <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-[#14b8a6]" />
+                    Statistiche TCC in Tempo Reale
+                    {fundLoading && <RefreshCw className="h-4 w-4 animate-spin text-[#14b8a6]" />}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="p-4 bg-gradient-to-br from-[#14b8a6]/20 to-[#14b8a6]/5 border border-[#14b8a6]/30 rounded-lg">
+                      <div className="text-sm text-[#e8fbff]/70 mb-1">TCC in Circolazione</div>
+                      <div className="text-3xl font-bold text-[#14b8a6]">{fundStats.total_circulation?.toLocaleString()}</div>
+                      <div className="text-xs text-[#e8fbff]/50">Nei wallet utenti</div>
+                    </div>
+                    <div className="p-4 bg-[#0b1220] border border-[#10b981]/20 rounded-lg">
+                      <div className="text-sm text-[#e8fbff]/70 mb-1">TCC Totali Rilasciati</div>
+                      <div className="text-2xl font-bold text-[#10b981]">{fundStats.total_issued?.toLocaleString()}</div>
+                      <div className="text-xs text-[#e8fbff]/50">Dagli operatori</div>
+                    </div>
+                    <div className="p-4 bg-[#0b1220] border border-[#f59e0b]/20 rounded-lg">
+                      <div className="text-sm text-[#e8fbff]/70 mb-1">TCC Totali Riscattati</div>
+                      <div className="text-2xl font-bold text-[#f59e0b]">{fundStats.total_redeemed?.toLocaleString()}</div>
+                      <div className="text-xs text-[#e8fbff]/50">Dai clienti</div>
+                    </div>
+                    <div className="p-4 bg-gradient-to-br from-[#8b5cf6]/20 to-[#8b5cf6]/5 border border-[#8b5cf6]/30 rounded-lg">
+                      <div className="text-sm text-[#e8fbff]/70 mb-1">Fabbisogno Fondo</div>
+                      <div className="text-2xl font-bold text-[#8b5cf6]">€{fundStats.fund_requirement_eur}</div>
+                      <div className="text-xs text-[#e8fbff]/50">Per coprire circolazione</div>
+                    </div>
+                  </div>
+                  
+                  {/* Statistiche Oggi */}
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="p-3 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg">
+                      <div className="text-xs text-[#e8fbff]/70">Rilasciati Oggi</div>
+                      <div className="text-xl font-bold text-[#10b981]">{fundStats.today?.issued || 0} TCC</div>
+                    </div>
+                    <div className="p-3 bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg">
+                      <div className="text-xs text-[#e8fbff]/70">Riscattati Oggi</div>
+                      <div className="text-xl font-bold text-[#f59e0b]">{fundStats.today?.redeemed || 0} TCC</div>
+                    </div>
+                    <div className="p-3 bg-[#14b8a6]/10 border border-[#14b8a6]/30 rounded-lg">
+                      <div className="text-xs text-[#e8fbff]/70">Vendite Oggi</div>
+                      <div className="text-xl font-bold text-[#14b8a6]">€{fundStats.today?.sales_eur || 0}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Utenti */}
+                  <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5 text-[#14b8a6]" />
+                      <span className="text-[#e8fbff]">Utenti Registrati</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-[#e8fbff]">{fundStats.users?.total || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Totali</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-[#10b981]">{fundStats.users?.active || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Con TCC</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Fondo Liquidità - SIMULATORE */}
             <Card className="bg-[#1a2332] border-[#14b8a6]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
