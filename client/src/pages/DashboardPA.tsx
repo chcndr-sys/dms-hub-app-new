@@ -2881,11 +2881,10 @@ export default function DashboardPA() {
                         return;
                       }
                       try {
-                        // Calcola il policy_multiplier: quanti TCC per €10 / valore base
-                        // Se tccValue = 1 (10 TCC per €10), policy_multiplier = 10 * 0.089 = 0.89
-                        // Il moltiplicatore indica quanti TCC vengono assegnati per ogni euro speso
-                        const tccPer10Euro = Math.round(tccValue * 10);
-                        const policyMultiplier = tccPer10Euro / 10; // TCC per €1
+                        // tccValue = valore dello slider (TCC per €10 spesi)
+                        // policy_multiplier = tccValue direttamente
+                        // Es: slider su 10 → policy_multiplier = 10 → €100 spesi = (100/10)*10 = 100 TCC
+                        const policyMultiplier = tccValue;
                         
                         const response = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/config/update/${selectedComuneId}`, {
                           method: 'PUT',
@@ -2893,13 +2892,13 @@ export default function DashboardPA() {
                           body: JSON.stringify({
                             policy_multiplier: policyMultiplier,
                             // NON sovrascrivere tcc_value - deve rimanere €0,089!
-                            policy_notes: `Leva: ${tccPer10Euro} TCC per €10 - ${new Date().toLocaleDateString('it-IT')}`
+                            policy_notes: `Leva: ${policyMultiplier} TCC per €10 - ${new Date().toLocaleDateString('it-IT')}`
                           })
                         });
                         const data = await response.json();
                         if (data.success) {
                           setAppliedTccValue(0.089); // Valore fisso EU ETS
-                          alert(`Leva politica salvata!\n\n€10 spesi = ${tccPer10Euro} TCC assegnati\nMoltiplicatore: ${policyMultiplier.toFixed(2)}x`);
+                          alert(`Leva politica salvata!\n\n€10 spesi = ${policyMultiplier} TCC assegnati`);
                         } else {
                           alert(`Errore: ${data.error || 'Impossibile salvare'}`);
                         }
