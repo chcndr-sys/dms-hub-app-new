@@ -754,7 +754,7 @@ export default function HubOperatore() {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-[#e8fbff]">
-                            EUR{tx.euro_amount?.toFixed(2) || '0.00'}
+                            EUR{parseFloat(tx.euro_amount || 0).toFixed(2)}
                           </p>
                           <p className={`text-sm ${tx.type === 'issue' ? 'text-[#14b8a6]' : 'text-[#f59e0b]'}`}>
                             {tx.type === 'issue' ? '+' : '-'}{tx.tcc_amount} TCC
