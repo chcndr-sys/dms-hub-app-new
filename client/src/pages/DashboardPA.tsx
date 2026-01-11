@@ -560,13 +560,13 @@ export default function DashboardPA() {
     loadRules();
   }, [selectedComuneId]);
   
-  // Carica statistiche fondo TCC per il comune selezionato
+  // Carica statistiche fondo TCC NAZIONALI (endpoint originale senza comune)
   useEffect(() => {
     const loadFundStats = async () => {
-      if (!selectedComuneId) return;
       try {
         setFundLoading(true);
-        const response = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/fund/stats/${selectedComuneId}`);
+        // Usa l'endpoint originale per le statistiche nazionali
+        const response = await fetch('https://orchestratore.mio-hub.me/api/tcc/v2/fund/stats');
         const data = await response.json();
         if (data.success) {
           setFundStats(data.fund);
@@ -577,7 +577,7 @@ export default function DashboardPA() {
             tccSpent: data.fund.total_redeemed || 0,
             fundBalance: parseFloat(data.fund.fund_requirement_eur || '0') * 100
           }));
-          // Aggiorna il valore TCC applicato
+          // Aggiorna il valore TCC applicato dalla config nazionale
           if (data.fund.config?.tcc_value) {
             setAppliedTccValue(parseFloat(data.fund.config.tcc_value));
             setTccValue(parseFloat(data.fund.config.tcc_value));
@@ -593,7 +593,7 @@ export default function DashboardPA() {
     // Refresh ogni 30 secondi
     const interval = setInterval(loadFundStats, 30000);
     return () => clearInterval(interval);
-  }, [selectedComuneId]);
+  }, []); // Carica una volta all'avvio, non dipende dal comune selezionato
   
   // Carica statistiche imprese
   useEffect(() => {
