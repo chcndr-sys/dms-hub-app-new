@@ -2808,7 +2808,7 @@ export default function DashboardPA() {
                 </CardContent>
               </Card>
 
-              {/* Manopola Politica */}
+              {/* Leva Politica TCC */}
               <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
                 <CardHeader>
                   <CardTitle className="text-[#e8fbff] flex items-center gap-2">
@@ -2818,43 +2818,54 @@ export default function DashboardPA() {
                 </CardHeader>
                 <CardContent>
                   <div className="mb-6">
-                    <label className="text-sm text-[#e8fbff]/70 mb-2 block">TCC assegnati per €1 speso</label>
+                    <label className="text-sm text-[#e8fbff]/70 mb-2 block">TCC assegnati per €10 spesi</label>
                     <input
                       type="range"
                       min="0"
-                      max="3.0"
-                      step="0.1"
-                      value={tccValue}
-                      onChange={(e) => setTccValue(parseFloat(e.target.value))}
+                      max="30"
+                      step="1"
+                      value={tccValue * 10}
+                      onChange={(e) => setTccValue(parseFloat(e.target.value) / 10)}
                       className="w-full h-2 bg-[#0b1220] rounded-lg appearance-none cursor-pointer"
                     />
                     <div className="flex justify-between text-xs text-[#e8fbff]/50 mt-1">
-                      <span>0x</span>
-                      <span>1x</span>
-                      <span>2x</span>
-                      <span>3x</span>
+                      <span>0</span>
+                      <span>10</span>
+                      <span>20</span>
+                      <span>30</span>
                     </div>
                   </div>
 
                   <div className="p-4 bg-[#8b5cf6]/10 border border-[#8b5cf6]/30 rounded-lg mb-4">
-                    <div className="text-sm text-[#e8fbff] font-semibold mb-2">Simulatore Impatto</div>
+                    <div className="text-sm text-[#e8fbff] font-semibold mb-2">Anteprima Assegnazione</div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-[#e8fbff]/70">Moltiplicatore:</span>
-                        <span className="text-[#8b5cf6] font-semibold">{tccValue.toLocaleString('it-IT', {minimumFractionDigits: 1})}x</span>
+                        <span className="text-[#e8fbff]/70">€10 spesi =</span>
+                        <span className="text-[#10b981] font-bold text-lg">{Math.round(10 * tccValue)} TCC</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#e8fbff]/70">€10 spesi =</span>
-                        <span className="text-[#10b981] font-semibold">{(10 * tccValue).toLocaleString('it-IT', {minimumFractionDigits: 0})} TCC</span>
+                        <span className="text-[#e8fbff]/70">€50 spesi =</span>
+                        <span className="text-[#10b981] font-semibold">{Math.round(50 * tccValue)} TCC</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#e8fbff]/70">€100 spesi =</span>
-                        <span className="text-[#10b981] font-semibold">{(100 * tccValue).toLocaleString('it-IT', {minimumFractionDigits: 0})} TCC</span>
+                        <span className="text-[#10b981] font-semibold">{Math.round(100 * tccValue)} TCC</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-[#e8fbff]/70">Valore 1 TCC:</span>
-                        <span className="text-[#f59e0b] font-semibold">€1,00</span>
-                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="text-sm text-[#e8fbff]/70 mb-2 block">Oppure inserisci manualmente:</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="30"
+                        value={Math.round(tccValue * 10)}
+                        onChange={(e) => setTccValue(Math.min(3, Math.max(0, parseFloat(e.target.value) || 0) / 10))}
+                        className="flex-1 px-3 py-2 bg-[#0b1220] border border-[#8b5cf6]/30 rounded-lg text-[#e8fbff] text-center text-lg font-bold focus:ring-2 focus:ring-[#8b5cf6]"
+                      />
+                      <span className="text-[#e8fbff]/70">TCC per €10</span>
                     </div>
                   </div>
 
@@ -2870,27 +2881,27 @@ export default function DashboardPA() {
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
                             policy_multiplier: tccValue,
-                            tcc_value: 1.0, // Valore fisso €1 = 1 TCC
-                            policy_notes: `Leva politica ${tccValue}x - Aggiornato il ${new Date().toLocaleDateString('it-IT')}`
+                            tcc_value: 1.0,
+                            policy_notes: `Leva: ${Math.round(tccValue * 10)} TCC per €10 - ${new Date().toLocaleDateString('it-IT')}`
                           })
                         });
                         const data = await response.json();
                         if (data.success) {
                           setAppliedTccValue(tccValue);
-                          alert(`Leva politica aggiornata a ${tccValue}x!\n\n€1 speso = ${tccValue} TCC assegnati`);
+                          alert(`Leva politica salvata!\n\n€10 spesi = ${Math.round(tccValue * 10)} TCC assegnati`);
                         } else {
-                          alert(`Errore: ${data.error || 'Impossibile salvare la modifica'}`);
+                          alert(`Errore: ${data.error || 'Impossibile salvare'}`);
                         }
                       } catch (error) {
                         console.error('Error updating TCC config:', error);
-                        alert('Errore di connessione al server');
+                        alert('Errore di connessione');
                       }
                     }}
                     className="w-full bg-[#8b5cf6] hover:bg-[#8b5cf6]/80"
                     disabled={!selectedComuneId}
                   >
                     <Settings className="h-4 w-4 mr-2" />
-                    Applica Leva
+                    Salva Leva Politica
                   </Button>
                 </CardContent>
               </Card>
