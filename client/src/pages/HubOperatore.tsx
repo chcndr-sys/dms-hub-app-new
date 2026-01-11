@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,12 @@ export default function HubOperatore() {
   const [co2Saved, setCo2Saved] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   
+  // Camera Scanner
+  const [cameraActive, setCameraActive] = useState(false);
+  const [inputMode, setInputMode] = useState<'camera' | 'manual'>('manual');
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const scannerContainerRef = useRef<HTMLDivElement>(null);
+
   // Wallet Operatore
   const [operatorWallet, setOperatorWallet] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -256,7 +263,95 @@ export default function HubOperatore() {
     }
   };
 
-  // Simula scansione QR (in futuro con camera reale)
+  // Avvia scanner camera
+  const startCameraScanner = async () => {
+    try {
+      if (!scannerContainerRef.current) {
+        console.error('Scanner container not found');
+        toast.error('Errore: container scanner non trovato');
+        return;
+      }
+      
+      console.log('Starting camera scanner...');
+      const html5QrCode = new Html5Qrcode('qr-reader');
+      html5QrCodeRef.current = html5QrCode;
+      
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: function(viewfinderWidth: number, viewfinderHeight: number) {
+            // QR box più grande per cattura più facile
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const qrboxSize = Math.floor(minEdge * 0.7);
+            return { width: qrboxSize, height: qrboxSize };
+          },
+          aspectRatio: 1.0,
+          disableFlip: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
+        },
+        async (decodedText) => {
+          // QR Code scansionato con successo
+          console.log('QR Code scansionato:', decodedText);
+          toast.success('QR Code letto!');
+          setScannedData(decodedText);
+          
+          if (scanMode === 'issue') {
+            await validateCustomerQR(decodedText);
+          } else {
+            toast.success('QR di spesa rilevato');
+          }
+          
+          await stopCameraScanner();
+          setInputMode('manual');
+        },
+        (errorMessage) => {
+          // Ignora errori di scansione continua (normale)
+        }
+      );
+      setCameraActive(true);
+      console.log('Camera scanner started successfully');
+    } catch (err) {
+      console.error('Errore avvio camera:', err);
+      toast.error('Errore avvio fotocamera: ' + (err as Error).message);
+      setInputMode('manual');
+    }
+  };
+
+  // Ferma scanner camera
+  const stopCameraScanner = async () => {
+    if (html5QrCodeRef.current) {
+      try {
+        await html5QrCodeRef.current.stop();
+        html5QrCodeRef.current = null;
+      } catch (err) {
+        console.error('Errore stop camera:', err);
+      }
+    }
+    setCameraActive(false);
+  };
+
+  // Cleanup camera on unmount
+  useEffect(() => {
+    return () => {
+      if (html5QrCodeRef.current) {
+        html5QrCodeRef.current.stop().catch(() => {});
+      }
+    };
+  }, []);
+
+  // Start/stop camera based on inputMode
+  useEffect(() => {
+    if (inputMode === 'camera' && !validatedCustomer && !scannedData) {
+      startCameraScanner();
+    } else {
+      stopCameraScanner();
+    }
+  }, [inputMode, validatedCustomer, scannedData]);
+
+  // Input manuale QR
   const handleManualQRInput = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -493,31 +588,51 @@ export default function HubOperatore() {
                   </div>
                 )}
 
+                {/* Toggle Camera/Manual */}
+                <div className="flex gap-2 mb-4">
+                  <Button
+                    type="button"
+                    variant={inputMode === 'camera' ? 'default' : 'outline'}
+                    onClick={() => setInputMode('camera')}
+                    className={`flex-1 ${inputMode === 'camera' ? 'bg-[#f97316] hover:bg-[#ea580c]' : 'border-[#334155]'}`}
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Fotocamera
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={inputMode === 'manual' ? 'default' : 'outline'}
+                    onClick={() => { stopCameraScanner(); setInputMode('manual'); }}
+                    className={`flex-1 ${inputMode === 'manual' ? 'bg-[#14b8a6] hover:bg-[#0d9488]' : 'border-[#334155]'}`}
+                  >
+                    <QrCode className="w-4 h-4 mr-2" />
+                    Manuale
+                  </Button>
+                </div>
+
                 {/* Scanner Section */}
-                <div className="aspect-video bg-[#0b1220] rounded-lg flex flex-col items-center justify-center border-2 border-dashed border-[#334155] overflow-hidden relative">
-                  {isScanning ? (
-                    <form onSubmit={handleManualQRInput} className="w-full p-4 space-y-4">
-                      <p className="text-center text-[#94a3b8] mb-4">
-                        <Camera className="w-8 h-8 mx-auto mb-2 text-[#f97316]" />
-                        Inserisci il codice QR manualmente
-                      </p>
-                      <input
-                        name="qrInput"
-                        type="text"
-                        placeholder={scanMode === 'issue' ? 'tcc://userId/token' : 'tcc-spend://userId/token'}
-                        className="w-full px-3 py-2 bg-[#1e293b] border border-[#334155] rounded-md text-[#e8fbff] focus:outline-none focus:border-[#14b8a6]"
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button type="submit" className="flex-1 bg-[#10b981] hover:bg-[#059669]">
-                          <CheckCircle2 className="w-4 h-4 mr-2" />
-                          Conferma
-                        </Button>
-                        <Button type="button" variant="outline" onClick={() => setIsScanning(false)} className="border-[#334155]">
-                          Annulla
-                        </Button>
-                      </div>
-                    </form>
+                <div 
+                  ref={scannerContainerRef}
+                  className="bg-[#0b1220] rounded-lg flex flex-col items-center justify-center border-2 border-dashed border-[#334155] overflow-hidden relative"
+                  style={{ minHeight: '350px' }}
+                >
+                  {inputMode === 'camera' ? (
+                    <div className="w-full h-full">
+                      <div 
+                        id="qr-reader" 
+                        className="w-full"
+                        style={{ minHeight: '300px' }}
+                      ></div>
+                      {cameraActive ? (
+                        <p className="text-center text-sm text-[#10b981] py-2 font-medium">
+                          📷 Fotocamera attiva - Inquadra il QR Code
+                        </p>
+                      ) : (
+                        <p className="text-center text-sm text-[#94a3b8] py-2">
+                          Avvio fotocamera...
+                        </p>
+                      )}
+                    </div>
                   ) : validatedCustomer ? (
                     <div className="text-center p-4">
                       <CheckCircle2 className="w-16 h-16 text-[#10b981] mx-auto mb-4" />
@@ -527,7 +642,7 @@ export default function HubOperatore() {
                       <p className="text-sm text-[#94a3b8] mt-2">Saldo: {validatedCustomer.wallet_balance} TCC</p>
                       <Button 
                         className="mt-4 bg-[#f97316] hover:bg-[#ea580c]"
-                        onClick={() => { setScannedData(null); setValidatedCustomer(null); setIsScanning(true); }}
+                        onClick={() => { setScannedData(null); setValidatedCustomer(null); }}
                       >
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Nuovo Cliente
@@ -542,26 +657,30 @@ export default function HubOperatore() {
                       </code>
                       <Button 
                         className="mt-4 bg-[#f97316] hover:bg-[#ea580c]"
-                        onClick={() => { setScannedData(null); setIsScanning(true); }}
+                        onClick={() => { setScannedData(null); }}
                       >
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Nuovo QR
                       </Button>
                     </div>
                   ) : (
-                    <>
-                      <QrCode className="w-16 h-16 text-[#334155] mb-4" />
-                      <p className="text-[#94a3b8] text-center">
-                        {scanMode === 'issue' ? 'Scansiona QR Cliente' : 'Scansiona QR Spesa'}
+                    <form onSubmit={handleManualQRInput} className="w-full p-4 space-y-4">
+                      <p className="text-center text-[#94a3b8] mb-4">
+                        <QrCode className="w-8 h-8 mx-auto mb-2 text-[#14b8a6]" />
+                        Inserisci il codice QR manualmente
                       </p>
-                      <Button 
-                        className="mt-4 bg-[#f97316] hover:bg-[#ea580c]"
-                        onClick={() => setIsScanning(true)}
-                      >
-                        <Camera className="w-4 h-4 mr-2" />
-                        Attiva Scanner
+                      <input
+                        name="qrInput"
+                        type="text"
+                        placeholder={scanMode === 'issue' ? 'tcc://userId/token' : 'tcc-spend://userId/token'}
+                        className="w-full px-3 py-2 bg-[#1e293b] border border-[#334155] rounded-md text-[#e8fbff] focus:outline-none focus:border-[#14b8a6]"
+                        autoFocus
+                      />
+                      <Button type="submit" className="w-full bg-[#10b981] hover:bg-[#059669]">
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        Conferma
                       </Button>
-                    </>
+                    </form>
                   )}
                 </div>
 
