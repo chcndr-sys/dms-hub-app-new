@@ -295,10 +295,7 @@ export default function HubOperatore() {
             return { width: qrboxSize, height: qrboxSize };
           },
           aspectRatio: 1.0,
-          disableFlip: false,
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          }
+          disableFlip: false
         },
         async (decodedText) => {
           // QR Code scansionato con successo
