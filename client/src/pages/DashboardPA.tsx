@@ -418,15 +418,15 @@ export default function DashboardPA() {
   const [walletSearch, setWalletSearch] = useState('');
   const [selectedWallet, setSelectedWallet] = useState<number | null>(null);
 
-  // Leva Politica: TCC assegnati per €10 spesi (range 0-30, default 1 = 10 TCC per €10)
-  const [tccValue, setTccValue] = useState(1.0); // Moltiplicatore leva (1.0 = 10 TCC per €10)
+  // Leva Politica: TCC assegnati per €10 spesi (range 0-30, default 10)
+  const [tccValue, setTccValue] = useState(10); // Valore diretto: 10 = 10 TCC per €10
   
   // Carbon Credits - Simulatore completo
   const [editableParams, setEditableParams] = useState({
-    fundBalance: 125000,
-    burnRate: 8500,
-    tccIssued: 125000,
-    tccSpent: 78000,
+    fundBalance: 0,
+    burnRate: 0,
+    tccIssued: 0,
+    tccSpent: 0,
     areaBoosts: [
       { area: 'Grosseto', boost: 0 },
       { area: 'Follonica', boost: -10 },
@@ -657,7 +657,7 @@ export default function DashboardPA() {
           }
           // Aggiorna la leva politica (policy_multiplier)
           if (data.fund.config?.policy_multiplier) {
-            // policy_multiplier rappresenta TCC per €1, quindi moltiplichiamo per 10 per avere TCC per €10
+            // policy_multiplier = TCC per €10 spesi (valore diretto)
             setTccValue(parseFloat(data.fund.config.policy_multiplier));
           }
         }
@@ -2829,8 +2829,8 @@ export default function DashboardPA() {
                       min="0"
                       max="30"
                       step="1"
-                      value={tccValue * 10}
-                      onChange={(e) => setTccValue(parseFloat(e.target.value) / 10)}
+                      value={tccValue}
+                      onChange={(e) => setTccValue(parseFloat(e.target.value))}
                       className="w-full h-2 bg-[#0b1220] rounded-lg appearance-none cursor-pointer"
                     />
                     <div className="flex justify-between text-xs text-[#e8fbff]/50 mt-1">
@@ -2846,15 +2846,15 @@ export default function DashboardPA() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-[#e8fbff]/70">€10 spesi =</span>
-                        <span className="text-[#10b981] font-bold text-lg">{Math.round(10 * tccValue)} TCC</span>
+                        <span className="text-[#10b981] font-bold text-lg">{Math.round(tccValue)} TCC</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#e8fbff]/70">€50 spesi =</span>
-                        <span className="text-[#10b981] font-semibold">{Math.round(50 * tccValue)} TCC</span>
+                        <span className="text-[#10b981] font-semibold">{Math.round(tccValue * 5)} TCC</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#e8fbff]/70">€100 spesi =</span>
-                        <span className="text-[#10b981] font-semibold">{Math.round(100 * tccValue)} TCC</span>
+                        <span className="text-[#10b981] font-semibold">{Math.round(tccValue * 10)} TCC</span>
                       </div>
                     </div>
                   </div>
@@ -2866,8 +2866,8 @@ export default function DashboardPA() {
                         type="number"
                         min="0"
                         max="30"
-                        value={Math.round(tccValue * 10)}
-                        onChange={(e) => setTccValue(Math.min(3, Math.max(0, parseFloat(e.target.value) || 0) / 10))}
+                        value={Math.round(tccValue)}
+                        onChange={(e) => setTccValue(Math.min(30, Math.max(0, parseFloat(e.target.value) || 0)))}
                         className="flex-1 px-3 py-2 bg-[#0b1220] border border-[#8b5cf6]/30 rounded-lg text-[#e8fbff] text-center text-lg font-bold focus:ring-2 focus:ring-[#8b5cf6]"
                       />
                       <span className="text-[#e8fbff]/70">TCC per €10</span>
