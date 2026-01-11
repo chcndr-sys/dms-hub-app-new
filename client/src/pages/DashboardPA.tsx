@@ -3086,8 +3086,29 @@ export default function DashboardPA() {
                   </Button>
                   <Button 
                     className="flex-1 bg-[#8b5cf6] hover:bg-[#8b5cf6]/80"
-                    onClick={() => {
-                      toast.info('Funzionalità Processa Batch in sviluppo - Richiede approvazione admin');
+                    onClick={async () => {
+                      try {
+                        toast.info('Elaborazione rimborsi in corso...');
+                        const response = await fetch('https://orchestratore.mio-hub.me/api/tcc/v2/process-batch-reimbursements', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          if (data.processed === 0) {
+                            toast.info('Nessun rimborso pending da processare');
+                          } else {
+                            toast.success(`Processati ${data.processed} rimborsi per \u20ac${data.total_euro}`);
+                            // Ricarica le statistiche
+                            window.location.reload();
+                          }
+                        } else {
+                          toast.error(data.error || 'Errore nel processare i rimborsi');
+                        }
+                      } catch (error) {
+                        console.error('Errore:', error);
+                        toast.error('Errore di connessione');
+                      }
                     }}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
