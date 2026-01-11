@@ -813,7 +813,7 @@ export default function WalletPage() {
                       <div className="p-3 bg-amber-500/10 rounded-lg">
                         <p className="text-sm text-muted-foreground">TCC necessari (stima)</p>
                         <p className="text-2xl font-bold text-amber-600">
-                          ~{Math.ceil(parseFloat(spendAmount) / 0.01)} TCC
+                          ~{Math.ceil(parseFloat(spendAmount))} TCC
                         </p>
                       </div>
                     )}

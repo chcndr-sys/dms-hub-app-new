@@ -2813,25 +2813,26 @@ export default function DashboardPA() {
                 <CardHeader>
                   <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                     <Sliders className="h-5 w-5 text-[#8b5cf6]" />
-                    Manopola Politica
+                    Leva Politica TCC
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-6">
-                    <label className="text-sm text-[#e8fbff]/70 mb-2 block">Regola Valore Base TCC</label>
+                    <label className="text-sm text-[#e8fbff]/70 mb-2 block">TCC assegnati per €1 speso</label>
                     <input
                       type="range"
                       min="0"
-                      max="5.00"
-                      step="0.10"
+                      max="3.0"
+                      step="0.1"
                       value={tccValue}
                       onChange={(e) => setTccValue(parseFloat(e.target.value))}
                       className="w-full h-2 bg-[#0b1220] rounded-lg appearance-none cursor-pointer"
                     />
                     <div className="flex justify-between text-xs text-[#e8fbff]/50 mt-1">
-                      <span>€0,00</span>
-                      <span>€2,50</span>
-                      <span>€5,00</span>
+                      <span>0x</span>
+                      <span>1x</span>
+                      <span>2x</span>
+                      <span>3x</span>
                     </div>
                   </div>
 
@@ -2839,16 +2840,20 @@ export default function DashboardPA() {
                     <div className="text-sm text-[#e8fbff] font-semibold mb-2">Simulatore Impatto</div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-[#e8fbff]/70">Nuovo valore:</span>
-                        <span className="text-[#8b5cf6] font-semibold">€{tccValue.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 4})}</span>
+                        <span className="text-[#e8fbff]/70">Moltiplicatore:</span>
+                        <span className="text-[#8b5cf6] font-semibold">{tccValue.toLocaleString('it-IT', {minimumFractionDigits: 1})}x</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#e8fbff]/70">Incremento spesa:</span>
-                        <span className="text-[#f59e0b] font-semibold">+€{((tccValue - appliedTccValue) * 1000).toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0})}/mese</span>
+                        <span className="text-[#e8fbff]/70">€10 spesi =</span>
+                        <span className="text-[#10b981] font-semibold">{(10 * tccValue).toLocaleString('it-IT', {minimumFractionDigits: 0})} TCC</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[#e8fbff]/70">Mesi rimanenti:</span>
-                        <span className="text-[#14b8a6] font-semibold">{tccValue > 0 ? (125000 / (tccValue * 1000)).toFixed(1) : '∞'}</span>
+                        <span className="text-[#e8fbff]/70">€100 spesi =</span>
+                        <span className="text-[#10b981] font-semibold">{(100 * tccValue).toLocaleString('it-IT', {minimumFractionDigits: 0})} TCC</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#e8fbff]/70">Valore 1 TCC:</span>
+                        <span className="text-[#f59e0b] font-semibold">€1,00</span>
                       </div>
                     </div>
                   </div>
@@ -2864,15 +2869,15 @@ export default function DashboardPA() {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
-                            policy_multiplier: tccValue / 0.01, // Calcola moltiplicatore rispetto al valore base
-                            tcc_value: tccValue,
-                            policy_notes: `Aggiornato da Dashboard PA il ${new Date().toLocaleDateString('it-IT')}`
+                            policy_multiplier: tccValue,
+                            tcc_value: 1.0, // Valore fisso €1 = 1 TCC
+                            policy_notes: `Leva politica ${tccValue}x - Aggiornato il ${new Date().toLocaleDateString('it-IT')}`
                           })
                         });
                         const data = await response.json();
                         if (data.success) {
                           setAppliedTccValue(tccValue);
-                          alert(`Valore TCC aggiornato a €${tccValue.toLocaleString('it-IT', {minimumFractionDigits: 4})}!\n\nLa modifica è stata salvata nel database.`);
+                          alert(`Leva politica aggiornata a ${tccValue}x!\n\n€1 speso = ${tccValue} TCC assegnati`);
                         } else {
                           alert(`Errore: ${data.error || 'Impossibile salvare la modifica'}`);
                         }
@@ -2885,7 +2890,7 @@ export default function DashboardPA() {
                     disabled={!selectedComuneId}
                   >
                     <Settings className="h-4 w-4 mr-2" />
-                    Applica Modifica
+                    Applica Leva
                   </Button>
                 </CardContent>
               </Card>
@@ -2898,7 +2903,7 @@ export default function DashboardPA() {
                 <CardHeader>
                   <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-[#14b8a6]" />
-                    Regolazione per Area
+                    Bonus TCC per Area
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -2907,25 +2912,27 @@ export default function DashboardPA() {
                       <div key={idx} className="p-3 bg-[#0b1220] rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-[#e8fbff] font-medium">{area.area}</span>
-                          <input
-                            type="number"
-                            value={area.boost}
-                            onChange={(e) => {
-                              const newBoosts = [...editableParams.areaBoosts];
-                              newBoosts[idx].boost = parseFloat(e.target.value) || 0;
-                              setEditableParams({ ...editableParams, areaBoosts: newBoosts });
-                            }}
-                            className={`text-sm font-semibold px-2 py-1 rounded w-20 text-center ${
-                              area.boost > 0 ? 'bg-[#10b981]/20 text-[#10b981]' :
-                              area.boost < 0 ? 'bg-[#ef4444]/20 text-[#ef4444]' :
-                              'bg-[#14b8a6]/20 text-[#14b8a6]'
-                            } border-none focus:ring-2 focus:ring-[#14b8a6]`}
-                          />
-                          <span className="text-xs text-[#e8fbff]/50 ml-1">%</span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={area.boost}
+                              onChange={(e) => {
+                                const newBoosts = [...editableParams.areaBoosts];
+                                newBoosts[idx].boost = parseFloat(e.target.value) || 0;
+                                setEditableParams({ ...editableParams, areaBoosts: newBoosts });
+                              }}
+                              className={`text-sm font-semibold px-2 py-1 rounded w-16 text-center ${
+                                area.boost > 0 ? 'bg-[#10b981]/20 text-[#10b981]' :
+                                area.boost < 0 ? 'bg-[#ef4444]/20 text-[#ef4444]' :
+                                'bg-[#14b8a6]/20 text-[#14b8a6]'
+                              } border-none focus:ring-2 focus:ring-[#14b8a6]`}
+                            />
+                            <span className="text-xs text-[#e8fbff]/50">%</span>
+                          </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-[#e8fbff]/50">Valore finale:</span>
-                          <span className="text-lg font-bold text-[#14b8a6]">€{area.value.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 4})}</span>
+                          <span className="text-xs text-[#e8fbff]/50">€10 spesi =</span>
+                          <span className="text-lg font-bold text-[#10b981]">{Math.round(10 * tccValue * (1 + area.boost/100))} TCC</span>
                         </div>
                       </div>
                     ))}
@@ -2938,7 +2945,7 @@ export default function DashboardPA() {
                 <CardHeader>
                   <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                     <Award className="h-5 w-5 text-[#14b8a6]" />
-                    Regolazione per Categoria
+                    Bonus TCC per Categoria
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -2947,7 +2954,7 @@ export default function DashboardPA() {
                       <div key={idx} className="p-3 bg-[#0b1220] rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-[#e8fbff] font-medium">{cat.category}</span>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
                             <span className="text-xs text-[#e8fbff]/50">+</span>
                             <input
                               type="number"
@@ -2965,8 +2972,8 @@ export default function DashboardPA() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-[#e8fbff]/50">Valore finale:</span>
-                          <span className="text-lg font-bold text-[#14b8a6]">€{cat.finalValue.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 4})}</span>
+                          <span className="text-xs text-[#e8fbff]/50">€10 spesi =</span>
+                          <span className="text-lg font-bold text-[#10b981]">{Math.round(10 * tccValue * (1 + cat.boost/100))} TCC</span>
                         </div>
                       </div>
                     ))}
