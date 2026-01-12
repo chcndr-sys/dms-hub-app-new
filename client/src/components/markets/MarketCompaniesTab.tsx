@@ -1419,6 +1419,116 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
 // QUALIFICAZIONE MODAL
 // ============================================================================
 
+// ============================================================================
+// WALLET TCC BADGE (v5.7.0)
+// Semaforo stato wallet TCC basato su qualifiche impresa
+// ============================================================================
+
+interface WalletTCCBadgeProps {
+  impresaId: string | number;
+  qualificazioni: any[];
+}
+
+function WalletTCCBadge({ impresaId, qualificazioni }: WalletTCCBadgeProps) {
+  const [walletStatus, setWalletStatus] = useState<'loading' | 'active' | 'suspended' | 'none'>('loading');
+  const [walletId, setWalletId] = useState<number | null>(null);
+  
+  // Calcola stato wallet basato su qualifiche locali
+  const qualificationStatus = React.useMemo(() => {
+    if (!qualificazioni || qualificazioni.length === 0) {
+      return { color: 'gray', label: 'No Qualifiche', enabled: false };
+    }
+    
+    const oggi = new Date();
+    oggi.setHours(0, 0, 0, 0);
+    
+    const hasExpired = qualificazioni.some(q => {
+      const stato = q.status || q.stato;
+      if (stato === 'SCADUTA') return true;
+      const dataScadenza = q.data_scadenza || q.end_date;
+      if (dataScadenza) {
+        const scadenza = new Date(dataScadenza.split('T')[0]);
+        return scadenza < oggi;
+      }
+      return false;
+    });
+    
+    if (hasExpired) {
+      return { color: 'red', label: 'Qualifiche Scadute', enabled: false };
+    }
+    
+    return { color: 'green', label: 'Qualificato', enabled: true };
+  }, [qualificazioni]);
+  
+  // Fetch wallet status from backend
+  useEffect(() => {
+    const fetchWalletStatus = async () => {
+      try {
+        const response = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/impresa/${impresaId}/wallet`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.wallet) {
+            setWalletId(data.wallet.id);
+            setWalletStatus(data.wallet.wallet_status === 'active' ? 'active' : 'suspended');
+          } else {
+            setWalletStatus('none');
+          }
+        } else {
+          setWalletStatus('none');
+        }
+      } catch (error) {
+        console.error('Error fetching wallet status:', error);
+        setWalletStatus('none');
+      }
+    };
+    
+    if (impresaId) {
+      fetchWalletStatus();
+    }
+  }, [impresaId]);
+  
+  // Determina colore finale basato su qualifiche E stato wallet
+  const finalStatus = React.useMemo(() => {
+    if (walletStatus === 'loading') {
+      return { color: 'gray', label: 'Caricamento...', icon: 'loading' };
+    }
+    
+    if (walletStatus === 'none') {
+      return { color: 'gray', label: 'No Wallet', icon: 'none' };
+    }
+    
+    // Se wallet esiste, usa lo stato delle qualifiche
+    if (!qualificationStatus.enabled) {
+      return { color: 'red', label: 'WALLET SOSPESO', icon: 'suspended' };
+    }
+    
+    return { color: 'green', label: 'WALLET TCC', icon: 'active' };
+  }, [walletStatus, qualificationStatus]);
+  
+  const colorClasses = {
+    gray: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
+    red: 'text-red-400 bg-red-400/10 border-red-400/20',
+    green: 'text-teal-400 bg-teal-400/10 border-teal-400/20',
+  };
+  
+  const dotColors = {
+    gray: 'bg-gray-500',
+    red: 'bg-red-500',
+    green: 'bg-teal-500',
+  };
+  
+  return (
+    <span 
+      className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium border rounded-md ${colorClasses[finalStatus.color as keyof typeof colorClasses]}`}
+      title={walletId ? `Wallet ID: ${walletId}` : 'Nessun wallet TCC'}
+    >
+      <div className={`w-2 h-2 rounded-full ${dotColors[finalStatus.color as keyof typeof dotColors]} ${finalStatus.icon === 'loading' ? 'animate-pulse' : ''}`} />
+      <Wallet className="w-3 h-3" />
+      {finalStatus.label}
+    </span>
+  );
+}
+
 interface QualificazioneModalProps {
   company: CompanyRow;
   qualificazione: QualificazioneRow | null;
@@ -1836,6 +1946,12 @@ function CompanyCard({ company, qualificazioni = [], marketId, onEdit, onViewQua
 	               displayQualificazioni.some(q => (q.status || q.stato) === 'IN_VERIFICA') ? 'In Verifica' : 'Qualificato'}
 	            </button>
 	          )}
+
+          {/* Semaforo WALLET TCC (v5.7.0) */}
+          <WalletTCCBadge 
+            impresaId={company.id} 
+            qualificazioni={displayQualificazioni}
+          />
 
           {company.autorizzazioni && company.autorizzazioni.length > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-md">

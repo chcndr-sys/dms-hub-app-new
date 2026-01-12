@@ -27,6 +27,85 @@ import {
 // API Base URL
 const API_BASE = 'https://orchestratore.mio-hub.me/api/tcc/v2';
 
+// ============================================================================
+// WALLET STATUS INDICATOR (v5.7.0)
+// Semaforo stato wallet TCC nella barra header
+// ============================================================================
+
+interface WalletStatusIndicatorProps {
+  operatorId: number;
+}
+
+function WalletStatusIndicator({ operatorId }: WalletStatusIndicatorProps) {
+  const [status, setStatus] = useState<'loading' | 'active' | 'suspended' | 'none'>('loading');
+  const [qualification, setQualification] = useState<any>(null);
+  
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        // Fetch wallet status per operatore (usa impresa_id = operator_id per ora)
+        const response = await fetch(`${API_BASE}/impresa/${operatorId}/wallet`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.wallet) {
+            setStatus(data.wallet.wallet_status === 'active' ? 'active' : 'suspended');
+            setQualification(data.qualification);
+          } else {
+            setStatus('none');
+          }
+        } else {
+          setStatus('none');
+        }
+      } catch (error) {
+        console.error('Error fetching wallet status:', error);
+        setStatus('none');
+      }
+    };
+    
+    fetchStatus();
+  }, [operatorId]);
+  
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 rounded-lg">
+        <div className="w-3 h-3 rounded-full bg-gray-400 animate-pulse" />
+        <span className="text-sm font-medium text-white/80">Caricamento...</span>
+      </div>
+    );
+  }
+  
+  if (status === 'none') {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 rounded-lg">
+        <div className="w-3 h-3 rounded-full bg-gray-400" />
+        <Wallet className="w-4 h-4 text-white/60" />
+        <span className="text-sm font-medium text-white/60">No Wallet</span>
+      </div>
+    );
+  }
+  
+  if (status === 'suspended') {
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/30 rounded-lg border border-red-400/50">
+        <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+        <Wallet className="w-4 h-4 text-red-200" />
+        <span className="text-sm font-medium text-red-200">WALLET SOSPESO</span>
+        {qualification && (
+          <span className="text-xs text-red-300/80">({qualification.label})</span>
+        )}
+      </div>
+    );
+  }
+  
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-teal-500/30 rounded-lg border border-teal-400/50">
+      <div className="w-3 h-3 rounded-full bg-teal-500" />
+      <Wallet className="w-4 h-4 text-teal-200" />
+      <span className="text-sm font-medium text-teal-200">WALLET ATTIVO</span>
+    </div>
+  );
+}
+
 export default function HubOperatore() {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
@@ -382,9 +461,13 @@ export default function HubOperatore() {
       {/* Header */}
       <header className="bg-gradient-to-r from-[#f97316] to-[#f59e0b] p-4 shadow-lg">
         <div className="container mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white">HUB Operatore</h1>
-            <p className="text-sm text-white/80">{operatore.negozio}</p>
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-white">HUB Operatore</h1>
+              <p className="text-sm text-white/80">{operatore.negozio}</p>
+            </div>
+            {/* Semaforo Wallet TCC (v5.7.0) */}
+            <WalletStatusIndicator operatorId={operatore.id} />
           </div>
           <div className="text-right">
             <p className="text-sm text-white/80">{operatore.ruolo}</p>

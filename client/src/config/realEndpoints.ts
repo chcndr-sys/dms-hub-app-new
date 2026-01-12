@@ -1248,6 +1248,170 @@ export const abacusGithubEndpoints: EndpointConfig[] = [
 ];
 
 /**
+ * CATEGORIA: TCC WALLET-IMPRESA (v5.7.0)
+ * Gestione wallet TCC collegati alle imprese con controllo qualifiche
+ */
+export const tccWalletImpresaEndpoints: EndpointConfig[] = [
+  {
+    id: 'tcc-impresa-wallet-get',
+    method: 'GET',
+    path: '/api/tcc/v2/impresa/:impresaId/wallet',
+    name: 'Wallet Impresa',
+    description: 'Recupera il wallet TCC associato all\'impresa con stato qualifiche',
+    category: 'TCC Wallet-Impresa',
+    exampleParams: { impresaId: 3 },
+    exampleResponse: {
+      success: true,
+      wallet: {
+        id: 15,
+        impresa_id: 3,
+        date: '2026-01-12',
+        tcc_issued: 0,
+        tcc_redeemed: 0,
+        settlement_status: 'open',
+        wallet_status: 'active'
+      },
+      impresa: {
+        id: 3,
+        denominazione: 'Farmacia Severi',
+        partita_iva: '11111111111'
+      },
+      qualification: {
+        status: 'qualified',
+        color: 'green',
+        label: 'Qualificato',
+        walletEnabled: true
+      }
+    },
+    notes: '✅ v5.7.0 - Restituisce wallet, dati impresa e stato qualifiche per semaforo'
+  },
+  {
+    id: 'tcc-impresa-wallet-create',
+    method: 'POST',
+    path: '/api/tcc/v2/impresa/:impresaId/wallet/create',
+    name: 'Crea Wallet Impresa',
+    description: 'Crea un nuovo wallet TCC per l\'impresa',
+    category: 'TCC Wallet-Impresa',
+    exampleParams: { impresaId: 3 },
+    exampleResponse: {
+      success: true,
+      walletId: 15,
+      walletStatus: 'active',
+      message: 'Wallet TCC creato per impresa Farmacia Severi'
+    },
+    notes: '✅ v5.7.0 - Crea wallet con stato basato su qualifiche (active/suspended)'
+  },
+  {
+    id: 'tcc-impresa-qualification-status',
+    method: 'GET',
+    path: '/api/tcc/v2/impresa/:impresaId/qualification-status',
+    name: 'Stato Qualifiche Impresa',
+    description: 'Verifica lo stato delle qualifiche dell\'impresa per semaforo wallet',
+    category: 'TCC Wallet-Impresa',
+    exampleParams: { impresaId: 3 },
+    exampleResponse: {
+      success: true,
+      impresaId: 3,
+      impresaName: 'Farmacia Severi',
+      status: 'qualified',
+      color: 'green',
+      label: 'Qualificato',
+      walletEnabled: true,
+      qualifications: [
+        {
+          tipo: 'DURC',
+          data_scadenza: '2026-06-30',
+          stato: 'valido'
+        }
+      ]
+    },
+    notes: '✅ v5.7.0 - Restituisce colore semaforo: green=qualificato, red=scaduto, gray=nessuna'
+  },
+  {
+    id: 'tcc-impresa-wallet-status-update',
+    method: 'PUT',
+    path: '/api/tcc/v2/impresa/:impresaId/wallet/status',
+    name: 'Aggiorna Stato Wallet',
+    description: 'Aggiorna manualmente lo stato del wallet (active/suspended/blocked)',
+    category: 'TCC Wallet-Impresa',
+    exampleParams: { impresaId: 3 },
+    exampleBody: {
+      status: 'suspended',
+      reason: 'Qualifiche scadute'
+    },
+    exampleResponse: {
+      success: true,
+      walletId: 15,
+      newStatus: 'suspended',
+      message: 'Stato wallet aggiornato a suspended'
+    },
+    notes: '✅ v5.7.0 - Valori ammessi: active, suspended, blocked'
+  },
+  {
+    id: 'tcc-impresa-wallet-transactions',
+    method: 'GET',
+    path: '/api/tcc/v2/impresa/:impresaId/wallet/transactions',
+    name: 'Transazioni Wallet Impresa',
+    description: 'Recupera le transazioni del wallet dell\'impresa',
+    category: 'TCC Wallet-Impresa',
+    exampleParams: { impresaId: 3 },
+    exampleResponse: {
+      success: true,
+      transactions: [],
+      count: 0,
+      total: 0
+    },
+    notes: '✅ v5.7.0 - Supporta filtro per tipo e paginazione'
+  },
+  {
+    id: 'tcc-impresa-wallet-sync',
+    method: 'POST',
+    path: '/api/tcc/v2/impresa/:impresaId/wallet/sync-qualification',
+    name: 'Sincronizza Qualifiche Wallet',
+    description: 'Sincronizza lo stato del wallet con le qualifiche attuali',
+    category: 'TCC Wallet-Impresa',
+    exampleParams: { impresaId: 3 },
+    exampleResponse: {
+      success: true,
+      walletId: 15,
+      newStatus: 'active',
+      qualification: {
+        status: 'qualified',
+        color: 'green',
+        label: 'Qualificato'
+      },
+      message: 'Wallet sincronizzato con stato qualifiche: Qualificato'
+    },
+    notes: '✅ v5.7.0 - Aggiorna wallet_status in base a qualifiche correnti'
+  },
+  {
+    id: 'tcc-wallets-all',
+    method: 'GET',
+    path: '/api/tcc/v2/wallets/all',
+    name: 'Lista Tutti i Wallet',
+    description: 'Lista tutti i wallet TCC con stato impresa e qualifiche',
+    category: 'TCC Wallet-Impresa',
+    exampleResponse: {
+      success: true,
+      wallets: [
+        {
+          wallet_id: 15,
+          impresa_id: 3,
+          impresa_name: 'Farmacia Severi',
+          wallet_status: 'active',
+          qualification: {
+            status: 'qualified',
+            color: 'green'
+          }
+        }
+      ],
+      count: 1
+    },
+    notes: '✅ v5.7.0 - Supporta filtro per status e hubId'
+  }
+];
+
+/**
  * TUTTI GLI ENDPOINT ORGANIZZATI
  */
 export const allRealEndpoints: EndpointConfig[] = [
@@ -1258,6 +1422,7 @@ export const allRealEndpoints: EndpointConfig[] = [
   ...suapEndpoints,
   ...walletsEndpoints,
   ...tariffsEndpoints,
+  ...tccWalletImpresaEndpoints,
   ...impreseEndpoints,
   ...qualificazioniEndpoints,
   ...gisEndpoints,
