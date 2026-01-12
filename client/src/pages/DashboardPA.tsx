@@ -3130,6 +3130,7 @@ export default function DashboardPA() {
             </Card>
 
             {/* Storico Movimenti Fondo */}
+            {fundStats && (
             <Card className="bg-[#1a2332] border-[#14b8a6]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
@@ -3223,6 +3224,7 @@ export default function DashboardPA() {
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Analytics Economici */}
             <Card className="bg-[#1a2332] border-[#14b8a6]/30">
