@@ -18,6 +18,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { trpc } from '@/lib/trpc';
 import MobilityMap from '@/components/MobilityMap';
 import GestioneMercati from '@/components/GestioneMercati';
