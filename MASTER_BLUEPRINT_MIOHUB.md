@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.29.0  
+> **Versione:** 3.30.0  
 > **Data:** 12 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -1960,3 +1960,115 @@ https://api.mio-hub.me/tools/bus_hub.html
 
 ---
 
+
+
+---
+
+## 📋 GESTIONE ENDPOINT - GUIDA OPERATIVA
+
+> **IMPORTANTE:** Questa sezione documenta dove e come registrare gli endpoint per mantenere il sistema allineato.
+
+### 🎯 Principio Fondamentale
+
+**Un endpoint deve essere registrato in UN SOLO posto principale:**
+- `MIO-hub/api/index.json` → Fonte di verità per il Dashboard Integrazioni
+
+### 📁 Struttura dei File Endpoint
+
+| File | Repository | Scopo | Endpoint |
+|------|------------|-------|----------|
+| `api/index.json` | MIO-hub | **Dashboard Integrazioni** (visibilità) | 353 |
+| `apiInventoryService.ts` | dms-hub-app-new | Guardian interno (legacy) | 166 |
+| `routes/*.js` | mihub-backend-rest | **Implementazione backend** | 31+ |
+
+### ✅ Procedura per Aggiungere un Nuovo Endpoint
+
+#### 1. Implementare l'endpoint nel backend
+```bash
+# File: mihub-backend-rest/routes/[nome-modulo].js
+router.get('/nuovo-endpoint', async (req, res) => {
+  // implementazione
+});
+```
+
+#### 2. Registrare in MIO-hub/api/index.json
+```json
+{
+  "id": "modulo.nuovoEndpoint",
+  "method": "GET",
+  "path": "/api/nuovo-endpoint",
+  "category": "Nome Categoria",
+  "description": "Descrizione chiara",
+  "risk_level": "low|medium|high",
+  "require_auth": true,
+  "enabled": true,
+  "test": {
+    "enabled": true,
+    "expected_status": 200
+  },
+  "implementation_note": "REST endpoint in mihub-backend-rest/routes/xxx.js"
+}
+```
+
+#### 3. Commit e Push
+```bash
+cd MIO-hub
+git add api/index.json
+git commit -m "feat(api): add [nome] endpoint"
+git push origin master
+```
+
+### 🏷️ Categorie Endpoint Disponibili
+
+| Categoria | Descrizione |
+|-----------|-------------|
+| `DmsHub` | Endpoint tRPC principali |
+| `TCC Fondo` | Token Carbon Credit - Fondo |
+| `TCC Wallet` | Token Carbon Credit - Wallet cittadino |
+| `TCC v2 - Configurazione` | TCC v2 - Config globale |
+| `TCC v2 - Hub Operatore` | TCC v2 - Operatori commerciali |
+| `TCC v2 - Cittadino` | TCC v2 - Wallet cittadino |
+| `TCC v2 - Dashboard PA` | TCC v2 - Rimborsi e statistiche PA |
+| `TCC v2 - Wallet Impresa` | TCC v2 - Wallet aziende |
+| `TCC v2 - Policy` | TCC v2 - Leva politica |
+| `TCC v2 - Regole Boost` | TCC v2 - Regole bonus |
+| `Analytics` | Statistiche e report |
+| `Concessioni` | Gestione concessioni |
+| `Imprese` | Anagrafica imprese |
+| `Qualificazioni` | DURC, SUAP, certificazioni |
+| `SUAP` | Pratiche SUAP |
+| `Wallets REST` | Wallet pagamenti |
+| `Guardian` | Monitoraggio sistema |
+| `System & Auth` | Autenticazione |
+
+### 🔄 Sincronizzazione
+
+Il file `apiInventoryService.ts` è **legacy** e potrebbe essere deprecato in futuro.
+Per ora, se aggiungi endpoint critici, aggiungili in entrambi i file.
+
+### 📊 Punti di Ripristino Stabili
+
+| Repository | Tag | Data | Endpoint |
+|------------|-----|------|----------|
+| dms-hub-app-new | v3.29.0-stable | 12/01/2026 | - |
+| MIO-hub | v16.0.0-stable | 12/01/2026 | 353 |
+| mihub-backend-rest | v5.7.0-stable | 12/01/2026 | 31 |
+
+### 🔧 Come Ripristinare
+
+```bash
+# Frontend
+cd dms-hub-app-new
+git checkout v3.29.0-stable
+
+# API Index
+cd MIO-hub
+git checkout v16.0.0-stable
+
+# Backend
+cd mihub-backend-rest
+git checkout v5.7.0-stable
+pm2 restart mihub-backend
+```
+
+---
