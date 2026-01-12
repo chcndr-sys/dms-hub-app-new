@@ -557,18 +557,34 @@ export default function WalletPage() {
   // ============================================================================
 
   const balance = walletData?.balance || 0;
-  // Formula: 1 TCC = 1 kg CO2, 22 kg CO2 = 1 albero/anno
-  const co2Saved = balance; // 1 TCC = 1 kg CO2
-  const treesEquivalent = (co2Saved / 22).toFixed(1); // 22 kg CO2 per albero/anno
-
-  const getLevel = (balance: number) => {
-    if (balance >= 500) return { name: 'Oro', color: 'amber', percentile: 'Top 5%' };
-    if (balance >= 200) return { name: 'Argento', color: 'gray', percentile: 'Top 20%' };
-    if (balance >= 50) return { name: 'Bronzo', color: 'orange', percentile: 'Top 50%' };
-    return { name: 'Starter', color: 'blue', percentile: 'Benvenuto!' };
+  
+  // CO2 dell'ultima operazione (non del saldo totale)
+  const lastTransaction = transactions.length > 0 ? transactions[0] : null;
+  const lastOperationCO2 = lastTransaction ? Math.abs(lastTransaction.amount) : 0;
+  const lastOperationTrees = (lastOperationCO2 / 22).toFixed(1); // 22 kg CO2 per albero/anno
+  const lastOperationType = lastTransaction?.type === 'earn' ? 'Accredito' : 'Pagamento';
+  
+  // Totale cumulativo di tutte le operazioni (somma dei valori assoluti)
+  const totalCumulativeCO2 = transactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  const totalCumulativeTrees = (totalCumulativeCO2 / 22).toFixed(1);
+  
+  // Scala livelli da 500 a 20.000 kg
+  const MAX_CO2_SCALE = 20000;
+  
+  const getLevel = (totalCO2: number) => {
+    if (totalCO2 >= 20000) return { name: 'Leggenda', color: 'emerald', percentile: 'Eco-Leggenda!', progress: 100 };
+    if (totalCO2 >= 15000) return { name: 'Eco-Champion', color: 'emerald', percentile: 'Top 1%', progress: 95 };
+    if (totalCO2 >= 10000) return { name: 'Platino', color: 'slate', percentile: 'Top 3%', progress: 80 };
+    if (totalCO2 >= 5000) return { name: 'Oro', color: 'amber', percentile: 'Top 5%', progress: 60 };
+    if (totalCO2 >= 2000) return { name: 'Argento', color: 'gray', percentile: 'Top 15%', progress: 40 };
+    if (totalCO2 >= 500) return { name: 'Bronzo', color: 'orange', percentile: 'Top 30%', progress: 20 };
+    return { name: 'Starter', color: 'blue', percentile: 'Benvenuto!', progress: Math.max(5, (totalCO2 / 500) * 15) };
   };
 
-  const level = getLevel(balance);
+  const level = getLevel(totalCumulativeCO2);
+  
+  // Calcola percentuale progresso per la barra verde (0-100)
+  const progressPercent = Math.min(100, (totalCumulativeCO2 / MAX_CO2_SCALE) * 100);
 
   // ============================================================================
   // RENDER
@@ -766,25 +782,44 @@ export default function WalletPage() {
 
             {/* Impatto Ambientale */}
             <div className="grid grid-cols-2 gap-4">
+              {/* Card Verde - Ultima Operazione */}
               <Card className="border-0 shadow-lg bg-gradient-to-br from-green-500/10 to-green-600/5">
                 <CardContent className="pt-6 text-center">
                   <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
                     <Leaf className="h-7 w-7 text-white" />
                   </div>
-                  <div className="text-4xl font-bold text-green-600">{co2Saved.toLocaleString('it-IT')} kg</div>
+                  <div className="text-4xl font-bold text-green-600">{lastOperationCO2.toLocaleString('it-IT')} kg</div>
                   <div className="text-sm text-muted-foreground font-medium">CO₂ Evitata</div>
-                  <p className="text-xs text-muted-foreground mt-2">Equivalente a {treesEquivalent} alberi/anno</p>
+                  <p className="text-xs text-muted-foreground mt-1">Ultima operazione</p>
+                  <p className="text-xs text-muted-foreground">≈ {lastOperationTrees} alberi/anno</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500/10 to-amber-600/5">
-                <CardContent className="pt-6 text-center">
+              {/* Card Arancione/Verde - Totale Cumulativo con Barra Progresso */}
+              <Card className="border-0 shadow-lg overflow-hidden relative">
+                {/* Sfondo arancione base */}
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-amber-600/10" />
+                {/* Barra verde che cresce dal basso */}
+                <div 
+                  className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-green-500/40 to-green-400/20 transition-all duration-1000 ease-out"
+                  style={{ height: `${progressPercent}%` }}
+                />
+                <CardContent className="pt-6 text-center relative z-10">
                   <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
                     <Award className="h-7 w-7 text-white" />
                   </div>
-                  <div className="text-4xl font-bold text-amber-600">{level.name}</div>
-                  <div className="text-sm text-muted-foreground font-medium">Livello</div>
-                  <p className="text-xs text-muted-foreground mt-2">{level.percentile}</p>
+                  <div className="text-3xl font-bold text-amber-600">{level.name}</div>
+                  <div className="text-lg font-semibold text-green-600">{totalCumulativeCO2.toLocaleString('it-IT')} kg</div>
+                  <div className="text-xs text-muted-foreground">CO₂ totale</div>
+                  <p className="text-xs text-muted-foreground mt-1">{level.percentile}</p>
+                  {/* Mini barra progresso */}
+                  <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-amber-500 to-green-500 transition-all duration-1000"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{progressPercent.toFixed(0)}% verso Eco-Leggenda</p>
                 </CardContent>
               </Card>
             </div>
