@@ -936,7 +936,7 @@ export default function HubOperatore() {
                             <p className="font-semibold text-[#e8fbff]">
                               {tx.type === 'issue' ? tx.customer_name || 'Cliente' :
                                tx.type === 'redeem' ? tx.customer_name || 'Cliente' :
-                               tx.type === 'settlement' ? `Chiusura Giornata${tx.settlement_number ? ' #' + tx.settlement_number : ''}` :
+                               tx.type === 'settlement' ? `Chiusura Giornata${tx.description?.startsWith('#') ? ' ' + tx.description.split('|')[0] : ''}` :
                                'Rimborso Ricevuto'}
                             </p>
                             <p className="text-sm text-[#94a3b8]">
