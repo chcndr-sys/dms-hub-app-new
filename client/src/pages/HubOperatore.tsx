@@ -152,6 +152,8 @@ export default function HubOperatore() {
   
   // Nome impresa collegata al wallet (v5.7.0)
   const [impresaNome, setImpresaNome] = useState<string | null>(null);
+  // Stato abilitazione wallet (v5.7.0) - false se qualifiche scadute/mancanti
+  const [walletEnabled, setWalletEnabled] = useState<boolean>(true);
 
   // Mock data operatore (in futuro da auth)
   const operatore = {
@@ -187,6 +189,8 @@ export default function HubOperatore() {
         if (data.impresa?.denominazione) {
           setImpresaNome(data.impresa.denominazione);
         }
+        // Salva stato abilitazione wallet (v5.7.0)
+        setWalletEnabled(data.qualification?.walletEnabled ?? true);
       }
     } catch (error) {
       console.error('Errore caricamento wallet:', error);
@@ -789,7 +793,7 @@ export default function HubOperatore() {
                         className="w-full px-3 py-2 bg-[#1e293b] border border-[#334155] rounded-md text-[#e8fbff] focus:outline-none focus:border-[#14b8a6]"
                         autoFocus
                       />
-                      <Button type="submit" className="w-full bg-[#10b981] hover:bg-[#059669]">
+                      <Button type="submit" className="w-full bg-[#10b981] hover:bg-[#059669] disabled:opacity-50" disabled={!walletEnabled}>
                         <CheckCircle2 className="w-4 h-4 mr-2" />
                         Conferma
                       </Button>
@@ -802,7 +806,7 @@ export default function HubOperatore() {
                   <Button 
                     className="w-full bg-[#10b981] hover:bg-[#059669] disabled:opacity-50 text-lg py-6"
                     onClick={handleIssueCredits}
-                    disabled={!validatedCustomer || !amount || parseFloat(amount) <= 0 || isLoading}
+                    disabled={!validatedCustomer || !amount || parseFloat(amount) <= 0 || isLoading || !walletEnabled}
                   >
                     {isLoading ? (
                       <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
@@ -815,7 +819,7 @@ export default function HubOperatore() {
                   <Button 
                     className="w-full bg-[#f59e0b] hover:bg-[#d97706] disabled:opacity-50 text-lg py-6"
                     onClick={handleRedeemSpend}
-                    disabled={!scannedData || isLoading}
+                    disabled={!scannedData || isLoading || !walletEnabled}
                   >
                     {isLoading ? (
                       <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
