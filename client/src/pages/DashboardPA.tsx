@@ -3172,10 +3172,10 @@ export default function DashboardPA() {
 
                 {/* Lista Movimenti */}
                 <div className="space-y-3 max-h-80 overflow-y-auto">
-                  {(!fundStats?.transactions || fundStats.transactions.length === 0) ? (
+                  {(!fundStats?.transactions || !Array.isArray(fundStats.transactions) || fundStats.transactions.length === 0) ? (
                     <p className="text-center text-[#94a3b8] py-8">Nessun movimento registrato</p>
                   ) : (
-                    (fundStats.transactions || []).filter(tx => {
+                    fundStats.transactions.filter(tx => {
                       if (fundMovementFilter === 'all') return true;
                       if (fundMovementFilter === 'deposit') return tx.type === 'deposit';
                       if (fundMovementFilter === 'reimbursement') return tx.type === 'reimbursement' || tx.type === 'reimbursement_batch';
