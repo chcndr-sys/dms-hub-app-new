@@ -13,7 +13,7 @@ export interface APIEndpoint {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   path: string;
   description: string;
-  category: 'analytics' | 'integrations' | 'mobility' | 'logs' | 'system' | 'guardian' | 'dms' | 'carbon' | 'users' | 'sustainability' | 'businesses' | 'inspections' | 'notifications' | 'civic' | 'wallet' | 'imprese' | 'suap' | 'concessioni' | 'tariffe' | 'qualificazioni';
+  category: 'analytics' | 'integrations' | 'mobility' | 'logs' | 'system' | 'guardian' | 'dms' | 'carbon' | 'users' | 'sustainability' | 'businesses' | 'inspections' | 'notifications' | 'civic' | 'wallet' | 'imprese' | 'suap' | 'concessioni' | 'tariffe' | 'qualificazioni' | 'tcc';
   status: 'active' | 'deprecated' | 'beta' | 'maintenance';
   version: string;
   requiresAuth: boolean;
@@ -1802,6 +1802,93 @@ export function getAPIInventory(): APIEndpoint[] {
       requiresAuth: true,
       documentation: 'Elimina una immagine dalla galleria vetrina',
       testParams: { id: 2, index: 0 },
+    },
+    // ============================================================================
+    // TCC v2 - WALLET IMPRESA (v5.7.0)
+    // Gestione wallet TCC collegati alle imprese con controllo qualifiche
+    // ============================================================================
+    {
+      id: 'tcc.v2.impresa.wallet.get',
+      method: 'GET',
+      path: '/api/tcc/v2/impresa/:impresaId/wallet',
+      description: 'Wallet TCC Impresa - Saldo e stato qualifiche',
+      category: 'tcc',
+      status: 'active',
+      version: '5.7.0',
+      requiresAuth: true,
+      documentation: 'Recupera il wallet TCC associato all\'impresa con stato qualifiche per semaforo (verde=attivo, rosso=sospeso, grigio=nessuna qualifica)',
+      testParams: { impresaId: 38 },
+    },
+    {
+      id: 'tcc.v2.impresa.wallet.create',
+      method: 'POST',
+      path: '/api/tcc/v2/impresa/:impresaId/wallet/create',
+      description: 'Crea Wallet TCC per Impresa',
+      category: 'tcc',
+      status: 'active',
+      version: '5.7.0',
+      requiresAuth: true,
+      documentation: 'Crea un nuovo wallet TCC per l\'impresa. Lo stato iniziale dipende dalle qualifiche (active se qualificata, suspended altrimenti)',
+      testParams: { impresaId: 38 },
+    },
+    {
+      id: 'tcc.v2.impresa.qualification.status',
+      method: 'GET',
+      path: '/api/tcc/v2/impresa/:impresaId/qualification-status',
+      description: 'Stato Qualifiche Impresa per Semaforo',
+      category: 'tcc',
+      status: 'active',
+      version: '5.7.0',
+      requiresAuth: true,
+      documentation: 'Verifica lo stato delle qualifiche dell\'impresa (DURC, HACCP, etc.) per determinare il colore del semaforo wallet',
+      testParams: { impresaId: 38 },
+    },
+    {
+      id: 'tcc.v2.impresa.wallet.status.update',
+      method: 'PUT',
+      path: '/api/tcc/v2/impresa/:impresaId/wallet/status',
+      description: 'Aggiorna Stato Wallet Impresa',
+      category: 'tcc',
+      status: 'active',
+      version: '5.7.0',
+      requiresAuth: true,
+      documentation: 'Aggiorna manualmente lo stato del wallet impresa (active/suspended). Usato quando cambiano le qualifiche',
+      testParams: { impresaId: 38 },
+    },
+    {
+      id: 'tcc.v2.impresa.wallet.transactions',
+      method: 'GET',
+      path: '/api/tcc/v2/impresa/:impresaId/wallet/transactions',
+      description: 'Storico Transazioni Wallet Impresa',
+      category: 'tcc',
+      status: 'active',
+      version: '5.7.0',
+      requiresAuth: true,
+      documentation: 'Recupera lo storico delle transazioni TCC del wallet impresa (assegnazioni, riscatti, settlement)',
+      testParams: { impresaId: 38 },
+    },
+    {
+      id: 'tcc.v2.impresa.wallet.sync',
+      method: 'POST',
+      path: '/api/tcc/v2/impresa/:impresaId/wallet/sync-qualification',
+      description: 'Sincronizza Wallet con Qualifiche',
+      category: 'tcc',
+      status: 'active',
+      version: '5.7.0',
+      requiresAuth: true,
+      documentation: 'Sincronizza lo stato del wallet con le qualifiche correnti dell\'impresa. Aggiorna wallet_status in base a DURC, HACCP, etc.',
+      testParams: { impresaId: 38 },
+    },
+    {
+      id: 'tcc.v2.wallets.all',
+      method: 'GET',
+      path: '/api/tcc/v2/wallets/all',
+      description: 'Lista Tutti i Wallet TCC Imprese',
+      category: 'tcc',
+      status: 'active',
+      version: '5.7.0',
+      requiresAuth: true,
+      documentation: 'Lista tutti i wallet TCC con stato impresa e qualifiche. Supporta filtro per status e hubId',
     },
   ];
 }
