@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.28.0  
-> **Data:** 9 Gennaio 2026  
+> **Versione:** 3.29.0  
+> **Data:** 12 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -368,7 +368,7 @@ POST /api/guardian/debug/testEndpoint
 
 ## 🔌 API ENDPOINTS
 
-### Endpoint Index (153 endpoint totali)
+### Endpoint Index (166 endpoint totali)
 
 Gli endpoint sono documentati in:
 ```
@@ -387,6 +387,104 @@ Gli endpoint sono documentati in:
 | **GIS** | `/api/gis/*` | market-map |
 | **Imprese** | `/api/imprese/*` | qualificazioni, rating |
 | **SUAP** | `/api/suap/*` | pratiche, stats, evaluate |
+| **TCC v2** | `/api/tcc/v2/*` | wallet-impresa, qualifiche, settlement |
+
+---
+
+## 💚 TCC WALLET-IMPRESA (v5.7.0)
+
+### Cos'è il Sistema TCC Wallet-Impresa?
+
+Il sistema **TCC Wallet-Impresa** collega i wallet Token Carbon Credit (TCC) direttamente alle imprese, implementando un controllo automatico basato sulle qualifiche aziendali. Questo garantisce che solo le imprese in regola possano operare con i crediti di carbonio.
+
+### Funzionalità Principali
+
+| Funzionalità | Descrizione |
+|--------------|-------------|
+| **Creazione Automatica Wallet** | Quando viene creato un nuovo negozio (shop), il sistema crea automaticamente un wallet TCC collegato all'impresa |
+| **Semaforo Qualifiche** | Indicatore visivo (verde/rosso/grigio) che mostra lo stato del wallet basato sulle qualifiche |
+| **Sospensione Automatica** | Il wallet viene sospeso automaticamente se le qualifiche scadono o mancano |
+| **Blocco Transazioni** | I pulsanti "Assegna TCC" e "Riscuoti TCC" sono disabilitati quando il wallet è sospeso |
+
+### Logica Semaforo Wallet
+
+| Colore | Stato | Condizione |
+|--------|-------|------------|
+| 🟢 **Verde** | Attivo | Impresa ha almeno una qualifica valida (DURC, HACCP, etc.) |
+| 🔴 **Rosso** | Sospeso | Tutte le qualifiche sono scadute o mancanti |
+| ⚪ **Grigio** | Nessuna Qualifica | L'impresa non ha mai avuto qualifiche registrate |
+
+### Qualifiche Monitorate
+
+| Tipo | Descrizione | Obbligatorietà |
+|------|-------------|----------------|
+| DURC | Documento Unico Regolarità Contributiva | Obbligatorio |
+| HACCP | Sicurezza Alimentare | Alimentare |
+| ONORABILITA | Requisiti Morali Art. 71 | Obbligatorio |
+| ANTIMAFIA | Dichiarazione Art. 67 | Obbligatorio |
+| SAB | Somministrazione Alimenti | Alimentare |
+| ISO 9001/14001 | Certificazioni Qualità | Opzionale |
+
+### API Endpoints TCC Wallet-Impresa
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/tcc/v2/impresa/:impresaId/wallet` | GET | Recupera wallet TCC con stato qualifiche |
+| `/api/tcc/v2/impresa/:impresaId/wallet/create` | POST | Crea nuovo wallet per impresa |
+| `/api/tcc/v2/impresa/:impresaId/qualification-status` | GET | Stato qualifiche per semaforo |
+| `/api/tcc/v2/impresa/:impresaId/wallet/status` | PUT | Aggiorna stato wallet (active/suspended) |
+| `/api/tcc/v2/impresa/:impresaId/wallet/transactions` | GET | Storico transazioni wallet impresa |
+| `/api/tcc/v2/impresa/:impresaId/wallet/sync-qualification` | POST | Sincronizza wallet con qualifiche |
+| `/api/tcc/v2/wallets/all` | GET | Lista tutti i wallet con stato |
+
+### Tabelle Database Coinvolte
+
+| Tabella | Nuove Colonne | Descrizione |
+|---------|---------------|-------------|
+| `operator_daily_wallet` | `impresa_id`, `wallet_status` | Collegamento wallet-impresa e stato |
+| `hub_shops` | `wallet_enabled` | Flag abilitazione wallet per negozio |
+| `qualificazioni` | - | Fonte dati per verifica qualifiche |
+| `imprese` | - | Anagrafica imprese |
+
+### Flusso Operativo
+
+```
+1. Creazione Negozio (HUB)
+   └─► Trigger: Crea wallet TCC automaticamente
+       └─► Verifica qualifiche impresa
+           ├─► Qualificata → wallet_status = 'active' (🟢)
+           └─► Non qualificata → wallet_status = 'suspended' (🔴)
+
+2. Operatore apre Hub Operatore
+   └─► Sistema carica wallet e verifica qualifiche
+       ├─► Semaforo verde → Pulsanti abilitati
+       └─► Semaforo rosso → Pulsanti disabilitati + messaggio
+
+3. Qualifica scade/viene rimossa
+   └─► Sync automatico → wallet_status = 'suspended'
+       └─► Operatore vede semaforo rosso
+
+4. Qualifica rinnovata
+   └─► Sync automatico → wallet_status = 'active'
+       └─► Operatore vede semaforo verde
+```
+
+### Componenti Frontend
+
+| File | Descrizione |
+|------|-------------|
+| `WalletStatusIndicator.jsx` | Componente semaforo nell'header Hub Operatore |
+| `HubOperatore.jsx` | Dashboard operatore con pulsanti TCC |
+| `ImpresaCard.jsx` | Card impresa con indicatore stato wallet |
+
+### Impresa di Test
+
+| Campo | Valore |
+|-------|--------|
+| Nome | MIO TEST |
+| P.IVA | 01010101010 |
+| ID | 38 |
+| Operatore | Luca Bianchi (ID: 1) |
 
 ---
 
