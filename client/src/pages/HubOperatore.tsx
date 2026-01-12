@@ -39,17 +39,30 @@ interface WalletStatusIndicatorProps {
 function WalletStatusIndicator({ operatorId }: WalletStatusIndicatorProps) {
   const [status, setStatus] = useState<'loading' | 'active' | 'suspended' | 'none'>('loading');
   const [qualification, setQualification] = useState<any>(null);
+  const [impresaName, setImpresaName] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        // Fetch wallet status per operatore (usa impresa_id = operator_id per ora)
-        const response = await fetch(`${API_BASE}/impresa/${operatorId}/wallet`);
+        // Fetch wallet status tramite operator_id (v5.7.0 fix)
+        const response = await fetch(`${API_BASE}/operator/wallet/${operatorId}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.wallet) {
-            setStatus(data.wallet.wallet_status === 'active' ? 'active' : 'suspended');
-            setQualification(data.qualification);
+            // Verifica se il wallet ha un'impresa collegata
+            if (data.impresa) {
+              setImpresaName(data.impresa.denominazione);
+              // Usa lo stato qualifiche per determinare se attivo o sospeso
+              if (data.qualification?.walletEnabled) {
+                setStatus('active');
+              } else {
+                setStatus('suspended');
+              }
+              setQualification(data.qualification);
+            } else {
+              // Wallet esiste ma senza impresa collegata
+              setStatus('none');
+            }
           } else {
             setStatus('none');
           }
@@ -89,7 +102,9 @@ function WalletStatusIndicator({ operatorId }: WalletStatusIndicatorProps) {
       <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/30 rounded-lg border border-red-400/50">
         <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
         <Wallet className="w-4 h-4 text-red-200" />
-        <span className="text-sm font-medium text-red-200">WALLET SOSPESO</span>
+        <span className="text-sm font-medium text-red-200">
+          {impresaName || 'WALLET'} - SOSPESO
+        </span>
         {qualification && (
           <span className="text-xs text-red-300/80">({qualification.label})</span>
         )}
@@ -101,7 +116,9 @@ function WalletStatusIndicator({ operatorId }: WalletStatusIndicatorProps) {
     <div className="flex items-center gap-2 px-3 py-1.5 bg-teal-500/30 rounded-lg border border-teal-400/50">
       <div className="w-3 h-3 rounded-full bg-teal-500" />
       <Wallet className="w-4 h-4 text-teal-200" />
-      <span className="text-sm font-medium text-teal-200">WALLET ATTIVO</span>
+      <span className="text-sm font-medium text-teal-200">
+        {impresaName || 'WALLET'} - ATTIVO
+      </span>
     </div>
   );
 }
