@@ -52,6 +52,7 @@ export default function HubOperatore() {
   const [operatorWallet, setOperatorWallet] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [tccConfig, setTccConfig] = useState<any>(null);
+  const [transactionFilter, setTransactionFilter] = useState<'all' | 'issue' | 'redeem' | 'settlement' | 'reimbursement_received'>('all');
 
   // Mock data operatore (in futuro da auth)
   const operatore = {
@@ -506,9 +507,9 @@ export default function HubOperatore() {
               <QrCode className="w-4 h-4 mr-2" />
               Scanner QR
             </TabsTrigger>
-            <TabsTrigger value="vendite" className="data-[state=active]:bg-[#f97316]">
+            <TabsTrigger value="transazioni" className="data-[state=active]:bg-[#f97316]">
               <BarChart3 className="w-4 h-4 mr-2" />
-              Vendite
+              Transazioni
             </TabsTrigger>
             <TabsTrigger value="wallet" className="data-[state=active]:bg-[#f97316]">
               <Wallet className="w-4 h-4 mr-2" />
@@ -721,43 +722,123 @@ export default function HubOperatore() {
             </Card>
           </TabsContent>
 
-          {/* Tab Vendite */}
-          <TabsContent value="vendite" className="space-y-4">
+          {/* Tab Transazioni */}
+          <TabsContent value="transazioni" className="space-y-4">
             <Card className="bg-[#1e293b] border-[#334155]">
               <CardHeader>
-                <CardTitle className="text-[#e8fbff]">Ultime Transazioni</CardTitle>
+                <CardTitle className="text-[#e8fbff]">Storico Transazioni</CardTitle>
                 <CardDescription className="text-[#94a3b8]">
-                  Storico vendite e TCC assegnati/riscattati oggi
+                  Tutte le operazioni tracciate del negozio
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                {/* Filtri Transazioni */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <Button
+                    size="sm"
+                    variant={transactionFilter === 'all' ? 'default' : 'outline'}
+                    onClick={() => setTransactionFilter('all')}
+                    className={transactionFilter === 'all' ? 'bg-[#f97316]' : 'border-[#334155] text-[#94a3b8]'}
+                  >
+                    Tutte
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={transactionFilter === 'issue' ? 'default' : 'outline'}
+                    onClick={() => setTransactionFilter('issue')}
+                    className={transactionFilter === 'issue' ? 'bg-[#14b8a6]' : 'border-[#334155] text-[#94a3b8]'}
+                  >
+                    Vendite
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={transactionFilter === 'redeem' ? 'default' : 'outline'}
+                    onClick={() => setTransactionFilter('redeem')}
+                    className={transactionFilter === 'redeem' ? 'bg-[#f59e0b]' : 'border-[#334155] text-[#94a3b8]'}
+                  >
+                    Pagamenti TCC
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={transactionFilter === 'settlement' ? 'default' : 'outline'}
+                    onClick={() => setTransactionFilter('settlement')}
+                    className={transactionFilter === 'settlement' ? 'bg-[#8b5cf6]' : 'border-[#334155] text-[#94a3b8]'}
+                  >
+                    Chiusure
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={transactionFilter === 'reimbursement_received' ? 'default' : 'outline'}
+                    onClick={() => setTransactionFilter('reimbursement_received')}
+                    className={transactionFilter === 'reimbursement_received' ? 'bg-[#10b981]' : 'border-[#334155] text-[#94a3b8]'}
+                  >
+                    Rimborsi
+                  </Button>
+                </div>
+
+                {/* Lista Transazioni */}
+                <div className="space-y-3 max-h-96 overflow-y-auto">
                   {(!transactions || transactions.length === 0) ? (
-                    <p className="text-center text-[#94a3b8] py-8">Nessuna transazione oggi</p>
+                    <p className="text-center text-[#94a3b8] py-8">Nessuna transazione</p>
                   ) : (
-                    (transactions || []).filter(tx => tx.type === 'issue' || tx.type === 'redeem').map((tx, i) => (
+                    (transactions || []).filter(tx => transactionFilter === 'all' || tx.type === transactionFilter).map((tx, i) => (
                       <div key={tx.id || i} className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
                         <div className="flex items-center gap-3">
                           {tx.type === 'issue' ? (
-                            <ArrowUpCircle className="w-5 h-5 text-[#14b8a6]" />
+                            <div className="w-8 h-8 rounded-full bg-[#14b8a6]/20 flex items-center justify-center">
+                              <ArrowUpCircle className="w-4 h-4 text-[#14b8a6]" />
+                            </div>
+                          ) : tx.type === 'redeem' ? (
+                            <div className="w-8 h-8 rounded-full bg-[#f59e0b]/20 flex items-center justify-center">
+                              <ArrowDownCircle className="w-4 h-4 text-[#f59e0b]" />
+                            </div>
+                          ) : tx.type === 'settlement' ? (
+                            <div className="w-8 h-8 rounded-full bg-[#8b5cf6]/20 flex items-center justify-center">
+                              <Send className="w-4 h-4 text-[#8b5cf6]" />
+                            </div>
                           ) : (
-                            <ArrowDownCircle className="w-5 h-5 text-[#f59e0b]" />
+                            <div className="w-8 h-8 rounded-full bg-[#10b981]/20 flex items-center justify-center">
+                              <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
+                            </div>
                           )}
                           <div>
                             <p className="font-semibold text-[#e8fbff]">
-                              {tx.customer_name || 'Cliente'}
+                              {tx.type === 'issue' ? tx.customer_name || 'Cliente' :
+                               tx.type === 'redeem' ? tx.customer_name || 'Cliente' :
+                               tx.type === 'settlement' ? 'Chiusura Giornata' :
+                               'Rimborso Ricevuto'}
                             </p>
                             <p className="text-sm text-[#94a3b8]">
-                              {new Date(tx.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(tx.created_at).toLocaleDateString('it-IT')} - {new Date(tx.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                             </p>
+                            <Badge className={`text-xs mt-1 ${
+                              tx.type === 'issue' ? 'bg-[#14b8a6]/20 text-[#14b8a6]' :
+                              tx.type === 'redeem' ? 'bg-[#f59e0b]/20 text-[#f59e0b]' :
+                              tx.type === 'settlement' ? 'bg-[#8b5cf6]/20 text-[#8b5cf6]' :
+                              'bg-[#10b981]/20 text-[#10b981]'
+                            }`}>
+                              {tx.type === 'issue' ? 'Vendita' :
+                               tx.type === 'redeem' ? 'Pagamento TCC' :
+                               tx.type === 'settlement' ? 'Chiusura' :
+                               'Rimborso'}
+                            </Badge>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-[#e8fbff]">
-                            €{parseFloat(tx.euro_amount || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                          <p className={`font-semibold ${
+                            tx.type === 'reimbursement_received' ? 'text-[#10b981]' :
+                            tx.type === 'settlement' ? 'text-[#8b5cf6]' :
+                            'text-[#e8fbff]'
+                          }`}>
+                            {tx.type === 'reimbursement_received' ? '+' : ''}€{parseFloat(tx.euro_amount || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                           </p>
-                          <p className={`text-sm ${tx.type === 'issue' ? 'text-[#14b8a6]' : 'text-[#f59e0b]'}`}>
-                            {tx.type === 'issue' ? '+' : '-'}{tx.tcc_amount} TCC
+                          <p className={`text-sm ${
+                            tx.type === 'issue' ? 'text-[#14b8a6]' :
+                            tx.type === 'redeem' ? 'text-[#f59e0b]' :
+                            tx.type === 'settlement' ? 'text-[#8b5cf6]' :
+                            'text-[#10b981]'
+                          }`}>
+                            {tx.type === 'issue' ? '+' : tx.type === 'redeem' ? '-' : ''}{tx.tcc_amount} TCC
                           </p>
                         </div>
                       </div>
