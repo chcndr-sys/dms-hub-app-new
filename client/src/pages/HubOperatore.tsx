@@ -99,24 +99,24 @@ function WalletStatusIndicator({ operatorId }: WalletStatusIndicatorProps) {
   
   if (status === 'suspended') {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/30 rounded-lg border border-red-400/50">
-        <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-        <Wallet className="w-4 h-4 text-red-200" />
-        <span className="text-sm font-medium text-red-200">
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-red-600 rounded-lg shadow-lg">
+        <div className="w-3 h-3 rounded-full bg-white animate-pulse" />
+        <Wallet className="w-4 h-4 text-white" />
+        <span className="text-sm font-bold text-white">
           {impresaName || 'WALLET'} - SOSPESO
         </span>
         {qualification && (
-          <span className="text-xs text-red-300/80">({qualification.label})</span>
+          <span className="text-xs text-white/80">({qualification.label})</span>
         )}
       </div>
     );
   }
   
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-teal-500/30 rounded-lg border border-teal-400/50">
-      <div className="w-3 h-3 rounded-full bg-teal-500" />
-      <Wallet className="w-4 h-4 text-teal-200" />
-      <span className="text-sm font-medium text-teal-200">
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-600 rounded-lg shadow-lg">
+      <div className="w-3 h-3 rounded-full bg-white" />
+      <Wallet className="w-4 h-4 text-white" />
+      <span className="text-sm font-bold text-white">
         {impresaName || 'WALLET'} - ATTIVO
       </span>
     </div>
@@ -149,6 +149,9 @@ export default function HubOperatore() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [tccConfig, setTccConfig] = useState<any>(null);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'issue' | 'redeem' | 'settlement' | 'reimbursement_received'>('all');
+  
+  // Nome impresa collegata al wallet (v5.7.0)
+  const [impresaNome, setImpresaNome] = useState<string | null>(null);
 
   // Mock data operatore (in futuro da auth)
   const operatore = {
@@ -180,6 +183,10 @@ export default function HubOperatore() {
       const data = await res.json();
       if (data.success) {
         setOperatorWallet(data.wallet);
+        // Salva nome impresa collegata (v5.7.0)
+        if (data.impresa?.denominazione) {
+          setImpresaNome(data.impresa.denominazione);
+        }
       }
     } catch (error) {
       console.error('Errore caricamento wallet:', error);
@@ -488,7 +495,7 @@ export default function HubOperatore() {
           </div>
           <div className="text-right">
             <p className="text-sm text-white/80">{operatore.ruolo}</p>
-            <p className="font-semibold text-white">{operatore.nome}</p>
+            <p className="font-semibold text-white">{impresaNome || operatore.nome}</p>
           </div>
         </div>
       </header>
