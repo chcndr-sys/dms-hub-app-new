@@ -3204,7 +3204,11 @@ export default function DashboardPA() {
                           )}
                           <div>
                             <p className="font-semibold text-[#e8fbff]">
-                              {isDeposit ? 'Deposito Fondo' : (tx.type === 'reimbursement_batch' ? 'Batch Rimborsi' : tx.description || 'Rimborso')}
+                              {isDeposit ? 'Deposito Fondo' : (tx.type === 'reimbursement_batch' ? (
+                                tx.description?.includes('[') 
+                                  ? `Batch Rimborsi ${tx.description.match(/\[(.*?)\]/)?.[0] || ''}`
+                                  : 'Batch Rimborsi'
+                              ) : tx.description || 'Rimborso')}
                             </p>
                             <p className="text-sm text-[#94a3b8]">
                               {new Date(tx.created_at).toLocaleDateString('it-IT')} - {new Date(tx.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
