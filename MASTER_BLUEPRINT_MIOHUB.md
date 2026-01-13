@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.31.0  
-> **Data:** 12 Gennaio 2026  
+> **Versione:** 3.32.0  
+> **Data:** 13 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -530,6 +530,55 @@ ALTER TABLE operator_daily_wallet ADD COLUMN settlement_number VARCHAR(20);
 CREATE INDEX idx_operator_daily_wallet_settlement_number ON operator_daily_wallet(settlement_number);
 ```
 
+
+
+### 🆕 Aggiornamenti TCC v5.9.0 (13 Gennaio 2026)
+
+#### Numeri Progressivi Transazioni
+Tutte le transazioni TCC ora hanno un **numero progressivo univoco** per tracciabilità completa:
+
+| Tipo Transazione | Formato Numero | Esempio |
+|------------------|----------------|---------|
+| **Vendita (issue)** | `#TRX-YYYYMMDD-NNNNNN` | `#TRX-20260113-000001` |
+| **Pagamento TCC (redeem)** | `#TRX-YYYYMMDD-NNNNNN` | `#TRX-20260113-000002` |
+| **Chiusura Giornata** | `#YYYYMMDD-NNNN` | `#20260113-0003` |
+| **Rimborso Ricevuto** | `#YYYYMMDD-NNNN` | `#20260113-0003` |
+| **Batch Rimborsi** | `[#YYYYMMDD-NNNN, ...]` | `[#20260113-0003]` |
+
+#### Scanner QR "Incassa TCC" Migliorato
+L'operatore ora vede i dettagli del cliente prima di incassare:
+
+| Campo | Descrizione |
+|-------|-------------|
+| **Nome Cliente** | Nome completo del cliente |
+| **Saldo Wallet** | TCC disponibili nel wallet cliente |
+| **TCC da Incassare** | Importo TCC della transazione |
+| **Valore Euro** | Controvalore in euro |
+
+#### Nuovo Endpoint API
+```
+POST /api/tcc/v2/operator/validate-spend-qr
+Body: { "qr_data": "tcc-spend://userId/token" }
+Response: { customer_name, wallet_balance, tcc_amount, euro_amount }
+```
+
+#### Flusso Incasso TCC Aggiornato
+```
+1. Cliente genera QR di spesa (valido 15 minuti)
+   └─► App cliente mostra QR con importo TCC
+
+2. Operatore scansiona QR
+   └─► Sistema valida token e recupera info cliente
+       └─► Mostra: Nome, Saldo, TCC, Euro
+           └─► Operatore conferma "Incassa X TCC (€Y)"
+               └─► Transazione completata con numero progressivo
+```
+
+#### Fix Applicati
+- ✅ **Wallet Query:** Restituisce sempre il wallet "open" indipendentemente dalla data
+- ✅ **Date Rimborsi:** Formato DD/MM/YYYY invece di oggetto Date raw
+- ✅ **Autocomplete Off:** Rimosso popup password Safari sui campi input
+- ✅ **Numeri in Batch:** I batch rimborsi mostrano i settlement numbers
 
 ## 📋 SSO SUAP - MODULO SCIA
 
