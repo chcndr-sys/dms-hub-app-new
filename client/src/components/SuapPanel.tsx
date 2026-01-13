@@ -187,6 +187,10 @@ export default function SuapPanel() {
   const [showConcessioneForm, setShowConcessioneForm] = useState(false);
   const [showAutorizzazioneForm, setShowAutorizzazioneForm] = useState(false);
   const [showDomandaSpuntaForm, setShowDomandaSpuntaForm] = useState(false);
+  const [selectedAutorizzazioneId, setSelectedAutorizzazioneId] = useState<number | null>(null);
+  const [selectedDomandaSpuntaId, setSelectedDomandaSpuntaId] = useState<number | null>(null);
+  const [autorizzazioneMode, setAutorizzazioneMode] = useState<'create' | 'view' | 'edit'>('create');
+  const [domandaSpuntaMode, setDomandaSpuntaMode] = useState<'create' | 'view' | 'edit'>('create');
   const [concessionePreData, setConcessionePreData] = useState<any>(null);
   const [concessioni, setConcessioni] = useState<any[]>([]);
   const [searchConcessioni, setSearchConcessioni] = useState('');
@@ -1780,13 +1784,35 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
             <AutorizzazioneForm 
               onSubmit={() => {
                 setShowAutorizzazioneForm(false);
-                toast.success('Autorizzazione creata!');
+                setSelectedAutorizzazioneId(null);
+                setAutorizzazioneMode('create');
+                toast.success(autorizzazioneMode === 'create' ? 'Autorizzazione creata!' : 'Autorizzazione aggiornata!');
               }}
-              onCancel={() => setShowAutorizzazioneForm(false)}
+              onCancel={() => {
+                setShowAutorizzazioneForm(false);
+                setSelectedAutorizzazioneId(null);
+                setAutorizzazioneMode('create');
+              }}
+              autorizzazioneId={selectedAutorizzazioneId}
+              mode={autorizzazioneMode}
             />
           ) : (
             <ListaAutorizzazioniSuap 
-              onNuovaAutorizzazione={() => setShowAutorizzazioneForm(true)}
+              onNuovaAutorizzazione={() => {
+                setAutorizzazioneMode('create');
+                setSelectedAutorizzazioneId(null);
+                setShowAutorizzazioneForm(true);
+              }}
+              onViewAutorizzazione={(id) => {
+                setAutorizzazioneMode('view');
+                setSelectedAutorizzazioneId(id);
+                setShowAutorizzazioneForm(true);
+              }}
+              onEditAutorizzazione={(id) => {
+                setAutorizzazioneMode('edit');
+                setSelectedAutorizzazioneId(id);
+                setShowAutorizzazioneForm(true);
+              }}
             />
           )}
         </TabsContent>
@@ -1799,13 +1825,35 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
             <DomandaSpuntaForm 
               onSubmit={() => {
                 setShowDomandaSpuntaForm(false);
-                toast.success('Domanda Spunta inviata!');
+                setSelectedDomandaSpuntaId(null);
+                setDomandaSpuntaMode('create');
+                toast.success(domandaSpuntaMode === 'create' ? 'Domanda Spunta inviata!' : 'Domanda Spunta aggiornata!');
               }}
-              onCancel={() => setShowDomandaSpuntaForm(false)}
+              onCancel={() => {
+                setShowDomandaSpuntaForm(false);
+                setSelectedDomandaSpuntaId(null);
+                setDomandaSpuntaMode('create');
+              }}
+              domandaId={selectedDomandaSpuntaId}
+              mode={domandaSpuntaMode}
             />
           ) : (
             <ListaDomandeSpuntaSuap 
-              onNuovaDomanda={() => setShowDomandaSpuntaForm(true)}
+              onNuovaDomanda={() => {
+                setDomandaSpuntaMode('create');
+                setSelectedDomandaSpuntaId(null);
+                setShowDomandaSpuntaForm(true);
+              }}
+              onViewDomanda={(id) => {
+                setDomandaSpuntaMode('view');
+                setSelectedDomandaSpuntaId(id);
+                setShowDomandaSpuntaForm(true);
+              }}
+              onEditDomanda={(id) => {
+                setDomandaSpuntaMode('edit');
+                setSelectedDomandaSpuntaId(id);
+                setShowDomandaSpuntaForm(true);
+              }}
             />
           )}
         </TabsContent>

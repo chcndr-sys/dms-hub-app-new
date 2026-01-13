@@ -74,9 +74,13 @@ interface DomandaSpuntaFormProps {
   onCancel: () => void;
   onSubmit: (data: any) => void;
   initialData?: any;
+  domandaId?: number | null;
+  mode?: 'create' | 'view' | 'edit';
 }
 
-export default function DomandaSpuntaForm({ onCancel, onSubmit, initialData }: DomandaSpuntaFormProps) {
+export default function DomandaSpuntaForm({ onCancel, onSubmit, initialData, domandaId, mode = 'create' }: DomandaSpuntaFormProps) {
+  const isViewMode = mode === 'view';
+  const isEditMode = mode === 'edit';
   // Stati per dati dal database
   const [markets, setMarkets] = useState<Market[]>([]);
   const [allImprese, setAllImprese] = useState<Impresa[]>([]);
@@ -175,6 +179,42 @@ export default function DomandaSpuntaForm({ onCancel, onSubmit, initialData }: D
       toast.info('Form pre-compilato', { description: 'Verifica e completa i dati mancanti' });
     }
   }, [initialData]);
+
+  // Carica dati domanda esistente in view/edit mode
+  useEffect(() => {
+    if (domandaId && (mode === 'view' || mode === 'edit')) {
+      const fetchDomanda = async () => {
+        try {
+          const res = await fetch(`${API_URL}/api/domande-spunta/${domandaId}`);
+          const json = await res.json();
+          if (json.success && json.data) {
+            const dom = json.data;
+            setFormData(prev => ({
+              ...prev,
+              impresa_id: dom.company_id?.toString() || '',
+              cf_impresa: dom.company_cf || '',
+              partita_iva: dom.company_piva || '',
+              ragione_sociale: dom.company_name || '',
+              mercato: dom.market_name || '',
+              mercato_id: dom.market_id?.toString() || '',
+              giorno: dom.market_days || '',
+              settore: dom.settore_richiesto || 'Non Alimentare',
+              autorizzazione_id: dom.autorizzazione_id?.toString() || '',
+              numero_autorizzazione: dom.numero_autorizzazione || '',
+              data_richiesta: dom.data_richiesta ? new Date(dom.data_richiesta).toISOString().split('T')[0] : '',
+              note: dom.note || '',
+              stato: dom.stato || 'IN_ATTESA'
+            }));
+            setSearchQuery(dom.company_name || '');
+          }
+        } catch (err) {
+          console.error('Errore caricamento domanda spunta:', err);
+          toast.error('Errore nel caricamento della domanda');
+        }
+      };
+      fetchDomanda();
+    }
+  }, [domandaId, mode]);
 
   // Filtra imprese per autocomplete
   useEffect(() => {
@@ -330,7 +370,9 @@ export default function DomandaSpuntaForm({ onCancel, onSubmit, initialData }: D
       <CardHeader className="border-b border-[#1e293b]">
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-green-400" />
-          <CardTitle className="text-[#e8fbff]">Domanda di Partecipazione alla Spunta</CardTitle>
+          <CardTitle className="text-[#e8fbff]">
+            {isViewMode ? 'Dettaglio Domanda Spunta' : isEditMode ? 'Modifica Domanda Spunta' : 'Domanda di Partecipazione alla Spunta'}
+          </CardTitle>
         </div>
         <CardDescription className="text-gray-400">
           Richiesta per partecipare all'assegnazione giornaliera dei posteggi liberi
@@ -662,23 +704,25 @@ export default function DomandaSpuntaForm({ onCancel, onSubmit, initialData }: D
           >
             Annulla
           </Button>
-          <Button 
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Invio in corso...
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4 mr-2" />
-                Invia Domanda Spunta
-              </>
-            )}
-          </Button>
+          {!isViewMode && (
+            <Button 
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {isEditMode ? 'Salvataggio...' : 'Invio in corso...'}
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  {isEditMode ? 'Salva Modifiche' : 'Invia Domanda Spunta'}
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

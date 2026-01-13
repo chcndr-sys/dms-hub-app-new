@@ -73,9 +73,13 @@ interface AutorizzazioneFormProps {
   onCancel: () => void;
   onSubmit: (data: any) => void;
   initialData?: any;
+  autorizzazioneId?: number | null;
+  mode?: 'create' | 'view' | 'edit';
 }
 
-export default function AutorizzazioneForm({ onCancel, onSubmit, initialData }: AutorizzazioneFormProps) {
+export default function AutorizzazioneForm({ onCancel, onSubmit, initialData, autorizzazioneId, mode = 'create' }: AutorizzazioneFormProps) {
+  const isViewMode = mode === 'view';
+  const isEditMode = mode === 'edit';
   // Stati per dati dal database
   const [markets, setMarkets] = useState<Market[]>([]);
   const [stalls, setStalls] = useState<Stall[]>([]);
@@ -205,6 +209,42 @@ export default function AutorizzazioneForm({ onCancel, onSubmit, initialData }: 
       toast.info('Form pre-compilato', { description: 'Verifica e completa i dati mancanti' });
     }
   }, [initialData]);
+
+  // Carica dati autorizzazione esistente in view/edit mode
+  useEffect(() => {
+    if (autorizzazioneId && (mode === 'view' || mode === 'edit')) {
+      const fetchAutorizzazione = async () => {
+        try {
+          const res = await fetch(`${API_URL}/api/autorizzazioni/${autorizzazioneId}`);
+          const json = await res.json();
+          if (json.success && json.data) {
+            const aut = json.data;
+            setFormData(prev => ({
+              ...prev,
+              numero_autorizzazione: aut.numero_autorizzazione || '',
+              data_rilascio: aut.data_rilascio ? new Date(aut.data_rilascio).toISOString().split('T')[0] : '',
+              data_scadenza: aut.data_scadenza ? new Date(aut.data_scadenza).toISOString().split('T')[0] : '',
+              ente_rilascio: aut.ente_rilascio || '',
+              tipo: aut.tipo || 'A',
+              impresa_id: aut.vendor_id?.toString() || '',
+              cf_impresa: aut.company_cf || '',
+              partita_iva: aut.company_piva || '',
+              ragione_sociale: aut.company_name || '',
+              mercato: aut.market_name || '',
+              mercato_id: aut.market_id?.toString() || '',
+              settore: aut.settore || 'Non Alimentare',
+              note: aut.note || '',
+              stato: aut.stato || 'ATTIVA'
+            }));
+          }
+        } catch (err) {
+          console.error('Errore caricamento autorizzazione:', err);
+          toast.error('Errore nel caricamento dell\'autorizzazione');
+        }
+      };
+      fetchAutorizzazione();
+    }
+  }, [autorizzazioneId, mode]);
 
   // Filtra imprese per autocomplete
   useEffect(() => {
@@ -370,7 +410,9 @@ export default function AutorizzazioneForm({ onCancel, onSubmit, initialData }: 
       <CardHeader className="border-b border-[#1e293b]">
         <div className="flex items-center gap-2">
           <FileCheck className="w-5 h-5 text-purple-400" />
-          <CardTitle className="text-[#e8fbff]">Generazione Autorizzazione Commercio</CardTitle>
+          <CardTitle className="text-[#e8fbff]">
+            {isViewMode ? 'Dettaglio Autorizzazione' : isEditMode ? 'Modifica Autorizzazione' : 'Generazione Autorizzazione Commercio'}
+          </CardTitle>
         </div>
         <CardDescription className="text-gray-400">
           Autorizzazione per il commercio su aree pubbliche (D.Lgs. 114/1998)
@@ -792,13 +834,15 @@ export default function AutorizzazioneForm({ onCancel, onSubmit, initialData }: 
           >
             Annulla
           </Button>
-          <Button 
-            onClick={handleSave}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            <Printer className="w-4 h-4 mr-2" />
-            Genera Autorizzazione
-          </Button>
+          {!isViewMode && (
+            <Button 
+              onClick={handleSave}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              {isEditMode ? 'Salva Modifiche' : 'Genera Autorizzazione'}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
