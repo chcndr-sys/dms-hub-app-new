@@ -142,10 +142,13 @@ export default function AutorizzazioneForm({ onCancel, onSubmit, initialData, au
     sottosettore: '',
     limitazioni: '',
     
-    // DURC
+    // DURC e Requisiti
     durc_numero: '',
     durc_data_rilascio: '',
     durc_data_scadenza: '',
+    durc_valido: false,
+    requisiti_morali: false,
+    requisiti_professionali: false,
     
     // Note
     note: '',
@@ -291,38 +294,73 @@ export default function AutorizzazioneForm({ onCancel, onSubmit, initialData, au
     
     toast.success('Dati impresa caricati');
     
-    // Carica DURC dalla tabella qualificazioni
-    fetchDurcData(impresa.id);
+    // Carica qualifiche (DURC, Morali, Professionali) dalla tabella qualificazioni
+    fetchQualificheData(impresa.id);
   };
   
-  // Funzione per caricare i dati DURC dalla tabella qualificazioni
-  const fetchDurcData = async (impresaId: number) => {
+  // Funzione per caricare i dati delle qualifiche (DURC, Morali, Professionali)
+  const fetchQualificheData = async (impresaId: number) => {
     try {
       const res = await fetch(`${API_URL}/api/qualificazioni/impresa/${impresaId}`);
       const json = await res.json();
       
       if (json.success && json.data && json.data.length > 0) {
-        // Cerca una qualifica di tipo DURC valida
-        const durcQualifica = json.data.find((q: any) => 
-          q.tipo_qualifica?.toUpperCase().includes('DURC') || 
-          q.tipo?.toUpperCase().includes('DURC')
-        );
+        const qualifiche = json.data;
+        const oggi = new Date();
         
-        if (durcQualifica) {
-          setFormData(prev => ({
-            ...prev,
-            durc_numero: durcQualifica.numero_attestato || durcQualifica.numero_certificato || '',
-            durc_data_rilascio: durcQualifica.data_rilascio ? durcQualifica.data_rilascio.split('T')[0] : '',
-            durc_data_scadenza: durcQualifica.data_scadenza ? durcQualifica.data_scadenza.split('T')[0] : ''
-          }));
-          
-          toast.success('Dati DURC caricati automaticamente', {
-            description: `DURC n. ${durcQualifica.numero_attestato || durcQualifica.numero_certificato || 'N/A'}`
+        // Cerca DURC valido
+        const durcQualifica = qualifiche.find((q: any) => {
+          const tipo = q.tipo_qualifica?.toUpperCase() || q.tipo?.toUpperCase() || '';
+          const stato = q.stato?.toUpperCase() || '';
+          const scadenza = new Date(q.data_scadenza);
+          return tipo.includes('DURC') && stato !== 'SCADUTO' && scadenza > oggi;
+        });
+        
+        // Cerca Requisiti Morali (Onorabilità Morali)
+        const moraliQualifica = qualifiche.find((q: any) => {
+          const tipo = q.tipo_qualifica?.toUpperCase() || q.tipo?.toUpperCase() || '';
+          const stato = q.stato?.toUpperCase() || '';
+          const scadenza = new Date(q.data_scadenza);
+          return (tipo.includes('MORAL') || tipo.includes('ONORABIL')) && stato !== 'SCADUTO' && scadenza > oggi;
+        });
+        
+        // Cerca Requisiti Professionali
+        const professionaliQualifica = qualifiche.find((q: any) => {
+          const tipo = q.tipo_qualifica?.toUpperCase() || q.tipo?.toUpperCase() || '';
+          const stato = q.stato?.toUpperCase() || '';
+          const scadenza = new Date(q.data_scadenza);
+          return tipo.includes('PROFESS') && stato !== 'SCADUTO' && scadenza > oggi;
+        });
+        
+        // Aggiorna formData con i dati trovati
+        setFormData(prev => ({
+          ...prev,
+          durc_numero: durcQualifica?.numero_attestato || durcQualifica?.numero_certificato || '',
+          durc_data_rilascio: durcQualifica?.data_rilascio ? durcQualifica.data_rilascio.split('T')[0] : '',
+          durc_data_scadenza: durcQualifica?.data_scadenza ? durcQualifica.data_scadenza.split('T')[0] : '',
+          durc_valido: !!durcQualifica,
+          requisiti_morali: !!moraliQualifica,
+          requisiti_professionali: !!professionaliQualifica
+        }));
+        
+        // Mostra toast informativo
+        const requisiti = [];
+        if (durcQualifica) requisiti.push('DURC');
+        if (moraliQualifica) requisiti.push('Morali');
+        if (professionaliQualifica) requisiti.push('Professionali');
+        
+        if (requisiti.length > 0) {
+          toast.success('Requisiti verificati automaticamente', {
+            description: `Trovati: ${requisiti.join(', ')}`
+          });
+        } else {
+          toast.warning('Nessun requisito valido trovato', {
+            description: 'Verificare le qualifiche dell\'impresa'
           });
         }
       }
     } catch (err) {
-      console.warn('Errore nel caricamento DURC:', err);
+      console.warn('Errore nel caricamento qualifiche:', err);
     }
   };
 
@@ -417,6 +455,9 @@ export default function AutorizzazioneForm({ onCancel, onSubmit, initialData, au
           durc_numero: formData.durc_numero,
           durc_data_rilascio: formData.durc_data_rilascio || null,
           durc_data_scadenza: formData.durc_data_scadenza || null,
+          durc_valido: formData.durc_valido,
+          requisiti_morali: formData.requisiti_morali,
+          requisiti_professionali: formData.requisiti_professionali,
           stato: formData.stato,
           note: formData.note
         })

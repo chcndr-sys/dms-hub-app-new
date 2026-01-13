@@ -287,51 +287,70 @@ export default function DomandaSpuntaForm({ onCancel, onSubmit, initialData, dom
     
     toast.success('Dati impresa caricati');
     
-    // Verifica DURC dalla tabella qualificazioni
-    checkDurcStatus(impresa.id);
+    // Verifica qualifiche (DURC, Requisiti, Antimafia) dalla tabella qualificazioni
+    checkQualificheStatus(impresa.id);
   };
   
-  // Funzione per verificare lo stato DURC dalla tabella qualificazioni
-  const checkDurcStatus = async (impresaId: number) => {
+  // Funzione per verificare i requisiti (DURC, Morali/Requisiti, Antimafia) dalla tabella qualificazioni
+  const checkQualificheStatus = async (impresaId: number) => {
     try {
       const res = await fetch(`${API_URL}/api/qualificazioni/impresa/${impresaId}`);
       const json = await res.json();
       
       if (json.success && json.data && json.data.length > 0) {
-        // Cerca una qualifica di tipo DURC valida
-        const durcQualifica = json.data.find((q: any) => 
-          (q.tipo_qualifica?.toUpperCase().includes('DURC') || 
-           q.tipo?.toUpperCase().includes('DURC')) &&
-          q.stato?.toUpperCase() !== 'SCADUTO'
-        );
+        const qualifiche = json.data;
+        const oggi = new Date();
         
-        if (durcQualifica) {
-          const scadenza = new Date(durcQualifica.data_scadenza);
-          const oggi = new Date();
-          
-          if (scadenza > oggi) {
-            // DURC valido - auto-seleziona la checkbox
-            setFormData(prev => ({
-              ...prev,
-              dichiarazione_durc: true
-            }));
-            
-            toast.success('DURC valido trovato', {
-              description: `Scadenza: ${scadenza.toLocaleDateString('it-IT')}`
-            });
-          } else {
-            toast.warning('DURC scaduto', {
-              description: 'Il DURC dell\'impresa risulta scaduto. Aggiornare prima di procedere.'
-            });
-          }
+        // Cerca DURC valido
+        const durcQualifica = qualifiche.find((q: any) => {
+          const tipo = q.tipo_qualifica?.toUpperCase() || q.tipo?.toUpperCase() || '';
+          const stato = q.stato?.toUpperCase() || '';
+          const scadenza = new Date(q.data_scadenza);
+          return tipo.includes('DURC') && stato !== 'SCADUTO' && scadenza > oggi;
+        });
+        
+        // Cerca Requisiti Morali/Professionali (per dichiarazione_requisiti)
+        const moraliQualifica = qualifiche.find((q: any) => {
+          const tipo = q.tipo_qualifica?.toUpperCase() || q.tipo?.toUpperCase() || '';
+          const stato = q.stato?.toUpperCase() || '';
+          const scadenza = new Date(q.data_scadenza);
+          return (tipo.includes('MORAL') || tipo.includes('ONORABIL') || tipo.includes('PROFESS')) && stato !== 'SCADUTO' && scadenza > oggi;
+        });
+        
+        // Cerca Antimafia
+        const antimafiaQualifica = qualifiche.find((q: any) => {
+          const tipo = q.tipo_qualifica?.toUpperCase() || q.tipo?.toUpperCase() || '';
+          const stato = q.stato?.toUpperCase() || '';
+          const scadenza = new Date(q.data_scadenza);
+          return tipo.includes('ANTIMAFIA') && stato !== 'SCADUTO' && scadenza > oggi;
+        });
+        
+        // Aggiorna le checkbox in base ai requisiti trovati
+        setFormData(prev => ({
+          ...prev,
+          dichiarazione_durc: !!durcQualifica,
+          dichiarazione_requisiti: !!moraliQualifica,
+          dichiarazione_antimafia: !!antimafiaQualifica
+        }));
+        
+        // Mostra toast informativo
+        const requisiti = [];
+        if (durcQualifica) requisiti.push('DURC');
+        if (moraliQualifica) requisiti.push('Requisiti');
+        if (antimafiaQualifica) requisiti.push('Antimafia');
+        
+        if (requisiti.length > 0) {
+          toast.success('Requisiti verificati automaticamente', {
+            description: `Trovati: ${requisiti.join(', ')}`
+          });
         } else {
-          toast.warning('DURC non trovato', {
-            description: 'Nessun DURC presente nelle qualifiche dell\'impresa'
+          toast.warning('Nessun requisito valido trovato', {
+            description: 'Verificare le qualifiche dell\'impresa'
           });
         }
       }
     } catch (err) {
-      console.warn('Errore nel controllo DURC:', err);
+      console.warn('Errore nel controllo qualifiche:', err);
     }
   };
 
