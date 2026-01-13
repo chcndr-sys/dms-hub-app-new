@@ -18,6 +18,10 @@ import {
 } from '@/api/suap';
 import SciaForm from '@/components/suap/SciaForm';
 import ConcessioneForm from '@/components/suap/ConcessioneForm';
+import AutorizzazioneForm from '@/components/suap/AutorizzazioneForm';
+import DomandaSpuntaForm from '@/components/suap/DomandaSpuntaForm';
+import ListaAutorizzazioniSuap from '@/components/suap/ListaAutorizzazioniSuap';
+import ListaDomandeSpuntaSuap from '@/components/suap/ListaDomandeSpuntaSuap';
 import { toast } from 'sonner';
 
 // Ente ID hardcoded per ora - in futuro da contesto utente
@@ -173,7 +177,7 @@ function timeAgo(dateStr?: string | null) {
 
 export default function SuapPanel() {
   // State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'lista' | 'dettaglio' | 'concessioni'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'lista' | 'dettaglio' | 'concessioni' | 'autorizzazioni' | 'domandespunta'>('dashboard');
   const [stats, setStats] = useState<SuapStats | null>(null);
   const [pratiche, setPratiche] = useState<SuapPratica[]>([]);
   const [selectedPratica, setSelectedPratica] = useState<SuapPraticaFull | null>(null);
@@ -181,6 +185,8 @@ export default function SuapPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSciaForm, setShowSciaForm] = useState(false);
   const [showConcessioneForm, setShowConcessioneForm] = useState(false);
+  const [showAutorizzazioneForm, setShowAutorizzazioneForm] = useState(false);
+  const [showDomandaSpuntaForm, setShowDomandaSpuntaForm] = useState(false);
   const [concessionePreData, setConcessionePreData] = useState<any>(null);
   const [concessioni, setConcessioni] = useState<any[]>([]);
   const [searchConcessioni, setSearchConcessioni] = useState('');
@@ -424,9 +430,9 @@ export default function SuapPanel() {
       {/* Tabs di navigazione */}
       <Tabs 
         value={activeTab} 
-        onValueChange={(v) => setActiveTab(v as 'dashboard' | 'lista' | 'dettaglio' | 'concessioni')}
+        onValueChange={(v) => setActiveTab(v as 'dashboard' | 'lista' | 'dettaglio' | 'concessioni' | 'autorizzazioni' | 'domandespunta')}
       >
-        <TabsList className="grid w-full grid-cols-4 bg-[#0b1220]/50">
+        <TabsList className="grid w-full grid-cols-6 bg-[#0b1220]/50">
           <TabsTrigger 
             value="dashboard"
             className="data-[state=active]:bg-[#14b8a6]/20 data-[state=active]:text-[#14b8a6]"
@@ -455,6 +461,20 @@ export default function SuapPanel() {
           >
             <ScrollText className="mr-2 h-4 w-4" />
             Lista Concessioni
+          </TabsTrigger>
+          <TabsTrigger 
+            value="autorizzazioni"
+            className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400"
+          >
+            <FileCheck className="mr-2 h-4 w-4" />
+            Autorizzazioni
+          </TabsTrigger>
+          <TabsTrigger 
+            value="domandespunta"
+            className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400"
+          >
+            <Users className="mr-2 h-4 w-4" />
+            Domande Spunta
           </TabsTrigger>
         </TabsList>
 
@@ -1749,6 +1769,44 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
             </CardContent>
           </Card>
           </>
+          )}
+        </TabsContent>
+
+        {/* ================================================================== */}
+        {/* TAB AUTORIZZAZIONI */}
+        {/* ================================================================== */}
+        <TabsContent value="autorizzazioni" className="space-y-4 mt-6">
+          {showAutorizzazioneForm ? (
+            <AutorizzazioneForm 
+              onSubmit={() => {
+                setShowAutorizzazioneForm(false);
+                toast.success('Autorizzazione creata!');
+              }}
+              onCancel={() => setShowAutorizzazioneForm(false)}
+            />
+          ) : (
+            <ListaAutorizzazioniSuap 
+              onNuovaAutorizzazione={() => setShowAutorizzazioneForm(true)}
+            />
+          )}
+        </TabsContent>
+
+        {/* ================================================================== */}
+        {/* TAB DOMANDE SPUNTA */}
+        {/* ================================================================== */}
+        <TabsContent value="domandespunta" className="space-y-4 mt-6">
+          {showDomandaSpuntaForm ? (
+            <DomandaSpuntaForm 
+              onSubmit={() => {
+                setShowDomandaSpuntaForm(false);
+                toast.success('Domanda Spunta inviata!');
+              }}
+              onCancel={() => setShowDomandaSpuntaForm(false)}
+            />
+          ) : (
+            <ListaDomandeSpuntaSuap 
+              onNuovaDomanda={() => setShowDomandaSpuntaForm(true)}
+            />
           )}
         </TabsContent>
       </Tabs>

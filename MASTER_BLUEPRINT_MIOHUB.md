@@ -2179,3 +2179,452 @@ pm2 restart mihub-backend
 ```
 
 ---
+
+
+---
+
+## 🆕 PROGETTO: GESTIONE AUTORIZZAZIONI E SPUNTA (v3.33.0)
+
+> **Data Progetto:** 13 Gennaio 2026  
+> **Autore:** Manus AI  
+> **Stato:** IN PROGETTAZIONE
+
+### 1. Obiettivi
+
+Estendere il modulo **SSO SUAP** per includere la gestione completa delle **Autorizzazioni per il commercio su aree pubbliche** e delle **Domande di Spunta**, in linea con la normativa vigente (D.Lgs. 114/1998).
+
+### 2. Architettura e Connessioni
+
+Il nuovo modulo si integrerà nell'architettura esistente come segue:
+
+```mermaid
+graph TD
+    subgraph Vercel Frontend (dms-hub-app-new)
+        A[SuapPanel.tsx] --> B{API Layer}
+        B --> C[api/autorizzazioni.ts]
+        B --> D[api/domande-spunta.ts]
+    end
+
+    subgraph Hetzner Backend (mihub-backend-rest)
+        E[routes/autorizzazioni.js] --> F[services/autorizzazioniService.js]
+        G[routes/domande-spunta.js] --> H[services/domandeSpuntaService.js]
+    end
+
+    subgraph Neon DB (PostgreSQL)
+        I(autorizzazioni)
+        J(domande_spunta)
+    end
+
+    C --> E
+    D --> G
+    F --> I
+    H --> J
+```
+
+### 3. Modifiche al Database
+
+Verranno create due nuove tabelle:
+
+#### Tabella `autorizzazioni`
+
+```sql
+CREATE TABLE autorizzazioni (
+    id SERIAL PRIMARY KEY,
+    impresa_id INTEGER REFERENCES imprese(id),
+    tipo VARCHAR(1) NOT NULL, -- 'A' per Posteggio, 'B' per Itinerante
+    numero_autorizzazione VARCHAR(100) NOT NULL,
+    data_rilascio DATE NOT NULL,
+    comune_rilascio VARCHAR(100) NOT NULL,
+    settore_merceologico VARCHAR(50) NOT NULL, -- Alimentare, Non Alimentare
+    sottosettore VARCHAR(100),
+    data_scadenza DATE, -- Per autorizzazioni a tempo
+    stato VARCHAR(20) NOT NULL DEFAULT 'ATTIVA', -- ATTIVA, SOSPESA, REVOCATA, CESSATA
+    mercato_id INTEGER REFERENCES markets(id), -- Solo per tipo 'A'
+    posteggio_id INTEGER REFERENCES stalls(id), -- Solo per tipo 'A'
+    durc_numero VARCHAR(50),
+    durc_data_rilascio DATE,
+    durc_data_scadenza DATE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+#### Tabella `domande_spunta`
+
+```sql
+CREATE TABLE domande_spunta (
+    id SERIAL PRIMARY KEY,
+    impresa_id INTEGER REFERENCES imprese(id) NOT NULL,
+    autorizzazione_id INTEGER REFERENCES autorizzazioni(id) NOT NULL,
+    mercato_id INTEGER REFERENCES markets(id) NOT NULL,
+    giorno_settimana VARCHAR(20) NOT NULL,
+    settore_richiesto VARCHAR(50) NOT NULL,
+    numero_presenze INTEGER DEFAULT 0,
+    data_prima_presenza DATE,
+    stato VARCHAR(20) NOT NULL DEFAULT 'IN_ATTESA', -- IN_ATTESA, APPROVATA, RIFIUTATA, ATTIVA
+    data_richiesta DATE NOT NULL DEFAULT CURRENT_DATE,
+    data_approvazione DATE,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+### 4. Modifiche al Frontend
+
+#### `SuapPanel.tsx`
+
+- **Nuovi Tab**: Aggiungere i tab "Lista Autorizzazioni" e "Lista Domande Spunta" dopo "Lista Concessioni".
+- **Nuovi Pulsanti**: Aggiungere i pulsanti "Crea Autorizzazione" e "Crea Domanda Spunta" dopo "Nuova SCIA" e "Concessione".
+- **State Management**: Gestire lo stato per i nuovi tab e i form modali.
+
+```typescript
+// in SuapPanel.tsx
+const [activeTab, setActiveTab] = useState<
+  'dashboard' | 'lista' | 'dettaglio' | 'concessioni' | 'autorizzazioni' | 'spunta'
+>('dashboard');
+
+// ...
+
+<TabsList className="grid w-full grid-cols-6 ...">
+  {/* ... tab esistenti ... */}
+  <TabsTrigger value="autorizzazioni">Lista Autorizzazioni</TabsTrigger>
+  <TabsTrigger value="spunta">Domande Spunta</TabsTrigger>
+</TabsList>
+
+<TabsContent value="autorizzazioni">
+  <ListaAutorizzazioni />
+</TabsContent>
+<TabsContent value="spunta">
+  <ListaDomandeSpunta />
+</TabsContent>
+```
+
+#### Nuovi Componenti
+
+- `ListaAutorizzazioni.tsx`: Tabella con la lista delle autorizzazioni, filtri e pulsante per creare.
+- `ListaDomandeSpunta.tsx`: Tabella con la lista delle domande di spunta, filtri e pulsante per creare.
+- `AutorizzazioneForm.tsx`: Form modale per creare/modificare un'autorizzazione, con logica di auto-popolamento simile a `ConcessioneForm.tsx`.
+- `DomandaSpuntaForm.tsx`: Form modale per creare/modificare una domanda di spunta.
+
+### 5. Modifiche al Backend
+
+#### Nuove API Routes
+
+- `mihub-backend-rest/routes/autorizzazioni.js`: API REST per CRUD su `autorizzazioni`.
+- `mihub-backend-rest/routes/domande-spunta.js`: API REST per CRUD su `domande_spunta`.
+
+#### Nuovi Servizi
+
+- `mihub-backend-rest/src/modules/suap/autorizzazioniService.js`: Logica di business per le autorizzazioni.
+- `mihub-backend-rest/src/modules/suap/domandeSpuntaService.js`: Logica di business per le domande di spunta.
+
+### 6. Piano di Implementazione
+
+1. **Fase 1: Backend (2 giorni)**
+   - Creare le migrazioni per le nuove tabelle.
+   - Sviluppare le API REST e i servizi per `autorizzazioni` e `domande_spunta`.
+
+2. **Fase 2: Frontend (3 giorni)**
+   - Sviluppare i componenti `AutorizzazioneForm.tsx` e `DomandaSpuntaForm.tsx`.
+   - Sviluppare i componenti `ListaAutorizzazioni.tsx` e `ListaDomandeSpunta.tsx`.
+   - Integrare i nuovi componenti e tab in `SuapPanel.tsx`.
+
+3. **Fase 3: Test e Deploy (1 giorno)**
+   - Test end-to-end del nuovo flusso.
+   - Deploy su Vercel e Hetzner.
+
+**Tempo stimato totale: 6 giorni**
+
+
+### 7. Riferimenti Normativi
+
+La gestione delle autorizzazioni e della spunta si basa sul **D.Lgs. 114/1998** (Riforma del Commercio), in particolare gli articoli 27, 28 e 29 del Titolo X dedicato al commercio su aree pubbliche.
+
+#### 7.1 Tipi di Autorizzazione (Art. 28)
+
+| Tipo | Denominazione | Cosa Autorizza | Chi Rilascia | Validità |
+|------|---------------|----------------|--------------|----------|
+| **A** | Posteggio Fisso | Commercio su posteggio in concessione | Sindaco del Comune sede del posteggio | 10 anni (rinnovabile) |
+| **B** | Itinerante | Commercio su qualsiasi area pubblica in forma itinerante | Comune dove si avvia l'attività | Illimitata |
+
+L'autorizzazione di **Tipo A** abilita automaticamente anche all'esercizio in forma itinerante nell'ambito del territorio regionale. L'autorizzazione di **Tipo B** abilita inoltre alla vendita al domicilio del consumatore e alla partecipazione alla spunta nei mercati.
+
+#### 7.2 Requisiti per il Rilascio
+
+| Requisito | Descrizione | Obbligatorietà |
+|-----------|-------------|----------------|
+| **DURC** | Documento Unico Regolarità Contributiva | Obbligatorio per tutti |
+| **Requisiti Morali** | Art. 71 D.Lgs. 59/2010 (no fallimento, no condanne, no misure prevenzione) | Obbligatorio per tutti |
+| **Requisiti Professionali** | Diploma/Corso/Esperienza nel settore alimentare | Solo per settore Alimentare |
+| **Visura Camerale** | Iscrizione al Registro Imprese | Obbligatorio per tutti |
+
+#### 7.3 La Spunta (Art. 28, comma 11)
+
+La **spunta** è l'assegnazione giornaliera dei posteggi temporaneamente non occupati dai titolari della concessione. I posteggi vengono assegnati ai soggetti legittimati (titolari di autorizzazione Tipo A o B) che vantano il **maggior numero di presenze** nel mercato.
+
+**Procedura per partecipare alla spunta:**
+
+1. Presentare **comunicazione di partecipazione** al Comune (30 giorni prima)
+2. Presentarsi al mercato **prima dell'orario di inizio** vendite
+3. L'assegnazione avviene **30 minuti dopo** l'orario di inizio
+4. Validità: **solo per la singola giornata**
+
+**Criteri di priorità:**
+
+1. Maggior numero di presenze nel mercato specifico
+2. A parità di presenze: criteri stabiliti dal regolamento comunale
+3. In caso di ulteriore parità: sorteggio
+
+### 8. Struttura Dati Form
+
+#### 8.1 Form Autorizzazione
+
+Il form è suddiviso in sezioni logiche con auto-popolamento dai dati esistenti:
+
+**Sezione 1: Dati Generali**
+
+| Campo | Tipo | Auto-popolato | Note |
+|-------|------|---------------|------|
+| Numero Autorizzazione | text | Auto-generato | Formato: AUT-YYYY-NNNN |
+| Data Rilascio | date | Data odierna | |
+| Comune Rilascio | select | Da contesto ente | |
+| Tipo Autorizzazione | select | - | A (Posteggio) / B (Itinerante) |
+
+**Sezione 2: Dati Impresa (auto-popolati da ricerca)**
+
+| Campo | Tipo | Auto-popolato | Note |
+|-------|------|---------------|------|
+| Cerca Impresa | autocomplete | - | Ricerca per P.IVA/CF/Denominazione |
+| Partita IVA | text | ✅ Da imprese | |
+| Codice Fiscale | text | ✅ Da imprese | |
+| Ragione Sociale | text | ✅ Da imprese | |
+| Sede Legale | text | ✅ Da imprese | Via, Comune, Provincia, CAP |
+| PEC | text | ✅ Da imprese | |
+
+**Sezione 3: Dati Titolare/Legale Rappresentante (auto-popolati)**
+
+| Campo | Tipo | Auto-popolato | Note |
+|-------|------|---------------|------|
+| Qualità | select | - | Titolare / Legale Rappresentante |
+| Nome | text | ✅ Da imprese | |
+| Cognome | text | ✅ Da imprese | |
+| Codice Fiscale | text | ✅ Da imprese | |
+| Data Nascita | date | ✅ Da imprese | |
+| Luogo Nascita | text | ✅ Da imprese | |
+| Residenza | text | ✅ Da imprese | Via, Comune, Provincia, CAP |
+
+**Sezione 4: Dati Posteggio (solo Tipo A, auto-popolati da selezione mercato)**
+
+| Campo | Tipo | Auto-popolato | Note |
+|-------|------|---------------|------|
+| Mercato | select | - | Lista mercati disponibili |
+| Ubicazione | text | ✅ Da mercato | |
+| Posteggio | select | - | Lista posteggi liberi del mercato |
+| Fila | text | ✅ Da posteggio | |
+| MQ | number | ✅ Da posteggio | |
+| Dimensioni | text | ✅ Da posteggio | Formato: LxP |
+| Giorno | text | ✅ Da mercato | |
+| Tipo Posteggio | text | ✅ Da posteggio | Fisso/Spunta |
+
+**Sezione 5: Settore Merceologico**
+
+| Campo | Tipo | Auto-popolato | Note |
+|-------|------|---------------|------|
+| Settore | select | - | Alimentare / Non Alimentare |
+| Sottosettore | text | - | Es. Frutta e Verdura, Abbigliamento |
+| Limitazioni | text | - | Es. Esclusi prodotti ittici |
+
+**Sezione 6: DURC**
+
+| Campo | Tipo | Auto-popolato | Note |
+|-------|------|---------------|------|
+| Numero DURC | text | - | |
+| Data Rilascio | date | - | |
+| Data Scadenza | date | - | Verifica automatica validità |
+
+**Sezione 7: Generazione Documento**
+
+| Azione | Descrizione |
+|--------|-------------|
+| Anteprima | Mostra preview del documento autorizzazione |
+| Genera PDF | Genera il documento ufficiale in PDF |
+| Salva | Salva l'autorizzazione nel database |
+
+#### 8.2 Form Domanda Spunta
+
+**Sezione 1: Dati Richiedente (auto-popolati)**
+
+| Campo | Tipo | Auto-popolato | Note |
+|-------|------|---------------|------|
+| Cerca Impresa | autocomplete | - | Ricerca per P.IVA/CF/Denominazione |
+| Ragione Sociale | text | ✅ Da imprese | |
+| Partita IVA | text | ✅ Da imprese | |
+| Codice Fiscale | text | ✅ Da imprese | |
+
+**Sezione 2: Autorizzazione di Riferimento**
+
+| Campo | Tipo | Auto-popolato | Note |
+|-------|------|---------------|------|
+| Autorizzazione | select | - | Lista autorizzazioni dell'impresa |
+| Numero | text | ✅ Da autorizzazione | |
+| Data Rilascio | date | ✅ Da autorizzazione | |
+| Comune | text | ✅ Da autorizzazione | |
+| Tipo | text | ✅ Da autorizzazione | A o B |
+
+**Sezione 3: Mercato Richiesto**
+
+| Campo | Tipo | Auto-popolato | Note |
+|-------|------|---------------|------|
+| Mercato | select | - | Lista mercati disponibili |
+| Ubicazione | text | ✅ Da mercato | |
+| Giorno/i | multiselect | ✅ Da mercato | Giorni in cui si svolge |
+| Settore Richiesto | select | - | Deve corrispondere all'autorizzazione |
+
+**Sezione 4: Presenze (se già partecipato)**
+
+| Campo | Tipo | Auto-popolato | Note |
+|-------|------|---------------|------|
+| Numero Presenze | number | ✅ Da storico | Calcolato automaticamente |
+| Data Prima Presenza | date | ✅ Da storico | |
+
+**Sezione 5: Dichiarazioni**
+
+| Campo | Tipo | Note |
+|-------|------|------|
+| Requisiti Morali | checkbox | Dichiarazione sostitutiva |
+| DURC Valido | checkbox | Dichiarazione sostitutiva |
+| Rispetto Regolamento | checkbox | Impegno a rispettare regolamento comunale |
+
+### 9. API Endpoints
+
+#### 9.1 Autorizzazioni
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/autorizzazioni` | GET | Lista autorizzazioni con filtri (impresa_id, tipo, stato, mercato_id) |
+| `/api/autorizzazioni/:id` | GET | Dettaglio singola autorizzazione |
+| `/api/autorizzazioni` | POST | Crea nuova autorizzazione |
+| `/api/autorizzazioni/:id` | PUT | Aggiorna autorizzazione |
+| `/api/autorizzazioni/:id` | DELETE | Elimina autorizzazione |
+| `/api/autorizzazioni/:id/genera-pdf` | POST | Genera documento PDF |
+
+#### 9.2 Domande Spunta
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/domande-spunta` | GET | Lista domande con filtri (impresa_id, mercato_id, stato) |
+| `/api/domande-spunta/:id` | GET | Dettaglio singola domanda |
+| `/api/domande-spunta` | POST | Crea nuova domanda |
+| `/api/domande-spunta/:id` | PUT | Aggiorna domanda |
+| `/api/domande-spunta/:id` | DELETE | Elimina domanda |
+| `/api/domande-spunta/:id/approva` | POST | Approva domanda |
+| `/api/domande-spunta/:id/rifiuta` | POST | Rifiuta domanda |
+| `/api/domande-spunta/presenze/:impresa_id/:mercato_id` | GET | Calcola presenze impresa nel mercato |
+
+### 10. File da Creare/Modificare
+
+#### 10.1 Backend (mihub-backend-rest)
+
+| File | Azione | Descrizione |
+|------|--------|-------------|
+| `migrations/021_create_autorizzazioni.sql` | Creare | Migrazione tabella autorizzazioni |
+| `migrations/022_create_domande_spunta.sql` | Creare | Migrazione tabella domande_spunta |
+| `routes/autorizzazioni.js` | Creare | API REST autorizzazioni |
+| `routes/domande-spunta.js` | Creare | API REST domande spunta |
+| `src/modules/suap/autorizzazioniService.js` | Creare | Service autorizzazioni |
+| `src/modules/suap/domandeSpuntaService.js` | Creare | Service domande spunta |
+| `index.js` | Modificare | Registrare nuove routes |
+
+#### 10.2 Frontend (dms-hub-app-new/client/src)
+
+| File | Azione | Descrizione |
+|------|--------|-------------|
+| `api/autorizzazioni.ts` | Creare | Client API autorizzazioni |
+| `api/domande-spunta.ts` | Creare | Client API domande spunta |
+| `components/suap/AutorizzazioneForm.tsx` | Creare | Form creazione autorizzazione |
+| `components/suap/DomandaSpuntaForm.tsx` | Creare | Form creazione domanda spunta |
+| `components/suap/ListaAutorizzazioni.tsx` | Creare | Tabella lista autorizzazioni |
+| `components/suap/ListaDomandeSpunta.tsx` | Creare | Tabella lista domande spunta |
+| `components/SuapPanel.tsx` | Modificare | Aggiungere nuovi tab e pulsanti |
+
+### 11. Stima Tempi
+
+| Fase | Attività | Giorni |
+|------|----------|--------|
+| 1 | Migrazioni database | 0.5 |
+| 2 | API Backend autorizzazioni | 1 |
+| 3 | API Backend domande spunta | 1 |
+| 4 | Form AutorizzazioneForm.tsx | 1 |
+| 5 | Form DomandaSpuntaForm.tsx | 1 |
+| 6 | Liste e integrazione SuapPanel | 1 |
+| 7 | Test e deploy | 0.5 |
+| **Totale** | | **6 giorni** |
+
+---
+
+
+
+---
+
+## 🆕 PROGETTO v2.0: INTEGRAZIONE AUTORIZZAZIONI E SPUNTA IN SSO SUAP
+
+> **Data Progetto:** 13 Gennaio 2026  
+> **Autore:** Manus AI  
+> **Stato:** PROGETTO RIVISTO
+
+### 1. Sintesi: Cosa Esiste Già
+
+- **Backend:** Tabelle `autorizzazioni` e `wallets` (tipo SPUNTA) con API funzionanti.
+- **Frontend:** Componenti per lista autorizzazioni e domanda spunta già presenti in Gestione Mercati.
+- **Connessioni:** Creazione autorizzazione → semaforo impresa; domanda spunta → creazione wallet → semaforo impresa.
+
+### 2. Architettura Connessioni Esistenti
+
+```mermaid
+graph TD
+    subgraph Frontend
+        A[MarketAutorizzazioniTab.tsx] --> B{API Layer}
+    end
+
+    subgraph Backend
+        B --> C[/api/autorizzazioni]
+        B --> D[/api/wallets/init]
+        C --> E[autorizzazioniService]
+        D --> F[walletsService]
+    end
+
+    subgraph Database
+        G(autorizzazioni)
+        H(wallets)
+        I(imprese)
+    end
+
+    E --> G
+    F --> H
+    I --> G
+    I --> H
+```
+
+### 3. Piano di Implementazione RIVISTO
+
+1. **Fase 1: Estendere Backend (1 giorno)**
+   - Aggiungere campi a `autorizzazioni` (tipo, settore, durc, posteggio_id, mercato_id).
+   - Creare API per generare PDF autorizzazione.
+
+2. **Fase 2: Frontend SSO SUAP (2 giorni)**
+   - Creare `AutorizzazioneFormSuap.tsx` (form completo).
+   - Creare `ListaAutorizzazioniSuap.tsx` e `ListaDomandeSpuntaSuap.tsx`.
+   - Integrare in `SuapPanel.tsx`.
+
+3. **Fase 3: Test e Deploy (0.5 giorni)**
+
+**Tempo stimato totale: 3.5 giorni**
+
+### 4. Connessioni da Mantenere
+
+- **Crea Autorizzazione** → Semaforo "Autorizzato" in Scheda Impresa.
+- **Invia Domanda Spunta** → Crea Wallet Spunta → Semaforo "Spunta Mercato X" in Scheda Impresa.
+
+---
+
