@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.32.0  
-> **Data:** 13 Gennaio 2026  
+> **Versione:** 3.34.0  
+> **Data:** 14 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1085,6 +1085,38 @@ Per il point GIS del nuovo negozio:
 
 
 ### 📝 CHANGELOG
+
+### v3.34.0 (14/01/2026) - Storico Wallet e Gestione Scadenze Canone
+
+**Nuove Funzionalità:**
+- **Tab Storico Wallet** nel WalletPanel con cronologia eventi
+  - Visualizza creazione/eliminazione/trasferimento wallet
+  - Mostra motivo (SUBINGRESSO, CESSAZIONE, MANUALE)
+  - Registra saldo residuo per eventuali rimborsi
+  - Design coerente con Storico PagoPA
+
+**Nuove Tabelle Database:**
+- `wallet_history` - Storico eventi wallet
+- `wallet_balance_snapshots` - Cronologia saldi annuali
+- `wallet_scadenze` - Scadenze canone con calcolo more
+
+**Nuovi Endpoint API:**
+- `GET /api/wallet-history` - Lista eventi storico
+- `GET /api/wallet-history/:wallet_id` - Storico singolo wallet
+- `POST /api/wallet-history` - Registra evento
+- `GET /api/wallet-scadenze` - Lista scadenze
+- `POST /api/wallet-scadenze/calcola-mora` - Calcolo mora/interessi
+
+**Modifiche Backend:**
+- DELETE `/api/wallets/:id` ora registra evento in wallet_history
+- Salva saldo_al_momento per tracciabilità rimborsi
+
+**Commit:**
+- Frontend: `61bcaa6` - Tab Storico Wallet
+- Backend: `da4b694` - DELETE registra storico
+
+---
+
 
 
 ### v3.28.0 (09/01/2026) - Indicatore Area mq + Fix Capoluoghi Italia
