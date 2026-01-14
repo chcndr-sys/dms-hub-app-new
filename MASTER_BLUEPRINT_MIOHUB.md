@@ -2628,3 +2628,357 @@ graph TD
 
 ---
 
+
+
+---
+
+## 🆕 PROGETTO: STORICO WALLET E GESTIONE SCADENZE CANONE (v3.34.0)
+
+> **Data Progetto:** 14 Gennaio 2026  
+> **Autore:** Manus AI  
+> **Stato:** IN SVILUPPO
+
+### 1. Obiettivo
+
+Implementare un sistema completo di **tracciamento storico wallet** e **gestione scadenze canone** nella sezione "Wallet Operatori & PagoPA". Il sistema deve:
+
+1. **Storico Wallet**: Tracciare creazione, eliminazione, trasferimenti con motivi dettagliati
+2. **Cronologia Saldi**: Mantenere storico saldi annuali per ogni wallet
+3. **Saldo Residuo**: Preservare saldo alla chiusura per eventuali rimborsi
+4. **Scadenze Canone**: Gestire date scadenza pagamento canone unico
+5. **Calcolo More**: Tracciare giorni ritardo e calcolare interessi/mora
+
+### 2. Architettura
+
+```mermaid
+graph TD
+    subgraph Frontend - WalletPanel.tsx
+        A[Tab Wallet]
+        B[Tab Storico PagoPA]
+        C[Tab Riconciliazione]
+        D[Tab Storico Wallet - NUOVO]
+    end
+    
+    subgraph Backend API
+        E[GET /api/wallets/history]
+        F[GET /api/wallets/:id/balance-history]
+        G[GET /api/wallets/scadenze]
+        H[POST /api/wallets/calcola-mora]
+    end
+    
+    subgraph Database
+        I(wallet_history)
+        J(wallet_balance_snapshots)
+        K(wallet_scadenze)
+    end
+    
+    D --> E
+    D --> F
+    D --> G
+    E --> I
+    F --> J
+    G --> K
+```
+
+### 3. Modifiche al Database
+
+#### 3.1 Tabella `wallet_history` (Storico Eventi Wallet)
+
+```sql
+CREATE TABLE wallet_history (
+    id SERIAL PRIMARY KEY,
+    wallet_id INTEGER NOT NULL,
+    impresa_id INTEGER REFERENCES imprese(id),
+    evento VARCHAR(50) NOT NULL, -- CREATO, ELIMINATO, TRASFERITO, SOSPESO, RIATTIVATO
+    motivo VARCHAR(100), -- SUBINGRESSO, CESSAZIONE, ERRORE, SCADENZA_CONCESSIONE, RINNOVO
+    saldo_al_momento DECIMAL(10,2) DEFAULT 0,
+    saldo_trasferito_a INTEGER, -- wallet_id destinatario (per subingresso)
+    concessione_id INTEGER,
+    mercato_id INTEGER REFERENCES markets(id),
+    posteggio_id INTEGER REFERENCES stalls(id),
+    note TEXT,
+    operatore_id VARCHAR(100), -- Chi ha eseguito l'operazione
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_wallet_history_wallet_id ON wallet_history(wallet_id);
+CREATE INDEX idx_wallet_history_impresa_id ON wallet_history(impresa_id);
+CREATE INDEX idx_wallet_history_evento ON wallet_history(evento);
+```
+
+#### 3.2 Tabella `wallet_balance_snapshots` (Snapshot Saldi Annuali)
+
+```sql
+CREATE TABLE wallet_balance_snapshots (
+    id SERIAL PRIMARY KEY,
+    wallet_id INTEGER NOT NULL,
+    anno INTEGER NOT NULL,
+    mese INTEGER, -- NULL = snapshot annuale, 1-12 = mensile
+    saldo_iniziale DECIMAL(10,2) DEFAULT 0,
+    saldo_finale DECIMAL(10,2) DEFAULT 0,
+    totale_entrate DECIMAL(10,2) DEFAULT 0,
+    totale_uscite DECIMAL(10,2) DEFAULT 0,
+    numero_transazioni INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(wallet_id, anno, mese)
+);
+
+CREATE INDEX idx_wallet_balance_snapshots_wallet ON wallet_balance_snapshots(wallet_id, anno);
+```
+
+#### 3.3 Tabella `wallet_scadenze` (Scadenze Canone Unico)
+
+```sql
+CREATE TABLE wallet_scadenze (
+    id SERIAL PRIMARY KEY,
+    wallet_id INTEGER NOT NULL,
+    tipo VARCHAR(50) NOT NULL, -- CANONE_ANNUO, CANONE_SEMESTRALE, MORA, INTERESSI
+    anno_riferimento INTEGER NOT NULL,
+    importo_dovuto DECIMAL(10,2) NOT NULL,
+    importo_pagato DECIMAL(10,2) DEFAULT 0,
+    data_scadenza DATE NOT NULL,
+    data_pagamento DATE,
+    giorni_ritardo INTEGER DEFAULT 0,
+    importo_mora DECIMAL(10,2) DEFAULT 0,
+    importo_interessi DECIMAL(10,2) DEFAULT 0,
+    tasso_mora DECIMAL(5,4) DEFAULT 0.05, -- 5% default
+    tasso_interessi_giornaliero DECIMAL(8,6) DEFAULT 0.000137, -- ~5% annuo
+    stato VARCHAR(20) NOT NULL DEFAULT 'DA_PAGARE', -- DA_PAGARE, PAGATO, SCADUTO, MORA
+    avviso_pagopa_id INTEGER,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_wallet_scadenze_wallet ON wallet_scadenze(wallet_id);
+CREATE INDEX idx_wallet_scadenze_stato ON wallet_scadenze(stato);
+CREATE INDEX idx_wallet_scadenze_scadenza ON wallet_scadenze(data_scadenza);
+```
+
+### 4. API Endpoints
+
+#### 4.1 Storico Wallet
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/wallets/history` | GET | Lista storico eventi tutti i wallet (filtri: impresa_id, evento, da_data, a_data) |
+| `/api/wallets/:id/history` | GET | Storico eventi singolo wallet |
+| `/api/wallets/:id/balance-history` | GET | Cronologia saldi annuali wallet |
+| `/api/wallets/history` | POST | Registra evento storico (interno) |
+
+#### 4.2 Scadenze e More
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/wallets/scadenze` | GET | Lista scadenze (filtri: stato, anno, wallet_id) |
+| `/api/wallets/:id/scadenze` | GET | Scadenze singolo wallet |
+| `/api/wallets/:id/scadenze` | POST | Crea nuova scadenza canone |
+| `/api/wallets/scadenze/:id/calcola-mora` | POST | Calcola mora e interessi per scadenza |
+| `/api/wallets/scadenze/:id/genera-pagamento-mora` | POST | Genera avviso PagoPA per mora |
+| `/api/wallets/scadenze/aggiorna-ritardi` | POST | Job: aggiorna giorni ritardo tutte le scadenze |
+
+### 5. Logica Calcolo Mora e Interessi
+
+```javascript
+// Calcolo mora e interessi
+function calcolaMoraInteressi(scadenza) {
+    const oggi = new Date();
+    const dataScadenza = new Date(scadenza.data_scadenza);
+    
+    if (oggi <= dataScadenza || scadenza.stato === 'PAGATO') {
+        return { mora: 0, interessi: 0, giorni_ritardo: 0 };
+    }
+    
+    const giorniRitardo = Math.floor((oggi - dataScadenza) / (1000 * 60 * 60 * 24));
+    const importoResiduo = scadenza.importo_dovuto - scadenza.importo_pagato;
+    
+    // Mora: percentuale fissa (default 5%)
+    const mora = importoResiduo * scadenza.tasso_mora;
+    
+    // Interessi: tasso giornaliero * giorni ritardo
+    const interessi = importoResiduo * scadenza.tasso_interessi_giornaliero * giorniRitardo;
+    
+    return {
+        giorni_ritardo: giorniRitardo,
+        mora: Math.round(mora * 100) / 100,
+        interessi: Math.round(interessi * 100) / 100,
+        totale_dovuto: importoResiduo + mora + interessi
+    };
+}
+```
+
+### 6. Frontend - Nuovo Tab "Storico Wallet"
+
+#### 6.1 Struttura Tab
+
+Il tab "Storico Wallet" si aggiunge ai tab esistenti in WalletPanel.tsx:
+
+```
+[Wallet] [Storico PagoPA] [Riconciliazione] [Storico Wallet] ← NUOVO
+```
+
+#### 6.2 Contenuto Tab Storico Wallet
+
+**Sezione 1: Filtri**
+- Cerca per Impresa (autocomplete)
+- Tipo Evento (select: CREATO, ELIMINATO, TRASFERITO, etc.)
+- Range Date (da/a)
+
+**Sezione 2: Tabella Storico Eventi**
+
+| DATA | WALLET | IMPRESA | EVENTO | MOTIVO | SALDO | DETTAGLI |
+|------|--------|---------|--------|--------|-------|----------|
+| 14/01/2026 | #123 | Rossi S.r.l. | ELIMINATO | SUBINGRESSO | € 150.00 | Trasferito a #124 |
+| 13/01/2026 | #124 | Bianchi S.r.l. | CREATO | SUBINGRESSO | € 150.00 | Da wallet #123 |
+| 10/01/2026 | #120 | Verdi S.r.l. | ELIMINATO | CESSAZIONE | € 45.00 | Saldo residuo per rimborso |
+
+**Sezione 3: Dettaglio Wallet Selezionato (Collapsible)**
+- Cronologia saldi annuali (grafico o tabella)
+- Lista scadenze canone con stato
+- Calcolo mora in tempo reale
+
+#### 6.3 Sezione Scadenze Canone (in ogni wallet)
+
+Nella card di ogni wallet (tab Wallet), aggiungere:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ 📅 Scadenza Canone 2026                                 │
+│ ─────────────────────────────────────────────────────── │
+│ Importo: € 1.422,72    Scadenza: 31/03/2026            │
+│ Stato: ⚠️ SCADUTO (15 giorni di ritardo)               │
+│ Mora: € 71,14    Interessi: € 2,92                     │
+│ ─────────────────────────────────────────────────────── │
+│ [Paga Canone + Mora]  [Genera Avviso]                  │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 7. Flusso Subingresso con Storico
+
+```
+1. Subingresso Richiesto
+   └─► Cedente: Wallet #100 (saldo € 150)
+       └─► Registra evento: ELIMINATO, motivo: SUBINGRESSO
+           └─► Salva saldo_al_momento: € 150
+               └─► Crea wallet #101 per subentrante
+                   └─► Registra evento: CREATO, motivo: SUBINGRESSO
+                       └─► saldo_trasferito_a: #101
+                           └─► Trasferisci € 150 a #101
+```
+
+### 8. Flusso Cessazione con Saldo Residuo
+
+```
+1. Cessazione Concessione
+   └─► Wallet #100 (saldo € 45)
+       └─► Registra evento: ELIMINATO, motivo: CESSAZIONE
+           └─► Salva saldo_al_momento: € 45
+               └─► note: "Saldo residuo € 45 - Da rimborsare"
+                   └─► Wallet rimane in DB con status: CHIUSO
+                       └─► Visibile in Storico per rimborso
+```
+
+### 9. Job Automatici
+
+| Job | Frequenza | Descrizione |
+|-----|-----------|-------------|
+| `aggiorna-ritardi-scadenze` | Giornaliero 00:01 | Aggiorna giorni_ritardo per scadenze non pagate |
+| `snapshot-saldi-mensile` | 1° del mese | Crea snapshot saldi mensili |
+| `snapshot-saldi-annuale` | 1 Gennaio | Crea snapshot saldi annuali |
+| `notifica-scadenze` | Giornaliero 08:00 | Invia notifiche per scadenze imminenti (7gg, 3gg, 1gg) |
+
+### 10. File da Creare/Modificare
+
+#### 10.1 Backend (mihub-backend-rest)
+
+| File | Azione | Descrizione |
+|------|--------|-------------|
+| `migrations/023_create_wallet_history.sql` | Creare | Tabella storico wallet |
+| `migrations/024_create_wallet_balance_snapshots.sql` | Creare | Tabella snapshot saldi |
+| `migrations/025_create_wallet_scadenze.sql` | Creare | Tabella scadenze canone |
+| `routes/wallet-history.js` | Creare | API storico wallet |
+| `routes/wallet-scadenze.js` | Creare | API scadenze e more |
+| `services/moraService.js` | Creare | Logica calcolo mora/interessi |
+| `jobs/scadenzeJob.js` | Creare | Job aggiornamento ritardi |
+
+#### 10.2 Frontend (dms-hub-app-new/client/src)
+
+| File | Azione | Descrizione |
+|------|--------|-------------|
+| `components/WalletPanel.tsx` | Modificare | Aggiungere tab Storico Wallet |
+| `components/wallet/StoricoWalletTab.tsx` | Creare | Contenuto tab storico |
+| `components/wallet/ScadenzeCanone.tsx` | Creare | Sezione scadenze in card wallet |
+| `components/wallet/WalletBalanceChart.tsx` | Creare | Grafico cronologia saldi |
+
+### 11. Stima Tempi
+
+| Fase | Attività | Ore |
+|------|----------|-----|
+| 1 | Migrazioni database (3 tabelle) | 2 |
+| 2 | API storico wallet | 3 |
+| 3 | API scadenze e more | 4 |
+| 4 | Service calcolo mora | 2 |
+| 5 | Frontend tab Storico Wallet | 4 |
+| 6 | Frontend sezione scadenze | 3 |
+| 7 | Job automatici | 2 |
+| 8 | Test e deploy | 2 |
+| **Totale** | | **22 ore (~3 giorni)** |
+
+### 12. Integrazione con Flussi Esistenti
+
+#### 12.1 Modifica DELETE /api/wallets/:id
+
+Prima di eliminare un wallet, registrare l'evento nello storico:
+
+```javascript
+// In routes/wallets.js - DELETE /:id
+router.delete('/:id', async (req, res) => {
+    const { id } = req.params;
+    const { motivo, note } = req.body; // Opzionali
+    
+    // 1. Recupera wallet corrente
+    const wallet = await db.query('SELECT * FROM wallets WHERE id = $1', [id]);
+    
+    // 2. Registra evento storico
+    await db.query(`
+        INSERT INTO wallet_history 
+        (wallet_id, impresa_id, evento, motivo, saldo_al_momento, mercato_id, posteggio_id, note)
+        VALUES ($1, $2, 'ELIMINATO', $3, $4, $5, $6, $7)
+    `, [id, wallet.company_id, motivo || 'MANUALE', wallet.balance, wallet.market_id, wallet.stall_id, note]);
+    
+    // 3. Se saldo > 0, marca per rimborso invece di eliminare
+    if (wallet.balance > 0) {
+        await db.query(`UPDATE wallets SET status = 'CHIUSO', note = 'Saldo residuo per rimborso' WHERE id = $1`, [id]);
+    } else {
+        await db.query('DELETE FROM wallets WHERE id = $1', [id]);
+    }
+    
+    res.json({ success: true });
+});
+```
+
+#### 12.2 Modifica POST /api/concessions (Subingresso)
+
+Aggiungere registrazione storico durante trasferimento wallet:
+
+```javascript
+// Durante subingresso
+if (tipo_concessione === 'subingresso') {
+    // Registra eliminazione wallet cedente
+    await db.query(`
+        INSERT INTO wallet_history 
+        (wallet_id, impresa_id, evento, motivo, saldo_al_momento, saldo_trasferito_a, note)
+        VALUES ($1, $2, 'ELIMINATO', 'SUBINGRESSO', $3, $4, 'Trasferito a subentrante')
+    `, [oldWalletId, cedenteImpresaId, saldoCedente, newWalletId]);
+    
+    // Registra creazione wallet subentrante
+    await db.query(`
+        INSERT INTO wallet_history 
+        (wallet_id, impresa_id, evento, motivo, saldo_al_momento, note)
+        VALUES ($1, $2, 'CREATO', 'SUBINGRESSO', $3, 'Saldo trasferito da cedente')
+    `, [newWalletId, subentranteImpresaId, saldoCedente]);
+}
+```
+
+---
+
