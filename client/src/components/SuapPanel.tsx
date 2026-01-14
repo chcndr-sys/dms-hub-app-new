@@ -542,7 +542,7 @@ export default function SuapPanel() {
                   Pratiche Pendenti
                 </CardTitle>
                 <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
-                  {pratiche.filter(p => p.stato === 'DA_REVISIONARE' || p.stato === 'PENDING').length} da revisionare
+                  {pratiche.filter(p => p.stato === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').length} da revisionare
                 </span>
               </CardHeader>
               <CardContent>
@@ -550,7 +550,7 @@ export default function SuapPanel() {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-orange-400" />
                   </div>
-                ) : pratiche.filter(p => p.stato === 'DA_REVISIONARE' || p.stato === 'PENDING').length === 0 ? (
+                ) : pratiche.filter(p => p.stato === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').length === 0 ? (
                   <div className="text-center py-8">
                     <CheckCircle2 className="h-12 w-12 mx-auto text-green-400/40 mb-4" />
                     <p className="text-[#e8fbff]/60">Nessuna pratica pendente</p>
@@ -558,7 +558,7 @@ export default function SuapPanel() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pratiche.filter(p => p.stato === 'DA_REVISIONARE' || p.stato === 'PENDING').slice(0, 5).map((pratica) => (
+                    {pratiche.filter(p => p.stato === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').slice(0, 5).map((pratica) => (
                       <div 
                         key={pratica.id}
                         className="flex items-center justify-between p-3 rounded-lg bg-orange-500/5 border border-orange-500/20 hover:bg-orange-500/10 cursor-pointer transition-colors"
@@ -595,7 +595,7 @@ export default function SuapPanel() {
                   Nuove Domande
                 </CardTitle>
                 <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
-                  {pratiche.filter(p => p.stato === 'IN_ATTESA' || p.stato === 'SUBMITTED').length} nuove
+                  {pratiche.filter(p => p.stato === 'RECEIVED').length} nuove
                 </span>
               </CardHeader>
               <CardContent>
@@ -603,14 +603,14 @@ export default function SuapPanel() {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
                   </div>
-                ) : pratiche.filter(p => p.stato === 'IN_ATTESA' || p.stato === 'SUBMITTED').length === 0 ? (
+                ) : pratiche.filter(p => p.stato === 'RECEIVED').length === 0 ? (
                   <div className="text-center py-8">
                     <Inbox className="h-12 w-12 mx-auto text-[#e8fbff]/20 mb-4" />
                     <p className="text-[#e8fbff]/60">Nessuna nuova domanda</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pratiche.filter(p => p.stato === 'IN_ATTESA' || p.stato === 'SUBMITTED').slice(0, 5).map((pratica) => (
+                    {pratiche.filter(p => p.stato === 'RECEIVED').slice(0, 5).map((pratica) => (
                       <div 
                         key={pratica.id}
                         className="flex items-center justify-between p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 hover:bg-blue-500/10 cursor-pointer transition-colors"
