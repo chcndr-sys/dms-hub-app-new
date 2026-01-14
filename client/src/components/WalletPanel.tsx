@@ -5,7 +5,7 @@ import {
   Building2, Calendar, User, CreditCard, RefreshCw, Download,
   Plus, Filter, Eye, Edit, Trash2, Send, Bell, AlertCircle,
   ExternalLink, Copy, Loader2, QrCode, ChevronDown, ChevronUp,
-  Store, History as HistoryIcon
+  Store, History as HistoryIcon, MapPin, Users
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -106,6 +106,13 @@ export default function WalletPanel() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [walletToDelete, setWalletToDelete] = useState<WalletItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Stati per Lista Imprese/Concessioni (v3.36.0)
+  const [mercatiList, setMercatiList] = useState<{id: number, name: string}[]>([]);
+  const [selectedMercatoId, setSelectedMercatoId] = useState<string>('');
+  const [impreseConcessioni, setImpreseConcessioni] = useState<any[]>([]);
+  const [isLoadingImprese, setIsLoadingImprese] = useState(false);
+  const [impreseSearch, setImpreseSearch] = useState('');
 
   // --- FETCH DATA ---
   const fetchWallets = async () => {
@@ -252,8 +259,49 @@ export default function WalletPanel() {
   useEffect(() => {
     if (subTab === 'canone') {
       fetchCanoneScadenze();
+      fetchMercatiList();
     }
   }, [subTab, canoneFilters]);
+
+  // --- LISTA IMPRESE/CONCESSIONI (v3.36.0) ---
+  const fetchMercatiList = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const response = await fetch(`${API_URL}/api/markets`);
+      const data = await response.json();
+      if (data.success && data.data) {
+        setMercatiList(data.data.map((m: any) => ({ id: m.id, name: m.name })));
+      }
+    } catch (err) {
+      console.error('Errore caricamento mercati:', err);
+    }
+  };
+
+  const fetchImpreseConcessioni = async (marketId: string) => {
+    if (!marketId) return;
+    setIsLoadingImprese(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const params = new URLSearchParams({ market_id: marketId });
+      if (impreseSearch) params.append('search', impreseSearch);
+      
+      const response = await fetch(`${API_URL}/api/canone-unico/imprese-concessioni?${params.toString()}`);
+      const data = await response.json();
+      if (data.success) {
+        setImpreseConcessioni(data.data || []);
+      }
+    } catch (err) {
+      console.error('Errore caricamento imprese/concessioni:', err);
+    } finally {
+      setIsLoadingImprese(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedMercatoId) {
+      fetchImpreseConcessioni(selectedMercatoId);
+    }
+  }, [selectedMercatoId, impreseSearch]);
 
   // --- TRANSACTIONS ---
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -1028,6 +1076,128 @@ export default function WalletPanel() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Lista Imprese/Concessioni (v3.36.0) */}
+          <Card className="bg-[#1e293b] border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-400" />
+                Lista Imprese per Mercato
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Filtri Lista Imprese */}
+              <div className="flex flex-wrap gap-4 items-end mb-6">
+                <div className="w-[250px]">
+                  <Label className="text-slate-400 text-sm">Seleziona Mercato</Label>
+                  <Select value={selectedMercatoId} onValueChange={(v) => setSelectedMercatoId(v)}>
+                    <SelectTrigger className="bg-[#0f172a] border-slate-700 text-white">
+                      <SelectValue placeholder="Seleziona un mercato..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1e293b] border-slate-700">
+                      {mercatiList.map((m) => (
+                        <SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1 min-w-[200px]">
+                  <Label className="text-slate-400 text-sm">Cerca Impresa</Label>
+                  <Input 
+                    placeholder="Denominazione o P.IVA..."
+                    value={impreseSearch}
+                    onChange={(e) => setImpreseSearch(e.target.value)}
+                    className="bg-[#0f172a] border-slate-700 text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Risultati */}
+              {!selectedMercatoId ? (
+                <div className="text-center py-8 text-slate-400">
+                  <Store className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                  <p>Seleziona un mercato per visualizzare le imprese</p>
+                </div>
+              ) : isLoadingImprese ? (
+                <div className="flex justify-center py-8"><Loader2 className="animate-spin h-8 w-8 text-blue-500" /></div>
+              ) : impreseConcessioni.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  <Building2 className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                  <p>Nessuna impresa trovata per questo mercato</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {impreseConcessioni.map((impresa: any) => (
+                    <div 
+                      key={`${impresa.impresa_id}-${impresa.concessione_id}`} 
+                      className="bg-[#0f172a] border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="text-white font-medium">{impresa.denominazione}</h4>
+                          <p className="text-sm text-slate-400">P.IVA: {impresa.partita_iva || 'N/A'}</p>
+                        </div>
+                        <Button size="sm" variant="outline" className="border-slate-600 text-slate-300 h-8">
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                      </div>
+
+                      {/* Badge Concessione/Posteggio */}
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {/* Badge Concessione */}
+                        <span className={`inline-flex items-center gap-2 px-2 py-1 text-xs font-medium rounded-md ${
+                          impresa.badge_color === 'red' 
+                            ? 'text-red-400 bg-red-400/10 border border-red-400/20' 
+                            : 'text-blue-400 bg-blue-400/10 border border-blue-400/20'
+                        }`}>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            Posteggio {impresa.posteggio_numero}
+                            {impresa.badge_concessione !== 'ATTIVA' && (
+                              <span className="ml-1 text-[10px] uppercase font-bold">({impresa.badge_concessione})</span>
+                            )}
+                          </div>
+                          {impresa.wallet_balance !== undefined && (
+                            <div className={`flex items-center gap-1 pl-2 border-l ${
+                              impresa.badge_color === 'red' ? 'border-red-400/20' : 'border-blue-400/20'
+                            } ${impresa.wallet_balance > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              <div className={`w-2 h-2 rounded-full ${impresa.wallet_balance > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
+                              <span className="font-bold">€ {Number(impresa.wallet_balance).toFixed(2)}</span>
+                            </div>
+                          )}
+                        </span>
+
+                        {/* Badge Spunta se presente */}
+                        {impresa.badge_wallet === 'SPUNTA' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 rounded-md">
+                            <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                            Spunta
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Info Scadenze */}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="text-slate-400">
+                          Scadenza: {impresa.valid_to ? new Date(impresa.valid_to).toLocaleDateString('it-IT') : 'N/A'}
+                        </div>
+                        {impresa.scadenze_non_pagate > 0 && (
+                          <Badge className="bg-red-500/20 text-red-400">
+                            {impresa.scadenze_non_pagate} scadenze non pagate
+                          </Badge>
+                        )}
+                        {impresa.totale_dovuto > 0 && (
+                          <span className="text-red-400 font-bold">
+                            Dovuto: € {Number(impresa.totale_dovuto).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>

@@ -3083,3 +3083,77 @@ if (tipo_concessione === 'subingresso') {
 
 ---
 
+
+---
+
+## 🆕 PROGETTO: LISTA IMPRESE/CONCESSIONI TAB CANONE UNICO (v3.36.0)
+
+> **Stato:** IN SVILUPPO
+
+### Obiettivo
+Implementare una lista di imprese per mercato con concessioni abbinate nel tab "Canone Unico", riutilizzando i badge esistenti dalla scheda imprese.
+
+### Schema Collegamenti Database
+
+```
+wallets ──► concessions ──► stalls ──► markets
+   │              │
+   │              ▼
+   └──────► imprese ──► qualificazioni
+```
+
+**Relazioni Chiave:**
+- `wallets.concession_id` → `concessions.id`
+- `wallets.company_id` → `imprese.id`
+- `concessions.stall_id` → `stalls.id`
+- `concessions.impresa_id` → `imprese.id`
+- `stalls.market_id` → `markets.id`
+
+### Componenti Riutilizzati
+
+| Componente | Origine | Uso nel Tab Canone |
+|------------|---------|-------------------|
+| Badge Blu Posteggio | Scheda Imprese | Concessione attiva |
+| Badge Rosso | Scheda Imprese | Concessione scaduta |
+| Badge Giallo Spunta | Scheda Imprese | Wallet spunta |
+| Saldo Wallet € | Scheda Imprese | Saldo corrente |
+
+### API Endpoint
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `GET /api/canone-unico/imprese-concessioni` | GET | Lista imprese con concessioni per mercato |
+
+**Parametri:**
+- `market_id` (required) - ID mercato
+- `search` (optional) - Cerca denominazione/P.IVA
+
+**Response:**
+```json
+{
+  "success": true,
+  "mercato": { "id": 1, "name": "Mercato Grosseto" },
+  "data": [{
+    "impresa_id": 4,
+    "denominazione": "Alimentari Rossi",
+    "partita_iva": "04567890123",
+    "concessione_id": 39,
+    "posteggio_numero": "152",
+    "wallet_id": 66,
+    "wallet_balance": 1422.72,
+    "concessione_status": "ATTIVA",
+    "valid_to": "2026-03-31"
+  }]
+}
+```
+
+### Fasi Implementazione
+
+| Fase | Stato |
+|------|-------|
+| 1. Scrivi progetto Blueprint | ✅ |
+| 2. Crea endpoint API backend | ⏳ |
+| 3. Registra in Guardian | ⏳ |
+| 4. Implementa frontend | ⏳ |
+| 5. Deploy e test | ⏳ |
+
