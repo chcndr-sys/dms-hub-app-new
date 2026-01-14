@@ -88,6 +88,11 @@ export default function WalletPanel() {
   const [annualFeeData, setAnnualFeeData] = useState<AnnualFeeCalculation | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
+  // Stati per Dialog Elimina Wallet
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [walletToDelete, setWalletToDelete] = useState<WalletItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // --- FETCH DATA ---
   const fetchWallets = async () => {
     setIsLoading(true);
@@ -278,6 +283,39 @@ export default function WalletPanel() {
     }
   };
 
+  // --- ELIMINA WALLET ---
+  const handleOpenDeleteDialog = (wallet: WalletItem) => {
+    setWalletToDelete(wallet);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteWallet = async () => {
+    if (!walletToDelete) return;
+    setIsDeleting(true);
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const res = await fetch(`${API_URL}/api/wallets/${walletToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(`Wallet #${walletToDelete.id} eliminato con successo!`);
+        setShowDeleteDialog(false);
+        setWalletToDelete(null);
+        fetchWallets(); // Ricarica dati
+      } else {
+        alert("Errore: " + (data.error || data.message || 'Eliminazione fallita'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Errore di connessione");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // --- FILTRI ---
   const filteredCompanies = companies.filter(c => 
     c.ragione_sociale.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -420,13 +458,22 @@ export default function WalletPanel() {
                                   </p>
                                 </div>
 
-                                <Button 
-                                  variant="outline"
-                                  className="border-slate-600 hover:bg-slate-800 text-white gap-2"
-                                  onClick={() => handleOpenDeposit(wallet, company.ragione_sociale)}
-                                >
-                                  <Plus className="h-4 w-4" /> Ricarica
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button 
+                                    variant="outline"
+                                    className="border-slate-600 hover:bg-slate-800 text-white gap-2"
+                                    onClick={() => handleOpenDeposit(wallet, company.ragione_sociale)}
+                                  >
+                                    <Plus className="h-4 w-4" /> Ricarica
+                                  </Button>
+                                  <Button 
+                                    variant="outline"
+                                    className="border-red-600 hover:bg-red-900/50 text-red-400 gap-2"
+                                    onClick={() => handleOpenDeleteDialog(wallet)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           ))
@@ -477,14 +524,23 @@ export default function WalletPanel() {
                                 </p>
                               </div>
 
-                              <Button 
-                                variant="outline" 
-                                className="border-slate-600 hover:bg-slate-700 text-slate-200"
-                                onClick={() => handleOpenDeposit(wallet, company.ragione_sociale)}
-                              >
-                                <CreditCard className="mr-2 h-4 w-4" />
-                                Paga Canone
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  className="border-slate-600 hover:bg-slate-700 text-slate-200"
+                                  onClick={() => handleOpenDeposit(wallet, company.ragione_sociale)}
+                                >
+                                  <CreditCard className="mr-2 h-4 w-4" />
+                                  Paga Canone
+                                </Button>
+                                <Button 
+                                  variant="outline"
+                                  className="border-red-600 hover:bg-red-900/50 text-red-400"
+                                  onClick={() => handleOpenDeleteDialog(wallet)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           ))
                         ) : (
@@ -666,6 +722,80 @@ export default function WalletPanel() {
             >
               {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
               Paga Ora (Simulazione)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Conferma Eliminazione Wallet */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="bg-[#1e293b] border-slate-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-red-400 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Elimina Wallet
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Sei sicuro di voler eliminare questo wallet?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-3">
+            <div className="bg-[#0f172a] p-4 rounded-lg border border-red-500/30">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-slate-400">ID Wallet:</span>
+                <span className="text-white font-mono">#{walletToDelete?.id}</span>
+              </div>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-slate-400">Tipo:</span>
+                <span className="text-white">{walletToDelete?.type}</span>
+              </div>
+              {walletToDelete?.market_name && (
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-slate-400">Mercato:</span>
+                  <span className="text-white">{walletToDelete.market_name}</span>
+                </div>
+              )}
+              {walletToDelete?.stall_number && (
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-slate-400">Posteggio:</span>
+                  <span className="text-white">{walletToDelete.stall_number}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm border-t border-slate-700 pt-2 mt-2">
+                <span className="text-slate-400">Saldo Attuale:</span>
+                <span className={`font-bold ${(walletToDelete?.balance || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  € {walletToDelete?.balance?.toFixed(2) || '0.00'}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3">
+              <p className="text-red-300 text-sm flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>
+                  <strong>Attenzione:</strong> Questa azione eliminerà definitivamente il wallet e tutte le transazioni associate. L'operazione non può essere annullata.
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+            >
+              Annulla
+            </Button>
+            <Button 
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleDeleteWallet}
+              disabled={isDeleting}
+            >
+              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Elimina Wallet
             </Button>
           </DialogFooter>
         </DialogContent>
