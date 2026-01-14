@@ -9,7 +9,7 @@ import {
   FileText, CheckCircle2, XCircle, Clock, Loader2, 
   Search, Filter, Eye, Play, User, Building2, MapPin, FileCheck, Users,
   Plus, LayoutDashboard, List, FileSearch, AlertCircle, TrendingUp, ScrollText, Stamp,
-  ArrowLeft, RefreshCw, AlertTriangle, Bell, Inbox
+  ArrowLeft, RefreshCw, AlertTriangle, Bell, Inbox, Edit, Trash2
 } from 'lucide-react';
 import { 
   getSuapStats, getSuapPratiche, getSuapPraticaById, 
@@ -203,6 +203,7 @@ export default function SuapPanel() {
   const [showAllChecks, setShowAllChecks] = useState(false); // false = solo ultima verifica, true = storico completo
   const [selectedConcessione, setSelectedConcessione] = useState<any | null>(null);
   const [concessioneDetailTab, setConcessioneDetailTab] = useState<'dati' | 'posteggio' | 'esporta'>('dati');
+  const [domandeSpuntaDashboard, setDomandeSpuntaDashboard] = useState<any[]>([]);
 
   // Carica dati iniziali
   useEffect(() => {
@@ -223,8 +224,9 @@ export default function SuapPanel() {
       );
       setPratiche(sorted);
       
-      // Carica anche le concessioni
+      // Carica anche le concessioni e le domande spunta
       await loadConcessioni();
+      await loadDomandeSpuntaDashboard();
     } catch (error) {
       console.error('Error loading SUAP data:', error);
       toast.error('Errore nel caricamento dei dati');
@@ -269,6 +271,23 @@ export default function SuapPanel() {
       }
     } catch (error) {
       console.error('Error loading concessioni:', error);
+    }
+  };
+
+  const loadDomandeSpuntaDashboard = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const response = await fetch(`${API_URL}/api/domande-spunta`);
+      const data = await response.json();
+      if (data.success && data.data) {
+        // Ordina per data creazione (più recenti prima)
+        const sorted = data.data.sort((a: any, b: any) => 
+          new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+        );
+        setDomandeSpuntaDashboard(sorted);
+      }
+    } catch (error) {
+      console.error('Error loading domande spunta:', error);
     }
   };
 
@@ -591,7 +610,7 @@ export default function SuapPanel() {
               </CardContent>
             </Card>
 
-            {/* Nuove Domande Arrivate */}
+            {/* Nuove Domande Arrivate (SCIA + Domande Spunta) */}
             <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-blue-500/30">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
@@ -599,7 +618,7 @@ export default function SuapPanel() {
                   Nuove Domande
                 </CardTitle>
                 <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
-                  {pratiche.filter(p => p.stato === 'RECEIVED').length} nuove
+                  {pratiche.filter(p => p.stato === 'RECEIVED').length + domandeSpuntaDashboard.filter(d => d.stato === 'IN_ATTESA').length} nuove
                 </span>
               </CardHeader>
               <CardContent>
@@ -607,16 +626,17 @@ export default function SuapPanel() {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
                   </div>
-                ) : pratiche.filter(p => p.stato === 'RECEIVED').length === 0 ? (
+                ) : (pratiche.filter(p => p.stato === 'RECEIVED').length + domandeSpuntaDashboard.filter(d => d.stato === 'IN_ATTESA').length) === 0 ? (
                   <div className="text-center py-8">
                     <Inbox className="h-12 w-12 mx-auto text-[#e8fbff]/20 mb-4" />
                     <p className="text-[#e8fbff]/60">Nessuna nuova domanda</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pratiche.filter(p => p.stato === 'RECEIVED').slice(0, 5).map((pratica) => (
+                    {/* Pratiche SCIA */}
+                    {pratiche.filter(p => p.stato === 'RECEIVED').slice(0, 3).map((pratica) => (
                       <div 
-                        key={pratica.id}
+                        key={`pratica-${pratica.id}`}
                         className="flex items-center justify-between p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 hover:bg-blue-500/10 cursor-pointer transition-colors"
                         onClick={() => loadPraticaDetail(pratica.id)}
                       >
@@ -633,6 +653,35 @@ export default function SuapPanel() {
                         <div className="ml-auto text-right">
                           <span className="text-xs text-gray-500">{timeAgo(pratica.created_at)}</span>
                           <Button size="sm" variant="ghost" className="text-blue-400 hover:bg-blue-400/10 mt-1 block">
+                            Esamina
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Domande Spunta */}
+                    {domandeSpuntaDashboard.filter(d => d.stato === 'IN_ATTESA').slice(0, 3).map((domanda) => (
+                      <div 
+                        key={`spunta-${domanda.id}`}
+                        className="flex items-center justify-between p-3 rounded-lg bg-green-500/5 border border-green-500/20 hover:bg-green-500/10 cursor-pointer transition-colors"
+                        onClick={() => {
+                          setDomandaSpuntaMode('view');
+                          setSelectedDomandaSpuntaId(domanda.id);
+                          setActiveTab('domandespunta');
+                        }}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                            <span className="font-medium text-[#e8fbff]">Domanda Spunta</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">In Attesa</span>
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            {domanda.company_name || domanda.denominazione} - {domanda.market_name || domanda.mercato}
+                          </p>
+                        </div>
+                        <div className="ml-auto text-right">
+                          <span className="text-xs text-gray-500">{timeAgo(domanda.created_at)}</span>
+                          <Button size="sm" variant="ghost" className="text-green-400 hover:bg-green-400/10 mt-1 block">
                             Esamina
                           </Button>
                         </div>
@@ -1847,10 +1896,12 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                           </Badge>
                         </TableCell>
                         <TableCell>
+                          <div className="flex items-center gap-1">
                           <Button 
                             size="sm" 
                             variant="ghost"
                             className="text-[#14b8a6] hover:bg-[#14b8a6]/10"
+                            title="Visualizza"
                             onClick={async () => {
                               // Carica i dettagli completi della concessione (inclusi campi cedente)
                               try {
@@ -1888,6 +1939,45 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="text-yellow-400 hover:bg-yellow-400/10"
+                            title="Modifica"
+                            onClick={() => {
+                              setConcessionePreData(conc);
+                              setShowConcessioneForm(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="text-red-400 hover:bg-red-400/10"
+                            title="Elimina"
+                            onClick={async () => {
+                              if (!confirm(`Sei sicuro di voler eliminare la concessione ${conc.numero_protocollo || '#' + conc.id}?`)) return;
+                              try {
+                                const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`, {
+                                  method: 'DELETE'
+                                });
+                                const data = await response.json();
+                                if (data.success) {
+                                  toast.success('Concessione eliminata');
+                                  loadConcessioni();
+                                } else {
+                                  toast.error(data.error || 'Errore eliminazione');
+                                }
+                              } catch (error) {
+                                console.error('Errore eliminazione:', error);
+                                toast.error('Errore di connessione');
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
