@@ -34,6 +34,7 @@ import {
   Edit,
   CheckCircle,
   XCircle,
+  AlertCircle,
   FileText,
   Loader2,
   RefreshCw,
@@ -125,16 +126,31 @@ export default function ListaDomandeSpuntaSuap({
     return `€ ${Number(amount).toFixed(2)}`;
   };
 
-  // Badge stato
+  // Badge stato con semafori
   const getStatoBadge = (stato: string) => {
     switch (stato?.toUpperCase()) {
       case 'APPROVATA':
       case 'ATTIVA':
-        return <Badge className="bg-green-500/20 text-green-400">Approvata</Badge>;
+        return <Badge className="bg-green-500/20 text-green-400 border border-green-500/50">
+          <span className="w-2 h-2 rounded-full bg-green-400 mr-1.5 animate-pulse"></span>
+          Approvata
+        </Badge>;
       case 'IN_ATTESA':
-        return <Badge className="bg-yellow-500/20 text-yellow-400">In Attesa</Badge>;
+        return <Badge className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50">
+          <span className="w-2 h-2 rounded-full bg-yellow-400 mr-1.5 animate-pulse"></span>
+          In Attesa
+        </Badge>;
+      case 'DA_REVISIONARE':
+      case 'REVISIONE':
+        return <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/50">
+          <span className="w-2 h-2 rounded-full bg-orange-400 mr-1.5 animate-pulse"></span>
+          Da Revisionare
+        </Badge>;
       case 'RIFIUTATA':
-        return <Badge className="bg-red-500/20 text-red-400">Rifiutata</Badge>;
+        return <Badge className="bg-red-500/20 text-red-400 border border-red-500/50">
+          <span className="w-2 h-2 rounded-full bg-red-400 mr-1.5"></span>
+          Rifiutata
+        </Badge>;
       default:
         return <Badge className="bg-gray-500/20 text-gray-400">{stato || 'N/D'}</Badge>;
     }
@@ -156,6 +172,32 @@ export default function ListaDomandeSpuntaSuap({
       }
     } catch (err: any) {
       toast.error('Errore approvazione', { description: err.message });
+    }
+  };
+
+  // Richiedi revisione/regolarizzazione
+  const handleRevisione = async (id: number) => {
+    const motivo = prompt('Motivo della richiesta di regolarizzazione:');
+    if (!motivo) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/domande-spunta/${id}/revisione`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo })
+      });
+      const json = await response.json();
+      
+      if (json.success) {
+        toast.success('Richiesta revisione inviata', { 
+          description: 'L\'impresa riceverà notifica per regolarizzare la domanda' 
+        });
+        fetchDomande();
+      } else {
+        throw new Error(json.error);
+      }
+    } catch (err: any) {
+      toast.error('Errore richiesta revisione', { description: err.message });
     }
   };
 
@@ -263,6 +305,7 @@ export default function ListaDomandeSpuntaSuap({
             <SelectItem value="all">Tutti gli stati</SelectItem>
             <SelectItem value="APPROVATA">Approvata</SelectItem>
             <SelectItem value="IN_ATTESA">In Attesa</SelectItem>
+            <SelectItem value="DA_REVISIONARE">Da Revisionare</SelectItem>
             <SelectItem value="RIFIUTATA">Rifiutata</SelectItem>
           </SelectContent>
         </Select>
@@ -357,23 +400,33 @@ export default function ListaDomandeSpuntaSuap({
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
-                        {dom.stato === 'IN_ATTESA' && (
+                        {/* Pulsanti per domande IN_ATTESA o DA_REVISIONARE */}
+                        {(dom.stato === 'IN_ATTESA' || dom.stato === 'DA_REVISIONARE') && (
                           <>
                             <Button 
                               size="sm" 
                               variant="ghost"
                               className="text-green-400 hover:bg-green-400/10"
                               onClick={() => handleApprova(dom.id)}
-                              title="Approva"
+                              title="Approva domanda"
                             >
                               <CheckCircle className="w-4 h-4" />
                             </Button>
                             <Button 
                               size="sm" 
                               variant="ghost"
-                              className="text-orange-400 hover:bg-orange-400/10"
+                              className="text-amber-400 hover:bg-amber-400/10"
+                              onClick={() => handleRevisione(dom.id)}
+                              title="Richiedi regolarizzazione"
+                            >
+                              <AlertCircle className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              className="text-red-400 hover:bg-red-400/10"
                               onClick={() => handleRifiuta(dom.id)}
-                              title="Rifiuta"
+                              title="Rifiuta domanda"
                             >
                               <XCircle className="w-4 h-4" />
                             </Button>
