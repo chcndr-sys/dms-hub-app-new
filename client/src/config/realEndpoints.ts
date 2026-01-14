@@ -685,10 +685,132 @@ export const walletsEndpoints: EndpointConfig[] = [
     method: 'DELETE',
     path: '/api/wallets/:id',
     name: 'Elimina Wallet',
-    description: 'Elimina un wallet e tutte le sue transazioni',
+    description: 'Elimina un wallet e tutte le sue transazioni (registra evento in storico)',
     category: 'Wallets',
     exampleParams: { id: 1 },
-    notes: '✅ FUNZIONANTE - Testato 04/01/2026'
+    notes: '✅ FUNZIONANTE - Testato 14/01/2026 - v3.34.0'
+  },
+  // === STORICO WALLET (v3.34.0) ===
+  {
+    id: 'wallet-history-list',
+    method: 'GET',
+    path: '/api/wallet-history',
+    name: 'Storico Wallet',
+    description: 'Ottieni lo storico di tutti gli eventi wallet (creazione, eliminazione, trasferimento)',
+    category: 'Wallets',
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.34.0'
+  },
+  {
+    id: 'wallet-history-by-id',
+    method: 'GET',
+    path: '/api/wallet-history/:wallet_id',
+    name: 'Storico Singolo Wallet',
+    description: 'Ottieni lo storico eventi di un wallet specifico',
+    category: 'Wallets',
+    exampleParams: { wallet_id: 1 },
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.34.0'
+  },
+  {
+    id: 'wallet-history-create',
+    method: 'POST',
+    path: '/api/wallet-history',
+    name: 'Registra Evento Storico',
+    description: 'Registra un nuovo evento nello storico wallet',
+    category: 'Wallets',
+    exampleBody: { wallet_id: 1, evento: 'ELIMINAZIONE', motivo: 'CESSAZIONE', saldo_al_momento: 150.50 },
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.34.0'
+  },
+  {
+    id: 'wallet-scadenze-list',
+    method: 'GET',
+    path: '/api/wallet-scadenze',
+    name: 'Lista Scadenze Wallet',
+    description: 'Ottieni tutte le scadenze di pagamento dei wallet',
+    category: 'Wallets',
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.34.0'
+  },
+  {
+    id: 'wallet-scadenze-calcola-mora',
+    method: 'POST',
+    path: '/api/wallet-scadenze/calcola-mora',
+    name: 'Calcola Mora Scadenza',
+    description: 'Calcola mora e interessi per una scadenza specifica',
+    category: 'Wallets',
+    exampleBody: { scadenza_id: 1 },
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.34.0'
+  },
+  // === CANONE UNICO (v3.35.0) ===
+  {
+    id: 'canone-unico-riepilogo',
+    method: 'GET',
+    path: '/api/canone-unico/riepilogo',
+    name: 'Riepilogo Canone Unico',
+    description: 'Riepilogo scadenze canone con filtri per mercato, tipo operatore, impresa',
+    category: 'Canone Unico',
+    exampleParams: { mercato_id: 1, tipo_operatore: 'CONCESSIONE', stato: 'NON_PAGATO' },
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.35.0'
+  },
+  {
+    id: 'canone-unico-genera-annuo',
+    method: 'POST',
+    path: '/api/canone-unico/genera-canone-annuo',
+    name: 'Genera Canone Annuo',
+    description: 'Genera le scadenze del canone annuo per tutti i posteggi attivi',
+    category: 'Canone Unico',
+    exampleBody: { anno: 2026, mercato_id: 1, data_scadenza: '2026-03-31' },
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.35.0'
+  },
+  {
+    id: 'canone-unico-pagamento-straordinario',
+    method: 'POST',
+    path: '/api/canone-unico/genera-pagamento-straordinario',
+    name: 'Genera Pagamento Straordinario',
+    description: 'Genera avvisi di pagamento per un mercato/fiera straordinaria',
+    category: 'Canone Unico',
+    exampleBody: { mercato_id: 1, descrizione: 'Fiera Natale 2026', importo: 150, data_scadenza: '2026-12-15' },
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.35.0'
+  },
+  {
+    id: 'canone-unico-calcola-mora',
+    method: 'POST',
+    path: '/api/canone-unico/calcola-mora',
+    name: 'Calcola Mora Canone',
+    description: 'Calcola mora e interessi per una scadenza canone',
+    category: 'Canone Unico',
+    exampleBody: { scadenza_id: 1 },
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.35.0'
+  },
+  {
+    id: 'canone-unico-blocco-concessione',
+    method: 'PUT',
+    path: '/api/canone-unico/concessions/:id/status',
+    name: 'Blocco/Sblocco Concessione',
+    description: 'Blocca o sblocca manualmente una concessione per mancato pagamento',
+    category: 'Canone Unico',
+    exampleParams: { id: 1 },
+    exampleBody: { status: 'SOSPESA', motivo: 'Mancato pagamento canone 2026' },
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.35.0'
+  },
+  {
+    id: 'canone-unico-impostazioni-get',
+    method: 'GET',
+    path: '/api/canone-unico/impostazioni/:comune_id',
+    name: 'Impostazioni Blocco Comune',
+    description: 'Recupera impostazioni blocco automatico per un comune',
+    category: 'Canone Unico',
+    exampleParams: { comune_id: 1 },
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.35.0'
+  },
+  {
+    id: 'canone-unico-impostazioni-update',
+    method: 'PUT',
+    path: '/api/canone-unico/impostazioni/:comune_id',
+    name: 'Aggiorna Impostazioni Blocco',
+    description: 'Aggiorna impostazioni blocco automatico per un comune',
+    category: 'Canone Unico',
+    exampleParams: { comune_id: 1 },
+    exampleBody: { blocco_automatico_pagamenti: true, giorni_tolleranza_blocco: 30 },
+    notes: '✅ FUNZIONANTE - Aggiunto 14/01/2026 - v3.35.0'
   }
 ];
 
