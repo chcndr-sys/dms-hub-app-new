@@ -9,7 +9,7 @@ import {
   FileText, CheckCircle2, XCircle, Clock, Loader2, 
   Search, Filter, Eye, Play, User, Building2, MapPin, FileCheck, Users,
   Plus, LayoutDashboard, List, FileSearch, AlertCircle, TrendingUp, ScrollText, Stamp,
-  ArrowLeft, RefreshCw
+  ArrowLeft, RefreshCw, AlertTriangle, Bell, Inbox
 } from 'lucide-react';
 import { 
   getSuapStats, getSuapPratiche, getSuapPraticaById, 
@@ -532,41 +532,54 @@ export default function SuapPanel() {
             </Card>
           </div>
 
-          {/* Attività Recente e Stato Integrazioni */}
+          {/* Pratiche Pendenti & Nuove Domande */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Attività Recente */}
-            <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff]">Attività Recente</CardTitle>
+            {/* Pratiche Pendenti - Da Revisionare */}
+            <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-orange-500/30">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-orange-400" />
+                  Pratiche Pendenti
+                </CardTitle>
+                <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
+                  {pratiche.filter(p => p.stato === 'DA_REVISIONARE' || p.stato === 'PENDING').length} da revisionare
+                </span>
               </CardHeader>
               <CardContent>
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-[#00f0ff]" />
+                    <Loader2 className="h-8 w-8 animate-spin text-orange-400" />
                   </div>
-                ) : pratiche.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                    <p>Nessuna pratica presente</p>
+                ) : pratiche.filter(p => p.stato === 'DA_REVISIONARE' || p.stato === 'PENDING').length === 0 ? (
+                  <div className="text-center py-8">
+                    <CheckCircle2 className="h-12 w-12 mx-auto text-green-400/40 mb-4" />
+                    <p className="text-[#e8fbff]/60">Nessuna pratica pendente</p>
+                    <p className="text-sm text-[#e8fbff]/40 mt-2">Tutte le pratiche sono state processate</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pratiche.slice(0, 5).map((pratica) => (
+                    {pratiche.filter(p => p.stato === 'DA_REVISIONARE' || p.stato === 'PENDING').slice(0, 5).map((pratica) => (
                       <div 
                         key={pratica.id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-[#0b1220] hover:bg-[#0f172a] cursor-pointer transition-colors"
+                        className="flex items-center justify-between p-3 rounded-lg bg-orange-500/5 border border-orange-500/20 hover:bg-orange-500/10 cursor-pointer transition-colors"
                         onClick={() => loadPraticaDetail(pratica.id)}
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>
                             <span className="font-medium text-[#e8fbff]">{pratica.tipo_pratica}</span>
-                            {getStatoBadge(pratica.stato)}
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400">Da Revisionare</span>
                           </div>
                           <p className="text-sm text-gray-500">
                             {pratica.richiedente_nome} - {pratica.richiedente_cf}
                           </p>
                         </div>
-                        <span className="text-xs text-gray-500">{timeAgo(pratica.created_at)}</span>
+                        <div className="ml-auto text-right">
+                          <span className="text-xs text-gray-500">{timeAgo(pratica.created_at)}</span>
+                          <Button size="sm" variant="ghost" className="text-orange-400 hover:bg-orange-400/10 mt-1 block">
+                            Verifica
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -574,33 +587,55 @@ export default function SuapPanel() {
               </CardContent>
             </Card>
 
-            {/* Stato Integrazioni */}
-            <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff]">Stato Integrazioni</CardTitle>
+            {/* Nuove Domande Arrivate */}
+            <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-blue-500/30">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-blue-400" />
+                  Nuove Domande
+                </CardTitle>
+                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
+                  {pratiche.filter(p => p.stato === 'IN_ATTESA' || p.stato === 'SUBMITTED').length} nuove
+                </span>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-[#e8fbff]">PDND Interoperabilità</span>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
                   </div>
-                  <span className="text-sm text-gray-500">Online</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-[#e8fbff]">INPS DURC OnLine</span>
+                ) : pratiche.filter(p => p.stato === 'IN_ATTESA' || p.stato === 'SUBMITTED').length === 0 ? (
+                  <div className="text-center py-8">
+                    <Inbox className="h-12 w-12 mx-auto text-[#e8fbff]/20 mb-4" />
+                    <p className="text-[#e8fbff]/60">Nessuna nuova domanda</p>
                   </div>
-                  <span className="text-sm text-gray-500">Online</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                    <span className="text-[#e8fbff]">Agenzia Entrate</span>
+                ) : (
+                  <div className="space-y-3">
+                    {pratiche.filter(p => p.stato === 'IN_ATTESA' || p.stato === 'SUBMITTED').slice(0, 5).map((pratica) => (
+                      <div 
+                        key={pratica.id}
+                        className="flex items-center justify-between p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 hover:bg-blue-500/10 cursor-pointer transition-colors"
+                        onClick={() => loadPraticaDetail(pratica.id)}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                            <span className="font-medium text-[#e8fbff]">{pratica.tipo_pratica}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">Nuova</span>
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            {pratica.richiedente_nome} - {pratica.richiedente_cf}
+                          </p>
+                        </div>
+                        <div className="ml-auto text-right">
+                          <span className="text-xs text-gray-500">{timeAgo(pratica.created_at)}</span>
+                          <Button size="sm" variant="ghost" className="text-blue-400 hover:bg-blue-400/10 mt-1 block">
+                            Esamina
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <span className="text-sm text-gray-500">Latenza Alta</span>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
