@@ -71,8 +71,20 @@ interface AnnualFeeCalculation {
 }
 
 export default function WalletPanel() {
-  const [subTab, setSubTab] = useState<'wallet' | 'pagopa' | 'riconciliazione' | 'storico'>('wallet');
+  const [subTab, setSubTab] = useState<'wallet' | 'pagopa' | 'riconciliazione' | 'storico' | 'canone'>('wallet');
   const [walletHistory, setWalletHistory] = useState<any[]>([]);
+  
+  // Stati per Canone Unico
+  const [canoneScadenze, setCanoneScadenze] = useState<any[]>([]);
+  const [isLoadingCanone, setIsLoadingCanone] = useState(false);
+  const [canoneFilters, setCanoneFilters] = useState({ mercato_id: '', tipo_operatore: '', impresa_search: '', stato: '' });
+  const [showGeneraCanoneDialog, setShowGeneraCanoneDialog] = useState(false);
+  const [showPagamentoStraordinarioDialog, setShowPagamentoStraordinarioDialog] = useState(false);
+  const [canoneAnno, setCanoneAnno] = useState(new Date().getFullYear().toString());
+  const [canoneDataScadenza, setCanoneDataScadenza] = useState('');
+  const [straordinarioDescrizione, setStraordinarioDescrizione] = useState('');
+  const [straordinarioImporto, setStraordinarioImporto] = useState('');
+  const [straordinarioMercatoId, setStraordinarioMercatoId] = useState('');
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [companies, setCompanies] = useState<CompanyWallets[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -161,6 +173,87 @@ export default function WalletPanel() {
   useEffect(() => {
     fetchWallets();
   }, []);
+
+  // --- CANONE UNICO ---
+  const fetchCanoneScadenze = async () => {
+    setIsLoadingCanone(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const params = new URLSearchParams();
+      if (canoneFilters.mercato_id) params.append('mercato_id', canoneFilters.mercato_id);
+      if (canoneFilters.tipo_operatore) params.append('tipo_operatore', canoneFilters.tipo_operatore);
+      if (canoneFilters.impresa_search) params.append('impresa_search', canoneFilters.impresa_search);
+      if (canoneFilters.stato) params.append('stato', canoneFilters.stato);
+      
+      const response = await fetch(`${API_URL}/api/canone-unico/riepilogo?${params.toString()}`);
+      const data = await response.json();
+      if (data.success) {
+        setCanoneScadenze(data.data);
+      }
+    } catch (err) {
+      console.error('Errore caricamento scadenze canone:', err);
+    } finally {
+      setIsLoadingCanone(false);
+    }
+  };
+
+  const handleGeneraCanoneAnnuo = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const response = await fetch(`${API_URL}/api/canone-unico/genera-canone-annuo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          anno: parseInt(canoneAnno),
+          data_scadenza: canoneDataScadenza || `${canoneAnno}-03-31`
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert(`Generate ${data.scadenze_create} scadenze per l'anno ${canoneAnno}`);
+        setShowGeneraCanoneDialog(false);
+        fetchCanoneScadenze();
+      } else {
+        alert('Errore: ' + data.error);
+      }
+    } catch (err) {
+      console.error('Errore generazione canone:', err);
+      alert('Errore di connessione');
+    }
+  };
+
+  const handleGeneraPagamentoStraordinario = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const response = await fetch(`${API_URL}/api/canone-unico/genera-pagamento-straordinario`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mercato_id: parseInt(straordinarioMercatoId),
+          descrizione: straordinarioDescrizione,
+          importo: parseFloat(straordinarioImporto),
+          data_scadenza: canoneDataScadenza
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert(`Generati ${data.scadenze_create} avvisi di pagamento straordinario`);
+        setShowPagamentoStraordinarioDialog(false);
+        fetchCanoneScadenze();
+      } else {
+        alert('Errore: ' + data.error);
+      }
+    } catch (err) {
+      console.error('Errore generazione pagamento straordinario:', err);
+      alert('Errore di connessione');
+    }
+  };
+
+  useEffect(() => {
+    if (subTab === 'canone') {
+      fetchCanoneScadenze();
+    }
+  }, [subTab, canoneFilters]);
 
   // --- TRANSACTIONS ---
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -388,6 +481,13 @@ export default function WalletPanel() {
             className={subTab === 'storico' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
           >
             <HistoryIcon className="mr-2 h-4 w-4" /> Storico Wallet
+          </Button>
+          <Button 
+            variant={subTab === 'canone' ? 'default' : 'outline'}
+            onClick={() => setSubTab('canone')}
+            className={subTab === 'canone' ? 'bg-[#f59e0b]' : 'border-slate-700 text-slate-300'}
+          >
+            <Euro className="mr-2 h-4 w-4" /> Canone Unico
           </Button>
         </div>
       </div>
@@ -772,6 +872,264 @@ export default function WalletPanel() {
           </Card>
         </div>
       )}
+
+      {/* Tab Canone Unico */}
+      {subTab === 'canone' && (
+        <div className="space-y-6">
+          {/* Filtri */}
+          <Card className="bg-[#1e293b] border-slate-700">
+            <CardContent className="pt-6">
+              <div className="flex flex-wrap gap-4 items-end">
+                <div className="flex-1 min-w-[200px]">
+                  <Label className="text-slate-400 text-sm">Cerca Impresa</Label>
+                  <Input 
+                    placeholder="Ragione Sociale o P.IVA..."
+                    value={canoneFilters.impresa_search}
+                    onChange={(e) => setCanoneFilters({...canoneFilters, impresa_search: e.target.value})}
+                    className="bg-[#0f172a] border-slate-700 text-white"
+                  />
+                </div>
+                <div className="w-[150px]">
+                  <Label className="text-slate-400 text-sm">Tipo Operatore</Label>
+                  <Select value={canoneFilters.tipo_operatore} onValueChange={(v) => setCanoneFilters({...canoneFilters, tipo_operatore: v})}>
+                    <SelectTrigger className="bg-[#0f172a] border-slate-700 text-white">
+                      <SelectValue placeholder="Tutti" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1e293b] border-slate-700">
+                      <SelectItem value="">Tutti</SelectItem>
+                      <SelectItem value="CONCESSIONE">Concessionari</SelectItem>
+                      <SelectItem value="SPUNTA">Spuntisti</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-[150px]">
+                  <Label className="text-slate-400 text-sm">Stato</Label>
+                  <Select value={canoneFilters.stato} onValueChange={(v) => setCanoneFilters({...canoneFilters, stato: v})}>
+                    <SelectTrigger className="bg-[#0f172a] border-slate-700 text-white">
+                      <SelectValue placeholder="Tutti" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1e293b] border-slate-700">
+                      <SelectItem value="">Tutti</SelectItem>
+                      <SelectItem value="PAGATO">Pagato</SelectItem>
+                      <SelectItem value="NON_PAGATO">Non Pagato</SelectItem>
+                      <SelectItem value="IN_MORA">In Mora</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button 
+                  onClick={() => setShowGeneraCanoneDialog(true)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Genera Canone Annuo
+                </Button>
+                <Button 
+                  onClick={() => setShowPagamentoStraordinarioDialog(true)}
+                  className="bg-amber-600 hover:bg-amber-700"
+                >
+                  <Euro className="mr-2 h-4 w-4" /> Pagamento Straordinario
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tabella Scadenze */}
+          <Card className="bg-[#1e293b] border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-amber-400" />
+                Scadenze Canone Unico ({canoneScadenze.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingCanone ? (
+                <div className="flex justify-center py-8"><Loader2 className="animate-spin h-8 w-8 text-amber-500" /></div>
+              ) : canoneScadenze.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  <Euro className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                  <p>Nessuna scadenza trovata</p>
+                  <p className="text-sm">Usa "Genera Canone Annuo" per creare le scadenze</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-700">
+                        <th className="text-left px-4 py-3 text-slate-400 font-medium">IMPRESA</th>
+                        <th className="text-left px-4 py-3 text-slate-400 font-medium">MERCATO</th>
+                        <th className="text-left px-4 py-3 text-slate-400 font-medium">POSTEGGIO</th>
+                        <th className="text-left px-4 py-3 text-slate-400 font-medium">ANNO</th>
+                        <th className="text-left px-4 py-3 text-slate-400 font-medium">SCADENZA</th>
+                        <th className="text-left px-4 py-3 text-slate-400 font-medium">GIORNI RITARDO</th>
+                        <th className="text-right px-4 py-3 text-slate-400 font-medium">IMPORTO</th>
+                        <th className="text-right px-4 py-3 text-slate-400 font-medium">MORA</th>
+                        <th className="text-left px-4 py-3 text-slate-400 font-medium">STATO</th>
+                        <th className="text-left px-4 py-3 text-slate-400 font-medium">AZIONI</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {canoneScadenze.map((s: any) => (
+                        <tr key={s.id} className="border-b border-slate-700/50 hover:bg-slate-800/50">
+                          <td className="px-4 py-3">
+                            <span className="text-white font-medium">{s.ragione_sociale}</span>
+                            <span className="block text-xs text-slate-400">{s.partita_iva}</span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-300">{s.mercato_nome || '-'}</td>
+                          <td className="px-4 py-3 text-slate-300">{s.posteggio || '-'}</td>
+                          <td className="px-4 py-3 text-slate-300">{s.anno_riferimento}</td>
+                          <td className="px-4 py-3 text-slate-300">
+                            {s.data_scadenza ? new Date(s.data_scadenza).toLocaleDateString('it-IT') : '-'}
+                          </td>
+                          <td className="px-4 py-3">
+                            {s.giorni_ritardo > 0 ? (
+                              <Badge className={`${s.giorni_ritardo > 30 ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                                {s.giorni_ritardo} giorni
+                              </Badge>
+                            ) : (
+                              <span className="text-green-400">In regola</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-white">€ {Number(s.importo_dovuto || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right text-red-400">
+                            {(Number(s.importo_mora || 0) + Number(s.importo_interessi || 0)) > 0 
+                              ? `€ ${(Number(s.importo_mora || 0) + Number(s.importo_interessi || 0)).toFixed(2)}` 
+                              : '-'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge className={`${
+                              s.stato === 'PAGATO' ? 'bg-green-500/20 text-green-400' :
+                              s.stato === 'IN_MORA' ? 'bg-red-500/20 text-red-400' :
+                              'bg-amber-500/20 text-amber-400'
+                            }`}>
+                              {s.stato || 'NON_PAGATO'}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="border-slate-600 text-slate-300 h-8">
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                              {s.concessione_status !== 'SOSPESA' ? (
+                                <Button size="sm" variant="outline" className="border-red-600 text-red-400 h-8" title="Blocca Concessione">
+                                  <XCircle className="h-3 w-3" />
+                                </Button>
+                              ) : (
+                                <Button size="sm" variant="outline" className="border-green-600 text-green-400 h-8" title="Sblocca Concessione">
+                                  <CheckCircle className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Dialog Genera Canone Annuo */}
+      <Dialog open={showGeneraCanoneDialog} onOpenChange={setShowGeneraCanoneDialog}>
+        <DialogContent className="bg-[#1e293b] border-slate-700 text-white sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Genera Canone Annuo</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Genera le scadenze del canone per tutti i concessionari attivi
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label className="text-slate-300">Anno</Label>
+              <Input 
+                type="number" 
+                value={canoneAnno} 
+                onChange={(e) => setCanoneAnno(e.target.value)}
+                className="bg-[#0f172a] border-slate-700 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-slate-300">Data Scadenza (default: 31 marzo)</Label>
+              <Input 
+                type="date" 
+                value={canoneDataScadenza} 
+                onChange={(e) => setCanoneDataScadenza(e.target.value)}
+                className="bg-[#0f172a] border-slate-700 text-white"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowGeneraCanoneDialog(false)} className="border-slate-600">
+              Annulla
+            </Button>
+            <Button onClick={handleGeneraCanoneAnnuo} className="bg-green-600 hover:bg-green-700">
+              Genera Scadenze
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Pagamento Straordinario */}
+      <Dialog open={showPagamentoStraordinarioDialog} onOpenChange={setShowPagamentoStraordinarioDialog}>
+        <DialogContent className="bg-[#1e293b] border-slate-700 text-white sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Pagamento Straordinario</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Genera avvisi di pagamento per fiere o eventi straordinari
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label className="text-slate-300">ID Mercato</Label>
+              <Input 
+                type="number" 
+                value={straordinarioMercatoId} 
+                onChange={(e) => setStraordinarioMercatoId(e.target.value)}
+                placeholder="Es: 1"
+                className="bg-[#0f172a] border-slate-700 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-slate-300">Descrizione Evento</Label>
+              <Input 
+                value={straordinarioDescrizione} 
+                onChange={(e) => setStraordinarioDescrizione(e.target.value)}
+                placeholder="Es: Fiera di Natale 2026"
+                className="bg-[#0f172a] border-slate-700 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-slate-300">Importo (€)</Label>
+              <Input 
+                type="number" 
+                step="0.01"
+                value={straordinarioImporto} 
+                onChange={(e) => setStraordinarioImporto(e.target.value)}
+                placeholder="Es: 150.00"
+                className="bg-[#0f172a] border-slate-700 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-slate-300">Data Scadenza</Label>
+              <Input 
+                type="date" 
+                value={canoneDataScadenza} 
+                onChange={(e) => setCanoneDataScadenza(e.target.value)}
+                className="bg-[#0f172a] border-slate-700 text-white"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPagamentoStraordinarioDialog(false)} className="border-slate-600">
+              Annulla
+            </Button>
+            <Button onClick={handleGeneraPagamentoStraordinario} className="bg-amber-600 hover:bg-amber-700">
+              Genera Avvisi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog Ricarica / Pagamento */}
       <Dialog open={showDepositDialog} onOpenChange={setShowDepositDialog}>
