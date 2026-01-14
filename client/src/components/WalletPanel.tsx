@@ -71,7 +71,9 @@ interface AnnualFeeCalculation {
 }
 
 export default function WalletPanel() {
-  const [subTab, setSubTab] = useState<'wallet' | 'pagopa' | 'riconciliazione'>('wallet');
+  const [subTab, setSubTab] = useState<'wallet' | 'pagopa' | 'riconciliazione' | 'storico'>('wallet');
+  const [walletHistory, setWalletHistory] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [companies, setCompanies] = useState<CompanyWallets[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -217,6 +219,29 @@ export default function WalletPanel() {
     }
   }, [subTab, companies]);
 
+  // Fetch storico wallet
+  const fetchWalletHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const response = await fetch(`${API_URL}/api/wallet-history`);
+      const data = await response.json();
+      if (data.success) {
+        setWalletHistory(data.data || []);
+      }
+    } catch (err) {
+      console.error('Errore caricamento storico wallet:', err);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    if (subTab === 'storico') {
+      fetchWalletHistory();
+    }
+  }, [subTab]);
+
   // --- ACTIONS ---
 
   const handleOpenDeposit = async (wallet: WalletItem, companyName: string) => {
@@ -356,6 +381,13 @@ export default function WalletPanel() {
             className={subTab === 'riconciliazione' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
           >
             <RefreshCw className="mr-2 h-4 w-4" /> Riconciliazione
+          </Button>
+          <Button 
+            variant={subTab === 'storico' ? 'default' : 'outline'}
+            onClick={() => setSubTab('storico')}
+            className={subTab === 'storico' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
+          >
+            <HistoryIcon className="mr-2 h-4 w-4" /> Storico Wallet
           </Button>
         </div>
       </div>
@@ -642,6 +674,102 @@ export default function WalletPanel() {
           <p className="max-w-md mx-auto mt-2">
             Area riservata per il caricamento dei flussi XML di rendicontazione e l'allineamento automatico dei wallet.
           </p>
+        </div>
+      )}
+
+      {subTab === 'storico' && (
+        <div className="space-y-6">
+          <Card className="bg-[#1e293b] border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <HistoryIcon className="h-5 w-5 text-blue-500" />
+                Storico Eventi Wallet
+              </CardTitle>
+              <p className="text-sm text-slate-400 mt-1">
+                Cronologia creazione, eliminazione e trasferimenti wallet con motivi e saldi residui
+              </p>
+            </CardHeader>
+            <CardContent>
+              {isLoadingHistory ? (
+                <div className="text-center py-8 text-slate-400">Caricamento storico...</div>
+              ) : walletHistory.length === 0 ? (
+                <div className="text-center py-12 text-slate-500">
+                  <HistoryIcon className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                  <p>Nessun evento registrato.</p>
+                  <p className="text-sm mt-2">Gli eventi verranno registrati automaticamente durante le operazioni sui wallet.</p>
+                </div>
+              ) : (
+                <div className="rounded-md border border-slate-700 overflow-hidden">
+                  <table className="w-full text-sm text-left text-slate-300">
+                    <thead className="bg-slate-800 text-slate-100 uppercase text-xs">
+                      <tr>
+                        <th className="px-4 py-3">Data</th>
+                        <th className="px-4 py-3">Wallet</th>
+                        <th className="px-4 py-3">Impresa</th>
+                        <th className="px-4 py-3">Evento</th>
+                        <th className="px-4 py-3">Motivo</th>
+                        <th className="px-4 py-3 text-right">Saldo</th>
+                        <th className="px-4 py-3">Dettagli</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700">
+                      {walletHistory.map((event, idx) => (
+                        <tr key={event.id || idx} className="hover:bg-slate-800/50">
+                          <td className="px-4 py-3">
+                            {(() => {
+                              try {
+                                if (!event.created_at) return '-';
+                                const d = new Date(event.created_at);
+                                if (isNaN(d.getTime())) return 'Data non valida';
+                                return d.toLocaleDateString('it-IT', {
+                                  day: '2-digit', month: '2-digit', year: 'numeric',
+                                  hour: '2-digit', minute: '2-digit'
+                                });
+                              } catch (e) {
+                                return 'Errore Data';
+                              }
+                            })()}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-white">
+                            #{event.wallet_id}
+                          </td>
+                          <td className="px-4 py-3">
+                            {event.impresa_nome || '-'}
+                            {event.partita_iva && <span className="block text-xs text-slate-500">P.IVA: {event.partita_iva}</span>}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant="outline" className={
+                              event.evento === 'CREATO' 
+                                ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                                : event.evento === 'ELIMINATO'
+                                ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                            }>
+                              {event.evento}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant="outline" className="bg-slate-500/10 text-slate-300 border-slate-500/20">
+                              {event.motivo || 'MANUALE'}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-amber-400">
+                            € {Number(event.saldo_al_momento || 0).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">
+                            {event.mercato_nome && <span className="block">Mercato: {event.mercato_nome}</span>}
+                            {event.posteggio_numero && <span className="block">Posteggio: {event.posteggio_numero}</span>}
+                            {event.saldo_trasferito_a && <span className="block text-blue-400">Trasferito a: #{event.saldo_trasferito_a}</span>}
+                            {event.note && <span className="block italic">{event.note}</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
