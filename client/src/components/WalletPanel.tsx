@@ -77,7 +77,7 @@ export default function WalletPanel() {
   // Stati per Canone Unico
   const [canoneScadenze, setCanoneScadenze] = useState<any[]>([]);
   const [isLoadingCanone, setIsLoadingCanone] = useState(false);
-  const [canoneFilters, setCanoneFilters] = useState({ mercato_id: '', tipo_operatore: '', impresa_search: '', stato: '' });
+  const [canoneFilters, setCanoneFilters] = useState({ mercato_id: 'all', tipo_operatore: 'all', impresa_search: '', stato: 'all' });
   const [showGeneraCanoneDialog, setShowGeneraCanoneDialog] = useState(false);
   const [showPagamentoStraordinarioDialog, setShowPagamentoStraordinarioDialog] = useState(false);
   const [canoneAnno, setCanoneAnno] = useState(new Date().getFullYear().toString());
@@ -180,10 +180,10 @@ export default function WalletPanel() {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
       const params = new URLSearchParams();
-      if (canoneFilters.mercato_id) params.append('mercato_id', canoneFilters.mercato_id);
-      if (canoneFilters.tipo_operatore) params.append('tipo_operatore', canoneFilters.tipo_operatore);
+      if (canoneFilters.mercato_id && canoneFilters.mercato_id !== 'all') params.append('mercato_id', canoneFilters.mercato_id);
+      if (canoneFilters.tipo_operatore && canoneFilters.tipo_operatore !== 'all') params.append('tipo_operatore', canoneFilters.tipo_operatore);
       if (canoneFilters.impresa_search) params.append('impresa_search', canoneFilters.impresa_search);
-      if (canoneFilters.stato) params.append('stato', canoneFilters.stato);
+      if (canoneFilters.stato && canoneFilters.stato !== 'all') params.append('stato', canoneFilters.stato);
       
       const response = await fetch(`${API_URL}/api/canone-unico/riepilogo?${params.toString()}`);
       const data = await response.json();
@@ -441,7 +441,7 @@ export default function WalletPanel() {
   );
 
   return (
-    <div className="space-y-6 p-6 bg-[#0f172a] min-h-screen text-slate-100">
+    <div className="space-y-6 p-6 bg-[#0f172a] min-h-screen text-slate-100 border border-green-500/30 rounded-lg">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -453,41 +453,46 @@ export default function WalletPanel() {
             Gestione borsellini digitali: Spunta (ricaricabile) e Concessioni (canone annuo)
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-600">
           <Button 
+            size="sm"
             variant={subTab === 'wallet' ? 'default' : 'outline'}
             onClick={() => setSubTab('wallet')}
             className={subTab === 'wallet' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
           >
-            <Wallet className="mr-2 h-4 w-4" /> Wallet
+            <Wallet className="mr-1 h-4 w-4" /> Wallet
           </Button>
           <Button 
+            size="sm"
             variant={subTab === 'pagopa' ? 'default' : 'outline'}
             onClick={() => setSubTab('pagopa')}
             className={subTab === 'pagopa' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
           >
-            <CreditCard className="mr-2 h-4 w-4" /> Storico PagoPA
+            <CreditCard className="mr-1 h-4 w-4" /> PagoPA
           </Button>
           <Button 
+            size="sm"
             variant={subTab === 'riconciliazione' ? 'default' : 'outline'}
             onClick={() => setSubTab('riconciliazione')}
             className={subTab === 'riconciliazione' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
           >
-            <RefreshCw className="mr-2 h-4 w-4" /> Riconciliazione
+            <RefreshCw className="mr-1 h-4 w-4" /> Riconc.
           </Button>
           <Button 
+            size="sm"
             variant={subTab === 'storico' ? 'default' : 'outline'}
             onClick={() => setSubTab('storico')}
             className={subTab === 'storico' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
           >
-            <HistoryIcon className="mr-2 h-4 w-4" /> Storico Wallet
+            <HistoryIcon className="mr-1 h-4 w-4" /> Storico
           </Button>
           <Button 
+            size="sm"
             variant={subTab === 'canone' ? 'default' : 'outline'}
             onClick={() => setSubTab('canone')}
             className={subTab === 'canone' ? 'bg-[#f59e0b]' : 'border-slate-700 text-slate-300'}
           >
-            <Euro className="mr-2 h-4 w-4" /> Canone Unico
+            <Euro className="mr-1 h-4 w-4" /> Canone
           </Button>
         </div>
       </div>
@@ -896,7 +901,7 @@ export default function WalletPanel() {
                       <SelectValue placeholder="Tutti" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#1e293b] border-slate-700">
-                      <SelectItem value="">Tutti</SelectItem>
+                      <SelectItem value="all">Tutti</SelectItem>
                       <SelectItem value="CONCESSIONE">Concessionari</SelectItem>
                       <SelectItem value="SPUNTA">Spuntisti</SelectItem>
                     </SelectContent>
@@ -909,7 +914,7 @@ export default function WalletPanel() {
                       <SelectValue placeholder="Tutti" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#1e293b] border-slate-700">
-                      <SelectItem value="">Tutti</SelectItem>
+                      <SelectItem value="all">Tutti</SelectItem>
                       <SelectItem value="PAGATO">Pagato</SelectItem>
                       <SelectItem value="NON_PAGATO">Non Pagato</SelectItem>
                       <SelectItem value="IN_MORA">In Mora</SelectItem>
