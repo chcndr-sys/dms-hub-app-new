@@ -1301,6 +1301,50 @@ export default function WalletPanel() {
                   <AlertTriangle className="mr-2 h-4 w-4" /> Impostazioni Mora
                 </Button>
               </div>
+              
+              {/* Indicatori Totali Canone */}
+              <div className="grid grid-cols-3 gap-4 mt-4">
+                {/* Canoni Da Pagare */}
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                  <div className="text-xs text-red-400 uppercase font-semibold">Da Pagare</div>
+                  <div className="text-xl font-bold text-red-400">
+                    € {canoneScadenze
+                      .filter((s: any) => s.stato_dinamico !== 'PAGATO')
+                      .reduce((sum: number, s: any) => sum + parseFloat(s.importo_dovuto || 0), 0)
+                      .toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {canoneScadenze.filter((s: any) => s.stato_dinamico !== 'PAGATO').length} rate
+                  </div>
+                </div>
+                
+                {/* Interessi Mora */}
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                  <div className="text-xs text-amber-400 uppercase font-semibold">Interessi Mora</div>
+                  <div className="text-xl font-bold text-amber-400">
+                    € {canoneScadenze
+                      .reduce((sum: number, s: any) => sum + parseFloat(s.importo_mora || 0), 0)
+                      .toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {canoneScadenze.filter((s: any) => s.stato_dinamico === 'IN_MORA' || s.pagato_in_mora).length} rate in mora
+                  </div>
+                </div>
+                
+                {/* Canoni Pagati */}
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                  <div className="text-xs text-green-400 uppercase font-semibold">Pagati</div>
+                  <div className="text-xl font-bold text-green-400">
+                    € {canoneScadenze
+                      .filter((s: any) => s.stato === 'PAGATO')
+                      .reduce((sum: number, s: any) => sum + parseFloat(s.importo_pagato || s.importo_dovuto || 0), 0)
+                      .toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {canoneScadenze.filter((s: any) => s.stato === 'PAGATO').length} rate
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -1765,6 +1809,7 @@ export default function WalletPanel() {
                     return walletScadenze.map((rata: any, idx: number) => {
                       const isPagata = rata.stato === 'PAGATO';
                       const isInMora = rata.stato === 'IN_MORA';
+                      const isPagatoInMora = isPagata && rata.pagato_in_mora;
                       const isPrimaRataDaPagare = primaRataDaPagare && rata.rata === primaRataDaPagare.rata;
                       const isBloccata = !isPagata && !isPrimaRataDaPagare;
                       
@@ -1774,30 +1819,38 @@ export default function WalletPanel() {
                       
                       return (
                         <div key={idx} className={`flex justify-between items-center p-2 rounded ${
-                          isPagata 
-                            ? 'bg-green-500/10 border border-green-500/30 opacity-70' 
-                            : isPrimaRataDaPagare 
-                              ? isInMora
-                                ? 'bg-red-500/20 border border-red-500'
-                                : 'bg-blue-500/20 border border-blue-500' 
-                              : 'bg-slate-800 opacity-50'
+                          isPagatoInMora
+                            ? 'bg-red-500/20 border border-red-500/50 opacity-80'
+                            : isPagata 
+                              ? 'bg-green-500/10 border border-green-500/30 opacity-70' 
+                              : isPrimaRataDaPagare 
+                                ? isInMora
+                                  ? 'bg-red-500/20 border border-red-500'
+                                  : 'bg-blue-500/20 border border-blue-500' 
+                                : 'bg-slate-800 opacity-50'
                         }`}>
                           <div className="flex items-center gap-2">
                             <span className={`w-3 h-3 rounded-full ${
-                              isPagata ? 'bg-green-500' : isInMora ? 'bg-red-500' : 'bg-amber-500'
+                              isPagatoInMora ? 'bg-red-500' : isPagata ? 'bg-green-500' : isInMora ? 'bg-red-500' : 'bg-amber-500'
                             }`}></span>
-                            <span className={isPagata ? 'text-green-400' : isPrimaRataDaPagare ? 'text-white' : 'text-slate-500'}>Rata {rata.rata}</span>
+                            <span className={isPagatoInMora ? 'text-red-400' : isPagata ? 'text-green-400' : isPrimaRataDaPagare ? 'text-white' : 'text-slate-500'}>Rata {rata.rata}</span>
                             <span className="text-slate-400 text-xs">scad. {new Date(rata.scadenza).toLocaleDateString('it-IT')}</span>
-                            {isPagata && <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">PAGATA</span>}
+                            {isPagatoInMora && (
+                              <>
+                                <span className="text-xs bg-red-500/30 text-red-300 px-2 py-0.5 rounded">{rata.giorni_ritardo} gg MORA</span>
+                                <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">PAGATA</span>
+                              </>
+                            )}
+                            {isPagata && !isPagatoInMora && <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">PAGATA</span>}
                             {isInMora && !isPagata && <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">{rata.giorni_ritardo} gg MORA</span>}
                             {isBloccata && <span className="text-xs text-slate-500">🔒</span>}
                           </div>
                           <div className="text-right">
-                            {hasMora && isPrimaRataDaPagare && (
+                            {hasMora && (isPrimaRataDaPagare || isPagatoInMora) && (
                               <div className="text-xs text-red-400">+€ {rata.importo_mora.toFixed(2)} mora</div>
                             )}
                             <span className={`font-bold ${
-                              isPagata ? 'text-green-400' : isPrimaRataDaPagare ? (isInMora ? 'text-red-400' : 'text-blue-400') : 'text-slate-500'
+                              isPagatoInMora ? 'text-red-400' : isPagata ? 'text-green-400' : isPrimaRataDaPagare ? (isInMora ? 'text-red-400' : 'text-blue-400') : 'text-slate-500'
                             }`}>€ {importoDaMostrare.toFixed(2)}</span>
                           </div>
                         </div>
