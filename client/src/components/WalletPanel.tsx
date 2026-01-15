@@ -102,6 +102,7 @@ export default function WalletPanel() {
   // Stati per Calcolo Canone
   const [annualFeeData, setAnnualFeeData] = useState<AnnualFeeCalculation | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [walletScadenze, setWalletScadenze] = useState<any[]>([]); // Rate da pagare per il wallet selezionato
 
   // Stati per Dialog Elimina Wallet
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -453,22 +454,53 @@ export default function WalletPanel() {
     setSelectedCompany(companyName);
     setDepositAmount('');
     setAnnualFeeData(null);
+    setWalletScadenze([]);
     setShowDepositDialog(true);
 
-    // Se NON è SPUNTA, assumiamo sia CONCESSIONE (logica più robusta)
+    // Se NON è SPUNTA, carica le scadenze/rate da pagare
     if (wallet.type !== 'SPUNTA') {
       setIsCalculating(true);
       try {
         const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
-        const res = await fetch(`${API_URL}/api/wallets/calculate-annual-fee`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ wallet_id: wallet.id })
-        });
-        const data = await res.json();
-        if (data.success) {
-          setAnnualFeeData(data.data);
-          setDepositAmount(data.data.total_amount.toFixed(2));
+        const anno = new Date().getFullYear();
+        
+        // Prima prova a caricare le scadenze esistenti
+        const scadenzeRes = await fetch(`${API_URL}/api/canone-unico/semaforo-rate/${wallet.id}/${anno}`);
+        const scadenzeData = await scadenzeRes.json();
+        
+        if (scadenzeData.success && scadenzeData.semaforo && scadenzeData.semaforo.length > 0) {
+          // Ci sono scadenze generate - mostra le rate da pagare
+          const rateNonPagate = scadenzeData.semaforo.filter((r: any) => r.stato === 'NON_PAGATO');
+          setWalletScadenze(rateNonPagate);
+          
+          if (rateNonPagate.length > 0) {
+            // Imposta l'importo della prima rata non pagata
+            setDepositAmount(rateNonPagate[0].importo.toFixed(2));
+            // Crea un oggetto compatibile con annualFeeData per mostrare i dettagli
+            setAnnualFeeData({
+              wallet_id: wallet.id,
+              year: anno,
+              market_id: wallet.market_id || 0,
+              calculation: {
+                cost_per_sqm: 0,
+                area_mq: 0,
+                days_per_year: 0
+              },
+              total_amount: scadenzeData.totale_dovuto || 0
+            });
+          }
+        } else {
+          // Nessuna scadenza - calcola il canone annuo (fallback)
+          const res = await fetch(`${API_URL}/api/wallets/calculate-annual-fee`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ wallet_id: wallet.id })
+          });
+          const data = await res.json();
+          if (data.success) {
+            setAnnualFeeData(data.data);
+            setDepositAmount(data.data.total_amount.toFixed(2));
+          }
         }
       } catch (err) {
         console.error(err);
@@ -484,15 +516,27 @@ export default function WalletPanel() {
 
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      
+      // Determina la descrizione - DEVE contenere "Canone" per aggiornare le scadenze
+      let description = '';
+      if (selectedWallet.type !== 'SPUNTA') {
+        if (walletScadenze.length > 0) {
+          // Pagamento rata specifica
+          description = `Pagamento Canone Rata ${walletScadenze[0].rata} - ${selectedWallet.market_name} - Posteggio ${selectedWallet.stall_number}`;
+        } else {
+          description = `Pagamento Canone Annuo - ${selectedWallet.market_name} - Posteggio ${selectedWallet.stall_number}`;
+        }
+      } else {
+        description = `Ricarica Credito Spunta`;
+      }
+      
       const res = await fetch(`${API_URL}/api/wallets/deposit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           wallet_id: selectedWallet.id,
           amount: parseFloat(depositAmount),
-          description: selectedWallet.type !== 'SPUNTA' 
-            ? `Pagamento Canone Annuo - ${selectedWallet.market_name} - Posteggio ${selectedWallet.stall_number}`
-            : `Ricarica Credito Spunta`
+          description
         })
       });
 
@@ -500,7 +544,10 @@ export default function WalletPanel() {
       if (data.success) {
         alert(mode === 'AVVISO' ? "Avviso PagoPA generato con successo!" : "Pagamento effettuato con successo!");
         setShowDepositDialog(false);
-        fetchWallets(); // Ricarica dati
+        fetchWallets(); // Ricarica dati wallet
+        if (subTab === 'canone') {
+          fetchCanoneScadenze(); // Ricarica anche le scadenze se siamo nel tab canone
+        }
       } else {
         alert("Errore: " + data.error);
       }
@@ -1005,6 +1052,20 @@ export default function WalletPanel() {
                     className="bg-[#0f172a] border-slate-700 text-white"
                   />
                 </div>
+                <div className="w-[180px]">
+                  <Label className="text-slate-400 text-sm">Mercato</Label>
+                  <Select value={canoneFilters.mercato_id} onValueChange={(v) => setCanoneFilters({...canoneFilters, mercato_id: v})}>
+                    <SelectTrigger className="bg-[#0f172a] border-slate-700 text-white">
+                      <SelectValue placeholder="Tutti" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#1e293b] border-slate-700">
+                      <SelectItem value="all">Tutti i Mercati</SelectItem>
+                      {mercatiList.map((m) => (
+                        <SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="w-[150px]">
                   <Label className="text-slate-400 text-sm">Tipo Operatore</Label>
                   <Select value={canoneFilters.tipo_operatore} onValueChange={(v) => setCanoneFilters({...canoneFilters, tipo_operatore: v})}>
@@ -1421,6 +1482,27 @@ export default function WalletPanel() {
             {selectedWallet?.type !== 'SPUNTA' ? (
               isCalculating ? (
                 <div className="flex justify-center py-4"><Loader2 className="animate-spin h-8 w-8 text-blue-500" /></div>
+              ) : walletScadenze.length > 0 ? (
+                <div className="bg-[#0f172a] p-4 rounded-lg border border-slate-700 space-y-3">
+                  <div className="text-sm text-slate-400 mb-2">Rate da pagare per {annualFeeData?.year || new Date().getFullYear()}:</div>
+                  {walletScadenze.map((rata: any, idx: number) => (
+                    <div key={idx} className={`flex justify-between items-center p-2 rounded ${idx === 0 ? 'bg-blue-500/20 border border-blue-500' : 'bg-slate-800'}`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`w-3 h-3 rounded-full ${rata.colore === 'verde' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                        <span className="text-white">Rata {rata.rata}</span>
+                        <span className="text-slate-400 text-xs">scad. {new Date(rata.scadenza).toLocaleDateString('it-IT')}</span>
+                      </div>
+                      <span className={`font-bold ${idx === 0 ? 'text-blue-400' : 'text-slate-300'}`}>€ {rata.importo.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  {walletScadenze.length > 1 && (
+                    <div className="text-xs text-slate-500 mt-2">* Verrà pagata la prima rata selezionata (€ {walletScadenze[0]?.importo.toFixed(2)})</div>
+                  )}
+                  <div className="border-t border-slate-700 pt-2 flex justify-between font-bold text-lg">
+                    <span className="text-white">Importo Rata:</span>
+                    <span className="text-blue-400">€ {walletScadenze[0]?.importo.toFixed(2)}</span>
+                  </div>
+                </div>
               ) : annualFeeData ? (
                 <div className="bg-[#0f172a] p-4 rounded-lg border border-slate-700 space-y-3">
                   <div className="flex justify-between text-sm">
@@ -1439,6 +1521,7 @@ export default function WalletPanel() {
                     <span className="text-white">Totale Annuo:</span>
                     <span className="text-blue-400">€ {annualFeeData.total_amount.toFixed(2)}</span>
                   </div>
+                  <div className="text-xs text-amber-400 mt-2">* Nessuna scadenza generata. Genera le scadenze dalla tab Canone.</div>
                 </div>
               ) : (
                 <p className="text-red-400 text-center">Impossibile calcolare il canone. Dati mancanti (Area, Tariffa o Giorni).</p>
