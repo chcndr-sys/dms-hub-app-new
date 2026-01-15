@@ -576,11 +576,13 @@ export default function WalletPanel() {
           // Ci sono scadenze generate - mostra TUTTE le rate (pagate e non pagate)
           setWalletScadenze(scadenzeData.semaforo);
           
-          // Trova la prima rata non pagata per impostare l'importo
-          const rateNonPagate = scadenzeData.semaforo.filter((r: any) => r.stato === 'NON_PAGATO');
+          // Trova la prima rata da pagare (NON_PAGATO o IN_MORA)
+          const rateNonPagate = scadenzeData.semaforo.filter((r: any) => r.stato !== 'PAGATO');
           if (rateNonPagate.length > 0) {
-            // Imposta l'importo della prima rata non pagata
-            setDepositAmount(rateNonPagate[0].importo.toFixed(2));
+            // Imposta l'importo della prima rata (usa importo_totale che include mora)
+            const primaRata = rateNonPagate[0];
+            const importoConMora = primaRata.importo_totale || primaRata.importo;
+            setDepositAmount(importoConMora.toFixed(2));
             // Crea un oggetto compatibile con annualFeeData per mostrare i dettagli
             setAnnualFeeData({
               wallet_id: wallet.id,
@@ -1746,44 +1748,78 @@ export default function WalletPanel() {
               ) : walletScadenze.length > 0 ? (
                 <div className="bg-[#0f172a] p-4 rounded-lg border border-slate-700 space-y-3">
                   <div className="text-sm text-slate-400 mb-2">Rate per {annualFeeData?.year || new Date().getFullYear()}:</div>
-                  {walletScadenze.map((rata: any, idx: number) => {
-                    const isPagata = rata.stato === 'PAGATO';
-                    const rateNonPagate = walletScadenze.filter((r: any) => r.stato === 'NON_PAGATO');
-                    const isFirstNonPagata = !isPagata && rateNonPagate.length > 0 && rata.rata === rateNonPagate[0].rata;
+                  {(() => {
+                    // Trova la prima rata da pagare (NON_PAGATO o IN_MORA)
+                    const rateNonPagate = walletScadenze.filter((r: any) => r.stato !== 'PAGATO');
+                    const primaRataDaPagare = rateNonPagate.length > 0 ? rateNonPagate[0] : null;
                     
-                    return (
-                      <div key={idx} className={`flex justify-between items-center p-2 rounded ${
-                        isPagata 
-                          ? 'bg-green-500/10 border border-green-500/30 opacity-70' 
-                          : isFirstNonPagata 
-                            ? 'bg-blue-500/20 border border-blue-500' 
-                            : 'bg-slate-800'
-                      }`}>
-                        <div className="flex items-center gap-2">
-                          <span className={`w-3 h-3 rounded-full ${isPagata ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                          <span className={isPagata ? 'text-green-400' : 'text-white'}>Rata {rata.rata}</span>
-                          <span className="text-slate-400 text-xs">scad. {new Date(rata.scadenza).toLocaleDateString('it-IT')}</span>
-                          {isPagata && <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">PAGATA</span>}
+                    return walletScadenze.map((rata: any, idx: number) => {
+                      const isPagata = rata.stato === 'PAGATO';
+                      const isInMora = rata.stato === 'IN_MORA';
+                      const isPrimaRataDaPagare = primaRataDaPagare && rata.rata === primaRataDaPagare.rata;
+                      const isBloccata = !isPagata && !isPrimaRataDaPagare;
+                      
+                      // Usa importo_totale se disponibile (include mora), altrimenti importo base
+                      const importoDaMostrare = rata.importo_totale || rata.importo;
+                      const hasMora = rata.importo_mora && rata.importo_mora > 0;
+                      
+                      return (
+                        <div key={idx} className={`flex justify-between items-center p-2 rounded ${
+                          isPagata 
+                            ? 'bg-green-500/10 border border-green-500/30 opacity-70' 
+                            : isPrimaRataDaPagare 
+                              ? isInMora
+                                ? 'bg-red-500/20 border border-red-500'
+                                : 'bg-blue-500/20 border border-blue-500' 
+                              : 'bg-slate-800 opacity-50'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <span className={`w-3 h-3 rounded-full ${
+                              isPagata ? 'bg-green-500' : isInMora ? 'bg-red-500' : 'bg-amber-500'
+                            }`}></span>
+                            <span className={isPagata ? 'text-green-400' : isPrimaRataDaPagare ? 'text-white' : 'text-slate-500'}>Rata {rata.rata}</span>
+                            <span className="text-slate-400 text-xs">scad. {new Date(rata.scadenza).toLocaleDateString('it-IT')}</span>
+                            {isPagata && <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">PAGATA</span>}
+                            {isInMora && !isPagata && <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">{rata.giorni_ritardo} gg MORA</span>}
+                            {isBloccata && <span className="text-xs text-slate-500">🔒</span>}
+                          </div>
+                          <div className="text-right">
+                            {hasMora && isPrimaRataDaPagare && (
+                              <div className="text-xs text-red-400">+€ {rata.importo_mora.toFixed(2)} mora</div>
+                            )}
+                            <span className={`font-bold ${
+                              isPagata ? 'text-green-400' : isPrimaRataDaPagare ? (isInMora ? 'text-red-400' : 'text-blue-400') : 'text-slate-500'
+                            }`}>€ {importoDaMostrare.toFixed(2)}</span>
+                          </div>
                         </div>
-                        <span className={`font-bold ${isPagata ? 'text-green-400' : isFirstNonPagata ? 'text-blue-400' : 'text-slate-300'}`}>€ {rata.importo.toFixed(2)}</span>
-                      </div>
-                    );
-                  })}
-                  {walletScadenze.filter((r: any) => r.stato === 'NON_PAGATO').length > 0 ? (
-                    <>
-                      {walletScadenze.filter((r: any) => r.stato === 'NON_PAGATO').length > 1 && (
-                        <div className="text-xs text-slate-500 mt-2">* Verrà pagata la prima rata non pagata (€ {walletScadenze.filter((r: any) => r.stato === 'NON_PAGATO')[0]?.importo.toFixed(2)})</div>
-                      )}
-                      <div className="border-t border-slate-700 pt-2 flex justify-between font-bold text-lg">
-                        <span className="text-white">Importo Rata:</span>
-                        <span className="text-blue-400">€ {walletScadenze.filter((r: any) => r.stato === 'NON_PAGATO')[0]?.importo.toFixed(2)}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="border-t border-slate-700 pt-2 text-center text-green-400 font-bold">
-                      ✅ Tutte le rate sono state pagate!
-                    </div>
-                  )}
+                      );
+                    });
+                  })()}
+                  {(() => {
+                    const rateNonPagate = walletScadenze.filter((r: any) => r.stato !== 'PAGATO');
+                    const primaRata = rateNonPagate[0];
+                    if (rateNonPagate.length > 0 && primaRata) {
+                      const importoTotale = primaRata.importo_totale || primaRata.importo;
+                      const hasMora = primaRata.importo_mora && primaRata.importo_mora > 0;
+                      return (
+                        <>
+                          {rateNonPagate.length > 1 && (
+                            <div className="text-xs text-slate-500 mt-2">* Paga prima la Rata {primaRata.rata} per sbloccare le successive</div>
+                          )}
+                          <div className="border-t border-slate-700 pt-2 flex justify-between font-bold text-lg">
+                            <span className="text-white">Importo da Pagare:</span>
+                            <span className={hasMora ? 'text-red-400' : 'text-blue-400'}>€ {importoTotale.toFixed(2)}</span>
+                          </div>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <div className="border-t border-slate-700 pt-2 text-center text-green-400 font-bold">
+                          ✅ Tutte le rate sono state pagate!
+                        </div>
+                      );
+                    }
+                  })()}
                 </div>
               ) : annualFeeData ? (
                 <div className="bg-[#0f172a] p-4 rounded-lg border border-slate-700 space-y-3">
