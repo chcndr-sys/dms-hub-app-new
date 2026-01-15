@@ -230,6 +230,68 @@ export default function WalletPanel() {
     }
   };
 
+  // Handler per eliminare una scadenza
+  const handleDeleteScadenza = async (scadenzaId: number) => {
+    if (!confirm('Sei sicuro di voler eliminare questa scadenza?')) return;
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const response = await fetch(`${API_URL}/api/canone-unico/scadenza/${scadenzaId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Scadenza eliminata');
+        fetchCanoneScadenze();
+      } else {
+        alert('Errore: ' + data.error);
+      }
+    } catch (err) {
+      console.error('Errore eliminazione scadenza:', err);
+      alert('Errore di connessione');
+    }
+  };
+
+  // Handler per visualizzare dettaglio scadenza
+  const handleViewScadenza = async (scadenzaId: number) => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const response = await fetch(`${API_URL}/api/canone-unico/scadenza/${scadenzaId}`);
+      const data = await response.json();
+      if (data.success) {
+        const s = data.scadenza;
+        alert(`Dettaglio Scadenza #${s.id}\n\nImpresa: ${s.ragione_sociale}\nMercato: ${s.mercato_nome}\nPosteggio: ${s.posteggio}\nAnno: ${s.anno_riferimento}\nRata: ${s.rata_numero}/${s.rata_totale}\nImporto: €${Number(s.importo_dovuto).toFixed(2)}\nStato: ${s.stato}\nScadenza: ${new Date(s.data_scadenza).toLocaleDateString('it-IT')}`);
+      } else {
+        alert('Errore: ' + data.error);
+      }
+    } catch (err) {
+      console.error('Errore dettaglio scadenza:', err);
+      alert('Errore di connessione');
+    }
+  };
+
+  // Handler per eliminare tutte le scadenze di un anno
+  const handleDeleteScadenzeAnno = async () => {
+    const anno = prompt('Inserisci l\'anno delle scadenze da eliminare (es. 2026):');
+    if (!anno) return;
+    if (!confirm(`Sei sicuro di voler eliminare TUTTE le scadenze dell'anno ${anno}?`)) return;
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const response = await fetch(`${API_URL}/api/canone-unico/scadenze/${anno}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert(`Eliminate ${data.scadenze_eliminate} scadenze per l'anno ${anno}`);
+        fetchCanoneScadenze();
+      } else {
+        alert('Errore: ' + data.error);
+      }
+    } catch (err) {
+      console.error('Errore eliminazione scadenze:', err);
+      alert('Errore di connessione');
+    }
+  };
+
   const handleGeneraPagamentoStraordinario = async () => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
@@ -982,6 +1044,13 @@ export default function WalletPanel() {
                 >
                   <Euro className="mr-2 h-4 w-4" /> Pagamento Straordinario
                 </Button>
+                <Button 
+                  onClick={handleDeleteScadenzeAnno}
+                  variant="outline"
+                  className="border-red-600 text-red-400 hover:bg-red-600/10"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Elimina Scadenze Anno
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -1070,18 +1139,24 @@ export default function WalletPanel() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-2">
-                              <Button size="sm" variant="outline" className="border-slate-600 text-slate-300 h-8">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="border-slate-600 text-slate-300 h-8"
+                                onClick={() => handleViewScadenza(s.id)}
+                                title="Visualizza dettaglio"
+                              >
                                 <Eye className="h-3 w-3" />
                               </Button>
-                              {s.concessione_status !== 'SOSPESA' ? (
-                                <Button size="sm" variant="outline" className="border-red-600 text-red-400 h-8" title="Blocca Concessione">
-                                  <XCircle className="h-3 w-3" />
-                                </Button>
-                              ) : (
-                                <Button size="sm" variant="outline" className="border-green-600 text-green-400 h-8" title="Sblocca Concessione">
-                                  <CheckCircle className="h-3 w-3" />
-                                </Button>
-                              )}
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="border-red-600 text-red-400 h-8" 
+                                title="Elimina scadenza"
+                                onClick={() => handleDeleteScadenza(s.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
                             </div>
                           </td>
                         </tr>
