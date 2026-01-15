@@ -545,8 +545,9 @@ export default function WalletPanel() {
         alert(mode === 'AVVISO' ? "Avviso PagoPA generato con successo!" : "Pagamento effettuato con successo!");
         setShowDepositDialog(false);
         fetchWallets(); // Ricarica dati wallet
-        if (subTab === 'canone') {
-          fetchCanoneScadenze(); // Ricarica anche le scadenze se siamo nel tab canone
+        // Ricarica sempre le scadenze dopo pagamento canone (per aggiornare semaforo)
+        if (selectedWallet?.type !== 'SPUNTA') {
+          fetchCanoneScadenze();
         }
       } else {
         alert("Errore: " + data.error);
@@ -589,6 +590,53 @@ export default function WalletPanel() {
       alert("Errore di connessione");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // --- AZZERA WALLET ---
+  const handleAzzeraWallet = async (walletId: number) => {
+    if (!confirm(`Vuoi azzerare il saldo del wallet #${walletId}?`)) return;
+    
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const res = await fetch(`${API_URL}/api/canone-unico/wallet/${walletId}/azzera`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Wallet #${walletId} azzerato! Saldo precedente: €${data.saldo_precedente}`);
+        fetchWallets();
+        fetchCanoneScadenze();
+      } else {
+        alert('Errore: ' + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Errore di connessione');
+    }
+  };
+
+  const handleAzzeraTuttiWallet = async () => {
+    if (!confirm('ATTENZIONE: Vuoi azzerare il saldo di TUTTI i wallet? Questa operazione è per test.')) return;
+    
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const res = await fetch(`${API_URL}/api/canone-unico/wallets/azzera-tutti`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`${data.wallets_azzerati} wallet azzerati! Totale: €${data.totale_azzerato}`);
+        fetchWallets();
+        fetchCanoneScadenze();
+      } else {
+        alert('Errore: ' + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Errore di connessione');
     }
   };
 
@@ -658,15 +706,24 @@ export default function WalletPanel() {
       {/* Content */}
       {subTab === 'wallet' && (
         <div className="space-y-6">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Cerca impresa per Ragione Sociale o P.IVA..." 
-              className="pl-10 bg-[#1e293b] border-slate-700 text-white w-full md:w-96"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          {/* Search + Pulsanti Test */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="relative flex-1 min-w-[300px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input 
+                placeholder="Cerca impresa per Ragione Sociale o P.IVA..." 
+                className="pl-10 bg-[#1e293b] border-slate-700 text-white w-full"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button 
+              variant="outline"
+              className="border-red-600 text-red-400 hover:bg-red-600/10"
+              onClick={handleAzzeraTuttiWallet}
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Svuota Tutti Wallet (Test)
+            </Button>
           </div>
 
           {isLoading ? (
@@ -827,6 +884,14 @@ export default function WalletPanel() {
                                 >
                                   <CreditCard className="mr-2 h-4 w-4" />
                                   Paga Canone
+                                </Button>
+                                <Button 
+                                  variant="outline"
+                                  className="border-amber-600 hover:bg-amber-900/50 text-amber-400"
+                                  onClick={() => handleAzzeraWallet(wallet.id)}
+                                  title="Svuota Wallet"
+                                >
+                                  <XCircle className="h-4 w-4" />
                                 </Button>
                                 <Button 
                                   variant="outline"
