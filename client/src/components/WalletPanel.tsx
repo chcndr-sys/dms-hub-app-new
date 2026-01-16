@@ -89,6 +89,7 @@ export default function WalletPanel() {
   const [straordinarioDataScadenza, setStraordinarioDataScadenza] = useState('');
   const [straordinarioImpresaId, setStraordinarioImpresaId] = useState('');
   const [straordinarioImpresaSearch, setStraordinarioImpresaSearch] = useState('');
+  const [straordinarioPosteggio, setStraordinarioPosteggio] = useState('');
   const [straordinarioImpreseSuggestions, setStraordinarioImpreseSuggestions] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [companies, setCompanies] = useState<CompanyWallets[]>([]);
@@ -283,12 +284,16 @@ export default function WalletPanel() {
         body: JSON.stringify({
           anno: parseInt(canoneAnno),
           numero_rate: parseInt(canoneNumeroRate),
-          data_prima_rata: canoneDataPrimaRata
+          data_prima_rata: canoneDataPrimaRata,
+          mercato_id: canoneFilters.mercato_id !== 'all' ? parseInt(canoneFilters.mercato_id) : null
         })
       });
       const data = await response.json();
       if (data.success) {
-        alert(`Generate ${data.scadenze_create} scadenze (${data.numero_rate} rate) per l'anno ${canoneAnno}`);
+        const mercatoNome = canoneFilters.mercato_id !== 'all' 
+          ? mercatiList.find((m: any) => m.id.toString() === canoneFilters.mercato_id)?.name || 'mercato selezionato'
+          : 'TUTTI i mercati';
+        alert(`Generate ${data.scadenze_create} scadenze (${data.numero_rate} rate) per l'anno ${canoneAnno}\nMercato: ${mercatoNome}`);
         setShowGeneraCanoneDialog(false);
         fetchCanoneScadenze();
       } else {
@@ -376,10 +381,11 @@ export default function WalletPanel() {
         body: JSON.stringify({
           mercato_id: straordinarioMercatoId !== 'all' ? parseInt(straordinarioMercatoId) : null,
           impresa_id: straordinarioImpresaId ? parseInt(straordinarioImpresaId) : null,
+          posteggio: straordinarioPosteggio || null,
           descrizione: straordinarioDescrizione,
           importo: parseFloat(straordinarioImporto),
           data_scadenza: straordinarioDataScadenza,
-          tutti: straordinarioMercatoId === 'all' && !straordinarioImpresaId
+          tutti: straordinarioMercatoId === 'all' && !straordinarioImpresaId && !straordinarioPosteggio
         })
       });
       const data = await response.json();
@@ -391,6 +397,7 @@ export default function WalletPanel() {
         setStraordinarioDataScadenza('');
         setStraordinarioImpresaId('');
         setStraordinarioImpresaSearch('');
+        setStraordinarioPosteggio('');
         fetchCanoneScadenze();
       } else {
         alert('Errore: ' + data.error);
@@ -1596,6 +1603,16 @@ export default function WalletPanel() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
+            {/* Indicazione mercato selezionato */}
+            <div className={`p-3 rounded-lg text-sm ${canoneFilters.mercato_id !== 'all' ? 'bg-blue-500/10 border border-blue-500/30' : 'bg-amber-500/10 border border-amber-500/30'}`}>
+              <div className={`font-medium mb-1 ${canoneFilters.mercato_id !== 'all' ? 'text-blue-400' : 'text-amber-400'}`}>Mercato Target:</div>
+              <div className="text-slate-300">
+                {canoneFilters.mercato_id !== 'all' 
+                  ? mercatiList.find((m: any) => m.id.toString() === canoneFilters.mercato_id)?.name || 'Mercato selezionato'
+                  : 'TUTTI i mercati (usa il filtro nella pagina per selezionare un mercato specifico)'
+                }
+              </div>
+            </div>
             <div>
               <Label className="text-slate-300">Anno</Label>
               <Input 
@@ -1695,20 +1712,35 @@ export default function WalletPanel() {
                 )}
               </div>
               
-              {/* Oppure seleziona mercato */}
-              {!straordinarioImpresaId && (
+              {/* Seleziona mercato */}
+              <div>
+                <Label className="text-slate-400 text-xs">Seleziona Mercato {!straordinarioImpresaId && '*'}</Label>
+                <select 
+                  value={straordinarioMercatoId} 
+                  onChange={(e) => {
+                    setStraordinarioMercatoId(e.target.value);
+                    setStraordinarioPosteggio('');
+                  }}
+                  className="w-full p-2 rounded bg-[#0f172a] border border-slate-700 text-white"
+                >
+                  <option value="all">Tutti i mercati</option>
+                  {mercatiList.map((m: any) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Posteggio (opzionale) */}
+              {straordinarioMercatoId !== 'all' && (
                 <div>
-                  <Label className="text-slate-400 text-xs">Oppure seleziona Mercato</Label>
-                  <select 
-                    value={straordinarioMercatoId} 
-                    onChange={(e) => setStraordinarioMercatoId(e.target.value)}
-                    className="w-full p-2 rounded bg-[#0f172a] border border-slate-700 text-white"
-                  >
-                    <option value="all">Tutti i mercati</option>
-                    {mercatiList.map((m: any) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
+                  <Label className="text-slate-400 text-xs">Posteggio (opzionale)</Label>
+                  <Input 
+                    value={straordinarioPosteggio} 
+                    onChange={(e) => setStraordinarioPosteggio(e.target.value)}
+                    placeholder="Es: 10, 152, A1..."
+                    className="bg-[#0f172a] border-slate-700 text-white"
+                  />
+                  <div className="text-xs text-slate-500 mt-1">Lascia vuoto per tutti i posteggi del mercato</div>
                 </div>
               )}
             </div>
@@ -1751,10 +1783,12 @@ export default function WalletPanel() {
               <div className="text-amber-400 font-medium mb-1">Riepilogo:</div>
               <div className="text-slate-300">
                 {straordinarioImpresaId 
-                  ? `Pagamento per: ${straordinarioImpresaSearch}` 
+                  ? `Pagamento per: ${straordinarioImpresaSearch}${straordinarioMercatoId !== 'all' ? ` (${mercatiList.find((m: any) => m.id.toString() === straordinarioMercatoId)?.name || 'Mercato'})` : ''}${straordinarioPosteggio ? ` - Posteggio ${straordinarioPosteggio}` : ''}` 
                   : straordinarioMercatoId === 'all' 
-                    ? 'Pagamento per: TUTTI i concessionari' 
-                    : `Pagamento per: Concessionari del mercato selezionato`
+                    ? 'Pagamento per: TUTTI i concessionari di TUTTI i mercati' 
+                    : straordinarioPosteggio
+                      ? `Pagamento per: Posteggio ${straordinarioPosteggio} del ${mercatiList.find((m: any) => m.id.toString() === straordinarioMercatoId)?.name || 'mercato'}`
+                      : `Pagamento per: TUTTI i concessionari del ${mercatiList.find((m: any) => m.id.toString() === straordinarioMercatoId)?.name || 'mercato selezionato'}`
                 }
               </div>
             </div>
@@ -1764,6 +1798,8 @@ export default function WalletPanel() {
               setShowPagamentoStraordinarioDialog(false);
               setStraordinarioImpresaId('');
               setStraordinarioImpresaSearch('');
+              setStraordinarioPosteggio('');
+              setStraordinarioMercatoId('all');
             }} className="border-slate-600">
               Annulla
             </Button>
