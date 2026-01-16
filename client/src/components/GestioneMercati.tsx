@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarketMapComponent } from './MarketMapComponent';
+import { PresenzeGraduatoriaPanel } from './PresenzeGraduatoriaPanel';
 import { MarketCompaniesTab, CompanyModal, CompanyRow, CompanyFormData, FORMA_GIURIDICA_OPTIONS, STATO_IMPRESA_OPTIONS } from './markets/MarketCompaniesTab';
 import { getStallStatusLabel, getStallStatusClasses, getStallMapFillColor, STALL_STATUS_OPTIONS } from '@/lib/stallStatus';
 import L from 'leaflet';
@@ -316,6 +317,11 @@ export default function GestioneMercati() {
       {/* Dettaglio Mercato Selezionato */}
       {selectedMarket && (
         <MarketDetail market={selectedMarket} allMarkets={markets} onUpdate={fetchMarkets} />
+      )}
+
+      {/* Presenze e Graduatoria */}
+      {selectedMarket && (
+        <PresenzeGraduatoriaPanel marketId={selectedMarket.id} marketName={selectedMarket.name} />
       )}
     </div>
   );
@@ -1375,10 +1381,12 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   };
 
   // Conferma assegnazione posteggio (da riservato a occupato)
-  const handleConfirmAssignment = async (stallId: number) => {
+  // Esteso per calcolare importo e addebitare wallet
+  const handleConfirmAssignment = async (stallId: number, impresaId?: number, walletId?: number) => {
     try {
       console.log('[DEBUG handleConfirmAssignment] Confermando assegnazione posteggio:', stallId);
       
+      // 1. Aggiorna stato posteggio
       const response = await fetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
         method: 'PATCH',
         headers: {
@@ -1390,7 +1398,37 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       const data = await response.json();
       if (data.success) {
         console.log('[DEBUG handleConfirmAssignment] Posteggio assegnato:', stallId);
-        toast.success('Posteggio assegnato con successo!');
+        
+        // 2. Se abbiamo impresa e wallet, registra presenza con calcolo importo
+        if (impresaId && walletId) {
+          try {
+            const presenzaResponse = await fetch(`${API_BASE_URL}/api/presenze/registra`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                market_id: marketId,
+                stall_id: stallId,
+                impresa_id: impresaId,
+                wallet_id: walletId,
+                tipo_presenza: isSpuntaMode ? 'SPUNTA' : 'CONCESSION',
+                giorno_mercato: new Date().toISOString().split('T')[0]
+              })
+            });
+            
+            const presenzaData = await presenzaResponse.json();
+            if (presenzaData.success) {
+              toast.success(`Presenza registrata - ${presenzaData.data.importo_addebitato?.toFixed(2) || '0.00'}€ addebitati`);
+            } else {
+              console.warn('[WARN] Presenza non registrata:', presenzaData.error);
+              toast.success('Posteggio assegnato (presenza non registrata)');
+            }
+          } catch (presenzaError) {
+            console.warn('[WARN] Errore registrazione presenza:', presenzaError);
+            toast.success('Posteggio assegnato (presenza non registrata)');
+          }
+        } else {
+          toast.success('Posteggio assegnato con successo!');
+        }
         
         // Aggiorna SOLO lo stato locale per evitare reload mappa
         setStalls(prevStalls => 
