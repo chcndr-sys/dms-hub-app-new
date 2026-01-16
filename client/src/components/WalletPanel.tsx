@@ -687,7 +687,18 @@ export default function WalletPanel() {
           description = `Pagamento Canone Annuo - ${selectedWallet.market_name} - Posteggio ${selectedWallet.stall_number}`;
         }
       } else {
-        description = `Ricarica Credito Spunta`;
+        // Wallet SPUNTA - verifica se ci sono scadenze straordinarie da pagare
+        if (walletScadenze.length > 0) {
+          const primaScadenzaDaPagare = walletScadenze.find(s => s.stato !== 'PAGATO');
+          if (primaScadenzaDaPagare) {
+            scadenza_id = primaScadenzaDaPagare.id;
+            description = primaScadenzaDaPagare.causale || `Pagamento Straordinario`;
+          } else {
+            description = `Ricarica Credito Spunta`;
+          }
+        } else {
+          description = `Ricarica Credito Spunta`;
+        }
       }
       
       const res = await fetch(`${API_URL}/api/wallets/deposit`, {
@@ -706,10 +717,8 @@ export default function WalletPanel() {
         alert(mode === 'AVVISO' ? "Avviso PagoPA generato con successo!" : "Pagamento effettuato con successo!");
         setShowDepositDialog(false);
         fetchWallets(); // Ricarica dati wallet
-        // Ricarica sempre le scadenze dopo pagamento canone (per aggiornare semaforo)
-        if (selectedWallet?.type !== 'SPUNTA') {
-          fetchCanoneScadenze();
-        }
+        // Ricarica sempre le scadenze dopo pagamento (per aggiornare semaforo)
+        fetchCanoneScadenze();
       } else {
         alert("Errore: " + data.error);
       }
@@ -2044,41 +2053,51 @@ export default function WalletPanel() {
                       
                       const importoDaMostrare = scadenza.importo_totale || scadenza.importo;
                       const hasMora = scadenza.importo_mora > 0;
+                      // Usa la causale se disponibile, altrimenti fallback a "Evento #N"
+                      const causale = scadenza.causale || `Evento #${idx + 1}`;
                       
                       return (
-                        <div key={idx} className={`flex justify-between items-center p-2 rounded ${
+                        <div key={idx} className={`flex justify-between items-center p-3 rounded ${
                           isPagata 
-                            ? 'bg-green-500/10 border border-green-500/30 opacity-70' 
+                            ? 'bg-green-500/20 border border-green-500/50' 
                             : isPrimaScadenzaDaPagare 
                               ? isInMora
                                 ? 'bg-red-500/20 border border-red-500'
-                                : 'bg-blue-500/20 border border-blue-500' 
+                                : 'bg-amber-500/20 border border-amber-500' 
                               : 'bg-slate-800 opacity-50'
                         }`}>
-                          <div className="flex items-center gap-2 flex-1">
+                          <div className="flex items-center gap-3 flex-1">
                             <span className={`w-3 h-3 rounded-full ${
                               isPagata ? 'bg-green-500' : isInMora ? 'bg-red-500' : 'bg-amber-500'
                             }`}></span>
                             <div className="flex flex-col">
-                              <span className={`text-sm ${isPagata ? 'text-green-400' : isPrimaScadenzaDaPagare ? 'text-white' : 'text-slate-500'}`}>
-                                Evento #{idx + 1}
+                              <span className={`text-sm font-medium ${isPagata ? 'text-green-400' : isPrimaScadenzaDaPagare ? 'text-white' : 'text-slate-500'}`}>
+                                {causale}
                               </span>
                               <span className="text-xs text-slate-400">
                                 scad. {new Date(scadenza.scadenza).toLocaleDateString('it-IT')}
                               </span>
                             </div>
-                            {isPagata && <span className="text-xs bg-green-500/30 text-green-300 px-2 py-0.5 rounded ml-2">PAGATA</span>}
-                            {isInMora && !isPagata && <span className="text-xs bg-red-500/30 text-red-300 px-2 py-0.5 rounded ml-2">{scadenza.giorni_ritardo} gg MORA</span>}
                           </div>
-                          <div className="text-right">
-                            {hasMora && isPrimaScadenzaDaPagare && (
-                              <div className="text-xs text-red-400">+€ {scadenza.importo_mora.toFixed(2)} mora</div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              {hasMora && isPrimaScadenzaDaPagare && (
+                                <div className="text-xs text-red-400">+€ {scadenza.importo_mora.toFixed(2)} mora</div>
+                              )}
+                              <span className={`font-bold ${
+                                isPagata ? 'text-green-400' : 
+                                isPrimaScadenzaDaPagare ? (isInMora ? 'text-red-400' : 'text-white') : 
+                                'text-slate-500'
+                              }`}>€ {importoDaMostrare.toFixed(2)}</span>
+                            </div>
+                            {/* Badge stato */}
+                            {isPagata ? (
+                              <span className="text-xs bg-green-500 text-white px-2 py-1 rounded font-medium">PAGATA</span>
+                            ) : isInMora ? (
+                              <span className="text-xs bg-red-500 text-white px-2 py-1 rounded font-medium">{scadenza.giorni_ritardo} gg MORA</span>
+                            ) : (
+                              <span className="text-xs bg-amber-500 text-white px-2 py-1 rounded font-medium">DA PAGARE</span>
                             )}
-                            <span className={`font-bold ${
-                              isPagata ? 'text-green-400' : 
-                              isPrimaScadenzaDaPagare ? (isInMora ? 'text-red-400' : 'text-white') : 
-                              'text-slate-500'
-                            }`}>€ {importoDaMostrare.toFixed(2)}</span>
                           </div>
                         </div>
                       );
@@ -2108,23 +2127,36 @@ export default function WalletPanel() {
           </div>
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button 
-              variant="outline" 
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
-              onClick={() => handleExecuteDeposit('AVVISO')}
-              disabled={isProcessing || !depositAmount}
-            >
-              {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
-              Genera Avviso PagoPA
-            </Button>
-            <Button 
-              className="bg-[#3b82f6] hover:bg-[#2563eb] text-white"
-              onClick={() => handleExecuteDeposit('PAGA_ORA')}
-              disabled={isProcessing || !depositAmount}
-            >
-              {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-              Paga Ora (Simulazione)
-            </Button>
+            {/* Nascondi pulsanti se tutte le scadenze sono pagate (per wallet SPUNTA con scadenze) */}
+            {selectedWallet?.type === 'SPUNTA' && walletScadenze.length > 0 && walletScadenze.every((s: any) => s.stato === 'PAGATO') ? (
+              <Button 
+                variant="outline" 
+                className="border-green-600 text-green-400 hover:bg-green-900/20"
+                onClick={() => setShowDepositDialog(false)}
+              >
+                Chiudi
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  variant="outline" 
+                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  onClick={() => handleExecuteDeposit('AVVISO')}
+                  disabled={isProcessing || !depositAmount}
+                >
+                  {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                  Genera Avviso PagoPA
+                </Button>
+                <Button 
+                  className="bg-[#3b82f6] hover:bg-[#2563eb] text-white"
+                  onClick={() => handleExecuteDeposit('PAGA_ORA')}
+                  disabled={isProcessing || !depositAmount}
+                >
+                  {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                  Paga Ora (Simulazione)
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
