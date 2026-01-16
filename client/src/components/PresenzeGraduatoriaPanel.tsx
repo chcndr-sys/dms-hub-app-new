@@ -91,6 +91,8 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<Partial<GraduatoriaRecord>>({});
   const [showStoricoPopup, setShowStoricoPopup] = useState<{stallId: number; stallNumber: string; presenze: number; primaPresenza: string | null} | null>(null);
+  const [spuntisti, setSpuntisti] = useState<any[]>([]);
+  const [loadingSpuntisti, setLoadingSpuntisti] = useState(false);
   // toast importato da sonner
 
   // Fetch graduatoria quando cambia mercato o tab
@@ -98,6 +100,9 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
     if (marketId) {
       fetchGraduatoria();
       fetchPresenze();
+      if (activeTab === 'spuntisti') {
+        fetchSpuntisti();
+      }
     }
   }, [marketId, activeTab]);
 
@@ -143,6 +148,28 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
       }
     } catch (error) {
       console.error('Errore fetch presenze:', error);
+    }
+  };
+
+  // Fetch spuntisti con wallet SPUNTA dal nuovo endpoint
+  const fetchSpuntisti = async () => {
+    if (!marketId) return;
+    setLoadingSpuntisti(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/spuntisti/mercato/${marketId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setSpuntisti(data.data);
+      } else {
+        console.error('Errore fetch spuntisti:', data.error);
+        setSpuntisti([]);
+      }
+    } catch (error) {
+      console.error('Errore fetch spuntisti:', error);
+      setSpuntisti([]);
+    } finally {
+      setLoadingSpuntisti(false);
     }
   };
 
@@ -411,7 +438,7 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
             )}
           </TabsContent>
 
-          {/* TAB SPUNTISTI */}
+          {/* TAB SPUNTISTI - Carica dati dal nuovo endpoint /api/spuntisti/mercato/:id */}
           <TabsContent value="spuntisti" className="mt-4">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -428,98 +455,70 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
+                  {loadingSpuntisti ? (
                     <tr>
-                      <td colSpan={8} className="text-center p-4 text-slate-400">Caricamento...</td>
+                      <td colSpan={8} className="text-center p-4 text-slate-400">Caricamento spuntisti...</td>
                     </tr>
-                  ) : graduatoria.length === 0 ? (
+                  ) : spuntisti.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="text-center p-4 text-slate-400">
-                        Nessuno spuntista registrato per questo mercato.
+                        Nessuno spuntista con wallet SPUNTA per questo mercato.
                       </td>
                     </tr>
-                  ) : graduatoria.map((record) => (
-                    <tr key={record.id} className="border-b border-slate-700 hover:bg-slate-700/30">
+                  ) : spuntisti
+                    .sort((a, b) => (a.posizione || 999) - (b.posizione || 999))
+                    .map((record, index) => (
+                    <tr key={record.wallet_id} className="border-b border-slate-700 hover:bg-yellow-900/20 bg-yellow-900/10">
                       <td className="p-2 text-center">
                         <Badge className={`${record.posizione === 1 ? 'bg-yellow-500' : record.posizione === 2 ? 'bg-slate-400' : record.posizione === 3 ? 'bg-amber-600' : 'bg-slate-600'}`}>
-                          #{record.posizione || '-'}
+                          #{record.posizione < 999 ? record.posizione : (index + 1)}
                         </Badge>
                       </td>
                       <td className="p-2">
                         <div className="text-white font-medium">{record.impresa_nome}</div>
-                        <div className="text-slate-400 text-xs">{record.impresa_piva}</div>
+                        <div className="text-slate-400 text-xs">{record.impresa_piva || record.codice_fiscale}</div>
                       </td>
                       <td className="p-2 text-center">
-                        <span className={`font-bold ${(record.wallet_balance || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {formatCurrency(record.wallet_balance)}
+                        <span className={`font-bold ${parseFloat(record.wallet_balance || 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {formatCurrency(parseFloat(record.wallet_balance || 0))}
                         </span>
                       </td>
                       <td className="p-2 text-center">
-                        {editingId === record.id ? (
-                          <Input
-                            type="number"
-                            value={editValues.punteggio || 0}
-                            onChange={(e) => setEditValues({...editValues, punteggio: parseInt(e.target.value)})}
-                            className="w-20 h-8 text-center bg-slate-700"
-                          />
-                        ) : (
-                          <span className="text-yellow-400 font-bold">{record.punteggio}</span>
-                        )}
+                        <span className="text-yellow-400 font-bold">{record.punteggio || 0}</span>
                       </td>
                       <td className="p-2 text-center">
-                        {editingId === record.id ? (
-                          <Input
-                            type="number"
-                            value={editValues.presenze_totali || 0}
-                            onChange={(e) => setEditValues({...editValues, presenze_totali: parseInt(e.target.value)})}
-                            className="w-20 h-8 text-center bg-slate-700"
-                          />
-                        ) : (
-                          <span className="text-white">{record.presenze_totali}</span>
-                        )}
+                        <span className="text-white">{record.presenze_totali || 0}</span>
                       </td>
                       <td className="p-2 text-center">
-                        {editingId === record.id ? (
-                          <Input
-                            type="date"
-                            value={editValues.data_prima_presenza || ''}
-                            onChange={(e) => setEditValues({...editValues, data_prima_presenza: e.target.value})}
-                            className="w-32 h-8 bg-slate-700"
-                          />
-                        ) : (
-                          <span className="text-slate-300">{formatDate(record.data_prima_presenza)}</span>
-                        )}
+                        <span className="text-slate-300">{record.data_prima_presenza ? formatDate(record.data_prima_presenza) : '-'}</span>
                       </td>
                       <td className="p-2 text-center">
                         <Checkbox className="border-yellow-500 data-[state=checked]:bg-yellow-500" />
                       </td>
                       <td className="p-2 text-center">
                         <div className="flex gap-1 justify-center">
-                          {editingId === record.id ? (
-                            <>
-                              <Button size="sm" variant="ghost" onClick={() => handleSave(record.id)} className="text-green-400 hover:text-green-300">
-                                <Save className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={handleCancel} className="text-red-400 hover:text-red-300">
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button size="sm" variant="ghost" onClick={() => handleEdit(record)} className="text-slate-400 hover:text-white">
-                                <Edit2 className="w-4 h-4" />
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={() => handleChiamaTurno(record)} className="text-yellow-400 hover:text-yellow-300">
-                                <Phone className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => toast.info(`📢 Chiamata Turno #${record.posizione < 999 ? record.posizione : (index + 1)} - ${record.impresa_nome}`)}
+                            className="text-yellow-400 hover:text-yellow-300"
+                            title="Chiama Turno"
+                          >
+                            <Phone className="w-4 h-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {spuntisti.length > 0 && (
+                <div className="mt-4 p-3 bg-yellow-900/20 rounded-lg border border-yellow-600/30">
+                  <p className="text-yellow-400 text-sm">
+                    📋 <strong>{spuntisti.length}</strong> spuntisti con wallet SPUNTA attivo per questo mercato
+                  </p>
+                </div>
+              )}
             </div>
           </TabsContent>
 
