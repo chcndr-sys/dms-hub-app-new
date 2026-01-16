@@ -269,14 +269,13 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
                     <tr>
                       <td colSpan={9} className="text-center p-4 text-slate-400">Caricamento...</td>
                     </tr>
-                  ) : stalls.filter(s => s.type === 'fisso').length === 0 ? (
+                  ) : stalls.length === 0 ? (
                     <tr>
                       <td colSpan={9} className="text-center p-4 text-slate-400">
-                        Nessun posteggio fisso trovato per questo mercato.
+                        Nessun posteggio trovato per questo mercato.
                       </td>
                     </tr>
                   ) : stalls
-                    .filter(s => s.type === 'fisso')
                     .sort((a, b) => parseInt(a.number) - parseInt(b.number))
                     .map((stall) => {
                     const record = graduatoria.find(g => g.stall_id === stall.id);
@@ -344,27 +343,69 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
               </table>
             </div>
 
-            {/* Popup Storico Presenze */}
+            {/* Popup Storico Presenze - Editabile */}
             {showStoricoPopup && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowStoricoPopup(null)}>
-                <div className="bg-slate-800 rounded-lg p-6 max-w-sm w-full mx-4 border border-cyan-500/30" onClick={e => e.stopPropagation()}>
+                <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border border-cyan-500/30" onClick={e => e.stopPropagation()}>
                   <h3 className="text-lg font-bold text-white mb-4">📊 Storico Presenze - Posteggio {showStoricoPopup.stallNumber}</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Presenze Totali:</span>
-                      <span className="text-2xl font-bold text-cyan-400">{showStoricoPopup.presenze}</span>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-slate-400 text-sm block mb-1">Presenze Totali (storico):</label>
+                      <input 
+                        type="number"
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-lg font-bold"
+                        value={showStoricoPopup.presenze}
+                        onChange={(e) => setShowStoricoPopup({...showStoricoPopup, presenze: parseInt(e.target.value) || 0})}
+                      />
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Prima Presenza:</span>
-                      <span className="text-white">{showStoricoPopup.primaPresenza ? formatDate(showStoricoPopup.primaPresenza) : 'N/A'}</span>
+                    <div>
+                      <label className="text-slate-400 text-sm block mb-1">Data Prima Presenza:</label>
+                      <input 
+                        type="date"
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                        value={showStoricoPopup.primaPresenza || ''}
+                        onChange={(e) => setShowStoricoPopup({...showStoricoPopup, primaPresenza: e.target.value})}
+                      />
                     </div>
                   </div>
-                  <Button 
-                    className="w-full mt-4 bg-cyan-600 hover:bg-cyan-700"
-                    onClick={() => setShowStoricoPopup(null)}
-                  >
-                    Chiudi
-                  </Button>
+                  <div className="flex gap-2 mt-4">
+                    <Button 
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(`${API_BASE}/api/graduatoria/aggiorna-storico`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              stall_id: showStoricoPopup.stallId,
+                              market_id: marketId,
+                              presenze_totali: showStoricoPopup.presenze,
+                              data_prima_presenza: showStoricoPopup.primaPresenza
+                            })
+                          });
+                          const data = await response.json();
+                          if (data.success) {
+                            toast.success('Storico aggiornato!');
+                            fetchGraduatoria();
+                            setShowStoricoPopup(null);
+                          } else {
+                            toast.error(data.error || 'Errore salvataggio');
+                          }
+                        } catch (error) {
+                          toast.error('Errore di connessione');
+                        }
+                      }}
+                    >
+                      💾 Salva
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="flex-1 border-slate-600"
+                      onClick={() => setShowStoricoPopup(null)}
+                    >
+                      Annulla
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
