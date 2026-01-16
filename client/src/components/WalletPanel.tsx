@@ -608,59 +608,57 @@ export default function WalletPanel() {
     setWalletScadenze([]);
     setShowDepositDialog(true);
 
-    // Se NON è SPUNTA, carica le scadenze/rate da pagare
-    if (wallet.type !== 'SPUNTA') {
-      setIsCalculating(true);
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
-        const anno = new Date().getFullYear();
+    // Carica le scadenze/rate da pagare per TUTTI i tipi di wallet
+    setIsCalculating(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const anno = new Date().getFullYear();
+      
+      // Prima prova a caricare le scadenze esistenti
+      const scadenzeRes = await fetch(`${API_URL}/api/canone-unico/semaforo-rate/${wallet.id}/${anno}`);
+      const scadenzeData = await scadenzeRes.json();
+      
+      if (scadenzeData.success && scadenzeData.semaforo && scadenzeData.semaforo.length > 0) {
+        // Ci sono scadenze generate - mostra TUTTE le rate (pagate e non pagate)
+        setWalletScadenze(scadenzeData.semaforo);
         
-        // Prima prova a caricare le scadenze esistenti
-        const scadenzeRes = await fetch(`${API_URL}/api/canone-unico/semaforo-rate/${wallet.id}/${anno}`);
-        const scadenzeData = await scadenzeRes.json();
-        
-        if (scadenzeData.success && scadenzeData.semaforo && scadenzeData.semaforo.length > 0) {
-          // Ci sono scadenze generate - mostra TUTTE le rate (pagate e non pagate)
-          setWalletScadenze(scadenzeData.semaforo);
-          
-          // Trova la prima rata da pagare (NON_PAGATO o IN_MORA)
-          const rateNonPagate = scadenzeData.semaforo.filter((r: any) => r.stato !== 'PAGATO');
-          if (rateNonPagate.length > 0) {
-            // Imposta l'importo della prima rata (usa importo_totale che include mora)
-            const primaRata = rateNonPagate[0];
-            const importoConMora = primaRata.importo_totale || primaRata.importo;
-            setDepositAmount(importoConMora.toFixed(2));
-            // Crea un oggetto compatibile con annualFeeData per mostrare i dettagli
-            setAnnualFeeData({
-              wallet_id: wallet.id,
-              year: anno,
-              market_id: wallet.market_id || 0,
-              calculation: {
-                cost_per_sqm: 0,
-                area_mq: 0,
-                days_per_year: 0
-              },
-              total_amount: scadenzeData.totale_dovuto || 0
-            });
-          }
-        } else {
-          // Nessuna scadenza - calcola il canone annuo (fallback)
-          const res = await fetch(`${API_URL}/api/wallets/calculate-annual-fee`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ wallet_id: wallet.id })
+        // Trova la prima rata da pagare (NON_PAGATO o IN_MORA)
+        const rateNonPagate = scadenzeData.semaforo.filter((r: any) => r.stato !== 'PAGATO');
+        if (rateNonPagate.length > 0) {
+          // Imposta l'importo della prima rata (usa importo_totale che include mora)
+          const primaRata = rateNonPagate[0];
+          const importoConMora = primaRata.importo_totale || primaRata.importo;
+          setDepositAmount(importoConMora.toFixed(2));
+          // Crea un oggetto compatibile con annualFeeData per mostrare i dettagli
+          setAnnualFeeData({
+            wallet_id: wallet.id,
+            year: anno,
+            market_id: wallet.market_id || 0,
+            calculation: {
+              cost_per_sqm: 0,
+              area_mq: 0,
+              days_per_year: 0
+            },
+            total_amount: scadenzeData.totale_dovuto || 0
           });
-          const data = await res.json();
-          if (data.success) {
-            setAnnualFeeData(data.data);
-            setDepositAmount(data.data.total_amount.toFixed(2));
-          }
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsCalculating(false);
+      } else if (wallet.type !== 'SPUNTA') {
+        // Nessuna scadenza e NON è SPUNTA - calcola il canone annuo (fallback)
+        const res = await fetch(`${API_URL}/api/wallets/calculate-annual-fee`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet_id: wallet.id })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setAnnualFeeData(data.data);
+          setDepositAmount(data.data.total_amount.toFixed(2));
+        }
       }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCalculating(false);
     }
   };
 
@@ -1420,6 +1418,7 @@ export default function WalletPanel() {
                         <th className="text-left px-4 py-3 text-slate-400 font-medium">IMPRESA</th>
                         <th className="text-left px-4 py-3 text-slate-400 font-medium">MERCATO</th>
                         <th className="text-left px-4 py-3 text-slate-400 font-medium">POSTEGGIO</th>
+                        <th className="text-left px-4 py-3 text-slate-400 font-medium">CAUSALE</th>
                         <th className="text-left px-4 py-3 text-slate-400 font-medium">ANNO</th>
                         <th className="text-center px-4 py-3 text-slate-400 font-medium">RATA</th>
                         <th className="text-left px-4 py-3 text-slate-400 font-medium">SCADENZA</th>
@@ -1439,6 +1438,17 @@ export default function WalletPanel() {
                           </td>
                           <td className="px-4 py-3 text-slate-300">{s.mercato_nome || '-'}</td>
                           <td className="px-4 py-3 text-slate-300">{s.posteggio || '-'}</td>
+                          <td className="px-4 py-3 text-slate-300 text-xs max-w-[150px] truncate" title={s.tipo === 'STRAORDINARIO' && s.note ? (typeof s.note === 'string' && s.note.startsWith('{') ? JSON.parse(s.note).descrizione : s.note) : (s.tipo || 'Canone Annuo')}>
+                            {s.tipo === 'STRAORDINARIO' ? (
+                              <span className="text-amber-400">
+                                {s.note && typeof s.note === 'string' && s.note.startsWith('{') 
+                                  ? JSON.parse(s.note).descrizione 
+                                  : (s.note?.replace('STRAORDINARIO: ', '').split(' - ')[0] || 'Straordinario')}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">Canone Annuo</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3 text-slate-300">{s.anno_riferimento}</td>
                           <td className="px-4 py-3 text-center">
                             {s.rata_totale > 1 ? (
@@ -1883,7 +1893,11 @@ export default function WalletPanel() {
         <DialogContent className="bg-[#1e293b] border-slate-700 text-white sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
-              {selectedWallet?.type !== 'SPUNTA' ? 'Pagamento Canone Concessione' : 'Ricarica Credito Spunta'}
+              {selectedWallet?.type !== 'SPUNTA' 
+                ? 'Pagamento Canone Concessione' 
+                : walletScadenze.length > 0 
+                  ? 'Pagamenti Straordinari' 
+                  : 'Ricarica Credito Spunta'}
             </DialogTitle>
             <DialogDescription className="text-slate-400">
               {selectedCompany}
@@ -2011,16 +2025,85 @@ export default function WalletPanel() {
                 <p className="text-red-400 text-center">Impossibile calcolare il canone. Dati mancanti (Area, Tariffa o Giorni).</p>
               )
             ) : (
-              <div className="space-y-2">
-                <Label>Importo da Ricaricare (€)</Label>
-                <Input 
-                  type="number" 
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(e.target.value)}
-                  className="bg-[#0f172a] border-slate-700 text-white text-lg"
-                  placeholder="0.00"
-                />
-              </div>
+              // Wallet SPUNTA - mostra scadenze straordinarie se presenti, altrimenti form ricarica
+              isCalculating ? (
+                <div className="flex justify-center py-4"><Loader2 className="animate-spin h-8 w-8 text-blue-500" /></div>
+              ) : walletScadenze.length > 0 ? (
+                <div className="bg-[#0f172a] p-4 rounded-lg border border-slate-700 space-y-3">
+                  <div className="text-sm text-slate-400 mb-2">Pagamenti Straordinari {annualFeeData?.year || new Date().getFullYear()}:</div>
+                  {(() => {
+                    // Trova la prima scadenza da pagare
+                    const scadenzeNonPagate = walletScadenze.filter((r: any) => r.stato !== 'PAGATO');
+                    const primaScadenzaDaPagare = scadenzeNonPagate.length > 0 ? scadenzeNonPagate[0] : null;
+                    
+                    return walletScadenze.map((scadenza: any, idx: number) => {
+                      const isPagata = scadenza.stato === 'PAGATO';
+                      const isInMora = scadenza.stato === 'IN_MORA';
+                      const isPrimaScadenzaDaPagare = primaScadenzaDaPagare && scadenza.id === primaScadenzaDaPagare.id;
+                      const isBloccata = !isPagata && !isPrimaScadenzaDaPagare;
+                      
+                      const importoDaMostrare = scadenza.importo_totale || scadenza.importo;
+                      const hasMora = scadenza.importo_mora > 0;
+                      
+                      return (
+                        <div key={idx} className={`flex justify-between items-center p-2 rounded ${
+                          isPagata 
+                            ? 'bg-green-500/10 border border-green-500/30 opacity-70' 
+                            : isPrimaScadenzaDaPagare 
+                              ? isInMora
+                                ? 'bg-red-500/20 border border-red-500'
+                                : 'bg-blue-500/20 border border-blue-500' 
+                              : 'bg-slate-800 opacity-50'
+                        }`}>
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className={`w-3 h-3 rounded-full ${
+                              isPagata ? 'bg-green-500' : isInMora ? 'bg-red-500' : 'bg-amber-500'
+                            }`}></span>
+                            <div className="flex flex-col">
+                              <span className={`text-sm ${isPagata ? 'text-green-400' : isPrimaScadenzaDaPagare ? 'text-white' : 'text-slate-500'}`}>
+                                Evento #{idx + 1}
+                              </span>
+                              <span className="text-xs text-slate-400">
+                                scad. {new Date(scadenza.scadenza).toLocaleDateString('it-IT')}
+                              </span>
+                            </div>
+                            {isPagata && <span className="text-xs bg-green-500/30 text-green-300 px-2 py-0.5 rounded ml-2">PAGATA</span>}
+                            {isInMora && !isPagata && <span className="text-xs bg-red-500/30 text-red-300 px-2 py-0.5 rounded ml-2">{scadenza.giorni_ritardo} gg MORA</span>}
+                          </div>
+                          <div className="text-right">
+                            {hasMora && isPrimaScadenzaDaPagare && (
+                              <div className="text-xs text-red-400">+€ {scadenza.importo_mora.toFixed(2)} mora</div>
+                            )}
+                            <span className={`font-bold ${
+                              isPagata ? 'text-green-400' : 
+                              isPrimaScadenzaDaPagare ? (isInMora ? 'text-red-400' : 'text-white') : 
+                              'text-slate-500'
+                            }`}>€ {importoDaMostrare.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                  
+                  {/* Messaggio se tutte pagate */}
+                  {walletScadenze.every((s: any) => s.stato === 'PAGATO') && (
+                    <div className="text-center text-green-400 py-2 flex items-center justify-center gap-2">
+                      <span>✅</span> Tutti i pagamenti sono stati effettuati!
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Importo da Ricaricare (€)</Label>
+                  <Input 
+                    type="number" 
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    className="bg-[#0f172a] border-slate-700 text-white text-lg"
+                    placeholder="0.00"
+                  />
+                </div>
+              )
             )}
           </div>
 
