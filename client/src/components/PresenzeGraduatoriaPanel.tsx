@@ -55,8 +55,12 @@ interface PresenzaRecord {
   wallet_id: number;
   tipo_presenza: string;
   giorno_mercato: string;
+  giorno_presenza: string;
   checkin_time: string;
   checkout_time: string;
+  orario_accesso: string;
+  orario_rifiuti: string;
+  orario_uscita: string;
   orario_deposito_rifiuti: string;
   importo_addebitato: number;
   stall_number: string;
@@ -86,6 +90,7 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<Partial<GraduatoriaRecord>>({});
+  const [showStoricoPopup, setShowStoricoPopup] = useState<{stallId: number; stallNumber: string; presenze: number; primaPresenza: string | null} | null>(null);
   // toast importato da sonner
 
   // Fetch graduatoria quando cambia mercato o tab
@@ -245,80 +250,124 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
           {/* TAB CONCESSIONARI */}
           <TabsContent value="concessionari" className="mt-4">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-600 text-slate-400">
-                    <th className="text-left p-2">Posteggio</th>
-                    <th className="text-left p-2">Tipo</th>
-                    <th className="text-center p-2">Stato Posteggio</th>
-                    <th className="text-left p-2">Impresa</th>
-                    <th className="text-center p-2">Presenze</th>
-                    <th className="text-center p-2">Prima Presenza</th>
-                    <th className="text-center p-2">Assenze N.G.</th>
-                    <th className="text-center p-2">Stato Revoca</th>
+                    <th className="text-center p-1 w-12">N°</th>
+                    <th className="text-center p-1">Stato</th>
+                    <th className="text-left p-1">Impresa</th>
+                    <th className="text-center p-1">Giorno</th>
+                    <th className="text-center p-1">Accesso</th>
+                    <th className="text-center p-1">Rifiuti</th>
+                    <th className="text-center p-1">Uscita</th>
+                    <th className="text-center p-1 cursor-pointer hover:text-cyan-400" title="Click per storico">Presenze</th>
+                    <th className="text-center p-1">Assenze</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="text-center p-4 text-slate-400">Caricamento...</td>
+                      <td colSpan={9} className="text-center p-4 text-slate-400">Caricamento...</td>
                     </tr>
                   ) : stalls.filter(s => s.type === 'fisso').length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center p-4 text-slate-400">
+                      <td colSpan={9} className="text-center p-4 text-slate-400">
                         Nessun posteggio fisso trovato per questo mercato.
                       </td>
                     </tr>
-                  ) : stalls.filter(s => s.type === 'fisso').map((stall) => {
+                  ) : stalls
+                    .filter(s => s.type === 'fisso')
+                    .sort((a, b) => parseInt(a.number) - parseInt(b.number))
+                    .map((stall) => {
                     const record = graduatoria.find(g => g.stall_id === stall.id);
+                    const presenza = presenze.find(p => p.stall_id === stall.id);
+                    const isSpuntista = stall.type === 'spunta';
+                    const isRevoca = record?.stato_revoca === 'REVOCA';
                     const getStatoBadge = (status: string) => {
                       switch(status) {
-                        case 'occupato': return <Badge className="bg-red-500">OCCUPATO</Badge>;
-                        case 'riservato': return <Badge className="bg-yellow-500">IN ASSEGNAZIONE</Badge>;
-                        case 'libero': default: return <Badge className="bg-green-500">LIBERO</Badge>;
+                        case 'occupato': return <Badge className="bg-red-500 text-[10px] px-1">OCCUP.</Badge>;
+                        case 'riservato': return <Badge className="bg-yellow-500 text-[10px] px-1">ASSEGN.</Badge>;
+                        case 'libero': default: return <Badge className="bg-green-500 text-[10px] px-1">LIBERO</Badge>;
                       }
                     };
                     return (
-                    <tr key={stall.id} className={`border-b border-slate-700 hover:bg-slate-700/30 ${stall.status === 'occupato' ? 'bg-red-900/10' : ''}`}>
-                      <td className="p-2">
-                        <Badge variant="outline" className="bg-cyan-500/20 text-cyan-400">
-                          {stall.number}
-                        </Badge>
+                    <tr key={stall.id} className={`border-b border-slate-700/50 hover:bg-slate-700/30 ${stall.status === 'occupato' ? 'bg-red-900/10' : ''}`}>
+                      <td className="p-1 text-center">
+                        <span className="text-cyan-400 font-mono font-bold">{stall.number}</span>
                       </td>
-                      <td className="p-2">
-                        <Badge variant="outline" className="bg-blue-500/20 text-blue-400">
-                          {stall.type}
-                        </Badge>
-                      </td>
-                      <td className="p-2 text-center">
+                      <td className="p-1 text-center">
                         {getStatoBadge(stall.status)}
                       </td>
-                      <td className="p-2">
+                      <td className="p-1">
                         {stall.vendor_business_name ? (
-                          <div className="text-white font-medium">{stall.vendor_business_name}</div>
+                          <span className={`font-medium ${isSpuntista ? 'text-yellow-400' : 'text-white'}`}>
+                            {stall.vendor_business_name}
+                          </span>
                         ) : (
                           <span className="text-slate-500">-</span>
                         )}
                       </td>
-                      <td className="p-2 text-center">
-                        <span className="text-white font-bold">{record?.presenze_totali || 0}</span>
+                      <td className="p-1 text-center text-slate-300">
+                        {presenza?.giorno_presenza ? new Date(presenza.giorno_presenza).toLocaleDateString('it-IT', {weekday: 'short', day: '2-digit', month: '2-digit'}) : '-'}
                       </td>
-                      <td className="p-2 text-center">
-                        <span className="text-slate-300">{record ? formatDate(record.data_prima_presenza) : '-'}</span>
+                      <td className="p-1 text-center text-green-400">
+                        {presenza?.orario_accesso || '-'}
                       </td>
-                      <td className="p-2 text-center">
-                        <span className={record && record.assenze_non_giustificate >= (record.soglia_revoca * 0.8) ? 'text-red-400 font-bold' : 'text-white'}>
-                          {record ? `${record.assenze_non_giustificate} / ${record.soglia_revoca}` : '-'}
+                      <td className="p-1 text-center text-orange-400">
+                        {presenza?.orario_rifiuti || '-'}
+                      </td>
+                      <td className="p-1 text-center text-blue-400">
+                        {presenza?.orario_uscita || '-'}
+                      </td>
+                      <td className="p-1 text-center">
+                        <button 
+                          onClick={() => setShowStoricoPopup({
+                            stallId: stall.id,
+                            stallNumber: stall.number,
+                            presenze: record?.presenze_totali || 0,
+                            primaPresenza: record?.data_prima_presenza || null
+                          })}
+                          className="text-white font-bold hover:text-cyan-400 cursor-pointer"
+                        >
+                          {record?.presenze_totali || 0}
+                        </button>
+                      </td>
+                      <td className="p-1 text-center">
+                        <span className={isRevoca ? 'text-red-500 font-bold animate-pulse' : 'text-slate-300'}>
+                          {record ? record.assenze_non_giustificate : '-'}
                         </span>
                       </td>
-                      <td className="p-2 text-center">
-                        {record ? getStatoRevocaBadge(record.stato_revoca) : <Badge className="bg-slate-600">N/A</Badge>}
-                      </td>                    </tr>
+                    </tr>
                   );
                   })}
                 </tbody>
               </table>
             </div>
+
+            {/* Popup Storico Presenze */}
+            {showStoricoPopup && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowStoricoPopup(null)}>
+                <div className="bg-slate-800 rounded-lg p-6 max-w-sm w-full mx-4 border border-cyan-500/30" onClick={e => e.stopPropagation()}>
+                  <h3 className="text-lg font-bold text-white mb-4">📊 Storico Presenze - Posteggio {showStoricoPopup.stallNumber}</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Presenze Totali:</span>
+                      <span className="text-2xl font-bold text-cyan-400">{showStoricoPopup.presenze}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Prima Presenza:</span>
+                      <span className="text-white">{showStoricoPopup.primaPresenza ? formatDate(showStoricoPopup.primaPresenza) : 'N/A'}</span>
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full mt-4 bg-cyan-600 hover:bg-cyan-700"
+                    onClick={() => setShowStoricoPopup(null)}
+                  >
+                    Chiudi
+                  </Button>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* TAB SPUNTISTI */}
