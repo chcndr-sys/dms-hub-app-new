@@ -534,6 +534,13 @@ export default function WalletPanel() {
     }
   };
 
+  // Sincronizza selectedMercatoId con il filtro mercato principale (v3.57.0)
+  useEffect(() => {
+    if (canoneFilters.mercato_id && canoneFilters.mercato_id !== 'all') {
+      setSelectedMercatoId(canoneFilters.mercato_id);
+    }
+  }, [canoneFilters.mercato_id]);
+
   useEffect(() => {
     if (selectedMercatoId) {
       fetchImpreseConcessioni(selectedMercatoId);
@@ -1647,7 +1654,7 @@ export default function WalletPanel() {
             </Card>
           )}
 
-          {/* Lista Imprese/Concessioni (v3.36.0) */}
+          {/* Lista Imprese/Concessioni (v3.36.0 - v3.57.0 sincronizzato con filtro principale) */}
           <Card className="bg-[#1e293b] border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
@@ -1656,11 +1663,15 @@ export default function WalletPanel() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Filtri Lista Imprese */}
+              {/* Filtri Lista Imprese - v3.57.0: sincronizzato con filtro principale */}
               <div className="flex flex-wrap gap-4 items-end mb-6">
                 <div className="w-[250px]">
                   <Label className="text-slate-400 text-sm">Seleziona Mercato</Label>
-                  <Select value={selectedMercatoId} onValueChange={(v) => setSelectedMercatoId(v)}>
+                  <Select value={selectedMercatoId} onValueChange={(v) => {
+                    setSelectedMercatoId(v);
+                    // Sincronizza anche il filtro principale
+                    setCanoneFilters({...canoneFilters, mercato_id: v});
+                  }}>
                     <SelectTrigger className="bg-[#0f172a] border-slate-700 text-white">
                       <SelectValue placeholder="Seleziona un mercato..." />
                     </SelectTrigger>
