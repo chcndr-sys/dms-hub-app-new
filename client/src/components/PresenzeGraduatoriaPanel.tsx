@@ -313,9 +313,9 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
                       </td>
                       <td className="p-2 text-center">
                         {record ? getStatoRevocaBadge(record.stato_revoca) : <Badge className="bg-slate-600">N/A</Badge>}
-                      </td>
-                    </tr>
-                  );})
+                      </td>                    </tr>
+                  );
+                  })}
                 </tbody>
               </table>
             </div>
