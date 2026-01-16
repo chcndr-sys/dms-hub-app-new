@@ -91,6 +91,8 @@ export default function WalletPanel() {
   const [straordinarioImpresaSearch, setStraordinarioImpresaSearch] = useState('');
   const [straordinarioPosteggio, setStraordinarioPosteggio] = useState('');
   const [straordinarioImpreseSuggestions, setStraordinarioImpreseSuggestions] = useState<any[]>([]);
+  const [straordinarioPosteggiList, setStraordinarioPosteggiList] = useState<{posteggi_impresa: any[], altri_posteggi: any[]}>({posteggi_impresa: [], altri_posteggi: []});
+  const [isLoadingPosteggi, setIsLoadingPosteggi] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [companies, setCompanies] = useState<CompanyWallets[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -408,6 +410,35 @@ export default function WalletPanel() {
     }
   };
   
+  // Carica posteggi del mercato per dropdown straordinario (v3.52.0)
+  const loadPosteggiMercato = async (mercatoId: string, impresaId?: string) => {
+    if (!mercatoId || mercatoId === 'all') {
+      setStraordinarioPosteggiList({posteggi_impresa: [], altri_posteggi: []});
+      return;
+    }
+    
+    setIsLoadingPosteggi(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const params = new URLSearchParams();
+      if (impresaId) params.append('impresa_id', impresaId);
+      
+      const response = await fetch(`${API_URL}/api/canone-unico/posteggi-mercato/${mercatoId}?${params.toString()}`);
+      const data = await response.json();
+      if (data.success) {
+        setStraordinarioPosteggiList({
+          posteggi_impresa: data.posteggi_impresa || [],
+          altri_posteggi: data.altri_posteggi || []
+        });
+      }
+    } catch (err) {
+      console.error('Errore caricamento posteggi:', err);
+      setStraordinarioPosteggiList({posteggi_impresa: [], altri_posteggi: []});
+    } finally {
+      setIsLoadingPosteggi(false);
+    }
+  };
+
   // Ricerca imprese per pagamento straordinario
   const handleSearchImpresaStraordinario = async (search: string) => {
     setStraordinarioImpresaSearch(search);
@@ -1699,6 +1730,10 @@ export default function WalletPanel() {
                           setStraordinarioImpresaId(impresa.id.toString());
                           setStraordinarioImpresaSearch(impresa.denominazione);
                           setStraordinarioImpreseSuggestions([]);
+                          // Ricarica posteggi con la nuova impresa selezionata
+                          if (straordinarioMercatoId !== 'all') {
+                            loadPosteggiMercato(straordinarioMercatoId, impresa.id.toString());
+                          }
                         }}
                       >
                         <div className="font-medium">{impresa.denominazione}</div>
@@ -1720,6 +1755,7 @@ export default function WalletPanel() {
                   onChange={(e) => {
                     setStraordinarioMercatoId(e.target.value);
                     setStraordinarioPosteggio('');
+                    loadPosteggiMercato(e.target.value, straordinarioImpresaId);
                   }}
                   className="w-full p-2 rounded bg-[#0f172a] border border-slate-700 text-white"
                 >
@@ -1730,16 +1766,39 @@ export default function WalletPanel() {
                 </select>
               </div>
               
-              {/* Posteggio (opzionale) */}
+              {/* Posteggio (opzionale) - Dropdown con gruppi v3.52.0 */}
               {straordinarioMercatoId !== 'all' && (
                 <div>
                   <Label className="text-slate-400 text-xs">Posteggio (opzionale)</Label>
-                  <Input 
-                    value={straordinarioPosteggio} 
-                    onChange={(e) => setStraordinarioPosteggio(e.target.value)}
-                    placeholder="Es: 10, 152, A1..."
-                    className="bg-[#0f172a] border-slate-700 text-white"
-                  />
+                  {isLoadingPosteggi ? (
+                    <div className="text-slate-400 text-sm py-2">Caricamento posteggi...</div>
+                  ) : (
+                    <select 
+                      value={straordinarioPosteggio} 
+                      onChange={(e) => setStraordinarioPosteggio(e.target.value)}
+                      className="w-full p-2 rounded bg-[#0f172a] border border-slate-700 text-white"
+                    >
+                      <option value="">Tutti i posteggi del mercato</option>
+                      {straordinarioPosteggiList.posteggi_impresa.length > 0 && (
+                        <optgroup label="📍 Posteggi dell'impresa selezionata" className="bg-green-900/30">
+                          {straordinarioPosteggiList.posteggi_impresa.map((p: any) => (
+                            <option key={p.stall_id} value={p.numero} className="bg-green-900/20 text-green-300">
+                              ⭐ Posteggio {p.numero} {p.dimensioni ? `(${p.dimensioni})` : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {straordinarioPosteggiList.altri_posteggi.length > 0 && (
+                        <optgroup label="📦 Altri posteggi del mercato">
+                          {straordinarioPosteggiList.altri_posteggi.map((p: any) => (
+                            <option key={p.stall_id} value={p.numero}>
+                              Posteggio {p.numero} {p.impresa_nome ? `- ${p.impresa_nome}` : '(libero)'} {p.dimensioni ? `(${p.dimensioni})` : ''}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </select>
+                  )}
                   <div className="text-xs text-slate-500 mt-1">Lascia vuoto per tutti i posteggi del mercato</div>
                 </div>
               )}
