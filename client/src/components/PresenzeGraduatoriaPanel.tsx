@@ -18,7 +18,7 @@ import {
   X,
   Phone
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://mihub.157-90-29-66.nip.io';
 
@@ -76,7 +76,7 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName }: PresenzeGradu
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValues, setEditValues] = useState<Partial<GraduatoriaRecord>>({});
-  const { toast } = useToast();
+  // toast importato da sonner
 
   // Fetch graduatoria quando cambia mercato o tab
   useEffect(() => {
@@ -152,21 +152,14 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName }: PresenzeGradu
       const data = await response.json();
       
       if (data.success) {
-        toast({
-          title: "Salvato",
-          description: data.message || "Dati aggiornati con successo"
-        });
+        toast.success(data.message || "Dati aggiornati con successo");
         setEditingId(null);
         fetchGraduatoria();
       } else {
         throw new Error(data.error);
       }
     } catch (error: any) {
-      toast({
-        title: "Errore",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error(error.message);
     }
   };
 
@@ -176,10 +169,7 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName }: PresenzeGradu
   };
 
   const handleChiamaTurno = (record: GraduatoriaRecord) => {
-    toast({
-      title: `📢 Chiamata Turno #${record.posizione}`,
-      description: `${record.impresa_nome} - Scegli un posteggio disponibile`
-    });
+    toast.info(`📢 Chiamata Turno #${record.posizione} - ${record.impresa_nome}`);
     // TODO: Attivare modalità selezione posteggio sulla mappa
   };
 
