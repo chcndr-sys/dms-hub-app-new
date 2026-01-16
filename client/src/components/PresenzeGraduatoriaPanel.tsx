@@ -64,12 +64,22 @@ interface PresenzaRecord {
   impresa_piva: string;
 }
 
+interface StallData {
+  id: number;
+  number: string;
+  type: string;
+  status: string;
+  vendor_business_name: string | null;
+  impresa_id: number | null;
+}
+
 interface PresenzeGraduatoriaPanelProps {
   marketId: number | null;
   marketName?: string;
+  stalls?: StallData[];
 }
 
-export function PresenzeGraduatoriaPanel({ marketId, marketName }: PresenzeGraduatoriaPanelProps) {
+export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: PresenzeGraduatoriaPanelProps) {
   const [activeTab, setActiveTab] = useState('concessionari');
   const [graduatoria, setGraduatoria] = useState<GraduatoriaRecord[]>([]);
   const [presenze, setPresenze] = useState<PresenzaRecord[]>([]);
@@ -239,95 +249,73 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName }: PresenzeGradu
                 <thead>
                   <tr className="border-b border-slate-600 text-slate-400">
                     <th className="text-left p-2">Posteggio</th>
+                    <th className="text-left p-2">Tipo</th>
+                    <th className="text-center p-2">Stato Posteggio</th>
                     <th className="text-left p-2">Impresa</th>
                     <th className="text-center p-2">Presenze</th>
                     <th className="text-center p-2">Prima Presenza</th>
                     <th className="text-center p-2">Assenze N.G.</th>
-                    <th className="text-center p-2">Stato</th>
-                    <th className="text-center p-2">Azioni</th>
+                    <th className="text-center p-2">Stato Revoca</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="text-center p-4 text-slate-400">Caricamento...</td>
+                      <td colSpan={8} className="text-center p-4 text-slate-400">Caricamento...</td>
                     </tr>
-                  ) : graduatoria.length === 0 ? (
+                  ) : stalls.filter(s => s.type === 'fisso').length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center p-4 text-slate-400">
-                        Nessun record trovato. I dati verranno popolati con le presenze.
+                      <td colSpan={8} className="text-center p-4 text-slate-400">
+                        Nessun posteggio fisso trovato per questo mercato.
                       </td>
                     </tr>
-                  ) : graduatoria.map((record) => (
-                    <tr key={record.id} className="border-b border-slate-700 hover:bg-slate-700/30">
+                  ) : stalls.filter(s => s.type === 'fisso').map((stall) => {
+                    const record = graduatoria.find(g => g.stall_id === stall.id);
+                    const getStatoBadge = (status: string) => {
+                      switch(status) {
+                        case 'occupato': return <Badge className="bg-red-500">OCCUPATO</Badge>;
+                        case 'riservato': return <Badge className="bg-yellow-500">IN ASSEGNAZIONE</Badge>;
+                        case 'libero': default: return <Badge className="bg-green-500">LIBERO</Badge>;
+                      }
+                    };
+                    return (
+                    <tr key={stall.id} className={`border-b border-slate-700 hover:bg-slate-700/30 ${stall.status === 'occupato' ? 'bg-red-900/10' : ''}`}>
                       <td className="p-2">
                         <Badge variant="outline" className="bg-cyan-500/20 text-cyan-400">
-                          {record.stall_number || 'N/A'}
+                          {stall.number}
                         </Badge>
                       </td>
                       <td className="p-2">
-                        <div className="text-white font-medium">{record.impresa_nome}</div>
-                        <div className="text-slate-400 text-xs">{record.impresa_piva}</div>
+                        <Badge variant="outline" className="bg-blue-500/20 text-blue-400">
+                          {stall.type}
+                        </Badge>
                       </td>
                       <td className="p-2 text-center">
-                        {editingId === record.id ? (
-                          <Input
-                            type="number"
-                            value={editValues.presenze_totali || 0}
-                            onChange={(e) => setEditValues({...editValues, presenze_totali: parseInt(e.target.value)})}
-                            className="w-20 h-8 text-center bg-slate-700"
-                          />
+                        {getStatoBadge(stall.status)}
+                      </td>
+                      <td className="p-2">
+                        {stall.vendor_business_name ? (
+                          <div className="text-white font-medium">{stall.vendor_business_name}</div>
                         ) : (
-                          <span className="text-white font-bold">{record.presenze_totali}</span>
+                          <span className="text-slate-500">-</span>
                         )}
                       </td>
                       <td className="p-2 text-center">
-                        {editingId === record.id ? (
-                          <Input
-                            type="date"
-                            value={editValues.data_prima_presenza || ''}
-                            onChange={(e) => setEditValues({...editValues, data_prima_presenza: e.target.value})}
-                            className="w-32 h-8 bg-slate-700"
-                          />
-                        ) : (
-                          <span className="text-slate-300">{formatDate(record.data_prima_presenza)}</span>
-                        )}
+                        <span className="text-white font-bold">{record?.presenze_totali || 0}</span>
                       </td>
                       <td className="p-2 text-center">
-                        {editingId === record.id ? (
-                          <Input
-                            type="number"
-                            value={editValues.assenze_non_giustificate || 0}
-                            onChange={(e) => setEditValues({...editValues, assenze_non_giustificate: parseInt(e.target.value)})}
-                            className="w-20 h-8 text-center bg-slate-700"
-                          />
-                        ) : (
-                          <span className={record.assenze_non_giustificate >= (record.soglia_revoca * 0.8) ? 'text-red-400 font-bold' : 'text-white'}>
-                            {record.assenze_non_giustificate} / {record.soglia_revoca}
-                          </span>
-                        )}
+                        <span className="text-slate-300">{record ? formatDate(record.data_prima_presenza) : '-'}</span>
                       </td>
                       <td className="p-2 text-center">
-                        {getStatoRevocaBadge(record.stato_revoca)}
+                        <span className={record && record.assenze_non_giustificate >= (record.soglia_revoca * 0.8) ? 'text-red-400 font-bold' : 'text-white'}>
+                          {record ? `${record.assenze_non_giustificate} / ${record.soglia_revoca}` : '-'}
+                        </span>
                       </td>
                       <td className="p-2 text-center">
-                        {editingId === record.id ? (
-                          <div className="flex gap-1 justify-center">
-                            <Button size="sm" variant="ghost" onClick={() => handleSave(record.id)} className="text-green-400 hover:text-green-300">
-                              <Save className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={handleCancel} className="text-red-400 hover:text-red-300">
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button size="sm" variant="ghost" onClick={() => handleEdit(record)} className="text-slate-400 hover:text-white">
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                        )}
+                        {record ? getStatoRevocaBadge(record.stato_revoca) : <Badge className="bg-slate-600">N/A</Badge>}
                       </td>
                     </tr>
-                  ))}
+                  );})
                 </tbody>
               </table>
             </div>

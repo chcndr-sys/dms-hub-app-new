@@ -163,6 +163,7 @@ export default function GestioneMercati() {
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [marketStalls, setMarketStalls] = useState<Stall[]>([]);
 
   useEffect(() => {
     fetchMarkets();
@@ -316,12 +317,12 @@ export default function GestioneMercati() {
 
       {/* Dettaglio Mercato Selezionato */}
       {selectedMarket && (
-        <MarketDetail market={selectedMarket} allMarkets={markets} onUpdate={fetchMarkets} />
+        <MarketDetail market={selectedMarket} allMarkets={markets} onUpdate={fetchMarkets} onStallsLoaded={setMarketStalls} />
       )}
 
       {/* Presenze e Graduatoria */}
       {selectedMarket && (
-        <PresenzeGraduatoriaPanel marketId={selectedMarket.id} marketName={selectedMarket.name} />
+        <PresenzeGraduatoriaPanel marketId={selectedMarket.id} marketName={selectedMarket.name} stalls={marketStalls} />
       )}
     </div>
   );
@@ -330,7 +331,7 @@ export default function GestioneMercati() {
 /**
  * Dettaglio mercato con tab
  */
-function MarketDetail({ market, allMarkets, onUpdate }: { market: Market; allMarkets: Market[]; onUpdate: () => void }) {
+function MarketDetail({ market, allMarkets, onUpdate, onStallsLoaded }: { market: Market; allMarkets: Market[]; onUpdate: () => void; onStallsLoaded?: (stalls: Stall[]) => void }) {
   const [activeTab, setActiveTab] = useState("anagrafica");
   const [stalls, setStalls] = useState<Stall[]>([]);
   // Stato per Vista Italia / Vista Mercato: 'italia' | 'mercato'
@@ -346,6 +347,7 @@ function MarketDetail({ market, allMarkets, onUpdate }: { market: Market; allMar
         const json = await response.json();
         if (json.success && Array.isArray(json.data)) {
           setStalls(json.data);
+          onStallsLoaded?.(json.data);
         }
       } catch (error) {
         console.error('[MarketDetail] Errore caricamento posteggi:', error);
