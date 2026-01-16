@@ -509,6 +509,15 @@ export default function WalletPanel() {
     }
   }, [selectedMercatoId, impreseSearch]);
 
+  // Carica posteggi automaticamente quando cambiano mercato o impresa (v3.52.0)
+  useEffect(() => {
+    if (straordinarioMercatoId && straordinarioMercatoId !== 'all') {
+      loadPosteggiMercato(straordinarioMercatoId, straordinarioImpresaId || undefined);
+    } else {
+      setStraordinarioPosteggiList({posteggi_impresa: [], altri_posteggi: []});
+    }
+  }, [straordinarioMercatoId, straordinarioImpresaId]);
+
   // --- TRANSACTIONS ---
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoadingTx, setIsLoadingTx] = useState(false);
