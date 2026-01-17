@@ -359,12 +359,13 @@ function MarketDetail({ market, allMarkets, onUpdate, onStallsLoaded, onRefreshS
   useEffect(() => {
     fetchStalls();
     // Reset vista all'apertura di un nuovo mercato
-    // Forza immediatamente lo stato italia
+    // Forza la vista Italia inizialmente
     setViewMode('italia');
-    // Uso un piccolo timeout per assicurarmi che la mappa sia pronta prima del trigger
-    setTimeout(() => {
+    // Uso un piccolo timeout per assicurarmi che la mappa sia pronta prima di scatenare l'animazione
+    const timer = setTimeout(() => {
       setViewTrigger(prev => prev + 1);
-    }, 100);
+    }, 800);
+    return () => clearTimeout(timer);
   }, [market.id]);
 
   // Espone la funzione fetchStalls al componente padre
@@ -390,7 +391,7 @@ function MarketDetail({ market, allMarkets, onUpdate, onStallsLoaded, onRefreshS
               // Quando si entra nel tab posteggi, forza sempre Vista Italia
               setViewMode('italia');
               // Trigger per assicurare che la mappa si posizioni correttamente
-              setTimeout(() => setViewTrigger(prev => prev + 1), 100);
+              setTimeout(() => setViewTrigger(prev => prev + 1), 300);
             } else {
               // Quando si esce dal tab posteggi, resetta selezioni
               setSelectedStallId(null);
@@ -411,9 +412,20 @@ function MarketDetail({ market, allMarkets, onUpdate, onStallsLoaded, onRefreshS
             <TabsTrigger 
               value="posteggi"
               className="data-[state=active]:bg-[#14b8a6]/20 data-[state=active]:text-[#14b8a6]"
+              onClick={(e) => {
+                // Se siamo già nel tab posteggi, toggle tra vista Italia e vista Mercato
+                if (activeTab === 'posteggi') {
+                  e.preventDefault();
+                  setViewMode(prev => prev === 'italia' ? 'mercato' : 'italia');
+                  setViewTrigger(prev => prev + 1); // Forza flyTo
+                }
+              }}
             >
               <MapPin className="mr-2 h-4 w-4" />
-              Posteggi
+              {activeTab === 'posteggi' 
+                ? (viewMode === 'italia' ? 'Vista Mercato' : 'Vista Italia')
+                : 'Vista Italia'
+              }
             </TabsTrigger>
             <TabsTrigger 
               value="concessioni"
@@ -429,20 +441,6 @@ function MarketDetail({ market, allMarkets, onUpdate, onStallsLoaded, onRefreshS
           </TabsContent>
 
           <TabsContent value="posteggi" className="space-y-4">
-            <div className="flex justify-center mb-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="bg-[#0b1220]/50 border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/20"
-                onClick={() => {
-                  setViewMode(prev => prev === 'italia' ? 'mercato' : 'italia');
-                  setViewTrigger(prev => prev + 1);
-                }}
-              >
-                <MapPin className="mr-2 h-4 w-4" />
-                {viewMode === 'italia' ? 'Vai a Vista Mercato' : 'Torna a Vista Italia'}
-              </Button>
-            </div>
             <PosteggiTab marketId={market.id} marketCode={market.code} marketCenter={[parseFloat(market.latitude), parseFloat(market.longitude)]} stalls={stalls} setStalls={setStalls} allMarkets={allMarkets} viewMode={viewMode} setViewMode={setViewMode} viewTrigger={viewTrigger} setViewTrigger={setViewTrigger} />
           </TabsContent>
 
