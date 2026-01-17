@@ -326,10 +326,7 @@ export default function GestioneMercati() {
         <MarketDetail market={selectedMarket} allMarkets={markets} onUpdate={fetchMarkets} onStallsLoaded={setMarketStalls} onRefreshStallsReady={setRefreshStallsCallback} />
       )}
 
-      {/* Presenze e Graduatoria */}
-      {selectedMarket && (
-        <PresenzeGraduatoriaPanel marketId={selectedMarket.id} marketName={selectedMarket.name} stalls={marketStalls} onRefreshStalls={refreshStallsCallback || undefined} />
-      )}
+      {/* Pannello Presenze e Graduatoria RIMOSSO - ora integrato nella lista posteggi superiore */}
     </div>
   );
 }
@@ -2115,8 +2112,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   }, 100);
                 }
               }}
-              selectedStallNumber={stalls.find(s => s.id === selectedStallId)?.number ? parseInt(stalls.find(s => s.id === selectedStallId)!.number, 10) : undefined}
-              stallsData={stallsDataForMap.map(s => ({ ...s, number: parseInt(s.number, 10) || 0 }))}
+              selectedStallNumber={stalls.find(s => s.id === selectedStallId)?.number}
+              stallsData={stallsDataForMap}
               allMarkets={allMarkets.map(m => ({
                 id: m.id,
                 name: m.name,
