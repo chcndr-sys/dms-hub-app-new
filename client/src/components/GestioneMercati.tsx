@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -102,52 +102,25 @@ interface Concession {
   stall_id: number;
   vendor_id: number;
   type: string;
-  valid_from: string;
-  valid_to: string | null;
-  market_name: string;
-  stall_number: string;
-  vendor_business_name: string;
-  vendor_code: string;
+  start_date: string;
+  end_date: string;
+  status: string;
 }
 
 interface MarketMapData {
-  container: [number, number][];
   center: { lat: number; lng: number };
   stalls_geojson: {
     type: string;
-    features: Array<{
-      type: string;
-      geometry: {
-        type: 'Point' | 'Polygon';
-        coordinates: [number, number] | [number, number][][];
-      };
-      properties: {
-        number: string;
-        orientation?: number;
-        kind?: string;
-        status?: string;
-        dimensions?: string;
-      };
-    }>;
+    features: any[];
   };
 }
 
-// Interfaccia per i dati completi dell'impresa
 interface CompanyDetails {
-  id: string;
-  code: string;
-  denominazione: string;
-  partita_iva?: string;
-  codice_fiscale?: string;
-  numero_rea?: string;
-  cciaa_sigla?: string;
-  forma_giuridica?: string;
-  stato_impresa?: string;
-  indirizzo_via?: string;
-  indirizzo_civico?: string;
-  indirizzo_cap?: string;
-  indirizzo_provincia?: string;
-  comune?: string;
+  id: number;
+  ragione_sociale: string;
+  piva: string;
+  codice_fiscale: string;
+  email?: string;
   pec?: string;
   referente?: string;
   telefono?: string;
@@ -703,72 +676,30 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
     }
   };
 
-  const handleEdit = (stall: Stall) => {
-    setEditingId(stall.id);
-    setEditData({
-      type: stall.type,
-      status: stall.status
-    });
-  };
-
-  const handleSave = async (stallId: number) => {
+  // Conferma assegnazione spunta
+  const handleConfirmAssignment = async (stallId: number) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editData),
-      });
-
-      if (response.ok) {
-        toast.success('Posteggio aggiornato');
-        setStalls(prev => prev.map(s => s.id === stallId ? { ...s, ...editData } : s));
-        setEditingId(null);
-        setMapRefreshKey(prev => prev + 1);
-        onActionTriggered?.();
-      } else {
-        toast.error('Errore nell\'aggiornamento');
-      }
-    } catch (error) {
-      console.error('Error updating stall:', error);
-      toast.error('Errore nell\'aggiornamento del posteggio');
-    }
-  };
-
-  // Conferma assegnazione posteggio (da riservato a occupato)
-  const handleConfirmAssignment = async (stallId: number, impresaId?: number, walletId?: number) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'occupato' }),
       });
 
       const data = await response.json();
       if (data.success) {
-        if (impresaId && walletId) {
-          try {
-            await fetch(`${API_BASE_URL}/api/presenze/registra`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                market_id: marketId,
-                stall_id: stallId,
-                impresa_id: impresaId,
-                wallet_id: walletId,
-                tipo_presenza: isSpuntaMode ? 'SPUNTA' : 'CONCESSION',
-                giorno_mercato: new Date().toISOString().split('T')[0]
-              })
-            });
-            toast.success('Presenza registrata');
-          } catch (e) {
-            toast.success('Posteggio assegnato (presenza non registrata)');
-          }
-        } else {
-          toast.success('Posteggio assegnato!');
+        try {
+          await fetch(`${API_BASE_URL}/api/presenze/registra-spunta`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              market_id: marketId,
+              stall_id: stallId,
+              giorno_mercato: new Date().toISOString().split('T')[0]
+            })
+          });
+          toast.success('Assegnazione confermata');
+        } catch (e) {
+          toast.success('Posteggio assegnato');
         }
         
         setStalls(prev => prev.map(s => s.id === stallId ? { ...s, status: 'occupato' } : s));
@@ -784,7 +715,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   };
 
   // Occupa un posteggio libero
-  const handleOccupaStall = async (stallId: number, impresaId?: number, walletId?: number) => {
+  const handleOccupaStall = async (stallId: number) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
         method: 'PATCH',
@@ -794,9 +725,13 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
       const data = await response.json();
       if (data.success) {
-        if (impresaId && walletId) {
+        const stall = stalls.find(s => s.id === stallId);
+        const impresaId = stall?.impresa_id || concessionsByStallId[stall?.number || '']?.impresa_id;
+        const walletId = 1; // Default wallet
+
+        if (impresaId) {
           try {
-            await fetch(`${API_BASE_URL}/api/presenze/registra`, {
+            await fetch(`${API_BASE_URL}/api/presenze/registra-arrivo`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -864,6 +799,11 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
     } catch (error) {
       toast.error('Errore durante la liberazione');
     }
+  };
+
+  const handleEdit = (stall: Stall) => {
+    setEditingId(stall.id);
+    setEditData(stall);
   };
 
   const handleCancel = () => {
@@ -948,7 +888,6 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               size="sm"
               variant="outline"
               className="text-xs text-[#f59e0b] border-[#f59e0b]/50"
-              onClick={() => toast.info('Funzione Prepara Spunta')}
             >
               🟠 Prepara
             </Button>
