@@ -1294,6 +1294,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   const [isSpuntaMode, setIsSpuntaMode] = useState(false);
   const [isOccupaMode, setIsOccupaMode] = useState(false);
   const [isLiberaMode, setIsLiberaMode] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false); // Animazione in corso
+  const stopAnimationRef = React.useRef(false); // Flag per fermare l'animazione
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [selectedCompanyForModal, setSelectedCompanyForModal] = useState<CompanyRow | null>(null);
   const listContainerRef = React.useRef<HTMLDivElement>(null);
@@ -1645,43 +1647,19 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
     <div className="space-y-4">
       {/* Statistiche Posteggi - Con Pulsanti Azione */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Indicatore OCCUPATI - Pulsante Libera (per uscita serale) */}
+        {/* Indicatore OCCUPATI - Pulsante Occupa (per occupare i liberi) */}
         <div className={`bg-[#ef4444]/10 border p-4 rounded-lg relative ${
-          isLiberaMode ? 'border-[#ef4444] ring-2 ring-[#ef4444]/50' : 'border-[#ef4444]/30'
+          isOccupaMode ? 'border-[#ef4444] ring-2 ring-[#ef4444]/50' : 'border-[#ef4444]/30'
         }`}>
           <div className="text-sm text-[#ef4444] mb-1">Occupati</div>
           <div className="text-3xl font-bold text-[#ef4444]">{occupiedCount}</div>
           <Button
             size="sm"
-            variant={isLiberaMode ? "default" : "outline"}
-            className={`absolute top-2 right-2 text-xs ${
-              isLiberaMode 
-                ? 'bg-[#ef4444] hover:bg-[#ef4444]/80 text-white border-[#ef4444]' 
-                : 'bg-transparent hover:bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/50'
-            }`}
-            onClick={() => {
-              setIsLiberaMode(!isLiberaMode);
-              setIsOccupaMode(false);
-              setIsSpuntaMode(false);
-            }}
-          >
-            🚮 Libera
-          </Button>
-        </div>
-        
-        {/* Indicatore LIBERI - Pulsante Occupa (per arrivo ambulante) */}
-        <div className={`bg-[#10b981]/10 border p-4 rounded-lg relative ${
-          isOccupaMode ? 'border-[#10b981] ring-2 ring-[#10b981]/50' : 'border-[#10b981]/30'
-        }`}>
-          <div className="text-sm text-[#10b981] mb-1">Liberi</div>
-          <div className="text-3xl font-bold text-[#10b981]">{freeCount}</div>
-          <Button
-            size="sm"
             variant={isOccupaMode ? "default" : "outline"}
             className={`absolute top-2 right-2 text-xs ${
               isOccupaMode 
-                ? 'bg-[#10b981] hover:bg-[#10b981]/80 text-white border-[#10b981]' 
-                : 'bg-transparent hover:bg-[#10b981]/20 text-[#10b981] border-[#10b981]/50'
+                ? 'bg-[#ef4444] hover:bg-[#ef4444]/80 text-white border-[#ef4444]' 
+                : 'bg-transparent hover:bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/50'
             }`}
             onClick={() => {
               setIsOccupaMode(!isOccupaMode);
@@ -1693,7 +1671,31 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
           </Button>
         </div>
         
-        {/* Indicatore RISERVATI - Due Pulsanti: Libera + Spunta */}
+        {/* Indicatore LIBERI - Pulsante Libera (per liberare gli occupati) */}
+        <div className={`bg-[#10b981]/10 border p-4 rounded-lg relative ${
+          isLiberaMode ? 'border-[#10b981] ring-2 ring-[#10b981]/50' : 'border-[#10b981]/30'
+        }`}>
+          <div className="text-sm text-[#10b981] mb-1">Liberi</div>
+          <div className="text-3xl font-bold text-[#10b981]">{freeCount}</div>
+          <Button
+            size="sm"
+            variant={isLiberaMode ? "default" : "outline"}
+            className={`absolute top-2 right-2 text-xs ${
+              isLiberaMode 
+                ? 'bg-[#10b981] hover:bg-[#10b981]/80 text-white border-[#10b981]' 
+                : 'bg-transparent hover:bg-[#10b981]/20 text-[#10b981] border-[#10b981]/50'
+            }`}
+            onClick={() => {
+              setIsLiberaMode(!isLiberaMode);
+              setIsOccupaMode(false);
+              setIsSpuntaMode(false);
+            }}
+          >
+            🚮 Libera
+          </Button>
+        </div>
+        
+        {/* Indicatore RISERVATI - Due Pulsanti: Prepara Spunta + Spunta */}
         <div className={`bg-[#f59e0b]/10 border p-4 rounded-lg relative ${
           isSpuntaMode ? 'border-[#f59e0b] ring-2 ring-[#f59e0b]/50' : 'border-[#f59e0b]/30'
         }`}>
@@ -1703,42 +1705,42 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
             <Button
               size="sm"
               variant="outline"
-              className="text-xs bg-transparent hover:bg-[#10b981]/20 text-[#10b981] border-[#10b981]/50"
+              className="text-xs bg-transparent hover:bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/50"
               onClick={() => {
-                // Libera tutti i riservati -> diventano liberi
-                const reservedStalls = stalls.filter(s => s.status === 'riservato');
-                if (reservedStalls.length === 0) {
-                  toast.info('Nessun posteggio riservato da liberare');
+                // Prepara Spunta: liberi -> riservati (per spuntisti)
+                const freeStalls = stalls.filter(s => s.status === 'libero');
+                if (freeStalls.length === 0) {
+                  toast.info('Nessun posteggio libero da preparare per la spunta');
                   return;
                 }
                 const confirmed = window.confirm(
-                  `Liberare ${reservedStalls.length} posteggi riservati?\n\nTutti i posteggi riservati diventeranno liberi.`
+                  `Preparare ${freeStalls.length} posteggi liberi per la spunta?\n\nTutti i posteggi liberi diventeranno riservati (arancioni) pronti per l'assegnazione spunta.`
                 );
                 if (!confirmed) return;
                 
                 (async () => {
                   let successCount = 0;
-                  for (const stall of reservedStalls) {
+                  for (const stall of freeStalls) {
                     try {
                       await fetch(`/api/stalls/${stall.id}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: 'libero' })
+                        body: JSON.stringify({ status: 'riservato' })
                       });
                       successCount++;
                     } catch (error) {
-                      console.error(`Errore liberazione posteggio ${stall.number}:`, error);
+                      console.error(`Errore preparazione posteggio ${stall.number}:`, error);
                     }
                   }
                   if (successCount > 0) {
-                    toast.success(`${successCount} posteggi liberati!`);
+                    toast.success(`${successCount} posteggi pronti per la spunta!`);
                     await fetchData();
                     setMapRefreshKey(prev => prev + 1);
                   }
                 })();
               }}
             >
-              🟢 Libera
+              🟠 Prepara
             </Button>
             <Button
               size="sm"
@@ -1764,8 +1766,19 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       {isLiberaMode && (
         <div className="mb-4">
           <Button
-            className="w-full bg-[#ef4444] hover:bg-[#ef4444]/80 text-white font-semibold py-3 border-2 border-[#ef4444]/50"
+            className={`w-full font-semibold py-3 border-2 ${
+              isAnimating 
+                ? 'bg-gray-600 hover:bg-gray-500 border-gray-500 text-white' 
+                : 'bg-[#10b981] hover:bg-[#10b981]/80 border-[#10b981]/50 text-white'
+            }`}
             onClick={async () => {
+              // Se animazione in corso, ferma
+              if (isAnimating) {
+                stopAnimationRef.current = true;
+                toast.info('Animazione fermata!');
+                return;
+              }
+              
               const occupiedStalls = stalls.filter(s => s.status === 'occupato');
               if (occupiedStalls.length === 0) {
                 toast.info('Nessun posteggio occupato da liberare');
@@ -1774,16 +1787,23 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               
               const confirmed = window.confirm(
                 `Liberare ${occupiedStalls.length} posteggi occupati?\n\n` +
-                `Tutti i posteggi occupati diventeranno liberi e verrà registrata l'uscita.`
+                `Tutti i posteggi occupati diventeranno liberi e verrà registrata l'uscita.\n\nPuoi cliccare STOP per fermare l'animazione.`
               );
               
               if (!confirmed) return;
               
               try {
+                setIsAnimating(true);
+                stopAnimationRef.current = false;
                 let successCount = 0;
                 let errorCount = 0;
                 
                 for (const stall of occupiedStalls) {
+                  // Controlla se l'utente ha cliccato STOP
+                  if (stopAnimationRef.current) {
+                    toast.info(`Animazione fermata dopo ${successCount} posteggi`);
+                    break;
+                  }
                   try {
                     await handleLiberaStall(stall.id);
                     successCount++;
@@ -1793,7 +1813,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   }
                 }
                 
-                if (successCount > 0) {
+                if (successCount > 0 && !stopAnimationRef.current) {
                   toast.success(`${successCount} posteggi liberati con successo!`);
                 }
                 if (errorCount > 0) {
@@ -1802,14 +1822,18 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 
                 await fetchData();
                 setMapRefreshKey(prev => prev + 1);
-                setIsLiberaMode(false);
+                setIsAnimating(false);
+                if (!stopAnimationRef.current) {
+                  setIsLiberaMode(false);
+                }
               } catch (error) {
                 console.error('Errore liberazione posteggi:', error);
                 toast.error('Errore durante la liberazione dei posteggi');
+                setIsAnimating(false);
               }
             }}
           >
-            🚮 Libera Tutti ({occupiedCount} posteggi)
+            {isAnimating ? '⏹ STOP' : `🚮 Libera Tutti (${occupiedCount} posteggi)`}
           </Button>
         </div>
       )}
@@ -1818,8 +1842,19 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       {isOccupaMode && (
         <div className="mb-4">
           <Button
-            className="w-full bg-[#10b981] hover:bg-[#10b981]/80 text-white font-semibold py-3 border-2 border-[#10b981]/50"
+            className={`w-full font-semibold py-3 border-2 ${
+              isAnimating 
+                ? 'bg-gray-600 hover:bg-gray-500 border-gray-500 text-white' 
+                : 'bg-[#ef4444] hover:bg-[#ef4444]/80 border-[#ef4444]/50 text-white'
+            }`}
             onClick={async () => {
+              // Se animazione in corso, ferma
+              if (isAnimating) {
+                stopAnimationRef.current = true;
+                toast.info('Animazione fermata!');
+                return;
+              }
+              
               const freeStalls = stalls.filter(s => s.status === 'libero');
               if (freeStalls.length === 0) {
                 toast.info('Nessun posteggio libero da occupare');
@@ -1828,16 +1863,23 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               
               const confirmed = window.confirm(
                 `Occupare ${freeStalls.length} posteggi liberi?\n\n` +
-                `Tutti i posteggi liberi diventeranno occupati e verrà registrato l'arrivo.`
+                `Tutti i posteggi liberi diventeranno occupati e verrà registrato l'arrivo.\n\nPuoi cliccare STOP per fermare l'animazione.`
               );
               
               if (!confirmed) return;
               
               try {
+                setIsAnimating(true);
+                stopAnimationRef.current = false;
                 let successCount = 0;
                 let errorCount = 0;
                 
                 for (const stall of freeStalls) {
+                  // Controlla se l'utente ha cliccato STOP
+                  if (stopAnimationRef.current) {
+                    toast.info(`Animazione fermata dopo ${successCount} posteggi`);
+                    break;
+                  }
                   try {
                     await handleOccupaStall(stall.id);
                     successCount++;
@@ -1847,7 +1889,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   }
                 }
                 
-                if (successCount > 0) {
+                if (successCount > 0 && !stopAnimationRef.current) {
                   toast.success(`${successCount} posteggi occupati con successo!`);
                 }
                 if (errorCount > 0) {
@@ -1856,14 +1898,18 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 
                 await fetchData();
                 setMapRefreshKey(prev => prev + 1);
-                setIsOccupaMode(false);
+                setIsAnimating(false);
+                if (!stopAnimationRef.current) {
+                  setIsOccupaMode(false);
+                }
               } catch (error) {
                 console.error('Errore occupazione posteggi:', error);
                 toast.error('Errore durante l\'occupazione dei posteggi');
+                setIsAnimating(false);
               }
             }}
           >
-            ✅ Occupa Tutti ({freeCount} posteggi)
+            {isAnimating ? '⏹ STOP' : `✅ Occupa Tutti (${freeCount} posteggi)`}
           </Button>
         </div>
       )}
@@ -1872,8 +1918,19 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       {isSpuntaMode && (
         <div className="mb-4">
           <Button
-            className="w-full bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white font-semibold py-3 border-2 border-[#f59e0b]/50"
+            className={`w-full font-semibold py-3 border-2 ${
+              isAnimating 
+                ? 'bg-gray-600 hover:bg-gray-500 border-gray-500 text-white' 
+                : 'bg-[#f59e0b] hover:bg-[#f59e0b]/80 border-[#f59e0b]/50 text-white'
+            }`}
             onClick={async () => {
+              // Se animazione in corso, ferma
+              if (isAnimating) {
+                stopAnimationRef.current = true;
+                toast.info('Animazione fermata!');
+                return;
+              }
+              
               const reservedStalls = stalls.filter(s => s.status === 'riservato');
               if (reservedStalls.length === 0) {
                 toast.info('Nessun posteggio riservato da confermare');
@@ -1882,16 +1939,23 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               
               const confirmed = window.confirm(
                 `Confermare l'assegnazione di ${reservedStalls.length} posteggi riservati?\n\n` +
-                `Tutti i posteggi riservati diventeranno occupati.`
+                `Tutti i posteggi riservati diventeranno occupati.\n\nPuoi cliccare STOP per fermare l'animazione.`
               );
               
               if (!confirmed) return;
               
               try {
+                setIsAnimating(true);
+                stopAnimationRef.current = false;
                 let successCount = 0;
                 let errorCount = 0;
                 
                 for (const stall of reservedStalls) {
+                  // Controlla se l'utente ha cliccato STOP
+                  if (stopAnimationRef.current) {
+                    toast.info(`Animazione fermata dopo ${successCount} posteggi`);
+                    break;
+                  }
                   try {
                     await handleConfirmAssignment(stall.id);
                     successCount++;
@@ -1901,7 +1965,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   }
                 }
                 
-                if (successCount > 0) {
+                if (successCount > 0 && !stopAnimationRef.current) {
                   toast.success(`${successCount} posteggi confermati con successo!`);
                 }
                 if (errorCount > 0) {
@@ -1911,14 +1975,18 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 // Ricarica dati
                 await fetchData();
                 setMapRefreshKey(prev => prev + 1);
-                setIsSpuntaMode(false);
+                setIsAnimating(false);
+                if (!stopAnimationRef.current) {
+                  setIsSpuntaMode(false);
+                }
               } catch (error) {
                 console.error('Errore conferma assegnazioni:', error);
                 toast.error('Errore durante la conferma delle assegnazioni');
+                setIsAnimating(false);
               }
             }}
           >
-            ✓ Conferma Assegnazione ({reservedCount} posteggi)
+            {isAnimating ? '⏹ STOP' : `✓ Conferma Assegnazione (${reservedCount} posteggi)`}
           </Button>
         </div>
       )}
