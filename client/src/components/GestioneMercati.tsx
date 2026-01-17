@@ -1746,19 +1746,25 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                       break;
                     }
                     try {
-                      // Usa tRPC invece di fetch REST e mappa lo stato correttamente
-                      await updateStallStatus.mutateAsync({
-                        stallId: stall.id,
-                        status: 'reserved'
+                      // Usa fetch REST come handleOccupaStall e handleLiberaStall
+                      const response = await fetch(`${API_BASE_URL}/api/stalls/${stall.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'riservato' }),
                       });
-                      
-                      successCount++;
-                      // Aggiorna lo stato locale per vedere l'animazione
-                      setStalls(prev => prev.map(s => 
-                        s.id === stall.id ? { ...s, status: 'reserved' } : s
-                      ));
-                      // Piccolo delay per l'animazione
-                      await new Promise(resolve => setTimeout(resolve, 100));
+
+                      const data = await response.json();
+                      if (data.success) {
+                        successCount++;
+                        // Aggiorna lo stato locale per vedere l'animazione
+                        setStalls(prev => prev.map(s => 
+                          s.id === stall.id ? { ...s, status: 'riservato' } : s
+                        ));
+                        // Piccolo delay per l'animazione
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                      } else {
+                        errorCount++;
+                      }
                     } catch (error) {
                       console.error(`Errore preparazione posteggio ${stall.number}:`, error);
                       errorCount++;
