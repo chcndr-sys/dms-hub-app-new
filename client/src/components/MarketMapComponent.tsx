@@ -100,6 +100,21 @@ interface MapControllerProps {
 }
 
 function MapCenterController(props: MapControllerProps) {
+  const map = useMap();
+  
+  // Forza invalidateSize quando cambia il trigger (es. cambio tab o vista)
+  useEffect(() => {
+    if (props.trigger !== undefined) {
+      console.log('[MapCenterController] Forzando invalidateSize per trigger:', props.trigger);
+      // Invalidate size immediato e uno ritardato per sicurezza
+      map.invalidateSize();
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [props.trigger, map]);
+
   useMapAnimation(props);
   return null;
 }
@@ -174,14 +189,9 @@ export function MarketMapComponent({
   selectedStallCenter
 }: MarketMapComponentProps) {
   
-  // Ottieni lo stato di animazione dal context per nascondere poligoni durante zoom
-  const { isAnimating } = useAnimation();
-  
-  // Se showItalyView è true e non c'è un center specifico, usa coordinate Italia
+  // Ottieni lo stato di animazione dal context per nascondere poligoni durante z  // Se showItalyView è true e non c'è un center specifico, usa coordinate Italia
   // Se mapData è null (vista Italia), usa coordinate Italia come fallback
-  const mapCenter: [number, number] = center || (showItalyView || !mapData ? [42.5, 12.5] : [mapData.center.lat, mapData.center.lng]);
-  
-  // Rimosso stato locale ridondante che causava loop
+  const mapCenter: [number, number] = center || (showItalyView || !mapData ? [42.5, 12.5] : [mapData.center.lat, mapData.center.lng]);tato locale ridondante che causava loop
   // L'animazione è gestita direttamente da MapCenterController tramite useAnimation
 
   // Ref per gestire la chiusura automatica dei popup
@@ -328,7 +338,7 @@ export function MarketMapComponent({
           {/* Controller per centrare mappa programmaticamente (cambio vista Italia/Mercato) */}
           <MapCenterController 
             center={mapCenter} 
-            zoom={zoom} 
+            zoom={showItalyView ? 6 : zoom} 
             trigger={viewTrigger}
             bounds={marketBounds || undefined}
             isMarketView={!showItalyView}
