@@ -245,8 +245,8 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
         setTestMercatoActive(true);
         setSpuntaActive(false);
         fetchTestMercatoStato();
-        // Ricarica i dati
-        window.location.reload();
+        fetchGraduatoria();
+        fetchPresenze();
       } else {
         toast.error(data.error);
       }
@@ -294,8 +294,8 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
         setSpuntaActive(true);
         fetchTestMercatoStato();
         fetchSpuntisti();
-        // Ricarica i dati
-        window.location.reload();
+        fetchGraduatoria();
+        fetchPresenze();
       } else {
         toast.error(data.error);
       }
@@ -344,7 +344,9 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
         setTestMercatoActive(false);
         setSpuntaActive(false);
         fetchTestMercatoStato();
-        window.location.reload();
+        fetchGraduatoria();
+        fetchPresenze();
+        fetchSpuntisti();
       } else {
         toast.error(data.error);
       }
