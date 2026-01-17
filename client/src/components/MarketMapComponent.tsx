@@ -784,52 +784,89 @@ export function MarketMapComponent({
                             );
                           })()}
                           
-                          {/* Intestatario (se presente) */}
-                          {displayVendor !== '-' && (
-                            <div className="bg-[#1e293b] p-3 rounded border border-gray-700">
-                              <div className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider">IMPRESA INTESTATARIA</div>
-                              <div className="font-medium text-white flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-indigo-900/50 flex items-center justify-center text-indigo-400 text-xs border border-indigo-800">
-                                  {displayVendor.charAt(0)}
-                                </div>
-                                <span className="truncate">{displayVendor}</span>
-                              </div>
-                            </div>
-                          )}
+	                          {/* Intestatario (se presente) */}
+	                          {displayVendor !== '-' && (
+	                            <div className="bg-[#1e293b] p-3 rounded border border-gray-700">
+	                              <div className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider">IMPRESA INTESTATARIA</div>
+	                              <div className="font-medium text-white flex items-center gap-2">
+	                                <div className="w-6 h-6 rounded-full bg-indigo-900/50 flex items-center justify-center text-indigo-400 text-xs border border-indigo-800">
+	                                  {displayVendor.charAt(0)}
+	                                </div>
+	                                <span className="truncate">{displayVendor}</span>
+	                              </div>
+	                            </div>
+	                          )}
+	
+	                          {/* Pulsante Visita Vetrina (se presente) */}
+	                          {(dbStall?.vendor_name || props.vendor_name) && (
+	                            <Link 
+	                              href={(() => {
+	                                const companyId = dbStall?.impresa_id || props.impresa_id || props.company_id;
+	                                if (!companyId) {
+	                                  const name = dbStall?.vendor_name || props.vendor_name;
+	                                  if (name) return `/vetrine?q=${encodeURIComponent(name)}`;
+	                                  return '/vetrine';
+	                                }
+	                                return `/vetrine/${companyId}`;
+	                              })()}
+	                              className="flex items-center justify-center gap-2 w-full bg-[#14b8a6] hover:bg-[#0d9488] text-white font-medium py-2.5 px-4 rounded transition-all hover:shadow-[0_0_15px_rgba(20,184,166,0.3)] text-sm cursor-pointer"
+	                            >
+	                              <span>🏪</span>
+	                              <span>Visita Vetrina</span>
+	                            </Link>
+	                          )}
+	
+	                          {/* Canone di occupazione */}
+	                          <div className="bg-[#1e3a8a]/20 p-3 rounded border border-[#1e3a8a]/50">
+	                            <div className="flex justify-between items-center">
+	                              <span className="text-sm font-semibold text-blue-400">💶 Canone:</span>
+	                              <div className="flex items-center bg-[#0b1220] px-2 py-1 rounded border border-blue-500/30">
+	                                <span className="text-gray-500 mr-1">€</span>
+	                                <input 
+	                                  type="text" 
+	                                  defaultValue="15,00"
+	                                  className="w-16 text-right font-bold text-blue-400 outline-none bg-transparent"
+	                                />
+	                              </div>
+	                            </div>
+	                          </div>
 
-                          {/* Pulsante Visita Vetrina (se presente) */}
-                          {(dbStall?.vendor_name || props.vendor_name) && (
-                            <Link 
-                              href={(() => {
-                                const companyId = dbStall?.impresa_id || props.impresa_id || props.company_id;
-                                if (!companyId) {
-                                  const name = dbStall?.vendor_name || props.vendor_name;
-                                  if (name) return `/vetrine?q=${encodeURIComponent(name)}`;
-                                  return '/vetrine';
-                                }
-                                return `/vetrine/${companyId}`;
-                              })()}
-                              className="flex items-center justify-center gap-2 w-full bg-[#14b8a6] hover:bg-[#0d9488] text-white font-medium py-2.5 px-4 rounded transition-all hover:shadow-[0_0_15px_rgba(20,184,166,0.3)] text-sm cursor-pointer"
-                            >
-                              <span>🏪</span>
-                              <span>Visita Vetrina</span>
-                            </Link>
-                          )}
+	                          {/* PULSANTI DI AZIONE (OCCUPA / LIBERA / SPUNTA) */}
+	                          {isOccupaMode && displayStatus === 'libero' && (
+	                            <button
+	                              className="w-full bg-[#ef4444] hover:bg-[#ef4444]/80 text-white font-bold py-3 px-4 rounded transition-colors shadow-lg shadow-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+	                              onClick={async (e) => {
+	                                e.stopPropagation();
+	                                if (onOccupaStall && dbStall?.id) await onOccupaStall(dbStall.id);
+	                              }}
+	                            >
+	                              ✅ Conferma Occupazione
+	                            </button>
+	                          )}
 
-                          {/* Canone di occupazione */}
-                          <div className="bg-[#1e3a8a]/20 p-3 rounded border border-[#1e3a8a]/50">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-semibold text-blue-400">💶 Canone:</span>
-                              <div className="flex items-center bg-[#0b1220] px-2 py-1 rounded border border-blue-500/30">
-                                <span className="text-gray-500 mr-1">€</span>
-                                <input 
-                                  type="text" 
-                                  defaultValue="15,00"
-                                  className="w-16 text-right font-bold text-blue-400 outline-none bg-transparent"
-                                />
-                              </div>
-                            </div>
-                          </div>
+	                          {isLiberaMode && displayStatus === 'occupato' && (
+	                            <button
+	                              className="w-full bg-[#10b981] hover:bg-[#10b981]/80 text-white font-bold py-3 px-4 rounded transition-colors shadow-lg shadow-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+	                              onClick={async (e) => {
+	                                e.stopPropagation();
+	                                if (onLiberaStall && dbStall?.id) await onLiberaStall(dbStall.id);
+	                              }}
+	                            >
+	                              🚮 Conferma Liberazione
+	                            </button>
+	                          )}
+
+	                          {isSpuntaMode && displayStatus === 'riservato' && (
+	                            <button
+	                              className="w-full bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white font-bold py-3 px-4 rounded transition-colors shadow-lg shadow-orange-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+	                              onClick={async (e) => {
+	                                e.stopPropagation();
+	                                if (onConfirmAssignment && dbStall?.id) await onConfirmAssignment(dbStall.id);
+	                              }}
+	                            >
+	                              ✓ Conferma Assegnazione
+	                            </button>
+	                          )}
                           
                           {/* Pulsante Conferma Assegnazione */}
                           <button
