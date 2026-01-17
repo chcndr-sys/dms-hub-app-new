@@ -303,6 +303,12 @@ export function MarketMapComponent({
           zoomSnap={0.25}
           zoomDelta={0.25}
           ref={mapRef}
+          scrollWheelZoom={false}
+          dragging={false}
+          doubleClickZoom={false}
+          touchZoom={false}
+          boxZoom={false}
+          keyboard={false}
         >
           <LayersControl position="topright">
             <LayersControl.BaseLayer checked name="CartoDB Dark">
