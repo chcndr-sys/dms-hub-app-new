@@ -189,9 +189,13 @@ export function MarketMapComponent({
   selectedStallCenter
 }: MarketMapComponentProps) {
   
-  // Ottieni lo stato di animazione dal context per nascondere poligoni durante z  // Se showItalyView è true e non c'è un center specifico, usa coordinate Italia
+  // Ottieni lo stato di animazione dal context per nascondere poligoni durante zoom
+  const { isAnimating } = useAnimation();
+  
+  // Se showItalyView è true e non c'è un center specifico, usa coordinate Italia
   // Se mapData è null (vista Italia), usa coordinate Italia come fallback
-  const mapCenter: [number, number] = center || (showItalyView || !mapData ? [42.5, 12.5] : [mapData.center.lat, mapData.center.lng]);tato locale ridondante che causava loop
+  const mapCenter: [number, number] = center || (showItalyView || !mapData ? [42.5, 12.5] : [mapData.center.lat, mapData.center.lng]);
+  
   // L'animazione è gestita direttamente da MapCenterController tramite useAnimation
 
   // Ref per gestire la chiusura automatica dei popup
