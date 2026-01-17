@@ -2070,8 +2070,6 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               center={viewMode === 'mercato' ? marketCenter : [42.5, 12.5] as [number, number]}
               zoom={viewMode === 'mercato' ? 17 : 6}
               height="100%"
-              interactive={false}
-              defaultLayer="light"
               isSpuntaMode={isSpuntaMode}
               isOccupaMode={isOccupaMode}
               isLiberaMode={isLiberaMode}
