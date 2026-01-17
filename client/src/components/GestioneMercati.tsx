@@ -361,10 +361,12 @@ function MarketDetail({ market, allMarkets, onUpdate, onStallsLoaded, onRefreshS
     // Reset vista all'apertura di un nuovo mercato
     // Forza la vista Italia inizialmente
     setViewMode('italia');
-    // Uso un piccolo timeout per assicurarmi che la mappa sia pronta prima di scatenare l'animazione
+    // Primo trigger immediato per inizializzare lastTriggerRef
+    setViewTrigger(prev => prev + 1);
+    // Secondo trigger ritardato per forzare il flyTo verso Italia
     const timer = setTimeout(() => {
       setViewTrigger(prev => prev + 1);
-    }, 800);
+    }, 1200);
     return () => clearTimeout(timer);
   }, [market.id]);
 
