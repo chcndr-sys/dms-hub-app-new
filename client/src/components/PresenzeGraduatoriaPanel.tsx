@@ -46,9 +46,16 @@ interface GraduatoriaRecord {
   impresa_piva: string;
   codice_fiscale: string;
   stall_number: string;
+  stall_status: string;
   wallet_balance: number;
   wallet_type: string;
   annual_market_days: number;
+  // Dati presenza odierna
+  presenza_giorno: string;
+  presenza_accesso: string;
+  presenza_rifiuti: string;
+  presenza_uscita: string;
+  presenza_importo: number;
 }
 
 interface PresenzaRecord {
@@ -657,16 +664,16 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [] }: 
                         )}
                       </td>
                       <td className="p-1 text-center text-slate-300">
-                        {presenza?.giorno_presenza ? new Date(presenza.giorno_presenza).toLocaleDateString('it-IT', {weekday: 'short', day: '2-digit', month: '2-digit'}) : '-'}
+                        {presenza?.giorno_mercato ? new Date(presenza.giorno_mercato).toLocaleDateString('it-IT', {weekday: 'short', day: '2-digit', month: '2-digit'}) : '-'}
                       </td>
                       <td className="p-1 text-center text-green-400">
-                        {presenza?.orario_accesso || '-'}
+                        {presenza?.checkin_time ? new Date(presenza.checkin_time).toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) : '-'}
                       </td>
                       <td className="p-1 text-center text-orange-400">
-                        {presenza?.orario_rifiuti || '-'}
+                        {presenza?.orario_deposito_rifiuti ? new Date(presenza.orario_deposito_rifiuti).toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) : '-'}
                       </td>
                       <td className="p-1 text-center text-blue-400">
-                        {presenza?.orario_uscita || '-'}
+                        {presenza?.checkout_time ? new Date(presenza.checkout_time).toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) : '-'}
                       </td>
                       <td className="p-1 text-center">
                         <button 
