@@ -359,15 +359,12 @@ function MarketDetail({ market, allMarkets, onUpdate, onStallsLoaded, onRefreshS
   useEffect(() => {
     fetchStalls();
     // Reset vista all'apertura di un nuovo mercato
-    // Forza la vista Italia inizialmente
+    // Forza immediatamente lo stato italia
     setViewMode('italia');
-    // Primo trigger immediato per inizializzare lastTriggerRef
-    setViewTrigger(prev => prev + 1);
-    // Secondo trigger ritardato per forzare il flyTo verso Italia
-    const timer = setTimeout(() => {
+    // Uso un piccolo timeout per assicurarmi che la mappa sia pronta prima del trigger
+    setTimeout(() => {
       setViewTrigger(prev => prev + 1);
-    }, 1200);
-    return () => clearTimeout(timer);
+    }, 100);
   }, [market.id]);
 
   // Espone la funzione fetchStalls al componente padre
@@ -393,7 +390,7 @@ function MarketDetail({ market, allMarkets, onUpdate, onStallsLoaded, onRefreshS
               // Quando si entra nel tab posteggi, forza sempre Vista Italia
               setViewMode('italia');
               // Trigger per assicurare che la mappa si posizioni correttamente
-              setTimeout(() => setViewTrigger(prev => prev + 1), 300);
+              setTimeout(() => setViewTrigger(prev => prev + 1), 100);
             } else {
               // Quando si esce dal tab posteggi, resetta selezioni
               setSelectedStallId(null);
@@ -414,20 +411,9 @@ function MarketDetail({ market, allMarkets, onUpdate, onStallsLoaded, onRefreshS
             <TabsTrigger 
               value="posteggi"
               className="data-[state=active]:bg-[#14b8a6]/20 data-[state=active]:text-[#14b8a6]"
-              onClick={(e) => {
-                // Se siamo già nel tab posteggi, toggle tra vista Italia e vista Mercato
-                if (activeTab === 'posteggi') {
-                  e.preventDefault();
-                  setViewMode(prev => prev === 'italia' ? 'mercato' : 'italia');
-                  setViewTrigger(prev => prev + 1); // Forza flyTo
-                }
-              }}
             >
               <MapPin className="mr-2 h-4 w-4" />
-              {activeTab === 'posteggi' 
-                ? (viewMode === 'italia' ? 'Vista Mercato' : 'Vista Italia')
-                : 'Vista Italia'
-              }
+              Posteggi
             </TabsTrigger>
             <TabsTrigger 
               value="concessioni"
