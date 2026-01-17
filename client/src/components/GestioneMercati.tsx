@@ -1643,9 +1643,9 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
   return (
     <div className="space-y-4">
-      {/* Statistiche Posteggi - Con Pulsanti Sempre Visibili */}
+      {/* Statistiche Posteggi - Con Pulsanti Azione */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Indicatore OCCUPATI - Pulsante Libera */}
+        {/* Indicatore OCCUPATI - Pulsante Libera (per uscita serale) */}
         <div className={`bg-[#ef4444]/10 border p-4 rounded-lg relative ${
           isLiberaMode ? 'border-[#ef4444] ring-2 ring-[#ef4444]/50' : 'border-[#ef4444]/30'
         }`}>
@@ -1669,7 +1669,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
           </Button>
         </div>
         
-        {/* Indicatore LIBERI - Pulsante Occupa */}
+        {/* Indicatore LIBERI - Pulsante Occupa (per arrivo ambulante) */}
         <div className={`bg-[#10b981]/10 border p-4 rounded-lg relative ${
           isOccupaMode ? 'border-[#10b981] ring-2 ring-[#10b981]/50' : 'border-[#10b981]/30'
         }`}>
@@ -1693,28 +1693,70 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
           </Button>
         </div>
         
-        {/* Indicatore RISERVATI - Pulsante Spunta */}
+        {/* Indicatore RISERVATI - Due Pulsanti: Libera + Spunta */}
         <div className={`bg-[#f59e0b]/10 border p-4 rounded-lg relative ${
           isSpuntaMode ? 'border-[#f59e0b] ring-2 ring-[#f59e0b]/50' : 'border-[#f59e0b]/30'
         }`}>
           <div className="text-sm text-[#f59e0b] mb-1">Riservati</div>
           <div className="text-3xl font-bold text-[#f59e0b]">{reservedCount}</div>
-          <Button
-            size="sm"
-            variant={isSpuntaMode ? "default" : "outline"}
-            className={`absolute top-2 right-2 text-xs ${
-              isSpuntaMode 
-                ? 'bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white border-[#f59e0b]' 
-                : 'bg-transparent hover:bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/50'
-            }`}
-            onClick={() => {
-              setIsSpuntaMode(!isSpuntaMode);
-              setIsOccupaMode(false);
-              setIsLiberaMode(false);
-            }}
-          >
-            ✓ Spunta
-          </Button>
+          <div className="absolute top-2 right-2 flex gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs bg-transparent hover:bg-[#10b981]/20 text-[#10b981] border-[#10b981]/50"
+              onClick={() => {
+                // Libera tutti i riservati -> diventano liberi
+                const reservedStalls = stalls.filter(s => s.status === 'riservato');
+                if (reservedStalls.length === 0) {
+                  toast.info('Nessun posteggio riservato da liberare');
+                  return;
+                }
+                const confirmed = window.confirm(
+                  `Liberare ${reservedStalls.length} posteggi riservati?\n\nTutti i posteggi riservati diventeranno liberi.`
+                );
+                if (!confirmed) return;
+                
+                (async () => {
+                  let successCount = 0;
+                  for (const stall of reservedStalls) {
+                    try {
+                      await fetch(`/api/stalls/${stall.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'libero' })
+                      });
+                      successCount++;
+                    } catch (error) {
+                      console.error(`Errore liberazione posteggio ${stall.number}:`, error);
+                    }
+                  }
+                  if (successCount > 0) {
+                    toast.success(`${successCount} posteggi liberati!`);
+                    await fetchData();
+                    setMapRefreshKey(prev => prev + 1);
+                  }
+                })();
+              }}
+            >
+              🟢 Libera
+            </Button>
+            <Button
+              size="sm"
+              variant={isSpuntaMode ? "default" : "outline"}
+              className={`text-xs ${
+                isSpuntaMode 
+                  ? 'bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white border-[#f59e0b]' 
+                  : 'bg-transparent hover:bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/50'
+              }`}
+              onClick={() => {
+                setIsSpuntaMode(!isSpuntaMode);
+                setIsOccupaMode(false);
+                setIsLiberaMode(false);
+              }}
+            >
+              ✓ Spunta
+            </Button>
+          </div>
         </div>
       </div>
 
