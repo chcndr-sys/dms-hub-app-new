@@ -1643,54 +1643,60 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
   return (
     <div className="space-y-4">
-      {/* Statistiche Posteggi - Indicatori Cliccabili */}
+      {/* Statistiche Posteggi - Con Pulsanti Sempre Visibili */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Indicatore OCCUPATI - Click attiva modalità Libera */}
-        <div 
-          className={`bg-[#ef4444]/10 border p-4 rounded-lg relative cursor-pointer transition-all ${
-            isLiberaMode 
-              ? 'border-[#ef4444] ring-2 ring-[#ef4444]/50' 
-              : 'border-[#ef4444]/30 hover:border-[#ef4444]/60'
-          }`}
-          onClick={() => {
-            setIsLiberaMode(!isLiberaMode);
-            setIsOccupaMode(false);
-            setIsSpuntaMode(false);
-          }}
-        >
+        {/* Indicatore OCCUPATI - Pulsante Libera */}
+        <div className={`bg-[#ef4444]/10 border p-4 rounded-lg relative ${
+          isLiberaMode ? 'border-[#ef4444] ring-2 ring-[#ef4444]/50' : 'border-[#ef4444]/30'
+        }`}>
           <div className="text-sm text-[#ef4444] mb-1">Occupati</div>
           <div className="text-3xl font-bold text-[#ef4444]">{occupiedCount}</div>
-          {isLiberaMode && (
-            <span className="absolute top-2 right-2 text-xs bg-[#ef4444] text-white px-2 py-1 rounded">
-              🚮 Libera
-            </span>
-          )}
+          <Button
+            size="sm"
+            variant={isLiberaMode ? "default" : "outline"}
+            className={`absolute top-2 right-2 text-xs ${
+              isLiberaMode 
+                ? 'bg-[#ef4444] hover:bg-[#ef4444]/80 text-white border-[#ef4444]' 
+                : 'bg-transparent hover:bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/50'
+            }`}
+            onClick={() => {
+              setIsLiberaMode(!isLiberaMode);
+              setIsOccupaMode(false);
+              setIsSpuntaMode(false);
+            }}
+          >
+            🚮 Libera
+          </Button>
         </div>
         
-        {/* Indicatore LIBERI - Click attiva modalità Occupa */}
-        <div 
-          className={`bg-[#10b981]/10 border p-4 rounded-lg relative cursor-pointer transition-all ${
-            isOccupaMode 
-              ? 'border-[#10b981] ring-2 ring-[#10b981]/50' 
-              : 'border-[#10b981]/30 hover:border-[#10b981]/60'
-          }`}
-          onClick={() => {
-            setIsOccupaMode(!isOccupaMode);
-            setIsLiberaMode(false);
-            setIsSpuntaMode(false);
-          }}
-        >
+        {/* Indicatore LIBERI - Pulsante Occupa */}
+        <div className={`bg-[#10b981]/10 border p-4 rounded-lg relative ${
+          isOccupaMode ? 'border-[#10b981] ring-2 ring-[#10b981]/50' : 'border-[#10b981]/30'
+        }`}>
           <div className="text-sm text-[#10b981] mb-1">Liberi</div>
           <div className="text-3xl font-bold text-[#10b981]">{freeCount}</div>
-          {isOccupaMode && (
-            <span className="absolute top-2 right-2 text-xs bg-[#10b981] text-white px-2 py-1 rounded">
-              ✅ Occupa
-            </span>
-          )}
+          <Button
+            size="sm"
+            variant={isOccupaMode ? "default" : "outline"}
+            className={`absolute top-2 right-2 text-xs ${
+              isOccupaMode 
+                ? 'bg-[#10b981] hover:bg-[#10b981]/80 text-white border-[#10b981]' 
+                : 'bg-transparent hover:bg-[#10b981]/20 text-[#10b981] border-[#10b981]/50'
+            }`}
+            onClick={() => {
+              setIsOccupaMode(!isOccupaMode);
+              setIsLiberaMode(false);
+              setIsSpuntaMode(false);
+            }}
+          >
+            ✅ Occupa
+          </Button>
         </div>
         
-        {/* Indicatore RISERVATI - Pulsante Spunta (logica esistente) */}
-        <div className="bg-[#f59e0b]/10 border border-[#f59e0b]/30 p-4 rounded-lg relative">
+        {/* Indicatore RISERVATI - Pulsante Spunta */}
+        <div className={`bg-[#f59e0b]/10 border p-4 rounded-lg relative ${
+          isSpuntaMode ? 'border-[#f59e0b] ring-2 ring-[#f59e0b]/50' : 'border-[#f59e0b]/30'
+        }`}>
           <div className="text-sm text-[#f59e0b] mb-1">Riservati</div>
           <div className="text-3xl font-bold text-[#f59e0b]">{reservedCount}</div>
           <Button
@@ -1701,8 +1707,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 ? 'bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white border-[#f59e0b]' 
                 : 'bg-transparent hover:bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/50'
             }`}
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={() => {
               setIsSpuntaMode(!isSpuntaMode);
               setIsOccupaMode(false);
               setIsLiberaMode(false);
@@ -1714,7 +1719,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       </div>
 
       {/* Barra LIBERA TUTTI (modalità Libera) */}
-      {isLiberaMode && occupiedCount > 0 && (
+      {isLiberaMode && (
         <div className="mb-4">
           <Button
             className="w-full bg-[#ef4444] hover:bg-[#ef4444]/80 text-white font-semibold py-3 border-2 border-[#ef4444]/50"
@@ -1768,7 +1773,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       )}
 
       {/* Barra OCCUPA TUTTI (modalità Occupa) */}
-      {isOccupaMode && freeCount > 0 && (
+      {isOccupaMode && (
         <div className="mb-4">
           <Button
             className="w-full bg-[#10b981] hover:bg-[#10b981]/80 text-white font-semibold py-3 border-2 border-[#10b981]/50"
@@ -1821,8 +1826,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
         </div>
       )}
 
-      {/* Barra CONFERMA ASSEGNAZIONE (modalità Spunta - logica esistente) */}
-      {isSpuntaMode && reservedCount > 0 && (
+      {/* Barra CONFERMA ASSEGNAZIONE (modalità Spunta) */}
+      {isSpuntaMode && (
         <div className="mb-4">
           <Button
             className="w-full bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-white font-semibold py-3 border-2 border-[#f59e0b]/50"
