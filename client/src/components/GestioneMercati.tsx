@@ -1313,7 +1313,6 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   // Nuovi state per presenze e graduatoria (integrazione lista unificata)
   const [presenze, setPresenze] = useState<any[]>([]);
   const [graduatoria, setGraduatoria] = useState<any[]>([]);
-  const [spuntisti, setSpuntisti] = useState<any[]>([]); // Imprese con wallet spunta per questo mercato
   const [listFilter, setListFilter] = useState<'concessionari' | 'spunta' | 'fiere'>('concessionari');
 
   useEffect(() => {
@@ -1322,14 +1321,12 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
   const fetchData = async () => {
     try {
-      const [stallsRes, mapRes, concessionsRes, presenzeRes, graduatoriaRes, spuntistiRes] = await Promise.all([
+      const [stallsRes, mapRes, concessionsRes, presenzeRes, graduatoriaRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/markets/${marketId}/stalls`),
         fetch(`${API_BASE_URL}/api/gis/market-map/${marketId}`),
         fetch(`${API_BASE_URL}/api/markets/${marketCode}/stalls/concessions`),
         fetch(`${API_BASE_URL}/api/presenze/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) })),
-        fetch(`${API_BASE_URL}/api/graduatoria/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) })),
-        // Fetch spuntisti: wallet tipo SPUNTA per questo mercato
-        fetch(`${API_BASE_URL}/api/wallets?market_id=${marketId}&tipo=SPUNTA`).catch(() => ({ json: () => ({ success: false }) }))
+        fetch(`${API_BASE_URL}/api/graduatoria/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) }))
       ]);
 
       const stallsData = await stallsRes.json();
@@ -1337,7 +1334,6 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       const concessionsData = await concessionsRes.json();
       const presenzeData = await presenzeRes.json();
       const graduatoriaData = await graduatoriaRes.json();
-      const spuntistiData = await spuntistiRes.json();
 
       console.log('[DEBUG fetchData] Dati ricevuti:', {
         stallsCount: stallsData.data?.length,
@@ -1376,11 +1372,6 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       if (graduatoriaData.success && Array.isArray(graduatoriaData.data)) {
         setGraduatoria(graduatoriaData.data);
         console.log('[DEBUG fetchData] graduatoria caricata:', graduatoriaData.data.length);
-      }
-      // Carica spuntisti (wallet tipo SPUNTA per questo mercato)
-      if (spuntistiData.success && Array.isArray(spuntistiData.data)) {
-        setSpuntisti(spuntistiData.data);
-        console.log('[DEBUG fetchData] spuntisti caricati:', spuntistiData.data.length);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -2331,59 +2322,6 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
             </Table>
           </div>
         </div>
-
-        {/* Lista Spuntisti - Visibile solo nel tab Spunta */}
-        {listFilter === 'spunta' && spuntisti.length > 0 && (
-          <div className="mt-4 border border-[#f59e0b]/20 rounded-lg overflow-hidden">
-            <div className="bg-[#0b1220]/50 px-4 py-2 border-b border-[#f59e0b]/20">
-              <h3 className="text-sm font-semibold text-[#f59e0b]">📋 Spuntisti in Attesa ({spuntisti.length})</h3>
-            </div>
-            <div className="max-h-[200px] overflow-y-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-[#0b1220]/95 z-10">
-                  <TableRow className="border-[#f59e0b]/20 hover:bg-[#0b1220]/50">
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-8">#</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs">Impresa</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-20 text-center">Presenze</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-24">Stato Wallet</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {spuntisti
-                    .sort((a, b) => (b.presenze || 0) - (a.presenze || 0)) // Ordina per presenze decrescenti
-                    .map((spuntista, idx) => (
-                    <TableRow key={spuntista.id || idx} className="border-[#f59e0b]/10 hover:bg-[#f59e0b]/10">
-                      <TableCell className="text-[#f59e0b] text-sm font-medium">{idx + 1}</TableCell>
-                      <TableCell className="text-[#e8fbff] text-sm">
-                        {spuntista.company_name || spuntista.impresa_denominazione || 'N/D'}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="text-[#f59e0b] font-bold">{spuntista.presenze || 0}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          spuntista.status === 'active' ? 'bg-[#10b981]/20 text-[#10b981]' :
-                          spuntista.status === 'suspended' ? 'bg-[#ef4444]/20 text-[#ef4444]' :
-                          'bg-[#6b7280]/20 text-[#6b7280]'
-                        }`}>
-                          {spuntista.status === 'active' ? 'ATTIVO' : 
-                           spuntista.status === 'suspended' ? 'SOSPESO' : 'N/D'}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        )}
-
-        {/* Messaggio se non ci sono spuntisti */}
-        {listFilter === 'spunta' && spuntisti.length === 0 && (
-          <div className="mt-4 p-4 border border-[#f59e0b]/20 rounded-lg bg-[#0b1220]/30 text-center">
-            <span className="text-[#e8fbff]/50 text-sm">Nessun spuntista registrato per questo mercato</span>
-          </div>
-        )}
 
         {/* Scheda Impresa - Form inline o preview */}
         <div className="h-[450px] flex flex-col bg-[#0b1220]/30 rounded-lg border border-[#14b8a6]/10 overflow-hidden relative">
