@@ -624,8 +624,8 @@ export function MarketMapComponent({
                   
                   {/* Popup informativo */}
                   <Popup className="stall-popup" minWidth={280}>
-                    {/* Popup OCCUPA per posteggi liberi - ROSSO */}
-                    {isOccupaMode && displayStatus === 'libero' ? (
+                    {/* Popup OCCUPA per posteggi liberi/riservati/in_assegnazione - ROSSO */}
+                    {isOccupaMode && (displayStatus === 'libero' || displayStatus === 'riservato' || displayStatus === 'in_assegnazione') ? (
                       <div className="p-0 bg-[#0b1220] text-gray-100 rounded-md overflow-hidden" style={{ minWidth: '280px' }}>
                         <div className="bg-[#1e293b] p-3 border-b border-gray-700 flex justify-between items-center">
                           <div className="font-bold text-lg text-white">
@@ -661,8 +661,8 @@ export function MarketMapComponent({
                           </button>
                         </div>
                       </div>
-                    ) : isLiberaMode && displayStatus === 'occupato' ? (
-                      /* Popup LIBERA per posteggi occupati - VERDE */
+                    ) : isLiberaMode && (displayStatus === 'occupato' || displayStatus === 'riservato' || displayStatus === 'in_assegnazione') ? (
+                      /* Popup LIBERA per posteggi occupati/riservati/in_assegnazione - VERDE */
                       <div className="p-0 bg-[#0b1220] text-gray-100 rounded-md overflow-hidden" style={{ minWidth: '280px' }}>
                         <div className="bg-[#1e293b] p-3 border-b border-gray-700 flex justify-between items-center">
                           <div className="font-bold text-lg text-white">
@@ -860,7 +860,7 @@ export function MarketMapComponent({
                           })()}
 
 	                          {/* PULSANTI DI AZIONE (OCCUPA / LIBERA / SPUNTA) */}
-	                          {isOccupaMode && displayStatus === 'libero' && (
+	                          {isOccupaMode && (displayStatus === 'libero' || displayStatus === 'riservato' || displayStatus === 'in_assegnazione') && (
 	                            <button
 	                              className="w-full bg-[#ef4444] hover:bg-[#ef4444]/80 text-white font-bold py-3 px-4 rounded transition-colors shadow-lg shadow-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
 	                              onClick={async (e) => {
@@ -872,7 +872,7 @@ export function MarketMapComponent({
 	                            </button>
 	                          )}
 
-	                          {isLiberaMode && displayStatus === 'occupato' && (
+	                          {isLiberaMode && (displayStatus === 'occupato' || displayStatus === 'riservato' || displayStatus === 'in_assegnazione') && (
 	                            <button
 	                              className="w-full bg-[#10b981] hover:bg-[#10b981]/80 text-white font-bold py-3 px-4 rounded transition-colors shadow-lg shadow-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
 	                              onClick={async (e) => {
