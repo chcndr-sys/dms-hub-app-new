@@ -2468,18 +2468,18 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
             <Table>
               <TableHeader className="sticky top-0 bg-[#0b1220]/95 z-10">
                 <TableRow className="border-[#14b8a6]/20 hover:bg-[#0b1220]/50">
-                  <TableHead className="text-[#e8fbff]/70 text-xs w-12">N°</TableHead>
-                  <TableHead className="text-[#e8fbff]/70 text-xs w-28">Stato</TableHead>
-                  <TableHead className="text-[#e8fbff]/70 text-xs min-w-[180px]">Impresa</TableHead>
-                  <TableHead className="text-[#e8fbff]/70 text-xs w-20 text-center">Wallet</TableHead>
-                  <TableHead className="text-[#e8fbff]/70 text-xs w-20 text-center">Importo</TableHead>
-                  <TableHead className="text-[#e8fbff]/70 text-xs w-20">Giorno</TableHead>
-                  <TableHead className="text-[#e8fbff]/70 text-xs w-16 text-center">Accesso</TableHead>
-                  <TableHead className="text-[#e8fbff]/70 text-xs w-16 text-center">Rifiuti</TableHead>
-                  <TableHead className="text-[#e8fbff]/70 text-xs w-16 text-center">Uscita</TableHead>
-                  <TableHead className="text-[#e8fbff]/70 text-xs w-14 text-center">Pres.</TableHead>
-                  <TableHead className="text-[#e8fbff]/70 text-xs w-14 text-center">Ass.</TableHead>
-                  <TableHead className="text-right text-[#e8fbff]/70 text-xs w-12">⚙️</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs" style={{width: '5%'}}>N°</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs" style={{width: '10%'}}>Stato</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs" style={{width: '20%'}}>Impresa</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '10%'}}>Wallet</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '10%'}}>Importo</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs" style={{width: '10%'}}>Giorno</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '8%'}}>Accesso</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '8%'}}>Rifiuti</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '8%'}}>Uscita</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '6%'}}>Pres.</TableHead>
+                  <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '5%'}}>Ass.</TableHead>
+                  <TableHead className="text-right text-[#e8fbff]/70 text-xs" style={{width: '5%'}}>⚙️</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
