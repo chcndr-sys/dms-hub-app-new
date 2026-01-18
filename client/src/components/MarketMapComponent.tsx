@@ -504,7 +504,7 @@ export function MarketMapComponent({
           })()}
           {/* Layer Macchia Verde (Area Mercato) - Renderizza PRIMA dei posteggi */}
           {mapData && !showItalyView && mapData.stalls_geojson?.features
-            ?.filter(f => (f.properties?.kind === 'area' || f.properties?.type === 'mercato') && f.geometry.type === 'Polygon')
+            ?.filter(f => (f.properties?.kind === 'area' || f.properties?.type === 'mercato') && f.geometry.type === 'Polygon' && f.geometry.coordinates?.[0])
             ?.map((feature, idx) => (
               <Polygon
                 key={`area-${idx}`}
