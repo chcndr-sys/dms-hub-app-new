@@ -1330,7 +1330,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
         fetch(`${API_BASE_URL}/api/markets/${marketCode}/stalls/concessions`),
         fetch(`${API_BASE_URL}/api/presenze/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) })),
         fetch(`${API_BASE_URL}/api/graduatoria/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) })),
-        fetch(`${API_BASE_URL}/api/domande-spunta?mercato_id=${marketId}&stato=ATTIVA`).catch(() => ({ json: () => ({ success: false }) }))
+        fetch(`${API_BASE_URL}/api/spuntisti/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) }))
       ]);
 
       const stallsData = await stallsRes.json();
@@ -1378,46 +1378,18 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
         setGraduatoria(graduatoriaData.data);
         console.log('[DEBUG fetchData] graduatoria caricata:', graduatoriaData.data.length);
       }
-      // Carica spuntisti da domande-spunta
-      if (spuntistiData.success && Array.isArray(spuntistiData.data)) {
-        // Ordina per presenze decrescenti (graduatoria)
-        const spuntistiOrdinati = spuntistiData.data.sort((a: any, b: any) => 
-          (b.numero_presenze || 0) - (a.numero_presenze || 0)
+      // Carica spuntisti da endpoint /api/spuntisti/mercato/:id (già arricchito con dati impresa e wallet)
+      const spuntistiArray = spuntistiData.data || spuntistiData;
+      if (Array.isArray(spuntistiArray) && spuntistiArray.length > 0) {
+        // L'endpoint già restituisce i dati arricchiti, ordina per presenze (posizione_graduatoria)
+        const spuntistiOrdinati = spuntistiArray.sort((a: any, b: any) => 
+          (a.posizione_graduatoria || 999) - (b.posizione_graduatoria || 999)
         );
-        
-        // Arricchisci con dati qualifica e wallet per ogni spuntista
-        const spuntistiArricchiti = await Promise.all(
-          spuntistiOrdinati.map(async (spuntista: any) => {
-            try {
-              // Fetch qualification-status
-              const qualRes = await fetch(`${API_BASE_URL}/api/tcc/v2/impresa/${spuntista.impresa_id}/qualification-status`).catch(() => null);
-              const qualData = qualRes ? await qualRes.json().catch(() => ({})) : {};
-              
-              // Fetch wallet spunta
-              const walletRes = await fetch(`${API_BASE_URL}/api/tcc/v2/impresa/${spuntista.impresa_id}/wallet`).catch(() => null);
-              const walletData = walletRes ? await walletRes.json().catch(() => ({})) : {};
-              
-              // Trova wallet spunta per questo mercato
-              const walletSpunta = walletData.data?.wallets?.find((w: any) => 
-                w.tipo === 'SPUNTA' && w.market_id === parseInt(marketId)
-              );
-              
-              return {
-                ...spuntista,
-                qualificato: qualData.data?.qualificato ?? qualData.qualificato ?? null,
-                qualification_status: qualData.data || qualData,
-                wallet_saldo: walletSpunta?.saldo ?? null,
-                wallet_stato: walletSpunta?.stato ?? null
-              };
-            } catch (err) {
-              console.warn('[fetchData] Errore fetch dati spuntista:', spuntista.impresa_id, err);
-              return spuntista;
-            }
-          })
-        );
-        
-        setSpuntisti(spuntistiArricchiti);
-        console.log('[DEBUG fetchData] spuntisti arricchiti:', spuntistiArricchiti.length);
+        setSpuntisti(spuntistiOrdinati);
+        console.log('[DEBUG fetchData] spuntisti caricati:', spuntistiOrdinati.length);
+      } else {
+        setSpuntisti([]);
+        console.log('[DEBUG fetchData] nessun spuntista trovato per questo mercato');
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -2223,18 +2195,18 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               <Table>
                 <TableHeader className="sticky top-0 bg-[#0b1220]/95 z-10">
                   <TableRow className="border-[#14b8a6]/20 hover:bg-[#0b1220]/50">
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-10">#</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-28">Stato</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs">Impresa</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-16 text-center">Wallet</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-16 text-center">Importo</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-16">Giorno</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-14 text-center">Accesso</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-14 text-center">Rifiuti</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-14 text-center">Uscita</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-12 text-center cursor-pointer hover:text-[#14b8a6]" title="Clicca per modificare">Pres.</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-12 text-center">Ass.</TableHead>
-                    <TableHead className="text-right text-[#e8fbff]/70 text-xs w-10">⚙️</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs w-[40px]">#</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs w-[100px]">Stato</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs min-w-[180px]">Impresa</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs w-[80px] text-center">Wallet</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs w-[80px] text-center">Importo</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs w-[90px]">Giorno</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs w-[70px] text-center">Accesso</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs w-[70px] text-center">Rifiuti</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs w-[70px] text-center">Uscita</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs w-[60px] text-center cursor-pointer hover:text-[#14b8a6]" title="Clicca per modificare">Pres.</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs w-[50px] text-center">Ass.</TableHead>
+                    <TableHead className="text-right text-[#e8fbff]/70 text-xs w-[40px]">⚙️</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -2255,10 +2227,9 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                       const presenzaOggi = presenze.find(p => 
                         p.impresa_id === spuntista.impresa_id
                       );
-                      // Determina stato semaforo basato su dati reali da API
-                      // qualificato viene da /api/tcc/v2/impresa/:id/qualification-status
-                      const hasQualifica = spuntista.qualificato === true;
-                      const isNotQualified = spuntista.qualificato === false;
+                      // Determina stato semaforo basato su dati dall'endpoint spuntisti/mercato
+                      const hasQualifica = spuntista.qualificato === true || spuntista.is_qualificato === true;
+                      const isNotQualified = spuntista.qualificato === false || spuntista.is_qualificato === false;
                       const haPosteggio = !!posteggioAssegnato;
                       const haPresenza = !!presenzaOggi?.ora_accesso;
                       
@@ -2307,9 +2278,9 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                           
                           {/* Wallet - semaforino con saldo */}
                           <TableCell className="text-xs text-center">
-                            {spuntista.wallet_saldo !== undefined ? (
-                              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${spuntista.wallet_saldo > 0 ? 'bg-[#10b981]/20 text-[#10b981]' : 'bg-[#ef4444]/20 text-[#ef4444]'}`}>
-                                €{(spuntista.wallet_saldo || 0).toFixed(2)}
+                            {(spuntista.wallet_balance !== undefined || spuntista.wallet_saldo !== undefined) ? (
+                              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${parseFloat(String(spuntista.wallet_balance || spuntista.wallet_saldo || 0)) > 0 ? 'bg-[#10b981]/20 text-[#10b981]' : 'bg-[#ef4444]/20 text-[#ef4444]'}`}>
+                                €{parseFloat(String(spuntista.wallet_balance || spuntista.wallet_saldo || 0)).toFixed(2)}
                               </span>
                             ) : (
                               <span className="text-[#e8fbff]/30">-</span>
@@ -2327,24 +2298,24 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                           
                           {/* Giorno */}
                           <TableCell className="text-xs text-[#e8fbff]/70">
-                            {presenzaOggi?.giorno || presenzaOggi?.data ? (
-                              new Date(presenzaOggi.giorno || presenzaOggi.data).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit' })
+                            {spuntista.giorno_presenza || presenzaOggi?.giorno || presenzaOggi?.data ? (
+                              new Date(spuntista.giorno_presenza || presenzaOggi?.giorno || presenzaOggi?.data).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit' })
                             ) : '-'}
                           </TableCell>
                           
                           {/* Accesso */}
                           <TableCell className="text-xs text-center text-[#10b981]">
-                            {presenzaOggi?.ora_accesso || presenzaOggi?.checkin || '-'}
+                            {spuntista.orario_arrivo || presenzaOggi?.ora_accesso || presenzaOggi?.checkin || '-'}
                           </TableCell>
                           
                           {/* Rifiuti */}
                           <TableCell className="text-xs text-center text-[#f59e0b]">
-                            {presenzaOggi?.ora_rifiuti || '-'}
+                            {spuntista.orario_deposito_rifiuti || presenzaOggi?.ora_rifiuti || '-'}
                           </TableCell>
                           
                           {/* Uscita */}
                           <TableCell className="text-xs text-center text-[#3b82f6]">
-                            {presenzaOggi?.ora_uscita || presenzaOggi?.checkout || '-'}
+                            {spuntista.orario_uscita || presenzaOggi?.ora_uscita || presenzaOggi?.checkout || '-'}
                           </TableCell>
                           
                           {/* Presenze - CLICCABILE per popup */}
@@ -2356,7 +2327,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                               setShowPresenzePopup(true);
                             }}
                           >
-                            {spuntista.numero_presenze || 0}
+                            {spuntista.presenze_totali || spuntista.numero_presenze || 0}
                           </TableCell>
                           
                           {/* Assenze */}
