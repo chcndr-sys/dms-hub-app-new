@@ -2195,18 +2195,18 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               <Table>
                 <TableHeader className="sticky top-0 bg-[#0b1220]/95 z-10">
                   <TableRow className="border-[#14b8a6]/20 hover:bg-[#0b1220]/50">
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-[40px]">#</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-[100px]">Stato</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs min-w-[180px]">Impresa</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-[80px] text-center">Wallet</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-[80px] text-center">Importo</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-[90px]">Giorno</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-[70px] text-center">Accesso</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-[70px] text-center">Rifiuti</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-[70px] text-center">Uscita</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-[60px] text-center cursor-pointer hover:text-[#14b8a6]" title="Clicca per modificare">Pres.</TableHead>
-                    <TableHead className="text-[#e8fbff]/70 text-xs w-[50px] text-center">Ass.</TableHead>
-                    <TableHead className="text-right text-[#e8fbff]/70 text-xs w-[40px]">⚙️</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs" style={{width: '5%'}}>#</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs" style={{width: '10%'}}>Stato</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs" style={{width: '20%'}}>Impresa</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '10%'}}>Wallet</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '10%'}}>Importo</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs" style={{width: '10%'}}>Giorno</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '8%'}}>Accesso</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '8%'}}>Rifiuti</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '8%'}}>Uscita</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs text-center cursor-pointer hover:text-[#14b8a6]" style={{width: '6%'}} title="Clicca per modificare">Pres.</TableHead>
+                    <TableHead className="text-[#e8fbff]/70 text-xs text-center" style={{width: '5%'}}>Ass.</TableHead>
+                    <TableHead className="text-right text-[#e8fbff]/70 text-xs" style={{width: '5%'}}>⚙️</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -2541,7 +2541,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   <label className="block text-sm text-[#e8fbff]/70 mb-1">Presenze Storiche</label>
                   <input 
                     type="number" 
-                    defaultValue={selectedSpuntistaForPresenze.numero_presenze || 0}
+                    id="presenze-storiche-input"
+                    defaultValue={selectedSpuntistaForPresenze.presenze_totali || selectedSpuntistaForPresenze.numero_presenze || 0}
                     className="w-full bg-[#0b1220] border border-[#14b8a6]/30 rounded px-3 py-2 text-[#e8fbff]"
                   />
                 </div>
@@ -2549,7 +2550,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   <label className="block text-sm text-[#e8fbff]/70 mb-1">Data Prima Presenza</label>
                   <input 
                     type="date" 
-                    defaultValue={selectedSpuntistaForPresenze.data_prima_presenza || ''}
+                    id="data-prima-presenza-input"
+                    defaultValue={selectedSpuntistaForPresenze.data_prima_presenza ? new Date(selectedSpuntistaForPresenze.data_prima_presenza).toISOString().split('T')[0] : ''}
                     className="w-full bg-[#0b1220] border border-[#14b8a6]/30 rounded px-3 py-2 text-[#e8fbff]"
                   />
                 </div>
@@ -2566,9 +2568,38 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   Annulla
                 </Button>
                 <Button 
-                  onClick={() => {
-                    // TODO: Salva presenze via API
-                    toast.success('Presenze aggiornate');
+                  onClick={async () => {
+                    const presenzeInput = document.getElementById('presenze-storiche-input') as HTMLInputElement;
+                    const dataInput = document.getElementById('data-prima-presenza-input') as HTMLInputElement;
+                    const nuovePresenze = parseInt(presenzeInput?.value || '0');
+                    const nuovaData = dataInput?.value || null;
+                    
+                    try {
+                      const response = await fetch(`${API_BASE_URL}/api/spuntisti/${selectedSpuntistaForPresenze.id}/presenze`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          presenze_totali: nuovePresenze,
+                          data_prima_presenza: nuovaData
+                        })
+                      });
+                      
+                      if (response.ok) {
+                        toast.success('Presenze aggiornate');
+                        // Aggiorna lo state locale
+                        setSpuntisti(prev => prev.map(s => 
+                          s.id === selectedSpuntistaForPresenze.id 
+                            ? { ...s, presenze_totali: nuovePresenze, numero_presenze: nuovePresenze, data_prima_presenza: nuovaData }
+                            : s
+                        ));
+                      } else {
+                        toast.error('Errore nel salvataggio');
+                      }
+                    } catch (error) {
+                      console.error('Errore salvataggio presenze:', error);
+                      toast.error('Errore nel salvataggio');
+                    }
+                    
                     setShowPresenzePopup(false);
                     setSelectedSpuntistaForPresenze(null);
                   }}
