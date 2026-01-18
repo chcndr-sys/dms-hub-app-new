@@ -2149,7 +2149,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
         {mapData && (() => {
           const stallsDataForMap = stalls.map(s => ({
             id: s.id,
-            number: parseInt(s.number) || 0,
+            number: s.number,  // NON usare parseInt - rompe il lookup sulla mappa!
             status: s.status,
             type: s.type,
             vendor_name: s.vendor_business_name || undefined,
@@ -2190,7 +2190,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   }, 100);
                 }
               }}
-              selectedStallNumber={parseInt(stalls.find(s => s.id === selectedStallId)?.number || '0') || undefined}
+              selectedStallNumber={stalls.find(s => s.id === selectedStallId)?.number}
               stallsData={stallsDataForMap}
               allMarkets={allMarkets.map(m => ({
                 id: m.id,
