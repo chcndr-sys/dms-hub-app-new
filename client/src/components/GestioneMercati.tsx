@@ -2189,8 +2189,11 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               <TableBody>
                 {[...stalls]
                   // Filtra per tipo in base al tab selezionato
+                  // Concessionari = TUTTI i posteggi (default)
+                  // Spunta = solo posteggi spunta o in assegnazione
+                  // Fiere = solo posteggi straordinari/fiere
                   .filter(stall => {
-                    if (listFilter === 'concessionari') return stall.type === 'fisso';
+                    if (listFilter === 'concessionari') return true; // Mostra TUTTI
                     if (listFilter === 'spunta') return stall.type === 'spunta' || stall.status === 'riservato';
                     if (listFilter === 'fiere') return stall.type === 'straordinario' || stall.type === 'fiera';
                     return true;
