@@ -2228,28 +2228,31 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                         p.impresa_id === spuntista.impresa_id
                       );
                       // Determina stato semaforo basato su dati dall'endpoint spuntisti/mercato
-                      const hasQualifica = spuntista.qualificato === true || spuntista.is_qualificato === true;
-                      const isNotQualified = spuntista.qualificato === false || spuntista.is_qualificato === false;
-                      const haPosteggio = !!posteggioAssegnato;
-                      const haPresenza = !!presenzaOggi?.ora_accesso;
+                      // Usa stato_presenza e stall_scelto come in PresenzeGraduatoriaPanel
+                      const statoPresenza = spuntista.stato_presenza;
+                      const stallScelto = spuntista.stall_scelto || posteggioAssegnato?.number;
                       
                       let statoLabel = 'IN ATTESA';
                       let statoColor = 'bg-gray-500/20 text-gray-400'; // Grigio - default
                       
-                      if (isNotQualified) {
-                        // Rosso - NON QUALIFICATO (da API qualification-status)
-                        statoLabel = 'NON QUALIF.';
-                        statoColor = 'bg-[#ef4444]/20 text-[#ef4444]';
-                      } else if (haPosteggio) {
-                        // Arancione con numero posteggio - ASSEGNATO
-                        statoLabel = posteggioAssegnato?.number || 'ASSEGNATO';
-                        statoColor = 'bg-[#f59e0b]/20 text-[#f59e0b]';
-                      } else if (hasQualifica && haPresenza) {
-                        // Verde - QUALIFICATO (ha qualifica E ha fatto presenza)
-                        statoLabel = 'QUALIFICATO';
+                      if (statoPresenza === 'presente' && stallScelto) {
+                        // Verde con numero posteggio - ha scelto posteggio
+                        statoLabel = stallScelto;
                         statoColor = 'bg-[#10b981]/20 text-[#10b981]';
-                      } else if (hasQualifica) {
-                        // Grigio - IN ATTESA (ha qualifica ma non ha ancora fatto presenza)
+                      } else if (statoPresenza === 'rinunciato') {
+                        // Arancione - ha fatto presenza ma non ha scelto posteggio
+                        statoLabel = 'RINUNCIATO';
+                        statoColor = 'bg-[#f59e0b]/20 text-[#f59e0b]';
+                      } else if (statoPresenza === 'rinuncia_forzata') {
+                        // Rosso - non ci sono più posteggi disponibili
+                        statoLabel = 'RINUNCIA';
+                        statoColor = 'bg-[#ef4444]/20 text-[#ef4444]';
+                      } else if (statoPresenza === 'presente') {
+                        // Verde - presente ma non ha ancora scelto
+                        statoLabel = 'PRESENTE';
+                        statoColor = 'bg-[#10b981]/20 text-[#10b981]';
+                      } else {
+                        // Grigio - non ancora presente
                         statoLabel = 'IN ATTESA';
                         statoColor = 'bg-gray-500/20 text-gray-400';
                       }
@@ -2287,10 +2290,10 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                             )}
                           </TableCell>
                           
-                          {/* Importo Speso - canone posteggio */}
+                          {/* Importo Speso - importo pagato dall'endpoint */}
                           <TableCell className="text-xs text-center">
-                            {posteggioAssegnato?.canone ? (
-                              <span className="text-[#f59e0b] font-medium">€{posteggioAssegnato.canone.toFixed(2)}</span>
+                            {(spuntista.importo_pagato !== undefined && spuntista.importo_pagato !== null && spuntista.importo_pagato > 0) ? (
+                              <span className="text-[#f59e0b] font-medium">€{parseFloat(String(spuntista.importo_pagato)).toFixed(2)}</span>
                             ) : (
                               <span className="text-[#e8fbff]/30">-</span>
                             )}
@@ -2575,25 +2578,26 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     const nuovaData = dataInput?.value || null;
                     
                     try {
-                      const response = await fetch(`${API_BASE_URL}/api/spuntisti/${selectedSpuntistaForPresenze.id}/presenze`, {
-                        method: 'PUT',
+                      // Usa l'endpoint corretto /api/graduatoria/aggiorna-storico
+                      const response = await fetch(`${API_BASE_URL}/api/graduatoria/aggiorna-storico`, {
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
+                          wallet_id: selectedSpuntistaForPresenze.wallet_id,
+                          impresa_id: selectedSpuntistaForPresenze.impresa_id,
+                          market_id: marketId,
                           presenze_totali: nuovePresenze,
                           data_prima_presenza: nuovaData
                         })
                       });
                       
-                      if (response.ok) {
+                      const data = await response.json();
+                      if (data.success) {
                         toast.success('Presenze aggiornate');
-                        // Aggiorna lo state locale
-                        setSpuntisti(prev => prev.map(s => 
-                          s.id === selectedSpuntistaForPresenze.id 
-                            ? { ...s, presenze_totali: nuovePresenze, numero_presenze: nuovePresenze, data_prima_presenza: nuovaData }
-                            : s
-                        ));
+                        // Ricarica i dati per avere i valori aggiornati
+                        fetchData();
                       } else {
-                        toast.error('Errore nel salvataggio');
+                        toast.error(data.error || 'Errore nel salvataggio');
                       }
                     } catch (error) {
                       console.error('Errore salvataggio presenze:', error);
