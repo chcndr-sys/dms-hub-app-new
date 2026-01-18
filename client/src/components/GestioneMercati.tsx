@@ -82,6 +82,8 @@ interface Stall {
   vendor_business_name: string | null;
   vendor_contact_name: string | null;
   impresa_id: number | null;
+  spuntista_impresa_id: number | null;
+  spuntista_nome: string | null;
 }
 
 interface Vendor {
@@ -1444,9 +1446,54 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   // Esteso per calcolare importo e addebitare wallet
   const handleConfirmAssignment = async (stallId: number, impresaId?: number, walletId?: number) => {
     try {
-      console.log('[DEBUG handleConfirmAssignment] Confermando assegnazione posteggio:', stallId);
+      console.log('[DEBUG handleConfirmAssignment] Confermando assegnazione posteggio:', stallId, 'isSpuntaMode:', isSpuntaMode);
       
-      // 1. Aggiorna stato posteggio
+      // Se siamo in modalità spunta, usa l'endpoint dedicato che:
+      // - Assegna al primo spuntista in graduatoria
+      // - Scala il wallet
+      // - Incrementa le presenze
+      // - Aggiorna lo stato posteggio
+      if (isSpuntaMode) {
+        const response = await fetch(`${API_BASE_URL}/api/test-mercato/assegna-posteggio-spunta`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ market_id: marketId, stall_id: stallId }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          console.log('[DEBUG handleConfirmAssignment] Spunta assegnata:', data);
+          const spuntista = data.data.spuntista;
+          const costo = data.data.costo_posteggio;
+          const nuovoSaldo = data.data.nuovo_saldo_wallet;
+          
+          toast.success(
+            `🎯 Posteggio ${data.data.stall_number} assegnato a ${spuntista.impresa_name}\n` +
+            `💰 Costo: ${costo.toFixed(2)}€ | Saldo: ${nuovoSaldo}€\n` +
+            `📊 Presenze: ${spuntista.nuove_presenze_totali}`,
+            { duration: 4000 }
+          );
+          
+          // Aggiorna stato locale
+          setStalls(prevStalls => 
+            prevStalls.map(s => 
+              s.id === stallId ? { ...s, status: 'occupato' } : s
+            )
+          );
+          
+          // Ricarica dati spuntisti per aggiornare la tabella
+          await fetchData();
+          
+          // Deseleziona posteggio
+          setSelectedStallId(null);
+          setSelectedStallCenter(null);
+        } else {
+          toast.error(data.error || 'Errore nell\'assegnazione spunta');
+        }
+        return;
+      }
+      
+      // Modalità normale (non spunta): aggiorna solo stato posteggio
       const response = await fetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
         method: 'PATCH',
         headers: {
@@ -1459,7 +1506,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       if (data.success) {
         console.log('[DEBUG handleConfirmAssignment] Posteggio assegnato:', stallId);
         
-        // 2. Se abbiamo impresa e wallet, registra presenza con calcolo importo
+        // Se abbiamo impresa e wallet, registra presenza con calcolo importo
         if (impresaId && walletId) {
           try {
             const presenzaResponse = await fetch(`${API_BASE_URL}/api/presenze/registra`, {
@@ -1470,7 +1517,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 stall_id: stallId,
                 impresa_id: impresaId,
                 wallet_id: walletId,
-                tipo_presenza: isSpuntaMode ? 'SPUNTA' : 'CONCESSION',
+                tipo_presenza: 'CONCESSION',
                 giorno_mercato: new Date().toISOString().split('T')[0]
               })
             });
@@ -1500,9 +1547,6 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
         // Deseleziona il posteggio per fermare il lampeggiamento e chiudere il popup
         setSelectedStallId(null);
         setSelectedStallCenter(null);
-        
-        // NON disattivare modalità spunta per permettere assegnazioni multiple
-        // setIsSpuntaMode(false);
       } else {
         toast.error('Errore nell\'assegnazione del posteggio');
       }
@@ -1761,68 +1805,45 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   return;
                 }
 
-                // Prepara Spunta: liberi -> riservati (per spuntisti)
+                // Prepara Spunta: chiama endpoint backend che:
+                // 1. Mette posteggi liberi in stato 'riservato'
+                // 2. Registra presenza per tutti gli spuntisti con giorno/orario
                 const freeStalls = stalls.filter(s => s.status === 'libero');
                 if (freeStalls.length === 0) {
                   toast.info('Nessun posteggio libero da preparare per la spunta');
                   return;
                 }
                 const confirmed = window.confirm(
-                  `Preparare ${freeStalls.length} posteggi liberi per la spunta?\n\nTutti i posteggi liberi diventeranno riservati (arancioni) pronti per l'assegnazione spunta.\n\nPuoi cliccare STOP per fermare l'animazione.`
+                  `Preparare ${freeStalls.length} posteggi liberi per la spunta?\n\nTutti i posteggi liberi diventeranno riservati (arancioni) e verrà registrata la presenza per tutti gli spuntisti con data e orario corrente.`
                 );
                 if (!confirmed) return;
                 
                 try {
                   setIsAnimating(true);
-                  stopAnimationRef.current = false;
-                  let successCount = 0;
-                  let errorCount = 0;
                   
-                  for (const stall of freeStalls) {
-                    // Controlla se l'utente ha cliccato STOP
-                    if (stopAnimationRef.current) {
-                      toast.info(`Animazione fermata dopo ${successCount} posteggi`);
-                      break;
-                    }
-                    try {
-                      // Usa fetch REST come handleOccupaStall e handleLiberaStall
-                      const response = await fetch(`${API_BASE_URL}/api/stalls/${stall.id}`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: 'riservato' }),
-                      });
+                  // Chiama endpoint avvia-spunta che fa tutto in una volta
+                  const response = await fetch(`${API_BASE_URL}/api/test-mercato/avvia-spunta`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ market_id: marketId }),
+                  });
 
-                      const data = await response.json();
-                      if (data.success) {
-                        successCount++;
-                        toast.success(`Posteggio ${stall.number} pronto per la spunta`, { duration: 1000 });
-                        // Aggiorna lo stato locale per vedere l'animazione
-                        setStalls(prev => prev.map(s => 
-                          s.id === stall.id ? { ...s, status: 'riservato' } : s
-                        ));
-                        // Piccolo delay per l'animazione
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                      } else {
-                        errorCount++;
-                      }
-                    } catch (error) {
-                      console.error(`Errore preparazione posteggio ${stall.number}:`, error);
-                      errorCount++;
-                    }
-                  }
-                  
-                  if (successCount > 0 && !stopAnimationRef.current) {
-                    toast.success(`${successCount} posteggi pronti per la spunta!`);
-                  }
-                  if (errorCount > 0) {
-                    toast.error(`${errorCount} posteggi non preparati`);
+                  const data = await response.json();
+                  if (data.success) {
+                    toast.success(`🏁 ${data.message}`);
+                    // Attiva modalità spunta automaticamente
+                    setIsSpuntaMode(true);
+                    setIsOccupaMode(false);
+                    setIsLiberaMode(false);
+                  } else {
+                    toast.error(data.error || 'Errore durante la preparazione spunta');
                   }
                   
                   await fetchData();
                   setIsAnimating(false);
                 } catch (error) {
-                  console.error('Errore preparazione posteggi:', error);
-                  toast.error('Errore durante la preparazione dei posteggi');
+                  console.error('Errore preparazione spunta:', error);
+                  toast.error('Errore durante la preparazione della spunta');
                   setIsAnimating(false);
                 }
               }}
@@ -2075,6 +2096,42 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
           >
             {isAnimating ? '⏹ STOP' : `✓ Conferma Assegnazione (${reservedCount} posteggi)`}
           </Button>
+          
+          {/* Pulsante Chiudi Spunta - imposta orari rifiuti/uscita */}
+          <Button
+            className="w-full mt-2 font-semibold py-2 border-2 bg-[#ef4444] hover:bg-[#ef4444]/80 border-[#ef4444]/50 text-white"
+            onClick={async () => {
+              const confirmed = window.confirm(
+                `Chiudere la spunta?\n\n` +
+                `Verrà registrato l'orario di uscita per tutti gli spuntisti con posteggio assegnato e i posteggi verranno liberati.`
+              );
+              
+              if (!confirmed) return;
+              
+              try {
+                const response = await fetch(`${API_BASE_URL}/api/test-mercato/chiudi-spunta`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ market_id: marketId }),
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                  toast.success(`🔒 ${data.message}`);
+                  setIsSpuntaMode(false);
+                } else {
+                  toast.error(data.error || 'Errore durante la chiusura spunta');
+                }
+                
+                await fetchData();
+              } catch (error) {
+                console.error('Errore chiusura spunta:', error);
+                toast.error('Errore durante la chiusura della spunta');
+              }
+            }}
+          >
+            🔒 Chiudi Spunta
+          </Button>
         </div>
       )}
 
@@ -2111,6 +2168,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               onConfirmAssignment={handleConfirmAssignment}
               onOccupaStall={handleOccupaStall}
               onLiberaStall={handleLiberaStall}
+              costPerSqm={formData.cost_per_sqm || 0.90}
               onStallClick={(stallNumber) => {
                 const dbStall = stallsByNumber.get(String(stallNumber));
                 if (dbStall) {
@@ -2416,14 +2474,19 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                       </Badge>
                     </TableCell>
                     
-                    {/* Impresa - colore giallo se spuntista */}
+                    {/* Impresa - colore giallo se spuntista assegnato */}
                     <TableCell className="text-sm">
-                      {stall.vendor_business_name ? (
-                        <p className={`font-medium text-xs truncate max-w-[150px] ${stall.type === 'spunta' ? 'text-[#f59e0b]' : 'text-[#e8fbff]'}`}>
+                      {stall.spuntista_nome ? (
+                        // Spuntista assegnato - sempre in giallo
+                        <p className="font-medium text-xs truncate max-w-[150px] text-[#f59e0b]">
+                          🎯 {stall.spuntista_nome}
+                        </p>
+                      ) : stall.vendor_business_name ? (
+                        <p className="font-medium text-xs truncate max-w-[150px] text-[#e8fbff]">
                           {stall.vendor_business_name}
                         </p>
                       ) : concessionsByStallId[stall.number] ? (
-                        <p className={`font-medium text-xs truncate max-w-[150px] ${stall.type === 'spunta' ? 'text-[#f59e0b]' : 'text-[#e8fbff]'}`}>
+                        <p className="font-medium text-xs truncate max-w-[150px] text-[#e8fbff]">
                           {concessionsByStallId[stall.number].companyName}
                         </p>
                       ) : (

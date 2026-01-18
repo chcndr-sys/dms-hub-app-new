@@ -75,6 +75,7 @@ interface MarketMapComponentProps {
   onConfirmAssignment?: (stallId: number) => Promise<void>; // Callback per confermare assegnazione (spunta)
   onOccupaStall?: (stallId: number) => Promise<void>; // Callback per occupare posteggio
   onLiberaStall?: (stallId: number) => Promise<void>; // Callback per liberare posteggio
+  costPerSqm?: number; // Costo per metro quadro per calcolo canone spunta
   routeConfig?: { // Configurazione routing (opzionale)
     enabled: boolean;
     userLocation: { lat: number; lng: number };
@@ -179,6 +180,7 @@ export function MarketMapComponent({
   onConfirmAssignment,
   onOccupaStall,
   onLiberaStall,
+  costPerSqm = 0.90, // Default 0.90€/mq
   routeConfig,
   // Props per Vista Italia (Gemello Digitale)
   allMarkets = [],
@@ -816,20 +818,36 @@ export function MarketMapComponent({
 	                            </Link>
 	                          )}
 	
-	                          {/* Canone di occupazione */}
-	                          <div className="bg-[#1e3a8a]/20 p-3 rounded border border-[#1e3a8a]/50">
-	                            <div className="flex justify-between items-center">
-	                              <span className="text-sm font-semibold text-blue-400">💶 Canone:</span>
-	                              <div className="flex items-center bg-[#0b1220] px-2 py-1 rounded border border-blue-500/30">
-	                                <span className="text-gray-500 mr-1">€</span>
-	                                <input 
-	                                  type="text" 
-	                                  defaultValue="15,00"
-	                                  className="w-16 text-right font-bold text-blue-400 outline-none bg-transparent"
-	                                />
-	                              </div>
-	                            </div>
-	                          </div>
+                          {/* Canone di occupazione - calcolato da superficie x costo/mq */}
+                          {(() => {
+                            // Calcola area dal DB o dalla geometria
+                            let area = 0;
+                            const dimensionsSource = dbStall?.dimensions || props.dimensions;
+                            if (dimensionsSource) {
+                              const normalized = dimensionsSource.replace(/,/g, '.');
+                              const match = normalized.match(/([\d.]+)\s*m?\s*[x×*]\s*([\d.]+)\s*m?/i);
+                              if (match) {
+                                area = parseFloat(match[1]) * parseFloat(match[2]);
+                              }
+                            }
+                            if (area === 0) {
+                              const dims = calculatePolygonDimensions(positions);
+                              area = dims.area;
+                            }
+                            const canone = area * costPerSqm;
+                            
+                            return (
+                              <div className="bg-[#1e3a8a]/20 p-3 rounded border border-[#1e3a8a]/50">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm font-semibold text-blue-400">💶 Canone Spunta:</span>
+                                  <div className="text-right">
+                                    <div className="font-bold text-xl text-blue-400">€ {canone.toFixed(2)}</div>
+                                    <div className="text-[10px] text-gray-500">{area.toFixed(2)} m² × €{costPerSqm.toFixed(2)}/m²</div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
 	                          {/* PULSANTI DI AZIONE (OCCUPA / LIBERA / SPUNTA) */}
 	                          {isOccupaMode && displayStatus === 'libero' && (
