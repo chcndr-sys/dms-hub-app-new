@@ -272,10 +272,14 @@ export function MarketMapComponent({
   
   // Funzione per determinare il colore in base allo stato
   // USA SOLO stallsData, IGNORA il GeoJSON statico!
-  const getStallColor = (stallNumber: number): string => {
-    const dbStall = stallsByNumber.get(stallNumber);
+  // Gestisce sia numeri che stringhe per il matching
+  const getStallColor = (stallNumber: number | string): string => {
+    // Prova prima come numero, poi come stringa
+    const numKey = typeof stallNumber === 'string' ? parseInt(stallNumber, 10) : stallNumber;
+    const strKey = String(stallNumber);
+    const dbStall = stallsByNumber.get(numKey) || stallsByNumber.get(strKey);
     const status = dbStall?.status || 'libero';
-    console.log(`[DEBUG getStallColor] Posteggio ${stallNumber}: dbStall=${!!dbStall}, status=${status}`);
+    console.log(`[DEBUG getStallColor] Posteggio ${stallNumber}: numKey=${numKey}, strKey=${strKey}, dbStall=${!!dbStall}, status=${status}`);
     return getStallMapFillColor(status);
   };
   
