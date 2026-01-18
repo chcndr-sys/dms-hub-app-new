@@ -67,13 +67,14 @@ interface MarketMapComponentProps {
     type?: string;
     vendor_name?: string;
     impresa_id?: number;
+    wallet_id?: number; // ID wallet per detrazione importo
   }>;
   refreshKey?: number; // Key per forzare re-mount completo della mappa
   isSpuntaMode?: boolean; // Modalità spunta per test dimensioni
   isOccupaMode?: boolean; // Modalità occupa (click su posteggio libero -> occupato)
   isLiberaMode?: boolean; // Modalità libera (click su posteggio occupato -> libero)
   onConfirmAssignment?: (stallId: number) => Promise<void>; // Callback per confermare assegnazione (spunta)
-  onOccupaStall?: (stallId: number) => Promise<void>; // Callback per occupare posteggio
+  onOccupaStall?: (stallId: number, impresaId?: number, walletId?: number) => Promise<void>; // Callback per occupare posteggio
   onLiberaStall?: (stallId: number) => Promise<void>; // Callback per liberare posteggio
   costPerSqm?: number; // Costo per metro quadro per calcolo canone spunta
   routeConfig?: { // Configurazione routing (opzionale)
@@ -649,7 +650,7 @@ export function MarketMapComponent({
                                 return;
                               }
                               try {
-                                await onOccupaStall(dbStall.id);
+                                await onOccupaStall(dbStall.id, dbStall.impresa_id, dbStall.wallet_id);
                               } catch (error) {
                                 console.error('[ERROR] Occupa posteggio:', error);
                                 alert('Errore durante l\'occupazione!');
@@ -865,7 +866,7 @@ export function MarketMapComponent({
 	                              className="w-full bg-[#ef4444] hover:bg-[#ef4444]/80 text-white font-bold py-3 px-4 rounded transition-colors shadow-lg shadow-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
 	                              onClick={async (e) => {
 	                                e.stopPropagation();
-	                                if (onOccupaStall && dbStall?.id) await onOccupaStall(dbStall.id);
+	                                if (onOccupaStall && dbStall?.id) await onOccupaStall(dbStall.id, dbStall.impresa_id, dbStall.wallet_id);
 	                              }}
 	                            >
 	                              ✅ Conferma Occupazione

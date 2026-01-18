@@ -82,6 +82,7 @@ interface Stall {
   vendor_business_name: string | null;
   vendor_contact_name: string | null;
   impresa_id: number | null;
+  wallet_id: number | null; // ID wallet per detrazione importo
   spuntista_impresa_id: number | null;
   spuntista_nome: string | null;
 }
@@ -2198,6 +2199,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
             type: s.type,
             vendor_name: s.vendor_business_name || undefined,
             impresa_id: s.impresa_id || undefined,
+            wallet_id: s.wallet_id || undefined, // Per detrazione importo
             dimensions: s.width && s.depth ? `${s.width}x${s.depth}` : undefined
           }));
           return (
