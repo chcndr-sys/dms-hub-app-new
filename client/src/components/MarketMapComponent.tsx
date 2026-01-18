@@ -228,7 +228,7 @@ export function MarketMapComponent({
       console.log('[DEBUG] Bounds calcolati da area mercato, punti:', allCoords.length);
     } else {
       // Fallback: calcola bounds da tutti i posteggi
-      mapData.stalls_geojson.features.forEach((feature: any) => {
+      mapData.stalls_geojson?.features?.forEach((feature: any) => {
         if (feature.geometry?.type === 'Polygon' && feature.geometry.coordinates?.[0]) {
           feature.geometry.coordinates[0].forEach((coord: number[]) => {
             allCoords.push([coord[1], coord[0]]);
@@ -504,8 +504,8 @@ export function MarketMapComponent({
           })()}
           {/* Layer Macchia Verde (Area Mercato) - Renderizza PRIMA dei posteggi */}
           {mapData && !showItalyView && mapData.stalls_geojson?.features
-            .filter(f => (f.properties?.kind === 'area' || f.properties?.type === 'mercato') && f.geometry.type === 'Polygon')
-            .map((feature, idx) => (
+            ?.filter(f => (f.properties?.kind === 'area' || f.properties?.type === 'mercato') && f.geometry.type === 'Polygon')
+            ?.map((feature, idx) => (
               <Polygon
                 key={`area-${idx}`}
                 positions={(feature.geometry.coordinates[0] as number[][]).map(c => [c[1], c[0]] as [number, number])}
