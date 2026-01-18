@@ -2097,19 +2097,22 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
             {isAnimating ? '⏹ STOP' : `✓ Conferma Assegnazione (${reservedCount} posteggi)`}
           </Button>
           
-          {/* Pulsante Chiudi Spunta - imposta orari rifiuti/uscita */}
+          {/* Pulsante Chiudi Mercato - registra uscita per TUTTI e libera TUTTI i posteggi */}
           <Button
             className="w-full mt-2 font-semibold py-2 border-2 bg-[#ef4444] hover:bg-[#ef4444]/80 border-[#ef4444]/50 text-white"
             onClick={async () => {
               const confirmed = window.confirm(
-                `Chiudere la spunta?\n\n` +
-                `Verrà registrato l'orario di uscita per tutti gli spuntisti con posteggio assegnato e i posteggi verranno liberati.`
+                `Chiudere il mercato?\n\n` +
+                `Questa azione:\n` +
+                `• Registrerà l'orario di uscita per TUTTI (concessionari + spuntisti)\n` +
+                `• Libererà TUTTI i posteggi\n` +
+                `• Reset completo per il giorno successivo`
               );
               
               if (!confirmed) return;
               
               try {
-                const response = await fetch(`${API_BASE_URL}/api/test-mercato/chiudi-spunta`, {
+                const response = await fetch(`${API_BASE_URL}/api/test-mercato/chiudi-mercato`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ market_id: marketId }),
@@ -2117,20 +2120,22 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
                 const data = await response.json();
                 if (data.success) {
-                  toast.success(`🔒 ${data.message}`);
+                  toast.success(`🏪 ${data.message}`);
                   setIsSpuntaMode(false);
+                  setIsOccupaMode(false);
+                  setIsLiberaMode(false);
                 } else {
-                  toast.error(data.error || 'Errore durante la chiusura spunta');
+                  toast.error(data.error || 'Errore durante la chiusura mercato');
                 }
                 
                 await fetchData();
               } catch (error) {
-                console.error('Errore chiusura spunta:', error);
-                toast.error('Errore durante la chiusura della spunta');
+                console.error('Errore chiusura mercato:', error);
+                toast.error('Errore durante la chiusura del mercato');
               }
             }}
           >
-            🔒 Chiudi Spunta
+            🏪 Chiudi Mercato
           </Button>
         </div>
       )}
