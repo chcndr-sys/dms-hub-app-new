@@ -736,7 +736,7 @@ export function MarketMapComponent({
                           {(() => {
                             // Funzione di formattazione intelligente
                             const smartFormat = (val: number) => {
-                              if (isNaN(val)) return '-';
+                              if (val === undefined || val === null || isNaN(val) || typeof val !== 'number') return '-';
                               if (Math.abs(val - Math.round(val)) < 0.05) {
                                 return Math.round(val).toString();
                               }
