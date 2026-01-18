@@ -127,6 +127,8 @@ function StallCenterController({ stallCenter }: { stallCenter?: [number, number]
   
   useEffect(() => {
     if (!stallCenter) return;
+    // Controllo sicurezza per evitare errori toFixed su valori non numerici
+    if (typeof stallCenter[0] !== 'number' || typeof stallCenter[1] !== 'number') return;
     
     // Crea una chiave unica per questo centro
     const centerKey = `${stallCenter[0].toFixed(6)},${stallCenter[1].toFixed(6)}`;
@@ -396,10 +398,10 @@ export function MarketMapComponent({
                       📍 Centro Mercato
                     </div>
                     <div className="text-gray-600">
-                      Lat: {fixedCenter[0].toFixed(6)}
+                      Lat: {typeof fixedCenter[0] === 'number' ? fixedCenter[0].toFixed(6) : '-'}
                     </div>
                     <div className="text-gray-600">
-                      Lng: {fixedCenter[1].toFixed(6)}
+                      Lng: {typeof fixedCenter[1] === 'number' ? fixedCenter[1].toFixed(6) : '-'}
                     </div>
                   </div>
                 </Popup>
@@ -477,8 +479,8 @@ export function MarketMapComponent({
                     <div className="bg-[#1e293b] p-2 rounded border border-gray-700 mt-2">
                       <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Coordinate GPS</div>
                       <div className="font-mono text-xs text-gray-300 flex justify-between">
-                        <span>Lat: {market.latitude.toFixed(6)}</span>
-                        <span>Lng: {market.longitude.toFixed(6)}</span>
+                        <span>Lat: {typeof market.latitude === 'number' ? market.latitude.toFixed(6) : '-'}</span>
+                        <span>Lng: {typeof market.longitude === 'number' ? market.longitude.toFixed(6) : '-'}</span>
                       </div>
                     </div>
                     
@@ -757,9 +759,13 @@ export function MarketMapComponent({
                             // 2. Se mancano nel DB, usa calcolo geometrico
                             if (isEstimated) {
                               const dims = calculatePolygonDimensions(positions);
-                              widthStr = dims.width.toFixed(2);
-                              lengthStr = dims.height.toFixed(2);
-                              areaStr = dims.area.toFixed(2);
+                              // Controlli sicurezza per evitare errori toFixed su undefined/NaN
+                              const safeWidth = typeof dims?.width === 'number' && !isNaN(dims.width) ? dims.width : 0;
+                              const safeHeight = typeof dims?.height === 'number' && !isNaN(dims.height) ? dims.height : 0;
+                              const safeAreaCalc = typeof dims?.area === 'number' && !isNaN(dims.area) ? dims.area : 0;
+                              widthStr = safeWidth.toFixed(2);
+                              lengthStr = safeHeight.toFixed(2);
+                              areaStr = safeAreaCalc.toFixed(2);
                             }
                             
                             return (
@@ -921,8 +927,8 @@ export function MarketMapComponent({
                             </div>
                             <div className="bg-[#1e293b] p-2 rounded border border-gray-700">
                               <div className="text-gray-400 mb-1">COORDINATE</div>
-                              <div className="font-medium text-white truncate" title={`${positions[0]?.[0].toFixed(5)}, ${positions[0]?.[1].toFixed(5)}`}>
-                                {positions[0] ? `${positions[0][0].toFixed(4)}, ${positions[0][1].toFixed(4)}` : '-'}
+                              <div className="font-medium text-white truncate" title={positions[0] && typeof positions[0][0] === 'number' && typeof positions[0][1] === 'number' ? `${positions[0][0].toFixed(5)}, ${positions[0][1].toFixed(5)}` : '-'}>
+                                {positions[0] && typeof positions[0][0] === 'number' && typeof positions[0][1] === 'number' ? `${positions[0][0].toFixed(4)}, ${positions[0][1].toFixed(4)}` : '-'}
                               </div>
                             </div>
                           </div>
