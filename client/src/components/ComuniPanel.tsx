@@ -16,6 +16,7 @@ const TIPI_SETTORE = [
   { value: 'SEGRETERIA', label: 'Segreteria Generale' },
   { value: 'URP', label: 'URP - Relazioni con il Pubblico' },
   { value: 'PROTEZIONE_CIVILE', label: 'Protezione Civile' },
+  { value: 'ALTRO', label: 'Altro Settore' },
 ];
 
 interface Comune {
@@ -87,6 +88,7 @@ export default function ComuniPanel() {
   const [ipaResults, setIpaResults] = useState<IPAResult[]>([]);
   const [ipaLoading, setIpaLoading] = useState(false);
   const [ipaError, setIpaError] = useState('');
+  const [importingSettori, setImportingSettori] = useState(false);
 
   // Form state per comune
   const [comuneForm, setComuneForm] = useState({
@@ -242,6 +244,83 @@ export default function ComuniPanel() {
       fetchSettori(selectedComune.id);
     }
   }, [selectedComune]);
+
+  // Import settori da IPA
+  const handleImportSettoriIPA = async () => {
+    if (!selectedComune?.codice_ipa) {
+      alert('Questo comune non ha un codice IPA. Importa prima i dati del comune da IndicePA.');
+      return;
+    }
+    
+    if (!confirm(`Vuoi importare le Unità Organizzative da IndicePA per ${selectedComune.nome}?\n\nQuesto aggiungerà i settori trovati senza eliminare quelli esistenti.`)) {
+      return;
+    }
+    
+    setImportingSettori(true);
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/ipa/uo/${selectedComune.codice_ipa}`);
+      const data = await res.json();
+      
+      if (data.success) {
+        const uoList = data.data;
+        
+        if (uoList.length === 0) {
+          alert('Nessuna Unità Organizzativa trovata per questo ente su IndicePA.');
+          return;
+        }
+        
+        // Importa ogni UO come settore
+        let imported = 0;
+        let errors = 0;
+        
+        for (const uo of uoList) {
+          try {
+            const settoreData = {
+              tipo_settore: uo.tipo_settore || 'ALTRO',
+              nome_settore: uo.nome_uo || '',
+              responsabile_nome: uo.responsabile_nome || '',
+              responsabile_cognome: uo.responsabile_cognome || '',
+              email: uo.email || '',
+              pec: uo.pec || '',
+              telefono: uo.telefono || '',
+              indirizzo: uo.indirizzo || '',
+              orari_apertura: '',
+              note: `Importato da IPA - Codice UO: ${uo.codice_uo || 'N/A'}`
+            };
+            
+            const saveRes = await fetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/settori`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(settoreData)
+            });
+            
+            const saveData = await saveRes.json();
+            if (saveData.success) {
+              imported++;
+            } else {
+              errors++;
+            }
+          } catch (e) {
+            errors++;
+          }
+        }
+        
+        // Ricarica settori
+        fetchSettori(selectedComune.id);
+        fetchComuni();
+        
+        alert(`Import completato!\n\n✅ Settori importati: ${imported}\n❌ Errori: ${errors}\n📊 Totale UO trovate: ${uoList.length}`);
+      } else {
+        alert(`Errore: ${data.error || 'Impossibile recuperare le UO da IPA'}`);
+      }
+    } catch (error) {
+      console.error('Error importing UO from IPA:', error);
+      alert('Errore di connessione durante l\'import da IPA');
+    } finally {
+      setImportingSettori(false);
+    }
+  };
 
   // Salva comune
   const handleSaveComune = async () => {
@@ -601,20 +680,36 @@ export default function ComuniPanel() {
               <div className="border-t border-gray-700 pt-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-medium text-white">Settori e Referenti</h4>
-                  <button
-                    onClick={() => {
-                      setEditingSettore(null);
-                      setSettoreForm({
-                        tipo_settore: '', nome_settore: '', responsabile_nome: '', responsabile_cognome: '',
-                        email: '', pec: '', telefono: '', indirizzo: '', orari_apertura: '', note: ''
-                      });
-                      setShowSettoreForm(true);
-                    }}
-                    className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Aggiungi Settore
-                  </button>
+                  <div className="flex gap-2">
+                    {selectedComune?.codice_ipa && (
+                      <button
+                        onClick={() => handleImportSettoriIPA()}
+                        disabled={importingSettori}
+                        className="flex items-center gap-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        {importingSettori ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Download className="w-3 h-3" />
+                        )}
+                        {importingSettori ? 'Importo...' : 'Import da IPA'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setEditingSettore(null);
+                        setSettoreForm({
+                          tipo_settore: '', nome_settore: '', responsabile_nome: '', responsabile_cognome: '',
+                          email: '', pec: '', telefono: '', indirizzo: '', orari_apertura: '', note: ''
+                        });
+                        setShowSettoreForm(true);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Aggiungi Settore
+                    </button>
+                  </div>
                 </div>
 
                 {settori.length === 0 ? (
