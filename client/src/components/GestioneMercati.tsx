@@ -2040,7 +2040,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     break;
                   }
                   try {
-                    await handleOccupaStall(stall.id);
+                    await handleOccupaStall(stall.id, stall.impresa_id || undefined, stall.wallet_id || undefined);
                     successCount++;
                   } catch (error) {
                     console.error(`Errore occupazione posteggio ${stall.number}:`, error);
