@@ -59,6 +59,7 @@ interface IPAResult {
   indirizzo: string;
   cap: string;
   codice_istat: string;
+  codice_comune_istat: string;
   codice_catastale: string;
   pec: string;
   email: string;
@@ -159,13 +160,37 @@ export default function ComuniPanel() {
     }
   };
 
+  // Mapping codice provincia ISTAT -> sigla provincia
+  const provinceISTATMap: { [key: string]: string } = {
+    '001': 'TO', '002': 'VC', '003': 'NO', '004': 'CN', '005': 'AT', '006': 'AL', '096': 'BI', '103': 'VB',
+    '007': 'AO',
+    '012': 'VA', '013': 'CO', '014': 'SO', '015': 'MI', '016': 'BG', '017': 'BS', '018': 'PV', '019': 'CR', '020': 'MN', '097': 'LC', '098': 'LO', '108': 'MB',
+    '021': 'BZ', '022': 'TN',
+    '023': 'VR', '024': 'VI', '025': 'BL', '026': 'TV', '027': 'VE', '028': 'PD', '029': 'RO',
+    '030': 'UD', '031': 'GO', '032': 'TS', '093': 'PN',
+    '008': 'IM', '009': 'SV', '010': 'GE', '011': 'SP',
+    '033': 'PC', '034': 'PR', '035': 'RE', '036': 'MO', '037': 'BO', '038': 'FE', '039': 'RA', '040': 'FC', '099': 'RN',
+    '045': 'MS', '046': 'LU', '047': 'PT', '048': 'FI', '049': 'LI', '050': 'PI', '051': 'AR', '052': 'SI', '053': 'GR', '100': 'PO',
+    '054': 'PG', '055': 'TR',
+    '041': 'PU', '042': 'AN', '043': 'MC', '044': 'AP', '109': 'FM',
+    '056': 'VT', '057': 'RI', '058': 'RM', '059': 'LT', '060': 'FR',
+    '066': 'AQ', '067': 'TE', '068': 'PE', '069': 'CH',
+    '070': 'CB', '094': 'IS',
+    '061': 'CE', '062': 'BN', '063': 'NA', '064': 'AV', '065': 'SA',
+    '071': 'FG', '072': 'BA', '073': 'TA', '074': 'BR', '075': 'LE', '110': 'BT',
+    '076': 'PZ', '077': 'MT',
+    '078': 'CS', '079': 'CZ', '080': 'RC', '101': 'KR', '102': 'VV',
+    '081': 'TP', '082': 'PA', '083': 'ME', '084': 'AG', '085': 'CL', '086': 'EN', '087': 'CT', '088': 'RG', '089': 'SR',
+    '090': 'SS', '091': 'NU', '092': 'CA', '095': 'OR', '111': 'SU'
+  };
+
   // Importa dati da IPA nel form
   const importFromIPA = (ipa: IPAResult) => {
-    // Estrai provincia dal codice catastale o dall'indirizzo
+    // Estrai provincia dal codice comune ISTAT (primi 3 caratteri = codice provincia)
     let provincia = '';
-    if (ipa.codice_catastale) {
-      // Il codice catastale inizia con la lettera della provincia
-      provincia = ipa.codice_catastale.substring(0, 1).toUpperCase();
+    if (ipa.codice_comune_istat && ipa.codice_comune_istat.length >= 3) {
+      const codProvincia = ipa.codice_comune_istat.substring(0, 3);
+      provincia = provinceISTATMap[codProvincia] || '';
     }
     
     // Estrai regione dal codice ISTAT (primi 2 caratteri = regione)
@@ -177,8 +202,8 @@ export default function ComuniPanel() {
       '14': 'Molise', '15': 'Campania', '16': 'Puglia', '17': 'Basilicata', '18': 'Calabria',
       '19': 'Sicilia', '20': 'Sardegna'
     };
-    if (ipa.codice_istat && ipa.codice_istat.length >= 2) {
-      const codRegione = ipa.codice_istat.substring(0, 2);
+    if (ipa.codice_comune_istat && ipa.codice_comune_istat.length >= 2) {
+      const codRegione = ipa.codice_comune_istat.substring(0, 2);
       regione = regioniMap[codRegione] || '';
     }
     
@@ -193,7 +218,7 @@ export default function ComuniPanel() {
       provincia: provincia,
       regione: regione,
       cap: ipa.cap || '',
-      codice_istat: ipa.codice_istat || '',
+      codice_istat: ipa.codice_comune_istat || '',
       codice_catastale: ipa.codice_catastale || '',
       codice_ipa: ipa.codice_ipa || '',
       pec: ipa.pec || '',
