@@ -1463,6 +1463,25 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
         const data = await response.json();
         if (data.success) {
+          // Caso: nessuno spuntista disponibile - posteggio torna libero
+          if (data.no_spuntisti) {
+            console.log('[DEBUG handleConfirmAssignment] Nessuno spuntista disponibile, posteggio liberato:', data);
+            toast.info(
+              `📭 Posteggio ${data.data.stall_number} - Nessuno spuntista disponibile\n` +
+              `Stato: LIBERO`,
+              { duration: 2000 }
+            );
+            
+            // Aggiorna stato locale a LIBERO
+            setStalls(prevStalls => 
+              prevStalls.map(s => 
+                s.id === stallId ? { ...s, status: 'libero' } : s
+              )
+            );
+            return;
+          }
+          
+          // Caso normale: spuntista assegnato
           console.log('[DEBUG handleConfirmAssignment] Spunta assegnata:', data);
           const spuntista = data.data.spuntista;
           const costo = data.data.costo_posteggio;
