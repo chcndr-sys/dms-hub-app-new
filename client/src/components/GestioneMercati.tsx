@@ -1449,6 +1449,16 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
     try {
       console.log('[DEBUG handleConfirmAssignment] Confermando assegnazione posteggio:', stallId, 'isSpuntaMode:', isSpuntaMode);
       
+      // AGGIORNA STATO LOCALE IMMEDIATAMENTE per animazione veloce
+      setStallsData(prev => prev.map(s => 
+        s.id === stallId ? { ...s, status: 'occupato' } : s
+      ));
+      setStalls(prevStalls => 
+        prevStalls.map(s => 
+          s.id === stallId ? { ...s, status: 'occupato' } : s
+        )
+      );
+      
       // Se siamo in modalità spunta, usa l'endpoint dedicato che:
       // - Assegna al primo spuntista in graduatoria
       // - Scala il wallet
@@ -1475,20 +1485,19 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
             { duration: 4000 }
           );
           
-          // Aggiorna stato locale
-          setStalls(prevStalls => 
-            prevStalls.map(s => 
-              s.id === stallId ? { ...s, status: 'occupato' } : s
-            )
-          );
-          
-          // Ricarica dati spuntisti per aggiornare la tabella
-          await fetchData();
-          
           // Deseleziona posteggio
           setSelectedStallId(null);
           setSelectedStallCenter(null);
         } else {
+          // Rollback stato locale se fallisce
+          setStallsData(prev => prev.map(s => 
+            s.id === stallId ? { ...s, status: 'in_assegnazione' } : s
+          ));
+          setStalls(prevStalls => 
+            prevStalls.map(s => 
+              s.id === stallId ? { ...s, status: 'in_assegnazione' } : s
+            )
+          );
           toast.error(data.error || 'Errore nell\'assegnazione spunta');
         }
         return;
@@ -1538,21 +1547,32 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
           toast.success('Posteggio assegnato con successo!');
         }
         
-        // Aggiorna SOLO lo stato locale per evitare reload mappa
-        setStalls(prevStalls => 
-          prevStalls.map(s => 
-            s.id === stallId ? { ...s, status: 'occupato' } : s
-          )
-        );
-        
         // Deseleziona il posteggio per fermare il lampeggiamento e chiudere il popup
         setSelectedStallId(null);
         setSelectedStallCenter(null);
       } else {
+        // Rollback stato locale se fallisce
+        setStallsData(prev => prev.map(s => 
+          s.id === stallId ? { ...s, status: 'in_assegnazione' } : s
+        ));
+        setStalls(prevStalls => 
+          prevStalls.map(s => 
+            s.id === stallId ? { ...s, status: 'in_assegnazione' } : s
+          )
+        );
         toast.error('Errore nell\'assegnazione del posteggio');
       }
     } catch (error) {
       console.error('[ERROR handleConfirmAssignment]:', error);
+      // Rollback stato locale
+      setStallsData(prev => prev.map(s => 
+        s.id === stallId ? { ...s, status: 'in_assegnazione' } : s
+      ));
+      setStalls(prevStalls => 
+        prevStalls.map(s => 
+          s.id === stallId ? { ...s, status: 'in_assegnazione' } : s
+        )
+      );
       toast.error('Errore durante l\'assegnazione del posteggio');
       throw error; // Rilancia l'errore per gestirlo nel popup
     }
@@ -1860,23 +1880,22 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                       break;
                     }
                     try {
-                      // Cambia stato a in_assegnazione
-                      const response = await fetch(`${API_BASE_URL}/api/stalls/${stall.id}`, {
+                      // AGGIORNA STATO LOCALE IMMEDIATAMENTE per animazione veloce
+                      setStallsData(prev => prev.map(s => 
+                        s.id === stall.id ? { ...s, status: 'in_assegnazione' } : s
+                      ));
+                      toast.success(`Posteggio ${stall.number} → in assegnazione`);
+                      successCount++;
+                      
+                      // Cambia stato nel backend (in background)
+                      fetch(`${API_BASE_URL}/api/stalls/${stall.id}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status: 'in_assegnazione' }),
-                      });
-                      const data = await response.json();
-                      if (data.success) {
-                        toast.success(`Posteggio ${stall.number} → in assegnazione`);
-                        // Aggiorna stato locale
-                        setStallsData(prev => prev.map(s => 
-                          s.id === stall.id ? { ...s, status: 'in_assegnazione' } : s
-                        ));
-                        successCount++;
-                        // Piccolo delay per animazione visibile
-                        await new Promise(r => setTimeout(r, 50));
-                      }
+                      }).catch(err => console.error(`Errore backend posteggio ${stall.number}:`, err));
+                      
+                      // Piccolo delay per animazione visibile
+                      await new Promise(r => setTimeout(r, 50));
                     } catch (error) {
                       console.error(`Errore posteggio ${stall.number}:`, error);
                     }
