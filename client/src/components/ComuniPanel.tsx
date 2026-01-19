@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Edit, Trash2, Phone, Mail, Globe, MapPin, Users, ChevronDown, ChevronUp, Save, X, Search } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Phone, Mail, Globe, MapPin, Users, ChevronDown, ChevronUp, Save, X, Search, Download, Loader2 } from 'lucide-react';
 
 const API_BASE_URL = 'https://orchestratore.mio-hub.me';
 
@@ -26,6 +26,7 @@ interface Comune {
   cap: string;
   codice_istat: string;
   codice_catastale: string;
+  codice_ipa?: string;
   pec: string;
   email: string;
   telefono: string;
@@ -50,6 +51,23 @@ interface Settore {
   note: string;
 }
 
+interface IPAResult {
+  codice_ipa: string;
+  denominazione: string;
+  codice_fiscale: string;
+  tipologia: string;
+  indirizzo: string;
+  cap: string;
+  codice_istat: string;
+  codice_catastale: string;
+  pec: string;
+  email: string;
+  sito_web: string;
+  responsabile_nome: string;
+  responsabile_cognome: string;
+  titolo_responsabile: string;
+}
+
 export default function ComuniPanel() {
   const [comuni, setComuni] = useState<Comune[]>([]);
   const [selectedComune, setSelectedComune] = useState<Comune | null>(null);
@@ -61,11 +79,18 @@ export default function ComuniPanel() {
   const [editingSettore, setEditingSettore] = useState<Settore | null>(null);
   const [expandedSettori, setExpandedSettori] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Stato per ricerca IPA
+  const [showIPASearch, setShowIPASearch] = useState(false);
+  const [ipaSearchQuery, setIpaSearchQuery] = useState('');
+  const [ipaResults, setIpaResults] = useState<IPAResult[]>([]);
+  const [ipaLoading, setIpaLoading] = useState(false);
+  const [ipaError, setIpaError] = useState('');
 
   // Form state per comune
   const [comuneForm, setComuneForm] = useState({
     nome: '', provincia: '', regione: '', cap: '', codice_istat: '',
-    codice_catastale: '', pec: '', email: '', telefono: '', sito_web: '',
+    codice_catastale: '', codice_ipa: '', pec: '', email: '', telefono: '', sito_web: '',
     indirizzo: '', logo_url: ''
   });
 
@@ -103,6 +128,86 @@ export default function ComuniPanel() {
     }
   };
 
+  // Ricerca su IndicePA
+  const searchIPA = async () => {
+    if (!ipaSearchQuery || ipaSearchQuery.length < 3) {
+      setIpaError('Inserisci almeno 3 caratteri');
+      return;
+    }
+    
+    setIpaLoading(true);
+    setIpaError('');
+    setIpaResults([]);
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/ipa/search?q=${encodeURIComponent(ipaSearchQuery)}`);
+      const data = await res.json();
+      
+      if (data.success) {
+        setIpaResults(data.data);
+        if (data.data.length === 0) {
+          setIpaError('Nessun risultato trovato');
+        }
+      } else {
+        setIpaError(data.error || 'Errore nella ricerca');
+      }
+    } catch (error) {
+      console.error('Error searching IPA:', error);
+      setIpaError('Errore di connessione');
+    } finally {
+      setIpaLoading(false);
+    }
+  };
+
+  // Importa dati da IPA nel form
+  const importFromIPA = (ipa: IPAResult) => {
+    // Estrai provincia dal codice catastale o dall'indirizzo
+    let provincia = '';
+    if (ipa.codice_catastale) {
+      // Il codice catastale inizia con la lettera della provincia
+      provincia = ipa.codice_catastale.substring(0, 1).toUpperCase();
+    }
+    
+    // Estrai regione dal codice ISTAT (primi 2 caratteri = regione)
+    let regione = '';
+    const regioniMap: { [key: string]: string } = {
+      '01': 'Piemonte', '02': 'Valle d\'Aosta', '03': 'Lombardia', '04': 'Trentino-Alto Adige',
+      '05': 'Veneto', '06': 'Friuli-Venezia Giulia', '07': 'Liguria', '08': 'Emilia-Romagna',
+      '09': 'Toscana', '10': 'Umbria', '11': 'Marche', '12': 'Lazio', '13': 'Abruzzo',
+      '14': 'Molise', '15': 'Campania', '16': 'Puglia', '17': 'Basilicata', '18': 'Calabria',
+      '19': 'Sicilia', '20': 'Sardegna'
+    };
+    if (ipa.codice_istat && ipa.codice_istat.length >= 2) {
+      const codRegione = ipa.codice_istat.substring(0, 2);
+      regione = regioniMap[codRegione] || '';
+    }
+    
+    // Estrai nome comune dalla denominazione (rimuovi "Comune di ")
+    let nomeComune = ipa.denominazione;
+    if (nomeComune.toLowerCase().startsWith('comune di ')) {
+      nomeComune = nomeComune.substring(10);
+    }
+    
+    setComuneForm({
+      nome: nomeComune,
+      provincia: provincia,
+      regione: regione,
+      cap: ipa.cap || '',
+      codice_istat: ipa.codice_istat || '',
+      codice_catastale: ipa.codice_catastale || '',
+      codice_ipa: ipa.codice_ipa || '',
+      pec: ipa.pec || '',
+      email: ipa.email || '',
+      telefono: '',
+      sito_web: ipa.sito_web || '',
+      indirizzo: ipa.indirizzo || '',
+      logo_url: ''
+    });
+    
+    setShowIPASearch(false);
+    setShowComuneForm(true);
+  };
+
   useEffect(() => {
     fetchComuni();
   }, []);
@@ -133,7 +238,7 @@ export default function ComuniPanel() {
         setEditingComune(null);
         setComuneForm({
           nome: '', provincia: '', regione: '', cap: '', codice_istat: '',
-          codice_catastale: '', pec: '', email: '', telefono: '', sito_web: '',
+          codice_catastale: '', codice_ipa: '', pec: '', email: '', telefono: '', sito_web: '',
           indirizzo: '', logo_url: ''
         });
       }
@@ -218,6 +323,7 @@ export default function ComuniPanel() {
       cap: comune.cap || '',
       codice_istat: comune.codice_istat || '',
       codice_catastale: comune.codice_catastale || '',
+      codice_ipa: comune.codice_ipa || '',
       pec: comune.pec || '',
       email: comune.email || '',
       telefono: comune.telefono || '',
@@ -310,110 +416,108 @@ export default function ComuniPanel() {
             <Mail className="w-4 h-4" />
             Media Settori/Comune
           </div>
-          <div className="text-2xl font-bold text-orange-400">
+          <div className="text-2xl font-bold text-amber-400">
             {comuni.length > 0 ? (totalSettori / comuni.length).toFixed(1) : '0'}
           </div>
         </div>
       </div>
 
-      {/* Header */}
+      {/* Header con pulsanti */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Building2 className="w-6 h-6 text-cyan-400" />
-          <h2 className="text-xl font-semibold text-white">Gestione Comuni</h2>
+        <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+          <Building2 className="w-5 h-5 text-cyan-400" />
+          Gestione Comuni
+        </h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setShowIPASearch(true);
+              setIpaSearchQuery('');
+              setIpaResults([]);
+              setIpaError('');
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Importa da IPA
+          </button>
+          <button
+            onClick={() => {
+              setEditingComune(null);
+              setComuneForm({
+                nome: '', provincia: '', regione: '', cap: '', codice_istat: '',
+                codice_catastale: '', codice_ipa: '', pec: '', email: '', telefono: '', sito_web: '',
+                indirizzo: '', logo_url: ''
+              });
+              setShowComuneForm(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Nuovo Comune
+          </button>
         </div>
-        <button
-          onClick={() => {
-            setEditingComune(null);
-            setComuneForm({
-              nome: '', provincia: '', regione: '', cap: '', codice_istat: '',
-              codice_catastale: '', pec: '', email: '', telefono: '', sito_web: '',
-              indirizzo: '', logo_url: ''
-            });
-            setShowComuneForm(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nuovo Comune
-        </button>
       </div>
 
+      {/* Layout a due colonne */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Lista Comuni */}
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+        <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
           <h3 className="text-lg font-medium text-white mb-4">Comuni Registrati</h3>
           
-          {/* Barra di ricerca */}
+          {/* Ricerca locale */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Cerca per nome, provincia, regione o CAP..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500 transition-colors"
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Cerca per nome, provincia, regione o CAP..."
+              className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
             />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
           </div>
-          
+
           {filteredComuni.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              {searchQuery ? (
-                <>
-                  <p>Nessun comune trovato per "{searchQuery}"</p>
-                  <p className="text-sm">Prova con un altro termine di ricerca</p>
-                </>
-              ) : (
-                <>
-                  <p>Nessun comune registrato</p>
-                  <p className="text-sm">Clicca "Nuovo Comune" per iniziare</p>
-                </>
-              )}
+              <p>Nessun comune trovato</p>
+              <p className="text-sm">Clicca "Importa da IPA" o "Nuovo Comune" per iniziare</p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+            <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {filteredComuni.map(comune => (
                 <div
                   key={comune.id}
                   onClick={() => setSelectedComune(comune)}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
                     selectedComune?.id === comune.id
-                      ? 'bg-cyan-900/30 border-cyan-500'
-                      : 'bg-gray-700/30 border-gray-600 hover:border-gray-500'
+                      ? 'bg-cyan-600/20 border border-cyan-500'
+                      : 'bg-gray-700/50 border border-gray-600 hover:bg-gray-700'
                   }`}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium text-white">{comune.nome}</h4>
-                      <p className="text-sm text-gray-400">
-                        {comune.provincia && `${comune.provincia} - `}{comune.regione}
-                      </p>
-                      {comune.num_settori !== undefined && (
-                        <p className="text-xs text-cyan-400 mt-1">
+                      <div className="font-medium text-white">{comune.nome}</div>
+                      <div className="text-sm text-gray-400">
+                        {comune.provincia} - {comune.regione}
+                      </div>
+                      {comune.num_settori !== undefined && comune.num_settori > 0 && (
+                        <div className="text-xs text-cyan-400 mt-1">
                           <Users className="w-3 h-3 inline mr-1" />
                           {comune.num_settori} settori configurati
-                        </p>
+                        </div>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={(e) => { e.stopPropagation(); openEditComune(comune); }}
-                        className="p-1.5 text-gray-400 hover:text-cyan-400 transition-colors"
+                        className="p-1 text-gray-400 hover:text-cyan-400"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDeleteComune(comune.id); }}
-                        className="p-1.5 text-gray-400 hover:text-red-400 transition-colors"
+                        className="p-1 text-gray-400 hover:text-red-400"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -425,46 +529,52 @@ export default function ComuniPanel() {
           )}
         </div>
 
-        {/* Dettaglio Comune e Settori */}
-        <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+        {/* Dettaglio Comune */}
+        <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
           {selectedComune ? (
             <>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-white">{selectedComune.nome}</h3>
+                {selectedComune.codice_ipa && (
+                  <span className="text-xs bg-purple-600/30 text-purple-300 px-2 py-1 rounded">
+                    IPA: {selectedComune.codice_ipa}
+                  </span>
+                )}
+              </div>
+              
               {/* Info Comune */}
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-white mb-3">{selectedComune.nome}</h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {selectedComune.indirizzo && (
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <MapPin className="w-4 h-4 text-gray-500" />
-                      {selectedComune.indirizzo}
-                    </div>
-                  )}
-                  {selectedComune.telefono && (
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Phone className="w-4 h-4 text-gray-500" />
-                      {selectedComune.telefono}
-                    </div>
-                  )}
-                  {selectedComune.email && (
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Mail className="w-4 h-4 text-gray-500" />
-                      {selectedComune.email}
-                    </div>
-                  )}
-                  {selectedComune.sito_web && (
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Globe className="w-4 h-4 text-gray-500" />
-                      <a href={selectedComune.sito_web} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">
-                        {selectedComune.sito_web}
-                      </a>
-                    </div>
-                  )}
-                </div>
+              <div className="grid grid-cols-2 gap-3 mb-6 text-sm">
+                {selectedComune.indirizzo && (
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    {selectedComune.indirizzo}
+                  </div>
+                )}
+                {selectedComune.telefono && (
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    {selectedComune.telefono}
+                  </div>
+                )}
+                {selectedComune.email && (
+                  <div className="flex items-center gap-2 text-gray-300">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    {selectedComune.email}
+                  </div>
+                )}
+                {selectedComune.sito_web && (
+                  <div className="flex items-center gap-2 text-cyan-400">
+                    <Globe className="w-4 h-4" />
+                    <a href={selectedComune.sito_web} target="_blank" rel="noopener noreferrer" className="hover:underline truncate">
+                      {selectedComune.sito_web}
+                    </a>
+                  </div>
+                )}
               </div>
 
               {/* Settori */}
               <div className="border-t border-gray-700 pt-4">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3">
                   <h4 className="font-medium text-white">Settori e Referenti</h4>
                   <button
                     onClick={() => {
@@ -475,7 +585,7 @@ export default function ComuniPanel() {
                       });
                       setShowSettoreForm(true);
                     }}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+                    className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
                   >
                     <Plus className="w-3 h-3" />
                     Aggiungi Settore
@@ -483,21 +593,22 @@ export default function ComuniPanel() {
                 </div>
 
                 {settori.length === 0 ? (
-                  <div className="text-center py-6 text-gray-400">
-                    <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Nessun settore configurato</p>
+                  <div className="text-center py-6 text-gray-400 text-sm">
+                    Nessun settore configurato
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
                     {settori.map(settore => (
-                      <div key={settore.id} className="bg-gray-700/30 rounded-lg border border-gray-600">
+                      <div key={settore.id} className="bg-gray-700/50 rounded-lg border border-gray-600">
                         <div
                           onClick={() => toggleSettoreExpand(settore.id)}
-                          className="flex items-center justify-between p-3 cursor-pointer"
+                          className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-700/70"
                         >
-                          <div>
-                            <span className="text-white font-medium">{getTipoSettoreLabel(settore.tipo_settore)}</span>
-                            {settore.responsabile_nome && (
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-white">
+                              {getTipoSettoreLabel(settore.tipo_settore)}
+                            </span>
+                            {(settore.responsabile_nome || settore.responsabile_cognome) && (
                               <span className="text-gray-400 text-sm ml-2">
                                 - {settore.responsabile_nome} {settore.responsabile_cognome}
                               </span>
@@ -557,6 +668,95 @@ export default function ComuniPanel() {
         </div>
       </div>
 
+      {/* Modal Ricerca IPA */}
+      {showIPASearch && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Download className="w-5 h-5 text-purple-400" />
+                Importa da IndicePA
+              </h3>
+              <button onClick={() => setShowIPASearch(false)} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-gray-400 text-sm mb-4">
+              Cerca un comune nell'Indice delle Pubbliche Amministrazioni (IPA) per importare automaticamente i dati ufficiali.
+            </p>
+
+            {/* Campo ricerca IPA */}
+            <div className="flex gap-2 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={ipaSearchQuery}
+                  onChange={e => setIpaSearchQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && searchIPA()}
+                  placeholder="es. Comune di Grosseto, Comune di Bologna..."
+                  className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+                />
+              </div>
+              <button
+                onClick={searchIPA}
+                disabled={ipaLoading || ipaSearchQuery.length < 3}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                {ipaLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+                Cerca
+              </button>
+            </div>
+
+            {/* Errore */}
+            {ipaError && (
+              <div className="text-red-400 text-sm mb-4 p-3 bg-red-900/20 rounded-lg">
+                {ipaError}
+              </div>
+            )}
+
+            {/* Risultati IPA */}
+            {ipaResults.length > 0 && (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                <p className="text-sm text-gray-400 mb-2">
+                  {ipaResults.length} risultati trovati - clicca per importare
+                </p>
+                {ipaResults.map((ipa, index) => (
+                  <div
+                    key={index}
+                    onClick={() => importFromIPA(ipa)}
+                    className="p-3 bg-gray-700/50 rounded-lg border border-gray-600 hover:border-purple-500 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-medium text-white">{ipa.denominazione}</div>
+                        <div className="text-sm text-gray-400">
+                          {ipa.indirizzo}, {ipa.cap}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Codice IPA: {ipa.codice_ipa} | CF: {ipa.codice_fiscale}
+                        </div>
+                        {ipa.pec && (
+                          <div className="text-xs text-cyan-400 mt-1">
+                            PEC: {ipa.pec}
+                          </div>
+                        )}
+                      </div>
+                      <Download className="w-5 h-5 text-purple-400" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Modal Form Comune */}
       {showComuneForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -569,6 +769,15 @@ export default function ComuniPanel() {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {comuneForm.codice_ipa && (
+              <div className="mb-4 p-3 bg-purple-900/20 rounded-lg border border-purple-700">
+                <div className="text-sm text-purple-300">
+                  <Download className="w-4 h-4 inline mr-2" />
+                  Dati importati da IndicePA - Codice: {comuneForm.codice_ipa}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
@@ -764,16 +973,6 @@ export default function ComuniPanel() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Telefono</label>
-                <input
-                  type="text"
-                  value={settoreForm.telefono}
-                  onChange={e => setSettoreForm({...settoreForm, telefono: e.target.value})}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                  placeholder="es. 051 123456"
-                />
-              </div>
-              <div className="col-span-2">
                 <label className="block text-sm text-gray-400 mb-1">PEC</label>
                 <input
                   type="email"
@@ -783,14 +982,24 @@ export default function ComuniPanel() {
                   placeholder="es. suap@pec.comune.bologna.it"
                 />
               </div>
-              <div className="col-span-2">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Telefono</label>
+                <input
+                  type="text"
+                  value={settoreForm.telefono}
+                  onChange={e => setSettoreForm({...settoreForm, telefono: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="es. 051 123456"
+                />
+              </div>
+              <div>
                 <label className="block text-sm text-gray-400 mb-1">Orari Apertura</label>
                 <input
                   type="text"
                   value={settoreForm.orari_apertura}
                   onChange={e => setSettoreForm({...settoreForm, orari_apertura: e.target.value})}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                  placeholder="es. Lun-Ven 9:00-13:00, Mar-Gio 15:00-17:00"
+                  placeholder="es. Lun-Ven 9-13"
                 />
               </div>
               <div className="col-span-2">
@@ -818,7 +1027,7 @@ export default function ComuniPanel() {
                 className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
               >
                 <Save className="w-4 h-4" />
-                {editingSettore ? 'Salva Modifiche' : 'Aggiungi Settore'}
+                {editingSettore ? 'Salva Modifiche' : 'Crea Settore'}
               </button>
             </div>
           </div>
