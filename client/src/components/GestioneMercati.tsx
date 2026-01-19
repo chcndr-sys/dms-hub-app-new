@@ -2626,8 +2626,27 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                       {presenzaOggi?.ora_uscita || presenzaOggi?.checkout || '-'}
                     </TableCell>
                     
-                    {/* Presenze totali */}
-                    <TableCell className="text-xs text-center text-[#e8fbff]">
+                    {/* Presenze totali - cliccabile per modificare */}
+                    <TableCell 
+                      className="text-xs text-center text-[#e8fbff] cursor-pointer hover:text-[#14b8a6] hover:underline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Prepara i dati per il popup
+                        const concessionario = concessionsByStallId[stall.number];
+                        if (concessionario || gradRecord) {
+                          setSelectedSpuntistaForPresenze({
+                            impresa_id: concessionario?.impresa_id || gradRecord?.impresa_id,
+                            impresa_nome: concessionario?.ragione_sociale || stall.vendor_business_name,
+                            ragione_sociale: concessionario?.ragione_sociale || stall.vendor_business_name,
+                            wallet_id: gradRecord?.wallet_id || concessionario?.wallet_id,
+                            presenze_totali: gradRecord?.presenze_totali || 0,
+                            data_prima_presenza: gradRecord?.data_prima_presenza
+                          });
+                          setShowPresenzePopup(true);
+                        }
+                      }}
+                      title="Clicca per modificare le presenze storiche"
+                    >
                       {gradRecord?.presenze_totali || gradRecord?.presenze || 0}
                     </TableCell>
                     
