@@ -2516,7 +2516,12 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   return a.number.localeCompare(b.number);
                 }).map((stall) => {                  // Trova i dati di presenza per questo posteggio
                   const presenzaOggi = presenze.find(p => p.stall_number === stall.number || p.stallId === stall.id);
-                  const gradRecord = graduatoria.find(g => g.stall_number === stall.number || g.stallId === stall.id);
+                  // Cerca graduatoria: prima per posteggio, poi per spuntista assegnato
+                  let gradRecord = graduatoria.find(g => g.stall_number === stall.number || g.stallId === stall.id);
+                  // Se non trovato e c'è uno spuntista assegnato, cerca per impresa_id dello spuntista
+                  if (!gradRecord && stall.spuntista_impresa_id) {
+                    gradRecord = graduatoria.find(g => g.impresa_id === stall.spuntista_impresa_id);
+                  }
                   
                   return (
                   <TableRow 
