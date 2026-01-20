@@ -576,7 +576,24 @@ export default function ComuniPanel() {
             <input
               type="text"
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                // Deseleziona se il comune selezionato non è nei risultati filtrati
+                if (selectedComune) {
+                  const query = e.target.value.toLowerCase();
+                  const isInResults = comuni.some(c => 
+                    c.id === selectedComune.id && (
+                      c.nome.toLowerCase().includes(query) ||
+                      c.provincia.toLowerCase().includes(query) ||
+                      c.regione.toLowerCase().includes(query) ||
+                      (c.cap && c.cap.includes(query))
+                    )
+                  );
+                  if (!isInResults && query.length > 0) {
+                    setSelectedComune(null);
+                  }
+                }
+              }}
               placeholder="Cerca per nome, provincia, regione o CAP..."
               className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
             />
