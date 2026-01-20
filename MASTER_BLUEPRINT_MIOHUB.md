@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.39.0  
+> **Versione:** 3.40.0  
 > **Data:** 20 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -1151,6 +1151,35 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 ---
 
 ### 📝 CHANGELOG
+
+### v3.40.0 (20/01/2026) - Implementazione Statistiche Dashboard PA
+
+**Backend - Nuovi Endpoint Statistiche:**
+- `GET /api/stats/overview` - Statistiche aggregate per Dashboard Overview
+  - Utenti totali: 31 (da wallets)
+  - Mercati attivi: 2
+  - HUB: 79
+  - Comuni: 5
+  - Vendors: 12
+  - Posteggi: 564
+  - Imprese: 28
+  - Autorizzazioni SUAP: 3
+  - Domande Spunta: 10
+  - Utenti TCC: 3
+- `GET /api/stats/realtime` - Dati in tempo reale
+- `GET /api/stats/inspections` - Statistiche controlli/sanzioni
+- `GET /api/stats/growth` - Grafico crescita utenti
+
+**Frontend - Collegamento KPI:**
+- Hook `useDashboardData` modificato per chiamare `/api/stats/overview`
+- Indicatori Dashboard Overview ora collegati a dati reali
+- Rimossi mockData per indicatori principali
+
+**Commit:**
+- Backend: `stats.js` - Endpoint statistiche aggregate
+- Frontend: `7473285` - Connect Dashboard PA KPIs to real stats/overview endpoint
+
+---
 
 ### v3.39.0 (20/01/2026) - Progetto Statistiche Dashboard PA + Tab HUB Comuni
 
