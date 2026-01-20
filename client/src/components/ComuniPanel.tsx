@@ -52,6 +52,20 @@ interface Settore {
   note: string;
 }
 
+interface Mercato {
+  id: number;
+  code: string;
+  name: string;
+  municipality: string;
+  days: string;
+  total_stalls: number;
+  status: string;
+  latitude: string;
+  longitude: string;
+  cost_per_sqm: string;
+  annual_market_days: number;
+}
+
 interface IPAResult {
   codice_ipa: string;
   denominazione: string;
@@ -89,6 +103,8 @@ export default function ComuniPanel() {
   const [ipaLoading, setIpaLoading] = useState(false);
   const [ipaError, setIpaError] = useState('');
   const [importingSettori, setImportingSettori] = useState(false);
+  const [mercatiComune, setMercatiComune] = useState<Mercato[]>([]);
+  const [loadingMercati, setLoadingMercati] = useState(false);
   const [activeTab, setActiveTab] = useState<'anagrafica' | 'settori' | 'mercati' | 'fatturazione' | 'permessi'>('anagrafica');
 
   // Form state per comune
@@ -130,6 +146,22 @@ export default function ComuniPanel() {
       }
     } catch (error) {
       console.error('Error fetching settori:', error);
+    }
+  };
+
+  // Carica mercati di un comune
+  const fetchMercati = async (comuneId: number) => {
+    setLoadingMercati(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/comuni/${comuneId}/mercati`);
+      const data = await res.json();
+      if (data.success) {
+        setMercatiComune(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching mercati:', error);
+    } finally {
+      setLoadingMercati(false);
     }
   };
 
@@ -284,6 +316,7 @@ export default function ComuniPanel() {
   useEffect(() => {
     if (selectedComune) {
       fetchSettori(selectedComune.id);
+      fetchMercati(selectedComune.id);
     }
   }, [selectedComune]);
 
@@ -1026,12 +1059,63 @@ export default function ComuniPanel() {
                 <div className="pt-2">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-medium text-white">Mercati del Comune</h4>
+                    <span className="text-sm text-gray-400">{mercatiComune.length} mercati</span>
                   </div>
-                  <div className="text-center py-8 text-gray-400">
-                    <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>Nessun mercato associato a questo comune</p>
-                    <p className="text-sm mt-2">I mercati vengono associati automaticamente dalla sezione Gestione Mercati</p>
-                  </div>
+                  
+                  {loadingMercati ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-cyan-400" />
+                      <p className="text-gray-400 mt-2">Caricamento mercati...</p>
+                    </div>
+                  ) : mercatiComune.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>Nessun mercato associato a questo comune</p>
+                      <p className="text-sm mt-2">I mercati vengono associati dalla sezione Gestione Mercati</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {mercatiComune.map(mercato => (
+                        <div key={mercato.id} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h5 className="font-medium text-white">{mercato.name}</h5>
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${mercato.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                  {mercato.status === 'active' ? 'Attivo' : 'Inattivo'}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-400 mt-1">Codice: {mercato.code}</p>
+                            </div>
+                            <a 
+                              href={`/gestione-mercati?market=${mercato.id}`}
+                              className="text-cyan-400 hover:text-cyan-300 text-sm"
+                            >
+                              Vai al mercato →
+                            </a>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3 pt-3 border-t border-gray-700">
+                            <div>
+                              <p className="text-xs text-gray-500">Giorni</p>
+                              <p className="text-sm text-white">{mercato.days || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Posteggi</p>
+                              <p className="text-sm text-white">{mercato.total_stalls || 0}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Costo/mq</p>
+                              <p className="text-sm text-white">€ {mercato.cost_per_sqm || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Giornate/anno</p>
+                              <p className="text-sm text-white">{mercato.annual_market_days || '-'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
