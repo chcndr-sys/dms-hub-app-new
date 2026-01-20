@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Edit, Trash2, Phone, Mail, Globe, MapPin, Users, ChevronDown, ChevronUp, Save, X, Search, Download, Loader2 } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Phone, Mail, Globe, MapPin, Users, ChevronDown, ChevronUp, Save, X, Search, Download, Loader2, FileText, ShoppingBag, Shield, CreditCard } from 'lucide-react';
 
 const API_BASE_URL = 'https://orchestratore.mio-hub.me';
 
@@ -89,6 +89,7 @@ export default function ComuniPanel() {
   const [ipaLoading, setIpaLoading] = useState(false);
   const [ipaError, setIpaError] = useState('');
   const [importingSettori, setImportingSettori] = useState(false);
+  const [activeTab, setActiveTab] = useState<'anagrafica' | 'settori' | 'mercati' | 'fatturazione' | 'permessi'>('anagrafica');
 
   // Form state per comune
   const [comuneForm, setComuneForm] = useState({
@@ -646,6 +647,68 @@ export default function ComuniPanel() {
                 )}
               </div>
               
+              {/* Tab Navigation */}
+              <div className="flex border-b border-gray-700 mb-4 overflow-x-auto">
+                <button
+                  onClick={() => setActiveTab('anagrafica')}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'anagrafica'
+                      ? 'text-cyan-400 border-b-2 border-cyan-400'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Building2 className="w-4 h-4" />
+                  Anagrafica
+                </button>
+                <button
+                  onClick={() => setActiveTab('settori')}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'settori'
+                      ? 'text-cyan-400 border-b-2 border-cyan-400'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  Settori
+                </button>
+                <button
+                  onClick={() => setActiveTab('mercati')}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'mercati'
+                      ? 'text-cyan-400 border-b-2 border-cyan-400'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  Mercati
+                </button>
+                <button
+                  onClick={() => setActiveTab('fatturazione')}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'fatturazione'
+                      ? 'text-cyan-400 border-b-2 border-cyan-400'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Fatturazione
+                </button>
+                <button
+                  onClick={() => setActiveTab('permessi')}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'permessi'
+                      ? 'text-cyan-400 border-b-2 border-cyan-400'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Shield className="w-4 h-4" />
+                  Permessi
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              {activeTab === 'anagrafica' && (
+                <>
               {/* Info Comune */}
               <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
                 {selectedComune.indirizzo && (
@@ -709,9 +772,12 @@ export default function ComuniPanel() {
                   </div>
                 )}
               </div>
+                </>
+              )}
 
-              {/* Settori */}
-              <div className="border-t border-gray-700 pt-4">
+              {/* Tab Settori */}
+              {activeTab === 'settori' && (
+              <div className="pt-2">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-medium text-white">Settori e Referenti</h4>
                   <div className="flex gap-2">
@@ -812,6 +878,89 @@ export default function ComuniPanel() {
                   </div>
                 )}
               </div>
+              )}
+
+              {/* Tab Mercati */}
+              {activeTab === 'mercati' && (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-medium text-white">Mercati del Comune</h4>
+                  </div>
+                  <div className="text-center py-8 text-gray-400">
+                    <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>Nessun mercato associato a questo comune</p>
+                    <p className="text-sm mt-2">I mercati vengono associati automaticamente dalla sezione Gestione Mercati</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Fatturazione */}
+              {activeTab === 'fatturazione' && (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-medium text-white">Fatturazione e Contratti</h4>
+                    <button className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors">
+                      <Plus className="w-3 h-3" />
+                      Nuovo Contratto
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-700/30 rounded-lg border border-gray-600">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-white">Contratto Servizio MIO-HUB</span>
+                        <span className="text-xs bg-yellow-600/30 text-yellow-300 px-2 py-1 rounded">In attesa</span>
+                      </div>
+                      <p className="text-sm text-gray-400">Contratto per utilizzo piattaforma MIO-HUB con integrazione PagoPA</p>
+                      <div className="mt-3 flex gap-2">
+                        <button className="text-xs text-cyan-400 hover:underline">Visualizza</button>
+                        <button className="text-xs text-emerald-400 hover:underline">Genera Fattura</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Permessi */}
+              {activeTab === 'permessi' && (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-medium text-white">Gestione Permessi e Ruoli</h4>
+                    <button className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors">
+                      <Plus className="w-3 h-3" />
+                      Assegna Utente
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-gray-700/30 rounded-lg border border-gray-600">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-white">Admin Comune</span>
+                          <p className="text-xs text-gray-400">Accesso completo a tutte le funzionalità del comune</p>
+                        </div>
+                        <span className="text-xs bg-purple-600/30 text-purple-300 px-2 py-1 rounded">0 utenti</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-gray-700/30 rounded-lg border border-gray-600">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-white">Operatore Mercato</span>
+                          <p className="text-xs text-gray-400">Gestione presenze e spunta mercati</p>
+                        </div>
+                        <span className="text-xs bg-purple-600/30 text-purple-300 px-2 py-1 rounded">0 utenti</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-gray-700/30 rounded-lg border border-gray-600">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-white">Polizia Locale</span>
+                          <p className="text-xs text-gray-400">Controlli e verbali</p>
+                        </div>
+                        <span className="text-xs bg-purple-600/30 text-purple-300 px-2 py-1 rounded">0 utenti</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-12 text-gray-400">
