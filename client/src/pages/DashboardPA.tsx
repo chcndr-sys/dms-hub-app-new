@@ -2204,8 +2204,8 @@ export default function DashboardPA() {
               <CardContent>
                 {realData.statsGrowth?.growth && realData.statsGrowth.growth.length > 0 ? (
                   <div className="h-64 flex items-end justify-between gap-2">
-                    {realData.statsGrowth.growth.map((item: any, i: number) => {
-                      const growthData = realData.statsGrowth.growth;
+                    {(realData.statsGrowth?.growth || []).map((item: any, i: number) => {
+                      const growthData = realData.statsGrowth?.growth || [];
                       const maxUsers = Math.max(...growthData.map((d: any) => parseInt(d.new_users) || 0));
                       const currentValue = parseInt(item.new_users) || 0;
                       // Formatta la data della settimana
@@ -2504,13 +2504,13 @@ export default function DashboardPA() {
                       <div className="w-32 bg-[#14b8a6]/20 rounded-full h-2">
                         <div className="bg-[#10b981] h-2 rounded-full" style={{ 
                           width: `${realData.statsOverview?.tcc?.total_issued > 0 
-                            ? (realData.statsOverview.tcc.total_redeemed / realData.statsOverview.tcc.total_issued * 100) 
+                            ? ((realData.statsOverview?.tcc?.total_redeemed || 0) / (realData.statsOverview?.tcc?.total_issued || 1) * 100) 
                             : 0}%` 
                         }}></div>
                       </div>
                       <span className="text-[#10b981] font-semibold">
                         {realData.statsOverview?.tcc?.total_issued > 0 
-                          ? ((realData.statsOverview.tcc.total_redeemed / realData.statsOverview.tcc.total_issued * 10).toFixed(1))
+                          ? (((realData.statsOverview?.tcc?.total_redeemed || 0) / (realData.statsOverview?.tcc?.total_issued || 1) * 10).toFixed(1))
                           : '0.0'}/10
                       </span>
                     </div>
