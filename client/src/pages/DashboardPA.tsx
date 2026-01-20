@@ -2103,7 +2103,7 @@ export default function DashboardPA() {
               }`}
             >
               <FileText className="h-6 w-6" />
-              <span className="text-xs font-medium">Documentazione</span>
+              <span className="text-xs font-medium">Enti & Associazioni</span>
             </button>
             <button
               onClick={() => {
