@@ -145,16 +145,18 @@ function useDashboardData() {
       .then(res => res.json())
       .then(async data => {
         if (data.success) {
-          // Fetch anche lista enti e corsi
-          const [entiRes, corsiRes] = await Promise.all([
+          // Fetch anche lista enti, corsi e iscrizioni
+          const [entiRes, corsiRes, iscrizioniRes] = await Promise.all([
             fetch(`${MIHUB_API}/formazione/enti`).then(r => r.json()),
-            fetch(`${MIHUB_API}/formazione/corsi`).then(r => r.json())
+            fetch(`${MIHUB_API}/formazione/corsi`).then(r => r.json()),
+            fetch(`${MIHUB_API}/formazione/iscrizioni/stats`).then(r => r.json())
           ]);
           
           setFormazioneStats({
             stats: data.data,
             enti: entiRes.success ? entiRes.data : [],
-            corsi: corsiRes.success ? corsiRes.data : []
+            corsi: corsiRes.success ? corsiRes.data : [],
+            iscrizioni: iscrizioniRes.success ? iscrizioniRes.data : null
           });
         }
       })
@@ -5077,6 +5079,92 @@ export default function DashboardPA() {
                         </button>
                       </div>
                     </form>
+                  </CardContent>
+                </Card>
+
+                {/* LISTA ISCRIZIONI AI CORSI */}
+                <Card className="bg-[#1a2332] border-[#8b5cf6]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <Users className="h-5 w-5 text-[#8b5cf6]" />
+                      Imprese Iscritte ai Corsi
+                      {realData.formazioneStats?.iscrizioni && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
+                      <Badge className="bg-purple-500/20 text-purple-400 ml-2">Nuovo</Badge>
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Iscrizioni registrate dall'app imprese - {realData.formazioneStats?.iscrizioni?.conteggi?.totale || 0} totali
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {/* KPI Iscrizioni */}
+                    <div className="grid grid-cols-4 gap-3 mb-4">
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#8b5cf6]/20 text-center">
+                        <div className="text-2xl font-bold text-[#8b5cf6]">{realData.formazioneStats?.iscrizioni?.conteggi?.iscritti || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Iscritti</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#10b981]/20 text-center">
+                        <div className="text-2xl font-bold text-[#10b981]">{realData.formazioneStats?.iscrizioni?.conteggi?.confermati || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Confermati</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#3b82f6]/20 text-center">
+                        <div className="text-2xl font-bold text-[#3b82f6]">{realData.formazioneStats?.iscrizioni?.conteggi?.completati || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Completati</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#ef4444]/20 text-center">
+                        <div className="text-2xl font-bold text-[#ef4444]">{realData.formazioneStats?.iscrizioni?.conteggi?.annullati || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Annullati</div>
+                      </div>
+                    </div>
+                    
+                    {/* Lista Iscrizioni */}
+                    <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
+                      {(realData.formazioneStats?.iscrizioni?.iscrizioni_recenti || []).map((item: any, idx: number) => (
+                        <div key={item.id || idx} className={`flex items-center justify-between p-3 rounded-lg border ${
+                          item.stato === 'COMPLETATO' ? 'bg-blue-500/10 border-blue-500/30' :
+                          item.stato === 'CONFERMATO' ? 'bg-green-500/10 border-green-500/30' :
+                          item.stato === 'ANNULLATO' ? 'bg-red-500/10 border-red-500/30' :
+                          'bg-purple-500/10 border-purple-500/30'
+                        }`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-[#e8fbff]">{item.impresa_nome}</span>
+                              <Badge className={`text-xs ${
+                                item.stato === 'COMPLETATO' ? 'bg-blue-500/20 text-blue-400' :
+                                item.stato === 'CONFERMATO' ? 'bg-green-500/20 text-green-400' :
+                                item.stato === 'ANNULLATO' ? 'bg-red-500/20 text-red-400' :
+                                'bg-purple-500/20 text-purple-400'
+                              }`}>
+                                {item.stato}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-[#e8fbff]/60 mt-1">
+                              <span className="text-[#3b82f6]">{item.corso_titolo}</span>
+                              {item.ente_nome && <span className="ml-2">• {item.ente_nome}</span>}
+                            </div>
+                            {item.utente_nome && (
+                              <div className="text-xs text-[#e8fbff]/40 mt-1">
+                                Partecipante: {item.utente_nome}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-[#e8fbff]/70">
+                              {item.corso_data ? new Date(item.corso_data).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                            </div>
+                            <div className="text-xs text-[#e8fbff]/40">
+                              Iscritto: {item.data_iscrizione ? new Date(item.data_iscrizione).toLocaleDateString('it-IT') : '-'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {(!realData.formazioneStats?.iscrizioni?.iscrizioni_recenti || realData.formazioneStats.iscrizioni.iscrizioni_recenti.length === 0) && (
+                        <div className="text-center text-[#e8fbff]/50 py-8">
+                          <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                          <p>Nessuna iscrizione registrata</p>
+                          <p className="text-xs mt-1">Le imprese potranno iscriversi ai corsi dall'app</p>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
