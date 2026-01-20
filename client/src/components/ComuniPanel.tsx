@@ -196,18 +196,52 @@ export default function ComuniPanel() {
       provincia = provinceISTATMap[codProvincia] || '';
     }
     
-    // Estrai regione dal codice ISTAT (primi 2 caratteri = regione)
+    // Estrai regione dalla sigla provincia
     let regione = '';
-    const regioniMap: { [key: string]: string } = {
-      '01': 'Piemonte', '02': 'Valle d\'Aosta', '03': 'Lombardia', '04': 'Trentino-Alto Adige',
-      '05': 'Veneto', '06': 'Friuli-Venezia Giulia', '07': 'Liguria', '08': 'Emilia-Romagna',
-      '09': 'Toscana', '10': 'Umbria', '11': 'Marche', '12': 'Lazio', '13': 'Abruzzo',
-      '14': 'Molise', '15': 'Campania', '16': 'Puglia', '17': 'Basilicata', '18': 'Calabria',
-      '19': 'Sicilia', '20': 'Sardegna'
+    const provinciaRegioneMap: { [key: string]: string } = {
+      // Piemonte
+      'TO': 'Piemonte', 'VC': 'Piemonte', 'NO': 'Piemonte', 'CN': 'Piemonte', 'AT': 'Piemonte', 'AL': 'Piemonte', 'BI': 'Piemonte', 'VB': 'Piemonte',
+      // Valle d'Aosta
+      'AO': "Valle d'Aosta",
+      // Lombardia
+      'VA': 'Lombardia', 'CO': 'Lombardia', 'SO': 'Lombardia', 'MI': 'Lombardia', 'BG': 'Lombardia', 'BS': 'Lombardia', 'PV': 'Lombardia', 'CR': 'Lombardia', 'MN': 'Lombardia', 'LC': 'Lombardia', 'LO': 'Lombardia', 'MB': 'Lombardia',
+      // Trentino-Alto Adige
+      'BZ': 'Trentino-Alto Adige', 'TN': 'Trentino-Alto Adige',
+      // Veneto
+      'VR': 'Veneto', 'VI': 'Veneto', 'BL': 'Veneto', 'TV': 'Veneto', 'VE': 'Veneto', 'PD': 'Veneto', 'RO': 'Veneto',
+      // Friuli-Venezia Giulia
+      'UD': 'Friuli-Venezia Giulia', 'GO': 'Friuli-Venezia Giulia', 'TS': 'Friuli-Venezia Giulia', 'PN': 'Friuli-Venezia Giulia',
+      // Liguria
+      'IM': 'Liguria', 'SV': 'Liguria', 'GE': 'Liguria', 'SP': 'Liguria',
+      // Emilia-Romagna
+      'PC': 'Emilia-Romagna', 'PR': 'Emilia-Romagna', 'RE': 'Emilia-Romagna', 'MO': 'Emilia-Romagna', 'BO': 'Emilia-Romagna', 'FE': 'Emilia-Romagna', 'RA': 'Emilia-Romagna', 'FC': 'Emilia-Romagna', 'RN': 'Emilia-Romagna',
+      // Toscana
+      'MS': 'Toscana', 'LU': 'Toscana', 'PT': 'Toscana', 'FI': 'Toscana', 'LI': 'Toscana', 'PI': 'Toscana', 'AR': 'Toscana', 'SI': 'Toscana', 'GR': 'Toscana', 'PO': 'Toscana',
+      // Umbria
+      'PG': 'Umbria', 'TR': 'Umbria',
+      // Marche
+      'PU': 'Marche', 'AN': 'Marche', 'MC': 'Marche', 'AP': 'Marche', 'FM': 'Marche',
+      // Lazio
+      'VT': 'Lazio', 'RI': 'Lazio', 'RM': 'Lazio', 'LT': 'Lazio', 'FR': 'Lazio',
+      // Abruzzo
+      'AQ': 'Abruzzo', 'TE': 'Abruzzo', 'PE': 'Abruzzo', 'CH': 'Abruzzo',
+      // Molise
+      'CB': 'Molise', 'IS': 'Molise',
+      // Campania
+      'CE': 'Campania', 'BN': 'Campania', 'NA': 'Campania', 'AV': 'Campania', 'SA': 'Campania',
+      // Puglia
+      'FG': 'Puglia', 'BA': 'Puglia', 'TA': 'Puglia', 'BR': 'Puglia', 'LE': 'Puglia', 'BT': 'Puglia',
+      // Basilicata
+      'PZ': 'Basilicata', 'MT': 'Basilicata',
+      // Calabria
+      'CS': 'Calabria', 'CZ': 'Calabria', 'KR': 'Calabria', 'VV': 'Calabria', 'RC': 'Calabria',
+      // Sicilia
+      'TP': 'Sicilia', 'PA': 'Sicilia', 'ME': 'Sicilia', 'AG': 'Sicilia', 'CL': 'Sicilia', 'EN': 'Sicilia', 'CT': 'Sicilia', 'RG': 'Sicilia', 'SR': 'Sicilia',
+      // Sardegna
+      'SS': 'Sardegna', 'NU': 'Sardegna', 'CA': 'Sardegna', 'OR': 'Sardegna', 'SU': 'Sardegna'
     };
-    if (ipa.codice_comune_istat && ipa.codice_comune_istat.length >= 2) {
-      const codRegione = ipa.codice_comune_istat.substring(0, 2);
-      regione = regioniMap[codRegione] || '';
+    if (provincia) {
+      regione = provinciaRegioneMap[provincia] || '';
     }
     
     // Estrai nome comune dalla denominazione (rimuovi "Comune di ")
