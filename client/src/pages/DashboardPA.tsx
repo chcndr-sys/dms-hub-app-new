@@ -4798,7 +4798,7 @@ export default function DashboardPA() {
                             <div>
                               <div className="text-[#e8fbff] font-medium">{ente.nome}</div>
                               <div className="text-xs text-[#e8fbff]/50">
-                                {ente.specializzazioni?.join(', ') || 'Formazione generale'}
+                                {(() => { try { const spec = typeof ente.specializzazioni === 'string' ? JSON.parse(ente.specializzazioni) : ente.specializzazioni; return Array.isArray(spec) ? spec.join(', ') : 'Formazione generale'; } catch { return 'Formazione generale'; } })()}
                               </div>
                             </div>
                           </div>
@@ -4949,7 +4949,7 @@ export default function DashboardPA() {
                             <div>
                               <div className="text-[#e8fbff] font-medium">{assoc.nome}</div>
                               <div className="text-xs text-[#e8fbff]/50">
-                                {assoc.tipo_ente} · {assoc.specializzazioni?.join(', ') || 'Generale'}
+                                {assoc.tipo_ente} · {(() => { try { const spec = typeof assoc.specializzazioni === 'string' ? JSON.parse(assoc.specializzazioni) : assoc.specializzazioni; return Array.isArray(spec) ? spec.join(', ') : 'Generale'; } catch { return 'Generale'; } })()}
                               </div>
                             </div>
                           </div>
