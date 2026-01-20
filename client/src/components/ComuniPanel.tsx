@@ -418,12 +418,12 @@ export default function ComuniPanel() {
         let importati = 0;
         
         for (const uo of dataUO.data) {
-          // Mappa il tipo settore
-          const tipoSettore = mapTipoSettore(uo.descrizione || '');
+          // Mappa il tipo settore usando nome_uo (campo corretto dall'API)
+          const tipoSettore = uo.tipo_settore || mapTipoSettore(uo.nome_uo || '');
           
           const settoreData = {
             tipo_settore: tipoSettore,
-            nome_settore: uo.descrizione || 'Settore',
+            nome_settore: uo.nome_uo || 'Settore',
             responsabile_nome: uo.responsabile_nome || '',
             responsabile_cognome: uo.responsabile_cognome || '',
             email: uo.email || '',
@@ -431,7 +431,7 @@ export default function ComuniPanel() {
             telefono: uo.telefono || '',
             indirizzo: uo.indirizzo || '',
             orari_apertura: '',
-            note: `Importato da IndicePA - Codice UO: ${uo.codice_uni_uo || ''}`
+            note: `Importato da IndicePA - Codice UO: ${uo.codice_uo || ''}`
           };
           
           // Salva il settore
