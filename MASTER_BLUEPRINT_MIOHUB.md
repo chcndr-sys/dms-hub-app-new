@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.41.0  
+> **Versione:** 3.42.0  
 > **Data:** 20 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -1151,6 +1151,61 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 ---
 
 ### 📝 CHANGELOG
+
+### v3.42.0 (20/01/2026) - Tab Qualificazione Imprese con Dati Reali
+
+**Backend - Nuovi Endpoint `/api/stats/qualificazione/*`:**
+- `GET /api/stats/qualificazione/overview` - KPI conformità imprese
+  - Totale imprese: 28
+  - Conformi: 0 (0%)
+  - Con riserva: 3 (10.7%)
+  - Non conformi: 4 (14.3%)
+  - Non verificati: 21 (75%)
+- `GET /api/stats/qualificazione/scadenze` - Scadenze qualifiche nei prossimi 90 giorni
+  - 7 scadenze imminenti (da tabella `qualificazioni`)
+- `GET /api/stats/qualificazione/demografia` - Demografia imprese
+  - Aperture 2026: 15
+  - Cessazioni 2026: 0
+  - Crescita netta: +15
+  - Per settore: 10 settori diversi
+- `GET /api/stats/qualificazione/top-imprese` - Top 5 imprese per rating
+  - Ordinate per rating e score_digitalizzazione
+- `GET /api/stats/qualificazione/indici` - Indici strategici
+  - Riqualificazione: 0% (nessuna impresa riqualificata)
+  - Digitalizzazione: 45% (media score_digitalizzazione)
+  - Sostenibilità: 100% (tutte le imprese con wallet TCC)
+  - Conformità: 97.1% (qualifiche valide vs totali)
+
+**Frontend - Tab Qualificazione Aggiornato:**
+- **KPI Conformità** - Collegati a `/api/stats/qualificazione/overview`
+  - Pienamente Conformi, Con Riserva, Non Conformi, Totale Imprese
+  - Indicatore "Live" quando dati reali caricati
+- **Scadenze Imminenti** - Collegato a `/api/stats/qualificazione/scadenze`
+  - Lista scadenze con giorni rimanenti
+  - Evidenziazione critica per scadenze < 15 giorni
+- **Demografia Imprese** - Collegato a `/api/stats/qualificazione/demografia`
+  - Aperture/Cessazioni anno corrente
+  - Distribuzione per settore (Top 5)
+- **Indici Strategici** - Collegato a `/api/stats/qualificazione/indici`
+  - Riqualificazione, Digitalizzazione, Sostenibilità, Conformità
+  - Barre di progresso animate
+- **Top 5 Imprese** - Collegato a `/api/stats/qualificazione/top-imprese`
+  - Nome, settore, score, digitalizzazione
+
+**Sezioni ancora con Mock (Fase 2):**
+- Formazione (richiede tabella `formazione_corsi`)
+- Bandi Attivi (richiede tabella `bandi_attivi`)
+
+**File Modificati:**
+- Backend: `routes/stats-qualificazione.js` (nuovo)
+- Backend: `index.js` (aggiunto mount route)
+- Frontend: `DashboardPA.tsx` (147 inserzioni, 86 rimozioni)
+
+**Commit:**
+- Backend: `e1e6a6b` - feat: endpoint stats qualificazione
+- Frontend: `a53c483` - feat: Tab Qualificazione collegato a dati reali
+
+---
 
 ### v3.41.0 (20/01/2026) - Completamento Collegamento Dati Reali Dashboard PA
 
