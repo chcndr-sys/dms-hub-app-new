@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.38.0  
+> **Versione:** 3.39.0  
 > **Data:** 20 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -921,9 +921,16 @@ fi
 
 ### Statistiche
 
-- **Endpoint totali:** 153
-- **Mercati nel DB:** 2
-- **Log totali:** ~1500
+- **Endpoint totali:** 382 (70 REST + 312 tRPC)
+- **Endpoint Comuni PA:** 25
+- **Mercati nel DB:** 3 (Grosseto, Novi Sad, Modena)
+- **HUB nel DB:** 79
+- **Comuni registrati:** 5
+- **Posteggi totali:** 564 (160 con geometria)
+- **Concessioni attive:** 6
+- **Utenti TCC:** 3
+- **TCC in circolazione:** 1.254
+- **Log totali:** ~2000
 - **Agenti attivi:** 5 (MIO, GPT Dev, Manus, Abacus, Zapier)
 - **Secrets configurati:** 10/10
 
@@ -1144,6 +1151,81 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 ---
 
 ### 📝 CHANGELOG
+
+### v3.39.0 (20/01/2026) - Progetto Statistiche Dashboard PA + Tab HUB Comuni
+
+**Nuove Funzionalità:**
+- **Tab HUB** nella Dashboard Comuni PA
+  - Lista HUB del comune con negozi e area totale
+  - Link "Vai all'HUB" → Gestione Hub Territoriale
+- **Tab Mercati aggiornata** con area totale calcolata (solo posteggi con geometria)
+  - Grosseto: 160 posteggi, 4.864 mq
+- **Link corretti** per navigazione a Gestione Hub → Rete Hub
+
+**Nuovi Endpoint API (25 totali per Comuni PA):**
+- `GET /api/comuni/:id/hub` - Lista HUB del comune
+- `GET/POST /api/comuni/:id/contratti` - Gestione contratti
+- `PUT/DELETE /api/comuni/contratti/:id` - CRUD contratti
+- `GET/POST /api/comuni/:id/fatture` - Gestione fatture
+- `PUT /api/comuni/fatture/:id` - Aggiorna stato fattura
+- `GET/POST /api/comuni/:id/utenti` - Gestione permessi utenti
+- `PUT/DELETE /api/comuni/utenti/:id` - CRUD permessi
+- `GET /api/comuni/:id/utenti/stats` - Statistiche per ruolo
+
+**Tabelle Database Nuove:**
+- `comune_contratti` - Contratti di servizio comuni
+- `comune_fatture` - Fatture emesse ai comuni
+- `comune_utenti` - Permessi utenti per comune
+
+**Progetto Statistiche Dashboard PA:**
+
+| Tab | Dati Reali | Dati Mock | Stato |
+|-----|------------|-----------|-------|
+| Dashboard | 1 | 5 | 🔴 20% |
+| Clienti | 4 | 1 | 🟢 80% |
+| Wallet/PagoPA | 3 | 0 | 🟢 100% |
+| Prodotti | 0 | 2 | 🔴 0% |
+| Sostenibilità | 0 | 6 | 🔴 0% |
+| Carbon Credits | 8 | 0 | 🟢 100% |
+| Real-time | 1 | 4 | 🟡 20% |
+| Comuni | 6 | 0 | 🟢 100% |
+| Gestione Mercati | 4 | 0 | 🟢 100% |
+| Gestione HUB | 4 | 0 | 🟢 100% |
+
+**Piano Implementazione Statistiche:**
+1. Fase 1: Collegare indicatori Overview a dati reali
+2. Fase 2: Creare endpoint `/api/stats/overview` aggregato
+3. Fase 3: Rimuovere mockData dal frontend
+
+**Commit:**
+- Backend: `b6a23ea` - fix: syntax error query mercati
+- Frontend: (in corso) - Tab HUB + link Gestione Hub
+
+---
+
+### v3.38.0 (20/01/2026) - Tab Fatturazione e Permessi Comuni PA
+
+**Nuove Funzionalità:**
+- **Tab Fatturazione** completa nella Dashboard Comuni PA
+  - Sezione Contratti con CRUD completo
+  - Sezione Fatture con calcolo IVA automatico
+  - Pulsante "Segna pagata" per aggiornare stato
+- **Tab Permessi** completa nella Dashboard Comuni PA
+  - Riepilogo visivo per ruolo (Admin, Operatore Mercato, Polizia Locale, Tributi, SUAP)
+  - Lista utenti assegnati con dropdown cambio ruolo
+  - Modal per assegnare nuovi utenti
+
+---
+
+### v3.37.0 (19/01/2026) - Tab Settori Comuni PA + Import IPA
+
+**Nuove Funzionalità:**
+- **Tab Settori** nella Dashboard Comuni PA
+  - CRUD settori/UO del comune
+  - Import automatico da IndicePA
+  - Ricerca comuni su IPA
+
+---
 
 ### v3.35.0 (14/01/2026) - Progettazione Gestione Canone Unico e More
 

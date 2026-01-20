@@ -75,8 +75,48 @@ function useDashboardData() {
   const civicReportsQuery = trpc.civicReports.list.useQuery();
   const mobilityQuery = trpc.mobility.list.useQuery();
 
+  // Fetch stats overview dal backend REST MIHUB
+  const [statsOverview, setStatsOverview] = React.useState<any>(null);
+  React.useEffect(() => {
+    const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+    fetch(`${MIHUB_API}/stats/overview`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setStatsOverview(data.data);
+        }
+      })
+      .catch(err => console.log('Stats overview fetch error:', err));
+  }, []);
+
+  // Combina dati tRPC con dati REST
+  const combinedOverview = React.useMemo(() => {
+    if (statsOverview) {
+      return {
+        totalUsers: statsOverview.utenti_totali || 0,
+        userGrowth: 0,
+        activeMarkets: statsOverview.mercati_attivi || 0,
+        totalShops: statsOverview.hub || 0,
+        totalTransactions: statsOverview.transazioni || 0,
+        transactionGrowth: 0,
+        sustainabilityRating: statsOverview.rating_sostenibilita || 0,
+        co2Saved: statsOverview.tcc?.total_redeemed || 0,
+        // Dati aggiuntivi
+        vendors: statsOverview.vendors || 0,
+        stalls: statsOverview.stalls || 0,
+        comuni: statsOverview.comuni || 0,
+        imprese: statsOverview.imprese || 0,
+        autorizzazioni: statsOverview.autorizzazioni || 0,
+        domande_spunta: statsOverview.domande_spunta || 0,
+        tcc: statsOverview.tcc || {},
+        today: statsOverview.today || {}
+      };
+    }
+    return overviewQuery.data;
+  }, [statsOverview, overviewQuery.data]);
+
   return {
-    overview: overviewQuery.data,
+    overview: combinedOverview,
     markets: marketsQuery.data || [],
     shops: shopsQuery.data || [],
     transactions: transactionsQuery.data || [],
@@ -88,7 +128,8 @@ function useDashboardData() {
     notifications: notificationsQuery.data || [],
     civicReports: civicReportsQuery.data || [],
     mobilityData: mobilityQuery.data || [],
-    isLoading: overviewQuery.isLoading,
+    isLoading: overviewQuery.isLoading && !statsOverview,
+    statsOverview: statsOverview
   };
 }
 
