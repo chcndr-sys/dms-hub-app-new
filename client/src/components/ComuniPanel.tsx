@@ -66,6 +66,38 @@ interface Mercato {
   annual_market_days: number;
 }
 
+interface Contratto {
+  id: number;
+  comune_id: number;
+  tipo_contratto: string;
+  descrizione: string;
+  data_inizio: string;
+  data_fine: string;
+  importo_annuale: number;
+  stato: string;
+  note: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Fattura {
+  id: number;
+  comune_id: number;
+  contratto_id: number;
+  numero_fattura: string;
+  data_emissione: string;
+  data_scadenza: string;
+  importo: number;
+  iva: number;
+  totale: number;
+  stato: string;
+  pagopa_iuv: string;
+  data_pagamento: string;
+  note: string;
+  contratto_descrizione?: string;
+  tipo_contratto?: string;
+}
+
 interface IPAResult {
   codice_ipa: string;
   denominazione: string;
@@ -106,6 +138,33 @@ export default function ComuniPanel() {
   const [mercatiComune, setMercatiComune] = useState<Mercato[]>([]);
   const [loadingMercati, setLoadingMercati] = useState(false);
   const [activeTab, setActiveTab] = useState<'anagrafica' | 'settori' | 'mercati' | 'fatturazione' | 'permessi'>('anagrafica');
+  
+  // Stato per fatturazione
+  const [contratti, setContratti] = useState<Contratto[]>([]);
+  const [fatture, setFatture] = useState<Fattura[]>([]);
+  const [loadingFatturazione, setLoadingFatturazione] = useState(false);
+  const [showContrattoForm, setShowContrattoForm] = useState(false);
+  const [showFatturaForm, setShowFatturaForm] = useState(false);
+  const [editingContratto, setEditingContratto] = useState<Contratto | null>(null);
+  const [contrattoForm, setContrattoForm] = useState({
+    tipo_contratto: 'servizio_miohub',
+    descrizione: '',
+    data_inizio: '',
+    data_fine: '',
+    importo_annuale: '',
+    stato: 'attivo',
+    note: ''
+  });
+  const [fatturaForm, setFatturaForm] = useState({
+    contratto_id: '',
+    numero_fattura: '',
+    data_emissione: '',
+    data_scadenza: '',
+    importo: '',
+    iva: '22',
+    stato: 'emessa',
+    note: ''
+  });
 
   // Form state per comune
   const [comuneForm, setComuneForm] = useState({
@@ -162,6 +221,108 @@ export default function ComuniPanel() {
       console.error('Error fetching mercati:', error);
     } finally {
       setLoadingMercati(false);
+    }
+  };
+
+  // Carica contratti e fatture di un comune
+  const fetchFatturazione = async (comuneId: number) => {
+    setLoadingFatturazione(true);
+    try {
+      const [contrattiRes, fattureRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/comuni/${comuneId}/contratti`),
+        fetch(`${API_BASE_URL}/api/comuni/${comuneId}/fatture`)
+      ]);
+      const contrattiData = await contrattiRes.json();
+      const fattureData = await fattureRes.json();
+      if (contrattiData.success) setContratti(contrattiData.data);
+      if (fattureData.success) setFatture(fattureData.data);
+    } catch (error) {
+      console.error('Error fetching fatturazione:', error);
+    } finally {
+      setLoadingFatturazione(false);
+    }
+  };
+
+  // Crea nuovo contratto
+  const handleCreateContratto = async () => {
+    if (!selectedComune) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/contratti`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...contrattoForm,
+          importo_annuale: parseFloat(contrattoForm.importo_annuale) || 0
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowContrattoForm(false);
+        setContrattoForm({ tipo_contratto: 'servizio_miohub', descrizione: '', data_inizio: '', data_fine: '', importo_annuale: '', stato: 'attivo', note: '' });
+        fetchFatturazione(selectedComune.id);
+      }
+    } catch (error) {
+      console.error('Error creating contratto:', error);
+    }
+  };
+
+  // Crea nuova fattura
+  const handleCreateFattura = async () => {
+    if (!selectedComune) return;
+    const importo = parseFloat(fatturaForm.importo) || 0;
+    const iva = parseFloat(fatturaForm.iva) || 22;
+    const totale = importo + (importo * iva / 100);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/fatture`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...fatturaForm,
+          contratto_id: parseInt(fatturaForm.contratto_id) || null,
+          importo,
+          iva: importo * iva / 100,
+          totale
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowFatturaForm(false);
+        setFatturaForm({ contratto_id: '', numero_fattura: '', data_emissione: '', data_scadenza: '', importo: '', iva: '22', stato: 'emessa', note: '' });
+        fetchFatturazione(selectedComune.id);
+      }
+    } catch (error) {
+      console.error('Error creating fattura:', error);
+    }
+  };
+
+  // Aggiorna stato fattura
+  const handleUpdateFatturaStato = async (fatturaId: number, nuovoStato: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/comuni/fatture/${fatturaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stato: nuovoStato, data_pagamento: nuovoStato === 'pagata' ? new Date().toISOString().split('T')[0] : null })
+      });
+      const data = await res.json();
+      if (data.success && selectedComune) {
+        fetchFatturazione(selectedComune.id);
+      }
+    } catch (error) {
+      console.error('Error updating fattura:', error);
+    }
+  };
+
+  // Elimina contratto
+  const handleDeleteContratto = async (contrattoId: number) => {
+    if (!confirm('Sei sicuro di voler eliminare questo contratto?')) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/comuni/contratti/${contrattoId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success && selectedComune) {
+        fetchFatturazione(selectedComune.id);
+      }
+    } catch (error) {
+      console.error('Error deleting contratto:', error);
     }
   };
 
@@ -317,6 +478,7 @@ export default function ComuniPanel() {
     if (selectedComune) {
       fetchSettori(selectedComune.id);
       fetchMercati(selectedComune.id);
+      fetchFatturazione(selectedComune.id);
     }
   }, [selectedComune]);
 
@@ -1122,26 +1284,149 @@ export default function ComuniPanel() {
               {/* Tab Fatturazione */}
               {activeTab === 'fatturazione' && (
                 <div className="pt-2">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-medium text-white">Fatturazione e Contratti</h4>
-                    <button className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors">
-                      <Plus className="w-3 h-3" />
-                      Nuovo Contratto
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-gray-700/30 rounded-lg border border-gray-600">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-white">Contratto Servizio MIO-HUB</span>
-                        <span className="text-xs bg-yellow-600/30 text-yellow-300 px-2 py-1 rounded">In attesa</span>
-                      </div>
-                      <p className="text-sm text-gray-400">Contratto per utilizzo piattaforma MIO-HUB con integrazione PagoPA</p>
-                      <div className="mt-3 flex gap-2">
-                        <button className="text-xs text-cyan-400 hover:underline">Visualizza</button>
-                        <button className="text-xs text-emerald-400 hover:underline">Genera Fattura</button>
-                      </div>
+                  {loadingFatturazione ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-cyan-400" />
+                      <p className="text-gray-400 mt-2">Caricamento dati fatturazione...</p>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      {/* Sezione Contratti */}
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-medium text-white flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-cyan-400" />
+                            Contratti ({contratti.length})
+                          </h4>
+                          <button 
+                            onClick={() => setShowContrattoForm(true)}
+                            className="flex items-center gap-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Nuovo Contratto
+                          </button>
+                        </div>
+                        
+                        {contratti.length === 0 ? (
+                          <div className="text-center py-6 text-gray-400 bg-gray-800/30 rounded-lg border border-gray-700">
+                            <FileText className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                            <p>Nessun contratto attivo</p>
+                            <p className="text-sm mt-1">Crea un nuovo contratto per iniziare</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {contratti.map(contratto => (
+                              <div key={contratto.id} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <h5 className="font-medium text-white">{contratto.descrizione || contratto.tipo_contratto}</h5>
+                                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                        contratto.stato === 'attivo' ? 'bg-emerald-500/20 text-emerald-400' :
+                                        contratto.stato === 'scaduto' ? 'bg-red-500/20 text-red-400' :
+                                        'bg-yellow-500/20 text-yellow-400'
+                                      }`}>
+                                        {contratto.stato}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-400 mt-1">
+                                      Dal {contratto.data_inizio ? new Date(contratto.data_inizio).toLocaleDateString('it-IT') : '-'} 
+                                      al {contratto.data_fine ? new Date(contratto.data_fine).toLocaleDateString('it-IT') : '-'}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-lg font-semibold text-emerald-400">€ {Number(contratto.importo_annuale || 0).toLocaleString('it-IT')}</p>
+                                    <p className="text-xs text-gray-500">annuale</p>
+                                  </div>
+                                </div>
+                                <div className="mt-3 pt-3 border-t border-gray-700 flex justify-between items-center">
+                                  <div className="flex gap-2">
+                                    <button 
+                                      onClick={() => {
+                                        setFatturaForm(prev => ({ ...prev, contratto_id: String(contratto.id) }));
+                                        setShowFatturaForm(true);
+                                      }}
+                                      className="text-xs text-emerald-400 hover:underline"
+                                    >
+                                      + Genera Fattura
+                                    </button>
+                                  </div>
+                                  <button 
+                                    onClick={() => handleDeleteContratto(contratto.id)}
+                                    className="text-xs text-red-400 hover:underline"
+                                  >
+                                    Elimina
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Sezione Fatture */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-medium text-white flex items-center gap-2">
+                            <CreditCard className="w-4 h-4 text-purple-400" />
+                            Fatture ({fatture.length})
+                          </h4>
+                          <button 
+                            onClick={() => setShowFatturaForm(true)}
+                            className="flex items-center gap-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Nuova Fattura
+                          </button>
+                        </div>
+                        
+                        {fatture.length === 0 ? (
+                          <div className="text-center py-6 text-gray-400 bg-gray-800/30 rounded-lg border border-gray-700">
+                            <CreditCard className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                            <p>Nessuna fattura emessa</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {fatture.map(fattura => (
+                              <div key={fattura.id} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-4">
+                                    <div>
+                                      <span className="font-medium text-white">#{fattura.numero_fattura}</span>
+                                      <p className="text-xs text-gray-500">
+                                        {fattura.data_emissione ? new Date(fattura.data_emissione).toLocaleDateString('it-IT') : '-'}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-sm font-medium text-white">€ {Number(fattura.totale || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p>
+                                      <p className="text-xs text-gray-500">IVA incl.</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-1 text-xs rounded-full ${
+                                      fattura.stato === 'pagata' ? 'bg-emerald-500/20 text-emerald-400' :
+                                      fattura.stato === 'scaduta' ? 'bg-red-500/20 text-red-400' :
+                                      'bg-yellow-500/20 text-yellow-400'
+                                    }`}>
+                                      {fattura.stato}
+                                    </span>
+                                    {fattura.stato !== 'pagata' && (
+                                      <button 
+                                        onClick={() => handleUpdateFatturaStato(fattura.id, 'pagata')}
+                                        className="text-xs text-emerald-400 hover:underline"
+                                      >
+                                        Segna pagata
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -1494,6 +1779,234 @@ export default function ComuniPanel() {
               >
                 <Save className="w-4 h-4" />
                 {editingComune ? 'Salva Modifiche' : 'Crea Comune'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Form Contratto */}
+      {showContrattoForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Nuovo Contratto</h3>
+              <button onClick={() => setShowContrattoForm(false)} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Tipo Contratto</label>
+                <select
+                  value={contrattoForm.tipo_contratto}
+                  onChange={e => setContrattoForm({...contrattoForm, tipo_contratto: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="servizio_miohub">Servizio MIO-HUB</option>
+                  <option value="licenza_annuale">Licenza Annuale</option>
+                  <option value="manutenzione">Manutenzione</option>
+                  <option value="consulenza">Consulenza</option>
+                  <option value="altro">Altro</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Descrizione</label>
+                <input
+                  type="text"
+                  value={contrattoForm.descrizione}
+                  onChange={e => setContrattoForm({...contrattoForm, descrizione: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="es. Contratto annuale piattaforma MIO-HUB"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Data Inizio</label>
+                  <input
+                    type="date"
+                    value={contrattoForm.data_inizio}
+                    onChange={e => setContrattoForm({...contrattoForm, data_inizio: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Data Fine</label>
+                  <input
+                    type="date"
+                    value={contrattoForm.data_fine}
+                    onChange={e => setContrattoForm({...contrattoForm, data_fine: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Importo Annuale (€)</label>
+                <input
+                  type="number"
+                  value={contrattoForm.importo_annuale}
+                  onChange={e => setContrattoForm({...contrattoForm, importo_annuale: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="es. 5000"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Stato</label>
+                <select
+                  value={contrattoForm.stato}
+                  onChange={e => setContrattoForm({...contrattoForm, stato: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="attivo">Attivo</option>
+                  <option value="in_attesa">In Attesa</option>
+                  <option value="sospeso">Sospeso</option>
+                  <option value="scaduto">Scaduto</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Note</label>
+                <textarea
+                  value={contrattoForm.note}
+                  onChange={e => setContrattoForm({...contrattoForm, note: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  rows={2}
+                  placeholder="Note aggiuntive..."
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowContrattoForm(false)} className="px-4 py-2 text-gray-400 hover:text-white">
+                Annulla
+              </button>
+              <button
+                onClick={handleCreateContratto}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+              >
+                <Save className="w-4 h-4" />
+                Crea Contratto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Form Fattura */}
+      {showFatturaForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Nuova Fattura</h3>
+              <button onClick={() => setShowFatturaForm(false)} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Contratto Associato</label>
+                <select
+                  value={fatturaForm.contratto_id}
+                  onChange={e => setFatturaForm({...fatturaForm, contratto_id: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="">-- Nessun contratto --</option>
+                  {contratti.map(c => (
+                    <option key={c.id} value={c.id}>{c.descrizione || c.tipo_contratto}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Numero Fattura *</label>
+                <input
+                  type="text"
+                  value={fatturaForm.numero_fattura}
+                  onChange={e => setFatturaForm({...fatturaForm, numero_fattura: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="es. FT-2025-001"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Data Emissione</label>
+                  <input
+                    type="date"
+                    value={fatturaForm.data_emissione}
+                    onChange={e => setFatturaForm({...fatturaForm, data_emissione: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Data Scadenza</label>
+                  <input
+                    type="date"
+                    value={fatturaForm.data_scadenza}
+                    onChange={e => setFatturaForm({...fatturaForm, data_scadenza: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Importo (€)</label>
+                  <input
+                    type="number"
+                    value={fatturaForm.importo}
+                    onChange={e => setFatturaForm({...fatturaForm, importo: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    placeholder="es. 1000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">IVA %</label>
+                  <input
+                    type="number"
+                    value={fatturaForm.iva}
+                    onChange={e => setFatturaForm({...fatturaForm, iva: e.target.value})}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                    placeholder="22"
+                  />
+                </div>
+              </div>
+              {fatturaForm.importo && (
+                <div className="p-3 bg-gray-700/50 rounded-lg">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Imponibile:</span>
+                    <span className="text-white">€ {parseFloat(fatturaForm.importo || '0').toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">IVA ({fatturaForm.iva}%):</span>
+                    <span className="text-white">€ {(parseFloat(fatturaForm.importo || '0') * parseFloat(fatturaForm.iva || '22') / 100).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold border-t border-gray-600 pt-2 mt-2">
+                    <span className="text-gray-300">Totale:</span>
+                    <span className="text-emerald-400">€ {(parseFloat(fatturaForm.importo || '0') * (1 + parseFloat(fatturaForm.iva || '22') / 100)).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Stato</label>
+                <select
+                  value={fatturaForm.stato}
+                  onChange={e => setFatturaForm({...fatturaForm, stato: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                >
+                  <option value="emessa">Emessa</option>
+                  <option value="inviata">Inviata</option>
+                  <option value="pagata">Pagata</option>
+                  <option value="scaduta">Scaduta</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowFatturaForm(false)} className="px-4 py-2 text-gray-400 hover:text-white">
+                Annulla
+              </button>
+              <button
+                onClick={handleCreateFattura}
+                disabled={!fatturaForm.numero_fattura}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg"
+              >
+                <Save className="w-4 h-4" />
+                Crea Fattura
               </button>
             </div>
           </div>
