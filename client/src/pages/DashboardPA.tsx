@@ -4870,6 +4870,146 @@ export default function DashboardPA() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* FORM REGISTRAZIONE ATTESTATO */}
+                <Card className="bg-[#1a2332] border-[#10b981]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <FileCheck className="h-5 w-5 text-[#10b981]" />
+                      Registra Nuovo Attestato
+                      <Badge className="bg-emerald-500/20 text-emerald-400 ml-2">Nuovo</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.target as HTMLFormElement;
+                      const formData = new FormData(form);
+                      const data = {
+                        impresa_id: parseInt(formData.get('impresa_id') as string),
+                        tipo_qualifica: formData.get('tipo_qualifica'),
+                        ente_rilascio: formData.get('ente_rilascio'),
+                        numero_attestato: formData.get('numero_attestato'),
+                        data_rilascio: formData.get('data_rilascio'),
+                        data_scadenza: formData.get('data_scadenza'),
+                        ore_formazione: parseInt(formData.get('ore_formazione') as string) || null,
+                        docente: formData.get('docente'),
+                        note: formData.get('note')
+                      };
+                      try {
+                        const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/formazione/attestati`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(data)
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                          alert('✅ ' + result.message);
+                          form.reset();
+                        } else {
+                          alert('❌ Errore: ' + result.error);
+                        }
+                      } catch (err) {
+                        alert('❌ Errore di connessione');
+                      }
+                    }} className="space-y-4">
+                      {/* Ricerca Impresa */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#e8fbff]/70">Cerca Impresa *</label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Cerca per nome, P.IVA o CF..."
+                              className="w-full p-3 bg-[#0b1220] border border-[#3b82f6]/20 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/30 focus:border-[#10b981] focus:outline-none"
+                              onChange={async (e) => {
+                                const q = e.target.value;
+                                if (q.length < 2) return;
+                                try {
+                                  const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/formazione/imprese/search?q=${encodeURIComponent(q)}`);
+                                  const data = await res.json();
+                                  const list = document.getElementById('imprese-list');
+                                  if (list && data.success) {
+                                    list.innerHTML = data.data.map((i: any) => 
+                                      `<div class="p-2 hover:bg-[#3b82f6]/20 cursor-pointer rounded" onclick="document.getElementById('impresa_id').value='${i.id}'; document.getElementById('impresa_nome').value='${i.denominazione} (${i.partita_iva})'; document.getElementById('imprese-list').innerHTML='';">${i.denominazione} - ${i.partita_iva} - ${i.comune || ''}</div>`
+                                    ).join('');
+                                  }
+                                } catch {}
+                              }}
+                            />
+                            <div id="imprese-list" className="absolute z-10 w-full bg-[#1a2332] border border-[#3b82f6]/20 rounded-lg mt-1 max-h-40 overflow-y-auto text-[#e8fbff] text-sm"></div>
+                          </div>
+                          <input type="hidden" name="impresa_id" id="impresa_id" required />
+                          <input type="text" id="impresa_nome" readOnly placeholder="Impresa selezionata" className="w-full p-2 bg-[#0b1220]/50 border border-[#10b981]/30 rounded text-[#10b981] text-sm" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#e8fbff]/70">Tipo Attestato *</label>
+                          <select name="tipo_qualifica" required className="w-full p-3 bg-[#0b1220] border border-[#3b82f6]/20 rounded-lg text-[#e8fbff] focus:border-[#10b981] focus:outline-none">
+                            <option value="">Seleziona tipo...</option>
+                            <option value="HACCP">HACCP - Sicurezza Alimentare</option>
+                            <option value="SICUREZZA_LAVORO">Sicurezza sul Lavoro (D.Lgs 81/08)</option>
+                            <option value="ANTINCENDIO">Prevenzione Incendi</option>
+                            <option value="PRIMO_SOCCORSO">Primo Soccorso</option>
+                            <option value="PRIVACY_GDPR">Privacy e GDPR</option>
+                            <option value="IGIENE_ALIMENTARE">Igiene Alimentare</option>
+                            <option value="RSPP">RSPP - Responsabile Sicurezza</option>
+                            <option value="RLS">RLS - Rappresentante Lavoratori</option>
+                            <option value="CARRELLISTA">Patentino Carrello Elevatore</option>
+                            <option value="PES_PAV">PES/PAV - Lavori Elettrici</option>
+                            <option value="ALTRO">Altro</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      {/* Date e Ente */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#e8fbff]/70">Data Rilascio *</label>
+                          <input type="date" name="data_rilascio" required className="w-full p-3 bg-[#0b1220] border border-[#3b82f6]/20 rounded-lg text-[#e8fbff] focus:border-[#10b981] focus:outline-none" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#e8fbff]/70">Data Scadenza *</label>
+                          <input type="date" name="data_scadenza" required className="w-full p-3 bg-[#0b1220] border border-[#3b82f6]/20 rounded-lg text-[#e8fbff] focus:border-[#10b981] focus:outline-none" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#e8fbff]/70">Ente Rilascio</label>
+                          <input type="text" name="ente_rilascio" placeholder="Nome ente formatore" className="w-full p-3 bg-[#0b1220] border border-[#3b82f6]/20 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/30 focus:border-[#10b981] focus:outline-none" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#e8fbff]/70">N. Attestato</label>
+                          <input type="text" name="numero_attestato" placeholder="Es: ATT-2026-001" className="w-full p-3 bg-[#0b1220] border border-[#3b82f6]/20 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/30 focus:border-[#10b981] focus:outline-none" />
+                        </div>
+                      </div>
+                      
+                      {/* Dettagli Corso */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#e8fbff]/70">Ore Formazione</label>
+                          <input type="number" name="ore_formazione" min="1" placeholder="Es: 8" className="w-full p-3 bg-[#0b1220] border border-[#3b82f6]/20 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/30 focus:border-[#10b981] focus:outline-none" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#e8fbff]/70">Docente</label>
+                          <input type="text" name="docente" placeholder="Nome docente" className="w-full p-3 bg-[#0b1220] border border-[#3b82f6]/20 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/30 focus:border-[#10b981] focus:outline-none" />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#e8fbff]/70">Note</label>
+                          <input type="text" name="note" placeholder="Note aggiuntive" className="w-full p-3 bg-[#0b1220] border border-[#3b82f6]/20 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/30 focus:border-[#10b981] focus:outline-none" />
+                        </div>
+                      </div>
+                      
+                      {/* Submit */}
+                      <div className="flex justify-end gap-3 pt-4">
+                        <button type="reset" className="px-6 py-3 bg-[#0b1220] border border-[#e8fbff]/20 rounded-lg text-[#e8fbff]/70 hover:bg-[#1a2332] transition-colors">
+                          Annulla
+                        </button>
+                        <button type="submit" className="px-6 py-3 bg-gradient-to-r from-[#10b981] to-[#3b82f6] rounded-lg text-white font-medium hover:opacity-90 transition-opacity flex items-center gap-2">
+                          <FileCheck className="w-4 h-4" />
+                          Registra Attestato
+                        </button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               {/* SOTTO-TAB: ASSOCIAZIONI & BANDI */}
