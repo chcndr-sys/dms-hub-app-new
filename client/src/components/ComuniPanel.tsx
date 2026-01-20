@@ -64,6 +64,40 @@ interface Mercato {
   longitude: string;
   cost_per_sqm: string;
   annual_market_days: number;
+  total_area_sqm?: string;
+  stalls_count?: string;
+}
+
+interface HubLocation {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  lat: string;
+  lng: string;
+  area_sqm: string;
+  active: number;
+  description: string;
+  livello: string;
+  tipo: string;
+  provincia_sigla: string;
+  shops: HubShop[];
+  shops_count: number;
+  total_shop_area: number;
+}
+
+interface HubShop {
+  id: number;
+  shop_number: string | null;
+  letter: string;
+  name: string;
+  category: string;
+  business_name: string;
+  vat_number: string;
+  phone: string;
+  email: string;
+  area_mq: string | null;
+  status: string;
 }
 
 interface Contratto {
@@ -149,7 +183,9 @@ export default function ComuniPanel() {
   const [importingSettori, setImportingSettori] = useState(false);
   const [mercatiComune, setMercatiComune] = useState<Mercato[]>([]);
   const [loadingMercati, setLoadingMercati] = useState(false);
-  const [activeTab, setActiveTab] = useState<'anagrafica' | 'settori' | 'mercati' | 'fatturazione' | 'permessi'>('anagrafica');
+  const [hubComune, setHubComune] = useState<HubLocation[]>([]);
+  const [loadingHub, setLoadingHub] = useState(false);
+  const [activeTab, setActiveTab] = useState<'anagrafica' | 'settori' | 'mercati' | 'hub' | 'fatturazione' | 'permessi'>('anagrafica');
   
   // Stato per fatturazione
   const [contratti, setContratti] = useState<Contratto[]>([]);
@@ -253,6 +289,22 @@ export default function ComuniPanel() {
       console.error('Error fetching mercati:', error);
     } finally {
       setLoadingMercati(false);
+    }
+  };
+
+  // Carica HUB di un comune
+  const fetchHub = async (comuneId: number) => {
+    setLoadingHub(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/comuni/${comuneId}/hub`);
+      const data = await res.json();
+      if (data.success) {
+        setHubComune(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching hub:', error);
+    } finally {
+      setLoadingHub(false);
     }
   };
 
@@ -592,6 +644,7 @@ export default function ComuniPanel() {
     if (selectedComune) {
       fetchSettori(selectedComune.id);
       fetchMercati(selectedComune.id);
+      fetchHub(selectedComune.id);
       fetchFatturazione(selectedComune.id);
       fetchPermessi(selectedComune.id);
     }
@@ -1134,6 +1187,17 @@ export default function ComuniPanel() {
                   Mercati
                 </button>
                 <button
+                  onClick={() => setActiveTab('hub')}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'hub'
+                      ? 'text-cyan-400 border-b-2 border-cyan-400'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Building2 className="w-4 h-4" />
+                  HUB
+                </button>
+                <button
                   onClick={() => setActiveTab('fatturazione')}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'fatturazione'
@@ -1371,14 +1435,18 @@ export default function ComuniPanel() {
                               Vai al mercato →
                             </a>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3 pt-3 border-t border-gray-700">
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-3 pt-3 border-t border-gray-700">
                             <div>
                               <p className="text-xs text-gray-500">Giorni</p>
                               <p className="text-sm text-white">{mercato.days || '-'}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Posteggi</p>
-                              <p className="text-sm text-white">{mercato.total_stalls || 0}</p>
+                              <p className="text-sm text-white">{mercato.stalls_count || mercato.total_stalls || 0}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Area Totale</p>
+                              <p className="text-sm text-white font-medium text-cyan-400">{mercato.total_area_sqm ? `${parseFloat(mercato.total_area_sqm).toLocaleString('it-IT', { maximumFractionDigits: 0 })} mq` : '-'}</p>
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Costo/mq</p>
@@ -1389,6 +1457,98 @@ export default function ComuniPanel() {
                               <p className="text-sm text-white">{mercato.annual_market_days || '-'}</p>
                             </div>
                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tab HUB */}
+              {activeTab === 'hub' && (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-medium text-white">HUB del Comune</h4>
+                    <span className="text-sm text-gray-400">{hubComune.length} HUB</span>
+                  </div>
+                  
+                  {loadingHub ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto text-cyan-400" />
+                      <p className="text-gray-400 mt-2">Caricamento HUB...</p>
+                    </div>
+                  ) : hubComune.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>Nessun HUB associato a questo comune</p>
+                      <p className="text-sm mt-2">Gli HUB vengono creati dalla sezione Vista Italia</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {hubComune.map(hub => (
+                        <div key={hub.id} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h5 className="font-medium text-white">{hub.name}</h5>
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${hub.active === 1 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                  {hub.active === 1 ? 'Attivo' : 'Inattivo'}
+                                </span>
+                                {hub.livello && (
+                                  <span className="px-2 py-0.5 text-xs rounded-full bg-purple-500/20 text-purple-400">
+                                    {hub.livello}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-400 mt-1">{hub.address}, {hub.city} {hub.provincia_sigla && `(${hub.provincia_sigla})`}</p>
+                              {hub.description && <p className="text-xs text-gray-500 mt-1">{hub.description}</p>}
+                            </div>
+                            <a 
+                              href={`/vista-italia?hub=${hub.id}`}
+                              className="text-cyan-400 hover:text-cyan-300 text-sm"
+                            >
+                              Vai all'HUB →
+                            </a>
+                          </div>
+                          
+                          {/* Statistiche HUB */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3 pt-3 border-t border-gray-700">
+                            <div>
+                              <p className="text-xs text-gray-500">Negozi</p>
+                              <p className="text-sm text-white font-medium">{hub.shops_count}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Area Totale</p>
+                              <p className="text-sm text-cyan-400 font-medium">{hub.area_sqm ? `${parseFloat(hub.area_sqm).toLocaleString('it-IT', { maximumFractionDigits: 0 })} mq` : '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Tipo</p>
+                              <p className="text-sm text-white">{hub.tipo || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Coordinate</p>
+                              <p className="text-sm text-white">{hub.lat && hub.lng ? `${parseFloat(hub.lat).toFixed(4)}, ${parseFloat(hub.lng).toFixed(4)}` : '-'}</p>
+                            </div>
+                          </div>
+
+                          {/* Lista Negozi */}
+                          {hub.shops && hub.shops.length > 0 && (
+                            <div className="mt-4 pt-3 border-t border-gray-700">
+                              <p className="text-xs text-gray-500 mb-2">Negozi nell'HUB:</p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {hub.shops.map(shop => (
+                                  <div key={shop.id} className="flex items-center gap-2 bg-gray-700/30 rounded px-3 py-2">
+                                    <span className={`w-2 h-2 rounded-full ${shop.status === 'active' ? 'bg-emerald-400' : 'bg-gray-400'}`}></span>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm text-white truncate">{shop.name}</p>
+                                      <p className="text-xs text-gray-400">{shop.category}</p>
+                                    </div>
+                                    {shop.phone && <span className="text-xs text-gray-500">{shop.phone}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
