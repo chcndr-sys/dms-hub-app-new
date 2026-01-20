@@ -1429,7 +1429,7 @@ export default function ComuniPanel() {
                               <p className="text-sm text-gray-400 mt-1">Codice: {mercato.code}</p>
                             </div>
                             <a 
-                              href="/dashboard-pa?tab=workspace"
+                              href="/dashboard-pa?tab=workspace&subtab=rete-hub"
                               className="text-cyan-400 hover:text-cyan-300 text-sm"
                             >
                               Vai al mercato →
@@ -1504,7 +1504,7 @@ export default function ComuniPanel() {
                               {hub.description && <p className="text-xs text-gray-500 mt-1">{hub.description}</p>}
                             </div>
                             <a 
-                              href="/dashboard-pa?tab=workspace"
+                              href="/dashboard-pa?tab=workspace&subtab=rete-hub"
                               className="text-cyan-400 hover:text-cyan-300 text-sm"
                             >
                               Vai all'HUB →

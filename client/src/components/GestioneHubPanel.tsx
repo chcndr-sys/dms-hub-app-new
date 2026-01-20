@@ -117,7 +117,10 @@ interface HubData {
 // ============================================================================
 
 export default function GestioneHubPanel() {
-  const [activeSubTab, setActiveSubTab] = useState('cruscotto');
+  // Leggi subtab da URL params (es. ?subtab=rete-hub)
+  const urlParams = new URLSearchParams(window.location.search);
+  const subtabFromUrl = urlParams.get('subtab');
+  const [activeSubTab, setActiveSubTab] = useState(subtabFromUrl || 'cruscotto');
   const [selectedProvincia, setSelectedProvincia] = useState<string>('all');
   const [selectedRuolo, setSelectedRuolo] = useState<string>('regione');
   const [searchQuery, setSearchQuery] = useState('');
