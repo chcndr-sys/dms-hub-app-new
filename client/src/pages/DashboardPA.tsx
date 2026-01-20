@@ -2128,21 +2128,25 @@ export default function DashboardPA() {
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-[#14b8a6]" />
                   Crescita Utenti
-                  {realData.statsGrowth && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
+                  {realData.statsGrowth?.growth && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {realData.statsGrowth && realData.statsGrowth.length > 0 ? (
+                {realData.statsGrowth?.growth && realData.statsGrowth.growth.length > 0 ? (
                   <div className="h-64 flex items-end justify-between gap-2">
-                    {realData.statsGrowth.map((item: any, i: number) => {
-                      const maxUsers = Math.max(...realData.statsGrowth.map((d: any) => d.cumulative || d.users || 0));
-                      const currentValue = item.cumulative || item.users || 0;
+                    {realData.statsGrowth.growth.map((item: any, i: number) => {
+                      const growthData = realData.statsGrowth.growth;
+                      const maxUsers = Math.max(...growthData.map((d: any) => parseInt(d.new_users) || 0));
+                      const currentValue = parseInt(item.new_users) || 0;
+                      // Formatta la data della settimana
+                      const weekDate = new Date(item.week);
+                      const formattedDate = weekDate.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
                       return (
                         <div key={i} className="flex-1 flex flex-col items-center gap-2">
                           <div className="w-full bg-[#14b8a6]/20 rounded-t-lg relative" style={{ height: `${maxUsers > 0 ? (currentValue / maxUsers) * 100 : 0}%`, minHeight: '20px' }}>
                             <div className="absolute inset-0 bg-gradient-to-t from-[#14b8a6] to-[#14b8a6]/50 rounded-t-lg"></div>
                           </div>
-                          <span className="text-xs text-[#e8fbff]/70">{item.date || item.period}</span>
+                          <span className="text-xs text-[#e8fbff]/70">{formattedDate}</span>
                           <span className="text-sm font-semibold text-[#14b8a6]">{currentValue.toLocaleString()}</span>
                         </div>
                       );
