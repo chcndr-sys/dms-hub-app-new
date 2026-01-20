@@ -95,7 +95,8 @@ export default function ComuniPanel() {
   const [comuneForm, setComuneForm] = useState({
     nome: '', provincia: '', regione: '', cap: '', codice_istat: '',
     codice_catastale: '', codice_ipa: '', pec: '', email: '', telefono: '', sito_web: '',
-    indirizzo: '', logo_url: ''
+    indirizzo: '', logo_url: '', codice_fiscale: '', tipologia: '',
+    sindaco_nome: '', sindaco_cognome: '', sindaco_titolo: '', acronimo: ''
   });
 
   // Form state per settore
@@ -263,7 +264,13 @@ export default function ComuniPanel() {
       telefono: '',
       sito_web: ipa.sito_web || '',
       indirizzo: ipa.indirizzo || '',
-      logo_url: ''
+      logo_url: '',
+      codice_fiscale: ipa.codice_fiscale || '',
+      tipologia: ipa.tipologia || '',
+      sindaco_nome: ipa.responsabile_nome || '',
+      sindaco_cognome: ipa.responsabile_cognome || '',
+      sindaco_titolo: ipa.titolo_responsabile || '',
+      acronimo: ''
     });
     
     setShowIPASearch(false);
@@ -389,7 +396,8 @@ export default function ComuniPanel() {
         setComuneForm({
           nome: '', provincia: '', regione: '', cap: '', codice_istat: '',
           codice_catastale: '', codice_ipa: '', pec: '', email: '', telefono: '', sito_web: '',
-          indirizzo: '', logo_url: ''
+          indirizzo: '', logo_url: '', codice_fiscale: '', tipologia: '',
+          sindaco_nome: '', sindaco_cognome: '', sindaco_titolo: '', acronimo: ''
         });
       }
     } catch (error) {
@@ -1322,6 +1330,68 @@ export default function ComuniPanel() {
                   onChange={e => setComuneForm({...comuneForm, sito_web: e.target.value})}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
                   placeholder="es. https://www.comune.bologna.it"
+                />
+              </div>
+              
+              {/* Nuovi campi IPA */}
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Codice Fiscale Ente</label>
+                <input
+                  type="text"
+                  value={comuneForm.codice_fiscale}
+                  onChange={e => setComuneForm({...comuneForm, codice_fiscale: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="es. 01232710374"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Tipologia Ente</label>
+                <input
+                  type="text"
+                  value={comuneForm.tipologia}
+                  onChange={e => setComuneForm({...comuneForm, tipologia: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="es. Pubbliche Amministrazioni"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Nome Sindaco</label>
+                <input
+                  type="text"
+                  value={comuneForm.sindaco_nome}
+                  onChange={e => setComuneForm({...comuneForm, sindaco_nome: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="es. Matteo"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Cognome Sindaco</label>
+                <input
+                  type="text"
+                  value={comuneForm.sindaco_cognome}
+                  onChange={e => setComuneForm({...comuneForm, sindaco_cognome: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="es. Lepore"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Titolo Sindaco</label>
+                <input
+                  type="text"
+                  value={comuneForm.sindaco_titolo}
+                  onChange={e => setComuneForm({...comuneForm, sindaco_titolo: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="es. Sindaco"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Acronimo</label>
+                <input
+                  type="text"
+                  value={comuneForm.acronimo}
+                  onChange={e => setComuneForm({...comuneForm, acronimo: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                  placeholder="es. BO"
                 />
               </div>
             </div>
