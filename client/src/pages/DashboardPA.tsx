@@ -79,6 +79,7 @@ function useDashboardData() {
   const [statsOverview, setStatsOverview] = useState<any>(null);
   const [statsRealtime, setStatsRealtime] = useState<any>(null);
   const [statsGrowth, setStatsGrowth] = useState<any>(null);
+  const [statsQualificazione, setStatsQualificazione] = useState<any>(null);
   
   useEffect(() => {
     const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
@@ -112,6 +113,30 @@ function useDashboardData() {
         }
       })
       .catch(err => console.log('Stats growth fetch error:', err));
+    
+    // Fetch qualificazione (Tab Imprese)
+    fetch(`${MIHUB_API}/stats/qualificazione/overview`)
+      .then(res => res.json())
+      .then(async data => {
+        if (data.success) {
+          // Fetch anche scadenze, demografia, top-imprese, indici
+          const [scadenzeRes, demografiaRes, topImpreseRes, indiciRes] = await Promise.all([
+            fetch(`${MIHUB_API}/stats/qualificazione/scadenze`).then(r => r.json()),
+            fetch(`${MIHUB_API}/stats/qualificazione/demografia`).then(r => r.json()),
+            fetch(`${MIHUB_API}/stats/qualificazione/top-imprese`).then(r => r.json()),
+            fetch(`${MIHUB_API}/stats/qualificazione/indici`).then(r => r.json())
+          ]);
+          
+          setStatsQualificazione({
+            overview: data.data,
+            scadenze: scadenzeRes.success ? scadenzeRes.data : [],
+            demografia: demografiaRes.success ? demografiaRes.data : null,
+            topImprese: topImpreseRes.success ? topImpreseRes.data : [],
+            indici: indiciRes.success ? indiciRes.data : null
+          });
+        }
+      })
+      .catch(err => console.log('Stats qualificazione fetch error:', err));
   }, []);
 
   // Combina dati tRPC con dati REST
@@ -156,7 +181,8 @@ function useDashboardData() {
     isLoading: overviewQuery.isLoading && !statsOverview,
     statsOverview: statsOverview,
     statsRealtime: statsRealtime,
-    statsGrowth: statsGrowth
+    statsGrowth: statsGrowth,
+    statsQualificazione: statsQualificazione
   };
 }
 
@@ -3754,15 +3780,22 @@ export default function DashboardPA() {
 
           {/* TAB 13: QUALIFICAZIONE IMPRESE */}
           <TabsContent value="businesses" className="space-y-6">
-            {/* KPI Conformità */}
+            {/* KPI Conformità - Dati Reali */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="bg-gradient-to-br from-[#10b981]/20 to-[#10b981]/5 border-[#10b981]/30">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-[#e8fbff]/70">Pienamente Conformi</CardTitle>
+                  <CardTitle className="text-sm text-[#e8fbff]/70 flex items-center gap-2">
+                    Pienamente Conformi
+                    {realData.statsQualificazione && <span className="text-xs text-[#10b981]">● Live</span>}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold text-[#10b981] mb-1">{mockData.businesses.fullyCompliant}</div>
-                  <div className="text-sm text-[#e8fbff]/50">{((mockData.businesses.fullyCompliant / mockData.businesses.total) * 100).toFixed(1)}% del totale</div>
+                  <div className="text-4xl font-bold text-[#10b981] mb-1">
+                    {realData.statsQualificazione?.overview?.conformi ?? mockData.businesses.fullyCompliant}
+                  </div>
+                  <div className="text-sm text-[#e8fbff]/50">
+                    {realData.statsQualificazione?.overview?.conformi_percentuale ?? ((mockData.businesses.fullyCompliant / mockData.businesses.total) * 100).toFixed(1)}% del totale
+                  </div>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-[#f59e0b]/20 to-[#f59e0b]/5 border-[#f59e0b]/30">
@@ -3770,8 +3803,12 @@ export default function DashboardPA() {
                   <CardTitle className="text-sm text-[#e8fbff]/70">Con Riserva</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold text-[#f59e0b] mb-1">{mockData.businesses.partiallyCompliant}</div>
-                  <div className="text-sm text-[#e8fbff]/50">{((mockData.businesses.partiallyCompliant / mockData.businesses.total) * 100).toFixed(1)}% del totale</div>
+                  <div className="text-4xl font-bold text-[#f59e0b] mb-1">
+                    {realData.statsQualificazione?.overview?.con_riserva ?? mockData.businesses.partiallyCompliant}
+                  </div>
+                  <div className="text-sm text-[#e8fbff]/50">
+                    {realData.statsQualificazione?.overview?.con_riserva_percentuale ?? ((mockData.businesses.partiallyCompliant / mockData.businesses.total) * 100).toFixed(1)}% del totale
+                  </div>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-[#ef4444]/20 to-[#ef4444]/5 border-[#ef4444]/30">
@@ -3779,59 +3816,74 @@ export default function DashboardPA() {
                   <CardTitle className="text-sm text-[#e8fbff]/70">Non Conformi</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold text-[#ef4444] mb-1">{mockData.businesses.nonCompliant}</div>
-                  <div className="text-sm text-[#e8fbff]/50">{((mockData.businesses.nonCompliant / mockData.businesses.total) * 100).toFixed(1)}% del totale</div>
+                  <div className="text-4xl font-bold text-[#ef4444] mb-1">
+                    {realData.statsQualificazione?.overview?.non_conformi ?? mockData.businesses.nonCompliant}
+                  </div>
+                  <div className="text-sm text-[#e8fbff]/50">
+                    {realData.statsQualificazione?.overview?.non_conformi_percentuale ?? ((mockData.businesses.nonCompliant / mockData.businesses.total) * 100).toFixed(1)}% del totale
+                  </div>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-[#14b8a6]/20 to-[#14b8a6]/5 border-[#14b8a6]/30">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-[#e8fbff]/70">Score Medio</CardTitle>
+                  <CardTitle className="text-sm text-[#e8fbff]/70">Totale Imprese</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold text-[#14b8a6] mb-1">{mockData.businesses.avgScore}</div>
-                  <div className="text-sm text-[#e8fbff]/50">su 100</div>
+                  <div className="text-4xl font-bold text-[#14b8a6] mb-1">
+                    {realData.statsQualificazione?.overview?.totale ?? mockData.businesses.total}
+                  </div>
+                  <div className="text-sm text-[#e8fbff]/50">nel sistema</div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Scadenze Imminenti */}
+            {/* Scadenze Imminenti - Dati Reali */}
             <Card className="bg-[#1a2332] border-[#ef4444]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                   <AlertCircle className="h-5 w-5 text-[#ef4444]" />
-                  Scadenze Imminenti ({mockData.businesses.atRiskSuspension})
+                  Scadenze Imminenti ({realData.statsQualificazione?.scadenze?.length ?? mockData.businesses.atRiskSuspension})
+                  {realData.statsQualificazione?.scadenze && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {mockData.businesses.expiringDocs.map((item, idx) => (
-                    <div key={idx} className={`flex items-center justify-between p-3 rounded-lg ${
-                      item.critical ? 'bg-[#ef4444]/10 border border-[#ef4444]/30' : 'bg-[#0b1220]'
-                    }`}>
-                      <div className="flex items-center gap-3">
-                        {item.critical && <AlertCircle className="h-5 w-5 text-[#ef4444]" />}
-                        <div>
-                          <div className="text-[#e8fbff] font-medium">{item.business}</div>
-                          <div className="text-sm text-[#e8fbff]/70">{item.doc}</div>
+                  {(realData.statsQualificazione?.scadenze || mockData.businesses.expiringDocs).map((item: any, idx: number) => {
+                    const isReal = realData.statsQualificazione?.scadenze;
+                    const isCritical = isReal ? item.giorni_rimanenti <= 15 : item.critical;
+                    const businessName = isReal ? item.impresa_nome : item.business;
+                    const docType = isReal ? item.tipo_qualifica : item.doc;
+                    const daysLeft = isReal ? item.giorni_rimanenti : item.days;
+                    
+                    return (
+                      <div key={idx} className={`flex items-center justify-between p-3 rounded-lg ${
+                        isCritical ? 'bg-[#ef4444]/10 border border-[#ef4444]/30' : 'bg-[#0b1220]'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          {isCritical && <AlertCircle className="h-5 w-5 text-[#ef4444]" />}
+                          <div>
+                            <div className="text-[#e8fbff] font-medium">{businessName}</div>
+                            <div className="text-sm text-[#e8fbff]/70">{docType}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`text-lg font-bold ${
+                            isCritical ? 'text-[#ef4444]' : 'text-[#f59e0b]'
+                          }`}>
+                            {daysLeft} giorni
+                          </div>
+                          <Button size="sm" variant="outline" className="mt-1">
+                            Invia Reminder
+                          </Button>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className={`text-lg font-bold ${
-                          item.critical ? 'text-[#ef4444]' : 'text-[#f59e0b]'
-                        }`}>
-                          {item.days} giorni
-                        </div>
-                        <Button size="sm" variant="outline" className="mt-1">
-                          Invia Reminder
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Demografia e Indici */}
+            {/* Demografia e Indici - Dati Reali */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Demografia */}
               <Card className="bg-[#1a2332] border-[#14b8a6]/30">
@@ -3839,63 +3891,53 @@ export default function DashboardPA() {
                   <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                     <Users className="h-5 w-5 text-[#14b8a6]" />
                     Demografia Imprese
+                    {realData.statsQualificazione?.demografia && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="p-4 bg-[#0b1220] rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[#e8fbff]/70">Aperture 2025</span>
-                        <span className="text-2xl font-bold text-[#10b981]">+{mockData.businesses.demographics.openings}</span>
+                        <span className="text-[#e8fbff]/70">Aperture 2026</span>
+                        <span className="text-2xl font-bold text-[#10b981]">+{realData.statsQualificazione?.demografia?.aperture_anno ?? mockData.businesses.demographics.openings}</span>
                       </div>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[#e8fbff]/70">Cessazioni 2025</span>
-                        <span className="text-2xl font-bold text-[#ef4444]">-{mockData.businesses.demographics.closures}</span>
+                        <span className="text-[#e8fbff]/70">Cessazioni 2026</span>
+                        <span className="text-2xl font-bold text-[#ef4444]">-{realData.statsQualificazione?.demografia?.cessazioni_anno ?? mockData.businesses.demographics.closures}</span>
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-[#14b8a6]/30">
                         <span className="text-[#e8fbff] font-semibold">Crescita Netta</span>
-                        <span className="text-2xl font-bold text-[#14b8a6]">+{mockData.businesses.demographics.netGrowth}</span>
+                        <span className="text-2xl font-bold text-[#14b8a6]">+{realData.statsQualificazione?.demografia?.crescita_netta ?? mockData.businesses.demographics.netGrowth}</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-[#0b1220] rounded-lg">
-                        <div className="text-xs text-[#e8fbff]/70 mb-1">Per Sesso</div>
-                        <div className="text-sm space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-[#e8fbff]/70">Uomini</span>
-                            <span className="text-[#14b8a6] font-semibold">{mockData.businesses.demographics.byGender.male}</span>
+                    {/* Per Settore - Dati Reali */}
+                    <div className="p-3 bg-[#0b1220] rounded-lg">
+                      <div className="text-xs text-[#e8fbff]/70 mb-2">Per Settore (Top 5)</div>
+                      <div className="text-sm space-y-1">
+                        {(realData.statsQualificazione?.demografia?.per_settore?.slice(0, 5) || [
+                          { settore: 'Alimentare', count: 180 },
+                          { settore: 'Abbigliamento', count: 95 },
+                          { settore: 'Artigianato', count: 75 }
+                        ]).map((s: any, i: number) => (
+                          <div key={i} className="flex justify-between">
+                            <span className="text-[#e8fbff]/70 truncate max-w-[150px]">{s.settore}</span>
+                            <span className="text-[#14b8a6] font-semibold">{s.count}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-[#e8fbff]/70">Donne</span>
-                            <span className="text-[#14b8a6] font-semibold">{mockData.businesses.demographics.byGender.female}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-3 bg-[#0b1220] rounded-lg">
-                        <div className="text-xs text-[#e8fbff]/70 mb-1">Per Origine</div>
-                        <div className="text-sm space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-[#e8fbff]/70">Locali</span>
-                            <span className="text-[#14b8a6] font-semibold">{mockData.businesses.demographics.byOrigin.native}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-[#e8fbff]/70">Stranieri</span>
-                            <span className="text-[#14b8a6] font-semibold">{mockData.businesses.demographics.byOrigin.foreign}</span>
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Indici Strategici */}
+              {/* Indici Strategici - Dati Reali */}
               <Card className="bg-[#1a2332] border-[#14b8a6]/30">
                 <CardHeader>
                   <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                     <Target className="h-5 w-5 text-[#14b8a6]" />
                     Indici Strategici
+                    {realData.statsQualificazione?.indici && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -3903,17 +3945,17 @@ export default function DashboardPA() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[#e8fbff]">Riqualificazione</span>
-                        <span className="text-2xl font-bold text-[#14b8a6]">{mockData.businesses.indices.requalification}</span>
+                        <span className="text-2xl font-bold text-[#14b8a6]">{realData.statsQualificazione?.indici?.riqualificazione ?? mockData.businesses.indices.requalification}</span>
                       </div>
                       <div className="w-full bg-[#0b1220] rounded-full h-3">
-                        <div className="bg-gradient-to-r from-[#14b8a6] to-[#10b981] h-3 rounded-full" style={{width: `${mockData.businesses.indices.requalification}%`}}></div>
+                        <div className="bg-gradient-to-r from-[#14b8a6] to-[#10b981] h-3 rounded-full" style={{width: `${realData.statsQualificazione?.indici?.riqualificazione ?? mockData.businesses.indices.requalification}%`}}></div>
                       </div>
                     </div>
 
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[#e8fbff]">Digitalizzazione</span>
-                        <span className="text-2xl font-bold text-[#8b5cf6]">{mockData.businesses.indices.digitalization}</span>
+                        <span className="text-2xl font-bold text-[#8b5cf6]">{realData.statsQualificazione?.indici?.digitalizzazione ?? mockData.businesses.indices.digitalization}</span>
                       </div>
                       <div className="w-full bg-[#0b1220] rounded-full h-3">
                         <div className="bg-gradient-to-r from-[#8b5cf6] to-[#a78bfa] h-3 rounded-full" style={{width: `${mockData.businesses.indices.digitalization}%`}}></div>
@@ -3923,10 +3965,20 @@ export default function DashboardPA() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[#e8fbff]">Sostenibilità</span>
-                        <span className="text-2xl font-bold text-[#10b981]">{mockData.businesses.indices.sustainability}</span>
+                        <span className="text-2xl font-bold text-[#10b981]">{realData.statsQualificazione?.indici?.sostenibilita ?? mockData.businesses.indices.sustainability}</span>
                       </div>
                       <div className="w-full bg-[#0b1220] rounded-full h-3">
-                        <div className="bg-gradient-to-r from-[#10b981] to-[#34d399] h-3 rounded-full" style={{width: `${mockData.businesses.indices.sustainability}%`}}></div>
+                        <div className="bg-gradient-to-r from-[#10b981] to-[#34d399] h-3 rounded-full" style={{width: `${realData.statsQualificazione?.indici?.sostenibilita ?? mockData.businesses.indices.sustainability}%`}}></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[#e8fbff]">Conformità</span>
+                        <span className="text-2xl font-bold text-[#06b6d4]">{realData.statsQualificazione?.indici?.conformita?.toFixed(1) ?? '97.1'}</span>
+                      </div>
+                      <div className="w-full bg-[#0b1220] rounded-full h-3">
+                        <div className="bg-gradient-to-r from-[#06b6d4] to-[#22d3ee] h-3 rounded-full" style={{width: `${realData.statsQualificazione?.indici?.conformita ?? 97}%`}}></div>
                       </div>
                     </div>
                   </div>
@@ -4020,33 +4072,42 @@ export default function DashboardPA() {
               </Card>
             </div>
 
-            {/* Top Imprese */}
+            {/* Top Imprese - Dati Reali */}
             <Card className="bg-[#1a2332] border-[#14b8a6]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                   <Award className="h-5 w-5 text-[#f59e0b]" />
                   Top 5 Imprese per Score Qualificazione
+                  {realData.statsQualificazione?.topImprese && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {mockData.businesses.topScoring.map((business, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-[#0b1220] rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#f59e0b] to-[#f97316] flex items-center justify-center">
-                          <span className="text-white font-bold text-lg">#{idx + 1}</span>
+                  {(realData.statsQualificazione?.topImprese || mockData.businesses.topScoring).map((business: any, idx: number) => {
+                    const isReal = realData.statsQualificazione?.topImprese;
+                    const name = isReal ? business.denominazione : business.name;
+                    const sector = isReal ? business.settore : business.sector;
+                    const score = isReal ? business.score : business.score;
+                    const digitalization = isReal ? business.score_digitalizzazione : business.digitalization;
+                    
+                    return (
+                      <div key={idx} className="flex items-center justify-between p-4 bg-[#0b1220] rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#f59e0b] to-[#f97316] flex items-center justify-center">
+                            <span className="text-white font-bold text-lg">#{idx + 1}</span>
+                          </div>
+                          <div>
+                            <div className="text-[#e8fbff] font-semibold">{name}</div>
+                            <div className="text-sm text-[#e8fbff]/50">{sector}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="text-[#e8fbff] font-semibold">{business.name}</div>
-                          <div className="text-sm text-[#e8fbff]/50">{business.sector}</div>
+                        <div className="text-right">
+                          <div className="text-3xl font-bold text-[#10b981] mb-1">{score}</div>
+                          <div className="text-xs text-[#e8fbff]/70">Digitalizzazione: {digitalization}%</div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-3xl font-bold text-[#10b981] mb-1">{business.score}</div>
-                        <div className="text-xs text-[#e8fbff]/70">Digitalizzazione: {business.digitalization}%</div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
