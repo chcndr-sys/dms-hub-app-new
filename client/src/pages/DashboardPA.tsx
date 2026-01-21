@@ -1117,12 +1117,17 @@ export default function DashboardPA() {
     try {
       const res = await fetch(`${MIHUB_API}/notifiche/messaggi/ENTE_FORMATORE/${ENTE_FORMATORE_ID}?filtro=${filtroMessaggiEnti}`);
       const data = await res.json();
-      if (data.success) {
-        setMessaggiEnti(data.data || []);
+      if (data.success && Array.isArray(data.data)) {
+        setMessaggiEnti(data.data);
         setNonLetteEnti(data.non_letti || 0);
+      } else {
+        setMessaggiEnti([]);
+        setNonLetteEnti(0);
       }
     } catch (err) {
       console.log('Messaggi Enti fetch error:', err);
+      setMessaggiEnti([]);
+      setNonLetteEnti(0);
     }
   };
   
@@ -1132,12 +1137,17 @@ export default function DashboardPA() {
     try {
       const res = await fetch(`${MIHUB_API}/notifiche/messaggi/ASSOCIAZIONE/${ASSOCIAZIONE_ID}?filtro=${filtroMessaggiAssoc}`);
       const data = await res.json();
-      if (data.success) {
-        setMessaggiAssociazioni(data.data || []);
+      if (data.success && Array.isArray(data.data)) {
+        setMessaggiAssociazioni(data.data);
         setNonLetteAssoc(data.non_letti || 0);
+      } else {
+        setMessaggiAssociazioni([]);
+        setNonLetteAssoc(0);
       }
     } catch (err) {
       console.log('Messaggi Associazioni fetch error:', err);
+      setMessaggiAssociazioni([]);
+      setNonLetteAssoc(0);
     }
   };
   
@@ -5512,7 +5522,7 @@ export default function DashboardPA() {
                   </CardHeader>
                   <CardContent>
                     <div className="max-h-[500px] overflow-y-auto space-y-3">
-                      {messaggiEnti.slice(0, 20).map((msg: any, idx: number) => (
+                      {Array.isArray(messaggiEnti) && messaggiEnti.slice(0, 20).map((msg: any, idx: number) => (
                         <div key={idx} 
                           onClick={() => msg.direzione === 'RICEVUTO' && msg.non_letti > 0 && segnaMessaggioLetto(msg.id, ENTE_FORMATORE_ID, 'ENTE_FORMATORE')}
                           className={`p-3 rounded-lg border cursor-pointer transition-all hover:border-blue-400/50 ${
@@ -5574,7 +5584,7 @@ export default function DashboardPA() {
                           )}
                         </div>
                       ))}
-                      {messaggiEnti.length === 0 && (
+                      {(!Array.isArray(messaggiEnti) || messaggiEnti.length === 0) && (
                         <div className="text-center text-[#e8fbff]/50 py-8">
                           <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-30" />
                           <p>Nessun messaggio</p>
@@ -6199,7 +6209,7 @@ export default function DashboardPA() {
                   </CardHeader>
                   <CardContent>
                     <div className="max-h-[500px] overflow-y-auto space-y-3">
-                      {messaggiAssociazioni.slice(0, 20).map((msg: any, idx: number) => (
+                      {Array.isArray(messaggiAssociazioni) && messaggiAssociazioni.slice(0, 20).map((msg: any, idx: number) => (
                         <div key={idx} 
                           onClick={() => msg.direzione === 'RICEVUTO' && msg.non_letti > 0 && segnaMessaggioLetto(msg.id, ASSOCIAZIONE_ID, 'ASSOCIAZIONE')}
                           className={`p-3 rounded-lg border cursor-pointer transition-all hover:border-emerald-400/50 ${
@@ -6261,7 +6271,7 @@ export default function DashboardPA() {
                           )}
                         </div>
                       ))}
-                      {messaggiAssociazioni.length === 0 && (
+                      {(!Array.isArray(messaggiAssociazioni) || messaggiAssociazioni.length === 0) && (
                         <div className="text-center text-[#e8fbff]/50 py-8">
                           <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-30" />
                           <p>Nessun messaggio</p>
