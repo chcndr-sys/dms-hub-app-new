@@ -1313,6 +1313,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   const [selectedCompanyForModal, setSelectedCompanyForModal] = useState<CompanyRow | null>(null);
   const [showConcessionDetailModal, setShowConcessionDetailModal] = useState(false);
   const [selectedConcessionForModal, setSelectedConcessionForModal] = useState<any>(null);
+  const [sidebarView, setSidebarView] = useState<'impresa' | 'concessione'>('impresa');
+  const [sidebarConcessionData, setSidebarConcessionData] = useState<any>(null);
   const listContainerRef = React.useRef<HTMLDivElement>(null);
   
   // Nuovi state per presenze e graduatoria (integrazione lista unificata)
@@ -2855,115 +2857,347 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     {getStallStatusLabel(selectedStall.status)}
                   </Badge>
                 </div>
-                <button onClick={() => setSelectedStallId(null)} className="text-[#e8fbff]/50 hover:text-[#e8fbff]">
+                <button onClick={() => { setSelectedStallId(null); setSidebarView('impresa'); setSidebarConcessionData(null); }} className="text-[#e8fbff]/50 hover:text-[#e8fbff]">
                   <X className="h-4 w-4" />
                 </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {/* Nome Impresa */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Building2 className="h-4 w-4 text-[#14b8a6]" />
-                    <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Impresa</span>
-                  </div>
-                  <p className="text-[#e8fbff] font-semibold">
-                    {concessionsByStallId[selectedStall.number]?.companyName || selectedStall.vendor_business_name || 'N/A'}
-                  </p>
-                </div>
-
-                {/* Tipo Concessione */}
-                {concessionsByStallId[selectedStall.number]?.tipoConcessione && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <FileText className="h-4 w-4 text-[#8b5cf6]" />
-                      <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Concessione</span>
-                    </div>
-                    <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
-                      {concessionsByStallId[selectedStall.number].tipoConcessione}
-                    </Badge>
-                  </div>
-                )}
-
-                {/* Referente */}
-                {selectedStall.vendor_contact_name && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <User className="h-4 w-4 text-[#f59e0b]" />
-                      <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Referente</span>
-                    </div>
-                    <p className="text-[#e8fbff] text-sm">{selectedStall.vendor_contact_name}</p>
-                  </div>
-                )}
-
-                {/* Tipo Posteggio */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="h-4 w-4 text-[#8b5cf6]" />
-                    <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Tipo Posteggio</span>
-                  </div>
-                  <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
-                    {selectedStall.type}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Pulsanti per aprire i modal */}
-              <div className="p-4 border-t border-[#14b8a6]/20 bg-[#0b1220]/50 space-y-2">
-                {/* Pulsante Vista Concessione */}
-                {selectedStall.concession_id && (
-                  <Button
+              {/* Tab switcher Vista Impresa / Vista Concessione */}
+              {selectedStall.concession_id && (
+                <div className="flex border-b border-[#14b8a6]/20">
+                  <button
+                    onClick={() => setSidebarView('impresa')}
+                    className={`flex-1 py-2 px-4 text-sm font-medium transition-colors ${sidebarView === 'impresa' ? 'text-[#14b8a6] border-b-2 border-[#14b8a6] bg-[#14b8a6]/10' : 'text-[#e8fbff]/50 hover:text-[#e8fbff]'}`}
+                  >
+                    <Building2 className="h-4 w-4 inline mr-2" />Vista Impresa
+                  </button>
+                  <button
                     onClick={async () => {
-                      try {
-                        const response = await fetch(`${API_BASE_URL}/api/concessions/${selectedStall.concession_id}`);
-                        const data = await response.json();
-                        if (data.success && data.data) {
-                          setSelectedConcessionForModal(data.data);
-                          setShowConcessionDetailModal(true);
+                      setSidebarView('concessione');
+                      if (!sidebarConcessionData) {
+                        try {
+                          const response = await fetch(`${API_BASE_URL}/api/concessions/${selectedStall.concession_id}`);
+                          const data = await response.json();
+                          if (data.success && data.data) {
+                            setSidebarConcessionData(data.data);
+                          }
+                        } catch (error) {
+                          console.error('Error loading concession:', error);
+                          toast.error('Errore nel caricamento della concessione');
                         }
-                      } catch (error) {
-                        console.error('Error loading concession:', error);
-                        toast.error('Errore nel caricamento della concessione');
                       }
                     }}
-                    className="w-full bg-[#8b5cf6] hover:bg-[#8b5cf6]/80 text-white"
+                    className={`flex-1 py-2 px-4 text-sm font-medium transition-colors ${sidebarView === 'concessione' ? 'text-[#8b5cf6] border-b-2 border-[#8b5cf6] bg-[#8b5cf6]/10' : 'text-[#e8fbff]/50 hover:text-[#e8fbff]'}`}
                   >
-                    <FileText className="h-4 w-4 mr-2" /> Vista Concessione
-                  </Button>
-                )}
-                {/* Pulsante Modifica Impresa */}
-                <Button
-                  onClick={async () => {
-                    // Carica i dati completi dell'impresa e apri il modal
-                    const companyId = selectedStall.impresa_id || concessionsByStallId[selectedStall.number]?.companyId;
-                    if (companyId) {
-                      try {
-                        const response = await fetch(`${API_BASE_URL}/api/imprese/${companyId}`);
-                        const data = await response.json();
-                        if (data.success && data.data) {
-                          setSelectedCompanyForModal({
-                            id: data.data.id,
-                            code: data.data.codice_fiscale || data.data.code,
-                            denominazione: data.data.denominazione,
-                            partita_iva: data.data.partita_iva,
-                            referente: data.data.referente || data.data.email,
-                            telefono: data.data.telefono,
-                            stato: data.data.stato || 'active',
-                            ...data.data
-                          });
-                          setShowCompanyModal(true);
+                    <FileText className="h-4 w-4 inline mr-2" />Vista Concessione
+                  </button>
+                </div>
+              )}
+              
+              {/* Contenuto Vista Impresa */}
+              {sidebarView === 'impresa' && (
+                <>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {/* Nome Impresa */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Building2 className="h-4 w-4 text-[#14b8a6]" />
+                        <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Impresa</span>
+                      </div>
+                      <p className="text-[#e8fbff] font-semibold">
+                        {concessionsByStallId[selectedStall.number]?.companyName || selectedStall.vendor_business_name || 'N/A'}
+                      </p>
+                    </div>
+
+                    {/* Tipo Concessione */}
+                    {concessionsByStallId[selectedStall.number]?.tipoConcessione && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="h-4 w-4 text-[#8b5cf6]" />
+                          <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Concessione</span>
+                        </div>
+                        <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
+                          {concessionsByStallId[selectedStall.number].tipoConcessione}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {/* Referente */}
+                    {selectedStall.vendor_contact_name && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <User className="h-4 w-4 text-[#f59e0b]" />
+                          <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Referente</span>
+                        </div>
+                        <p className="text-[#e8fbff] text-sm">{selectedStall.vendor_contact_name}</p>
+                      </div>
+                    )}
+
+                    {/* Tipo Posteggio */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <MapPin className="h-4 w-4 text-[#8b5cf6]" />
+                        <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Tipo Posteggio</span>
+                      </div>
+                      <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
+                        {selectedStall.type}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Pulsante Modifica Impresa */}
+                  <div className="p-4 border-t border-[#14b8a6]/20 bg-[#0b1220]/50">
+                    <Button
+                      onClick={async () => {
+                        const companyId = selectedStall.impresa_id || concessionsByStallId[selectedStall.number]?.companyId;
+                        if (companyId) {
+                          try {
+                            const response = await fetch(`${API_BASE_URL}/api/imprese/${companyId}`);
+                            const data = await response.json();
+                            if (data.success && data.data) {
+                              setSelectedCompanyForModal({
+                                id: data.data.id,
+                                code: data.data.codice_fiscale || data.data.code,
+                                denominazione: data.data.denominazione,
+                                partita_iva: data.data.partita_iva,
+                                referente: data.data.referente || data.data.email,
+                                telefono: data.data.telefono,
+                                stato: data.data.stato || 'active',
+                                ...data.data
+                              });
+                              setShowCompanyModal(true);
+                            }
+                          } catch (error) {
+                            console.error('Error loading company:', error);
+                            toast.error('Errore nel caricamento dell\'impresa');
+                          }
                         }
-                      } catch (error) {
-                        console.error('Error loading company:', error);
-                        toast.error('Errore nel caricamento dell\'impresa');
+                      }}
+                      className="w-full bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white"
+                    >
+                      <Edit className="h-4 w-4 mr-2" /> Modifica Impresa (38 campi)
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {/* Contenuto Vista Concessione */}
+              {sidebarView === 'concessione' && sidebarConcessionData && (
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {/* Dati Concessione */}
+                  <div className="bg-[#0d1829] rounded-lg p-3 border border-[#14b8a6]/20">
+                    <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <FileText className="h-4 w-4" /> Dati Concessione
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Tipo</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.tipo_concessione || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Stato</span>
+                        <Badge className={sidebarConcessionData.stato === 'ATTIVA' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}>
+                          {sidebarConcessionData.stato || 'N/A'}
+                        </Badge>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Valida Dal</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.valid_from ? new Date(sidebarConcessionData.valid_from).toLocaleDateString('it-IT') : '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Valida Al</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.valid_to ? new Date(sidebarConcessionData.valid_to).toLocaleDateString('it-IT') : '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Concessionario */}
+                  <div className="bg-[#0d1829] rounded-lg p-3 border border-[#14b8a6]/20">
+                    <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4" /> Concessionario
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Ragione Sociale</span>
+                        <p className="text-[#e8fbff] font-semibold text-sm">{sidebarConcessionData.ragione_sociale || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Nome</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.nome || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Cognome</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.cognome || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Partita IVA</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.partita_iva || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Codice Fiscale</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.cf_concessionario || '-'}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Sede Legale</span>
+                        <p className="text-[#e8fbff] text-sm">
+                          {[sidebarConcessionData.sede_legale_via, sidebarConcessionData.sede_legale_cap, sidebarConcessionData.sede_legale_comune, sidebarConcessionData.sede_legale_provincia].filter(Boolean).join(', ') || '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dati Posteggio e Mercato */}
+                  <div className="bg-[#0d1829] rounded-lg p-3 border border-[#14b8a6]/20">
+                    <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4" /> Dati Posteggio e Mercato
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Mercato</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.market_name || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Posteggio</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.stall_code || sidebarConcessionData.stall_number || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Ubicazione</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.ubicazione || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Giorno</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.giorno || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">MQ</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.mq || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Dimensioni</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.dimensioni_lineari || '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dati Economici */}
+                  <div className="bg-[#0d1829] rounded-lg p-3 border border-[#14b8a6]/20">
+                    <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <Building2 className="h-4 w-4" /> Dati Economici
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Canone Unico</span>
+                        <p className={`font-semibold text-sm ${parseFloat(sidebarConcessionData.canone_unico || '0') > 0 ? 'text-red-400' : 'text-[#e8fbff]'}`}>
+                          € {parseFloat(sidebarConcessionData.canone_unico || '0').toLocaleString('it-IT', {minimumFractionDigits: 2})}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Tipo Posteggio</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.tipo_posteggio || '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Wallet Concessione */}
+                  <div className="bg-[#0d1829] rounded-lg p-3 border border-[#14b8a6]/20">
+                    <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <Wallet className="h-4 w-4" /> Wallet Concessione
+                    </h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">ID Wallet</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.wallet_id || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Saldo</span>
+                        <p className={`font-semibold text-sm ${parseFloat(sidebarConcessionData.wallet_balance || '0') >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          € {parseFloat(sidebarConcessionData.wallet_balance || '0').toLocaleString('it-IT', {minimumFractionDigits: 2})}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Stato</span>
+                        <p className={`text-sm ${sidebarConcessionData.wallet_status === 'ACTIVE' ? 'text-green-400' : 'text-yellow-400'}`}>
+                          {sidebarConcessionData.wallet_status === 'ACTIVE' ? '✓ Attivo' : sidebarConcessionData.wallet_status || '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Requisiti e Documentazione */}
+                  <div className="bg-[#0d1829] rounded-lg p-3 border border-[#14b8a6]/20">
+                    <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4" /> Requisiti e Documentazione
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">DURC Valido</span>
+                        <p className={`text-sm ${sidebarConcessionData.durc_scadenza ? (new Date(sidebarConcessionData.durc_scadenza) > new Date() ? 'text-green-400' : 'text-yellow-400') : 'text-red-400'}`}>
+                          {sidebarConcessionData.durc_scadenza ? (new Date(sidebarConcessionData.durc_scadenza) > new Date() ? '✓ Sì' : '⚠ Scaduto') : '✗ Non presente'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Scadenza DURC</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.durc_scadenza ? new Date(sidebarConcessionData.durc_scadenza).toLocaleDateString('it-IT') : '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Requisiti Morali</span>
+                        <p className={`text-sm ${sidebarConcessionData.requisiti_morali ? 'text-green-400' : 'text-[#e8fbff]/50'}`}>
+                          {sidebarConcessionData.requisiti_morali ? '✓ Verificati' : '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Requisiti Professionali</span>
+                        <p className={`text-sm ${sidebarConcessionData.requisiti_professionali ? 'text-green-400' : 'text-[#e8fbff]/50'}`}>
+                          {sidebarConcessionData.requisiti_professionali ? '✓ Verificati' : '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading per Vista Concessione */}
+              {sidebarView === 'concessione' && !sidebarConcessionData && (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8b5cf6]"></div>
+                </div>
+              )}
+
+              {/* Pulsanti per posteggi senza concessione */}
+              {!selectedStall.concession_id && (
+                <div className="p-4 border-t border-[#14b8a6]/20 bg-[#0b1220]/50">
+                  <Button
+                    onClick={async () => {
+                      const companyId = selectedStall.impresa_id || concessionsByStallId[selectedStall.number]?.companyId;
+                      if (companyId) {
+                        try {
+                          const response = await fetch(`${API_BASE_URL}/api/imprese/${companyId}`);
+                          const data = await response.json();
+                          if (data.success && data.data) {
+                            setSelectedCompanyForModal({
+                              id: data.data.id,
+                              code: data.data.codice_fiscale || data.data.code,
+                              denominazione: data.data.denominazione,
+                              partita_iva: data.data.partita_iva,
+                              referente: data.data.referente || data.data.email,
+                              telefono: data.data.telefono,
+                              stato: data.data.stato || 'active',
+                              ...data.data
+                            });
+                            setShowCompanyModal(true);
+                          }
+                        } catch (error) {
+                          console.error('Error loading company:', error);
+                          toast.error('Errore nel caricamento dell\'impresa');
+                        }
                       }
-                    }
-                  }}
-                  className="w-full bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white"
-                >
-                  <Edit className="h-4 w-4 mr-2" /> Modifica Impresa (38 campi)
-                </Button>
-              </div>
+                    }}
+                    className="w-full bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white"
+                  >
+                    <Edit className="h-4 w-4 mr-2" /> Modifica Impresa (38 campi)
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
