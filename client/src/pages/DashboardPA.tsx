@@ -1102,6 +1102,10 @@ export default function DashboardPA() {
   const [invioNotificaLoading, setInvioNotificaLoading] = useState(false);
   const [selectedNotifica, setSelectedNotifica] = useState<any>(null);
   const [notificheNonLette, setNotificheNonLette] = useState(0);
+  const [filtroMessaggiEnti, setFiltroMessaggiEnti] = useState<'tutti' | 'inviati' | 'ricevuti'>('tutti');
+  const [filtroMessaggiAssoc, setFiltroMessaggiAssoc] = useState<'tutti' | 'inviati' | 'ricevuti'>('tutti');
+  const [messaggiInviatiEnti, setMessaggiInviatiEnti] = useState<any[]>([]);
+  const [messaggiInviatiAssoc, setMessaggiInviatiAssoc] = useState<any[]>([]);
   
   // Fetch notifiche stats e risposte
   useEffect(() => {
