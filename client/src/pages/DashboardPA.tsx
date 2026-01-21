@@ -1124,9 +1124,9 @@ export default function DashboardPA() {
       .then(data => {
         if (data.success && Array.isArray(data.data)) {
           setNotificheRisposte(data.data);
-          // Filtra per mittente_tipo della notifica originale
-          setNotificheRisposteEnti(data.data.filter((r: any) => r.mittente_tipo === 'ENTE_FORMATORE'));
-          setNotificheRisposteAssoc(data.data.filter((r: any) => r.mittente_tipo === 'ASSOCIAZIONE'));
+          // Filtra per target_tipo (chi era il destinatario originale della notifica)
+          setNotificheRisposteEnti(data.data.filter((r: any) => r.target_tipo === 'ENTE_FORMATORE'));
+          setNotificheRisposteAssoc(data.data.filter((r: any) => r.target_tipo === 'ASSOCIAZIONE'));
         }
       })
       .catch(err => console.log('Notifiche risposte fetch error:', err));
