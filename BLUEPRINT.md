@@ -76,6 +76,12 @@ Il database PostgreSQL è strutturato in 6 domini logici principali:
 
 Il backend espone **130+ endpoint** organizzati in router tematici:
 
+### `notificheRouter` (Sistema Notifiche v3.47.0)
+*   **Filtri Messaggi**: Aggiunti filtri (Tutti/Inviati/Ricevuti) per PA e Imprese.
+*   **Stato Lettura**: Implementato click per segnare come letto e icone busta aperta/chiusa.
+*   **Nuovo Endpoint**: Aggiunto `PUT /api/notifiche/risposte/:id/letta` per salvare lo stato di lettura.
+*   **Correzione Badge**: Il badge notifiche ora conta solo le risposte non lette.
+
 ### `dmsHubRouter` (Core Business Logic)
 *   **Markets**: Import Slot Editor v3, Auto-import GIS, Listing con statistiche real-time.
 *   **Stalls**: Gestione stati posteggi, assegnazione dinamica.
@@ -97,6 +103,13 @@ Il backend espone **130+ endpoint** organizzati in router tematici:
 ## 💻 Frontend Architecture (React 19 + Vite)
 
 L'applicazione client è una Single Page Application (SPA) complessa divisa in moduli:
+
+### Modifiche Recenti (Gennaio 2026)
+*   **Gestione Mercati**:
+    *   Corretto conteggio posteggi (182 -> 160) filtrando per `geometry_geojson`.
+    *   Risolto problema reset lista presenze al cambio mercato.
+    *   Corretta query per mostrare importo corretto nella spunta.
+    *   "Inizia Mercato" ora azzera TUTTE le presenze per test più puliti.
 
 ### 1. Dashboard PA (`/dashboard-pa`)
 Il centro di controllo principale per l'amministrazione.
