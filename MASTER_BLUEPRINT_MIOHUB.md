@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.44.0  
-> **Data:** 20 Gennaio 2026  
+> **Versione:** 3.46.0  
+> **Data:** 21 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -921,7 +921,7 @@ fi
 
 ### Statistiche
 
-- **Endpoint totali:** 382 (70 REST + 312 tRPC)
+- **Endpoint totali:** 448 (136 REST + 312 tRPC)
 - **Endpoint Comuni PA:** 25
 - **Mercati nel DB:** 3 (Grosseto, Novi Sad, Modena)
 - **HUB nel DB:** 79
@@ -3996,8 +3996,8 @@ const handleStallUpdate = async () => {
 
 ### 5. Guardian Aggiornato
 
-- **Versione**: v28
-- **Endpoint monitorati**: 70 totali
+- **Versione**: v31
+- **Endpoint monitorati**: 136 totali
 - **Endpoint Comuni PA**: 25 (CRUD comuni, settori, mercati, **HUB**, contratti, fatture, utenti, IPA)
 
 ---
@@ -4013,4 +4013,160 @@ const handleStallUpdate = async () => {
 
 ---
 
-*Aggiornamento del 20 Gennaio 2026 - Manus AI*
+## 🆕 v3.45.0 - v3.46.0 (21/01/2026) - Sistema Formazione e Servizi Associazioni
+
+### 1. Sistema Iscrizioni Corsi Formazione
+
+**Nuova Tabella Database:**
+
+| Tabella | Descrizione |
+|---------|-------------|
+| `formazione_iscrizioni` | Iscrizioni imprese ai corsi formativi |
+
+**Struttura formazione_iscrizioni:**
+
+| Campo | Tipo | Descrizione |
+|-------|------|-------------|
+| id | SERIAL | ID univoco |
+| corso_id | INTEGER | FK a formazione_corsi |
+| impresa_id | INTEGER | FK a imprese |
+| utente_nome | VARCHAR | Nome partecipante |
+| utente_email | VARCHAR | Email partecipante |
+| stato | VARCHAR | ISCRITTO, CONFERMATO, COMPLETATO, ANNULLATO |
+| data_iscrizione | TIMESTAMP | Data iscrizione |
+| note | TEXT | Note aggiuntive |
+
+**Nuovi Endpoint Formazione:**
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/formazione/iscrizioni` | GET | Lista iscrizioni |
+| `/api/formazione/iscrizioni` | POST | Crea iscrizione |
+| `/api/formazione/iscrizioni/:id` | PUT | Aggiorna stato |
+| `/api/formazione/iscrizioni/:id` | DELETE | Cancella iscrizione |
+| `/api/formazione/iscrizioni/stats` | GET | Statistiche iscrizioni |
+
+**Frontend - Tab Enti Formatori:**
+- KPI: Iscritti, Confermati, Completati, Annullati
+- Lista scorrevole con stato colorato
+- Mostra: impresa, corso, ente, partecipante, date
+
+---
+
+### 2. Sistema Servizi Associazioni
+
+**Nuove Tabelle Database:**
+
+| Tabella | Record | Descrizione |
+|---------|--------|-------------|
+| `servizi_associazioni` | 24 | Catalogo servizi professionali |
+| `richieste_servizi` | 10 | Richieste dalle imprese |
+| `regolarita_imprese` | 20 | Stato regolarità documentale |
+
+**Struttura servizi_associazioni:**
+
+| Campo | Tipo | Descrizione |
+|-------|------|-------------|
+| id | SERIAL | ID univoco |
+| associazione_id | INTEGER | FK a bandi_associazioni |
+| codice | VARCHAR | Codice servizio |
+| nome | VARCHAR | Nome servizio |
+| descrizione | TEXT | Descrizione dettagliata |
+| categoria | VARCHAR | REGOLARIZZAZIONE, PRATICHE, CONTABILITA, PAGHE, CONSULENZA, ASSOCIATIVO |
+| prezzo_base | DECIMAL | Prezzo standard |
+| prezzo_associati | DECIMAL | Prezzo scontato per associati |
+| durata_media_giorni | INTEGER | Tempo medio evasione |
+
+**Categorie Servizi (24 totali):**
+
+| Categoria | Servizi | Esempi |
+|-----------|---------|--------|
+| REGOLARIZZAZIONE | 3 | Verifica DURC, Regolarizzazione DURC, Rateizzazione INPS |
+| PRATICHE | 7 | SCIA Apertura/Modifica/Subingresso, Autorizzazione Sanitaria, Visura Camerale |
+| CONTABILITA | 5 | Contabilità Ordinaria/Semplificata, Bilancio, Dichiarazione IVA, F24 |
+| PAGHE | 4 | Elaborazione Paghe, Assunzione, Licenziamento, CU Annuale |
+| CONSULENZA | 4 | Fiscale, Legale, Lavoro, Bandi |
+| ASSOCIATIVO | 2 | Tessera Base, Tessera Premium |
+
+**Struttura richieste_servizi:**
+
+| Campo | Tipo | Descrizione |
+|-------|------|-------------|
+| id | SERIAL | ID univoco |
+| servizio_id | INTEGER | FK a servizi_associazioni |
+| impresa_id | INTEGER | FK a imprese |
+| stato | VARCHAR | RICHIESTA, IN_LAVORAZIONE, COMPLETATA, ANNULLATA |
+| priorita | VARCHAR | URGENTE, ALTA, NORMALE, BASSA |
+| operatore_assegnato | VARCHAR | Nome operatore |
+| importo_preventivo | DECIMAL | Preventivo |
+| importo_finale | DECIMAL | Importo finale |
+
+**Struttura regolarita_imprese:**
+
+| Campo | Tipo | Descrizione |
+|-------|------|-------------|
+| id | SERIAL | ID univoco |
+| impresa_id | INTEGER | FK a imprese |
+| tipo | VARCHAR | DURC, SCIA, AUT_SANITARIA, VISURA_CAMERALE, ISCRIZIONE_ALBO |
+| stato | VARCHAR | REGOLARE, IN_SCADENZA, SCADUTO, IRREGOLARE, DA_VERIFICARE |
+| numero_documento | VARCHAR | Numero documento |
+| data_rilascio | DATE | Data rilascio |
+| data_scadenza | DATE | Data scadenza |
+| ente_rilascio | VARCHAR | Ente che ha rilasciato |
+
+**Nuovi Endpoint Bandi/Servizi:**
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/bandi/servizi` | GET | Lista servizi disponibili |
+| `/api/bandi/servizi/categorie` | GET | Categorie servizi |
+| `/api/bandi/richieste` | GET | Lista richieste |
+| `/api/bandi/richieste` | POST | Crea richiesta |
+| `/api/bandi/richieste/:id` | PUT | Aggiorna stato |
+| `/api/bandi/richieste/stats` | GET | Statistiche richieste |
+| `/api/bandi/regolarita` | GET | Lista regolarità |
+| `/api/bandi/regolarita/:id` | PUT | Aggiorna regolarità |
+| `/api/bandi/regolarita/stats` | GET | Imprese problematiche |
+
+---
+
+### 3. Frontend - Tab Associazioni & Bandi
+
+**Nuove Sezioni:**
+
+| Sezione | Descrizione |
+|---------|-------------|
+| Servizi Professionali | Catalogo 24 servizi con prezzi |
+| Richieste Servizi | Lista richieste con stato e priorità |
+| Imprese con Problemi | DURC irregolare, SCIA scaduta, ecc. |
+
+**KPI Richieste Servizi:**
+- In Attesa: 4
+- In Lavorazione: 4
+- Completate: 2
+- Urgenti: 2
+- Totale: 10
+
+**KPI Regolarità Imprese:**
+- Irregolari: 1
+- Scaduti: 3
+- In Scadenza: 5
+- Da Verificare: 2
+- Regolari: 9
+
+---
+
+### 4. Commit e Deploy
+
+| Repository | Commit | Descrizione |
+|------------|--------|-------------|
+| mihub-backend-rest | `ccf3cdf` | Endpoint iscrizioni corsi |
+| mihub-backend-rest | `7f8adb7` | Sistema servizi e regolarità |
+| dms-hub-app-new | `5a21450` | Lista iscrizioni frontend |
+| dms-hub-app-new | `4667bf9` | Servizi e regolarità frontend |
+| MIO-hub | `e1af897` | Index.json v30 (iscrizioni) |
+| MIO-hub | `646c489` | Index.json v31 (servizi) |
+
+---
+
+*Aggiornamento del 21 Gennaio 2026 - Manus AI*
