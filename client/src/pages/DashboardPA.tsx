@@ -1810,8 +1810,8 @@ export default function DashboardPA() {
       {icon}
       <span className="text-sm font-medium">{label}</span>
       {badge > 0 && (
-        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-          {badge > 9 ? '9+' : badge}
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center animate-pulse">
+          {badge}
         </span>
       )}
     </button>
