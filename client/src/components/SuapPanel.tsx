@@ -1644,16 +1644,18 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wide">DURC Valido</p>
                       <p className="text-[#e8fbff] font-medium">
-                        {selectedConcessione.durc_valido ? (
+                        {selectedConcessione.durc_scadenza_qualifica && new Date(selectedConcessione.durc_scadenza_qualifica) > new Date() ? (
                           <span className="text-green-400">✓ Sì</span>
+                        ) : selectedConcessione.durc_scadenza_qualifica ? (
+                          <span className="text-orange-400">⚠ Scaduto</span>
                         ) : (
-                          <span className="text-red-400">✗ No</span>
+                          <span className="text-red-400">✗ Non presente</span>
                         )}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide">Data DURC</p>
-                      <p className="text-[#e8fbff] font-medium">{selectedConcessione.durc_data ? new Date(selectedConcessione.durc_data).toLocaleDateString('it-IT') : '-'}</p>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Scadenza DURC</p>
+                      <p className="text-[#e8fbff] font-medium">{selectedConcessione.durc_scadenza_qualifica ? new Date(selectedConcessione.durc_scadenza_qualifica).toLocaleDateString('it-IT') : '-'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wide">Requisiti Morali</p>
