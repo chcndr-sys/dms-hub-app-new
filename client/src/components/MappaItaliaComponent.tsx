@@ -1848,12 +1848,17 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   <button
                     onClick={async () => {
                       setSidebarView('concessione');
-                      if (!sidebarConcessionData) {
+                      if (!sidebarConcessionData && selectedStall.concession_id) {
                         try {
                           const response = await fetch(`${API_BASE_URL}/api/concessions/${selectedStall.concession_id}`);
+                          if (!response.ok) {
+                            throw new Error('Concessione non trovata');
+                          }
                           const data = await response.json();
                           if (data.success && data.data) {
                             setSidebarConcessionData(data.data);
+                          } else {
+                            toast.error('Concessione non trovata');
                           }
                         } catch (error) {
                           console.error('Error loading concession:', error);
@@ -1919,39 +1924,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     </div>
                   </div>
 
-                  {/* Pulsante Modifica Impresa */}
-                  <div className="p-4 border-t border-[#14b8a6]/20 bg-[#0b1220]/50">
-                    <Button
-                      onClick={async () => {
-                        const companyId = selectedStall.impresa_id || concessionsByStallId[selectedStall.number]?.companyId;
-                        if (companyId) {
-                          try {
-                            const response = await fetch(`${API_BASE_URL}/api/imprese/${companyId}`);
-                            const data = await response.json();
-                            if (data.success && data.data) {
-                              setSelectedCompanyForModal({
-                                id: data.data.id,
-                                code: data.data.codice_fiscale || data.data.code,
-                                denominazione: data.data.denominazione,
-                                partita_iva: data.data.partita_iva,
-                                referente: data.data.referente || data.data.email,
-                                telefono: data.data.telefono,
-                                stato: data.data.stato || 'active',
-                                ...data.data
-                              });
-                              setShowCompanyModal(true);
-                            }
-                          } catch (error) {
-                            console.error('Error loading company:', error);
-                            toast.error('Errore nel caricamento dell\'impresa');
-                          }
-                        }
-                      }}
-                      className="w-full bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white"
-                    >
-                      <Edit className="h-4 w-4 mr-2" /> Modifica Impresa (38 campi)
-                    </Button>
-                  </div>
+
                 </>
               )}
 
