@@ -13,7 +13,7 @@ import {
   Radio, CloudRain, Wind, UserCog, ClipboardCheck, Scale, Bell, BellRing,
   Navigation, Train, ParkingCircle, TrafficCone, FileBarChart, Plug, SettingsIcon, Euro, Newspaper, Rocket,
   XCircle, Lightbulb, MessageSquare, Brain, Calculator, ExternalLink, StopCircle,
-  Search, Filter, Plus, Landmark, BookOpen, Star, FileCheck, HandCoins, Mail
+  Search, Filter, Plus, Landmark, BookOpen, Star, FileCheck, HandCoins, Mail, MailOpen
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -1106,6 +1106,28 @@ export default function DashboardPA() {
   const [filtroMessaggiAssoc, setFiltroMessaggiAssoc] = useState<'tutti' | 'inviati' | 'ricevuti'>('tutti');
   const [messaggiInviatiEnti, setMessaggiInviatiEnti] = useState<any[]>([]);
   const [messaggiInviatiAssoc, setMessaggiInviatiAssoc] = useState<any[]>([]);
+  
+  // Funzione per segnare una risposta come letta
+  const segnaRispostaComeLetta = async (risposta: any) => {
+    if (risposta.letta) return; // Già letta
+    const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+    try {
+      await fetch(`${MIHUB_API}/notifiche/risposte/${risposta.id}/letta`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      // Aggiorna stato locale
+      if (risposta.target_tipo === 'ENTE_FORMATORE') {
+        setNotificheRisposteEnti(prev => prev.map(r => r.id === risposta.id ? { ...r, letta: true } : r));
+      } else {
+        setNotificheRisposteAssoc(prev => prev.map(r => r.id === risposta.id ? { ...r, letta: true } : r));
+      }
+      // Aggiorna contatore non lette
+      setNotificheNonLette(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Errore segna come letta:', error);
+    }
+  };
   
   // Fetch notifiche stats e risposte
   useEffect(() => {
@@ -5527,10 +5549,18 @@ export default function DashboardPA() {
                       ))}
                       {/* Messaggi Ricevuti */}
                       {(filtroMessaggiEnti === 'tutti' || filtroMessaggiEnti === 'ricevuti') && (notificheRisposteEnti || []).map((risposta: any, idx: number) => (
-                        <div key={`ric-${idx}`} className={`p-3 rounded-lg border ${!risposta.letta ? 'bg-blue-500/10 border-blue-500/30' : 'bg-[#0b1220] border-[#3b82f6]/20'}`}>
+                        <div 
+                          key={`ric-${idx}`} 
+                          onClick={() => segnaRispostaComeLetta(risposta)}
+                          className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.01] ${!risposta.letta ? 'bg-blue-500/10 border-blue-500/30' : 'bg-[#0b1220] border-[#3b82f6]/20'}`}
+                        >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <Mail className="w-4 h-4 text-amber-400" />
+                              {risposta.letta ? (
+                                <MailOpen className="w-4 h-4 text-[#e8fbff]/40" />
+                              ) : (
+                                <Mail className="w-4 h-4 text-amber-400" />
+                              )}
                               <span className="text-[#e8fbff] font-medium">{risposta.mittente_nome || 'Impresa'}</span>
                               {!risposta.letta && <Badge className="bg-amber-500 text-white text-xs">Nuova</Badge>}
                             </div>
@@ -6201,10 +6231,18 @@ export default function DashboardPA() {
                       ))}
                       {/* Messaggi Ricevuti */}
                       {(filtroMessaggiAssoc === 'tutti' || filtroMessaggiAssoc === 'ricevuti') && (notificheRisposteAssoc || []).map((risposta: any, idx: number) => (
-                        <div key={`ric-${idx}`} className={`p-3 rounded-lg border ${!risposta.letta ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-[#0b1220] border-[#10b981]/20'}`}>
+                        <div 
+                          key={`ric-${idx}`} 
+                          onClick={() => segnaRispostaComeLetta(risposta)}
+                          className={`p-3 rounded-lg border cursor-pointer transition-all hover:scale-[1.01] ${!risposta.letta ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-[#0b1220] border-[#10b981]/20'}`}
+                        >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <Mail className="w-4 h-4 text-amber-400" />
+                              {risposta.letta ? (
+                                <MailOpen className="w-4 h-4 text-[#e8fbff]/40" />
+                              ) : (
+                                <Mail className="w-4 h-4 text-amber-400" />
+                              )}
                               <span className="text-[#e8fbff] font-medium">{risposta.mittente_nome || 'Impresa'}</span>
                               {!risposta.letta && <Badge className="bg-amber-500 text-white text-xs">Nuova</Badge>}
                             </div>
