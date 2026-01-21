@@ -1298,6 +1298,31 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
     fetchData();
   }, [marketId]);
 
+  // Carica dati concessione quando viene selezionato un posteggio con concessione
+  useEffect(() => {
+    const loadConcessionData = async () => {
+      const stall = stalls.find(s => s.id === selectedStallId);
+      if (stall?.concession_id) {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/concessions/${stall.concession_id}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data) {
+              setSidebarConcessionData(data.data);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading concession:', error);
+        }
+      } else {
+        setSidebarConcessionData(null);
+      }
+    };
+    if (selectedStallId) {
+      loadConcessionData();
+    }
+  }, [selectedStallId, stalls]);
+
   const fetchData = async () => {
     try {
       const [stallsRes, mapRes, concessionsRes] = await Promise.all([
@@ -1846,26 +1871,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     <Building2 className="h-4 w-4 inline mr-2" />Vista Impresa
                   </button>
                   <button
-                    onClick={async () => {
-                      setSidebarView('concessione');
-                      if (!sidebarConcessionData && selectedStall.concession_id) {
-                        try {
-                          const response = await fetch(`${API_BASE_URL}/api/concessions/${selectedStall.concession_id}`);
-                          if (!response.ok) {
-                            throw new Error('Concessione non trovata');
-                          }
-                          const data = await response.json();
-                          if (data.success && data.data) {
-                            setSidebarConcessionData(data.data);
-                          } else {
-                            toast.error('Concessione non trovata');
-                          }
-                        } catch (error) {
-                          console.error('Error loading concession:', error);
-                          toast.error('Errore nel caricamento della concessione');
-                        }
-                      }
-                    }}
+                    onClick={() => setSidebarView('concessione')}
                     className={`flex-1 py-2 px-4 text-sm font-medium transition-colors ${sidebarView === 'concessione' ? 'text-[#8b5cf6] border-b-2 border-[#8b5cf6] bg-[#8b5cf6]/10' : 'text-[#e8fbff]/50 hover:text-[#e8fbff]'}`}
                   >
                     <FileText className="h-4 w-4 inline mr-2" />Vista Concessione
