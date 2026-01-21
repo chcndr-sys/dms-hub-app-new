@@ -4406,3 +4406,18 @@ ADD COLUMN requisiti_professionali BOOLEAN DEFAULT true;
 2.  Collegare i campi del componente ai dati reali, rimuovendo ogni valore statico o mock.
     -   **Wallet:** `selectedConcessione.wallet_id`, `selectedConcessione.wallet_balance`, `selectedConcessione.wallet_status`.
     -   **Requisiti:** `selectedConcessione.durc_valido`, `selectedConcessione.durc_data`, `selectedConcessione.requisiti_morali`, `selectedConcessione.requisiti_professionali`.
+
+
+## 🐞 BUG E SOLUZIONI (21 Gennaio 2026)
+
+### 1. Bug `vendor_id` errato nella creazione concessioni
+
+**Problema:**
+Quando si crea una nuova concessione (es. "Alimentari Verdi", impresa 19) su un posteggio (es. 101) che aveva una concessione precedente con un vendor diverso (es. vendor 2, "Impresa Aggiornata PUT"), il sistema assegna il `vendor_id` della vecchia concessione (2) invece di creare/usare il vendor corretto per la nuova impresa (3).
+
+**Causa:**
+La logica di creazione concessione (`/routes/concessions.js`) in caso di rinnovo/subingresso, non aggiorna correttamente il `vendor_id` se l'impresa cambia.
+
+**Soluzione:**
+1. **Correzione Dati:** Aggiornare manualmente il `vendor_id` della concessione 44 a 3 (vendor di "Alimentari Verdi").
+2. **Correzione Codice:** Modificare la logica di creazione concessione per garantire che il `vendor_id` sia sempre quello corretto dell'impresa concessionaria, anche in caso di rinnovo/subingresso.
