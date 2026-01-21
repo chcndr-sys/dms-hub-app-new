@@ -9,7 +9,7 @@ import {
   FileText, CheckCircle2, XCircle, Clock, Loader2, 
   Search, Filter, Eye, Play, User, Building2, MapPin, FileCheck, Users,
   Plus, LayoutDashboard, List, FileSearch, AlertCircle, TrendingUp, ScrollText, Stamp,
-  ArrowLeft, RefreshCw, AlertTriangle, Bell, Inbox, Edit, Trash2, CreditCard
+  ArrowLeft, RefreshCw, AlertTriangle, Bell, Inbox, Edit, Trash2, CreditCard, Wallet, Calendar
 } from 'lucide-react';
 import { 
   getSuapStats, getSuapPratiche, getSuapPraticaById, 
@@ -1579,7 +1579,7 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {selectedConcessione.canone_unico && (
                       <div><p className="text-xs text-gray-500 uppercase tracking-wide">Canone Unico</p><p className="text-[#14b8a6] font-bold text-lg">€ {Number(selectedConcessione.canone_unico).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</p></div>
                     )}
@@ -1590,40 +1590,88 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                       <div><p className="text-xs text-gray-500 uppercase tracking-wide">Tipo Posteggio</p><p className="text-[#e8fbff] font-medium">{selectedConcessione.tipo_posteggio}</p></div>
                     )}
                   </div>
-                  
-                  {/* Card Wallet Concessione Digitale */}
-                  <div className="mt-4 p-4 bg-[#0b1220] rounded-lg border border-[#14b8a6]/20">
-                    <div className="flex items-center justify-between flex-wrap gap-4">
-                      <div className="flex items-center gap-4 flex-wrap">
-                        <span className="px-3 py-1 bg-[#14b8a6]/20 text-[#14b8a6] text-xs font-medium rounded-full">
-                          {selectedConcessione.market_name || 'Mercato'}
-                        </span>
-                        <span className="text-[#e8fbff] font-semibold">
-                          Posteggio {selectedConcessione.stall_number || '-'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-6 text-sm text-gray-400">
-                        <span>Area: {selectedConcessione.mq || selectedConcessione.stall_area || '-'} mq</span>
-                        <span>Tariffa: € {selectedConcessione.canone_unico && selectedConcessione.mq ? (Number(selectedConcessione.canone_unico) / Number(selectedConcessione.mq) / 52).toFixed(2) : '0.90'}/mq</span>
-                        <span>Giorni: 52/anno</span>
-                      </div>
+                </CardContent>
+              </Card>
+              
+              {/* Sezione Wallet Concessione - Stile Domanda Spunta */}
+              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-[#14b8a6] flex items-center gap-2 text-lg">
+                    <Wallet className="h-5 w-5" />
+                    Wallet Concessione
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">ID Wallet</p>
+                      <p className="text-[#e8fbff] font-medium">{selectedConcessione.wallet_id || selectedConcessione.id || '-'}</p>
                     </div>
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-700">
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Saldo Wallet</p>
-                        <p className={`text-xl font-bold ${Number(selectedConcessione.canone_unico || 0) > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Saldo</p>
+                      <p className="text-[#e8fbff] font-medium text-lg">
+                        <span className={Number(selectedConcessione.canone_unico || 0) > 0 ? 'text-red-400' : 'text-green-400'}>
                           € {selectedConcessione.canone_unico ? `-${Number(selectedConcessione.canone_unico).toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : '0.00'}
-                        </p>
-                        {Number(selectedConcessione.canone_unico || 0) > 0 && (
-                          <p className="text-xs text-red-400">Da Pagare</p>
+                        </span>
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Stato Wallet</p>
+                      <p className="text-[#e8fbff] font-medium">
+                        {selectedConcessione.stato === 'ATTIVA' || selectedConcessione.stato === 'attiva' ? (
+                          <span className="text-green-400">✓ Attivo</span>
+                        ) : (
+                          <span className="text-orange-400">⚠ In attesa</span>
                         )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" className="border-[#14b8a6] text-[#14b8a6] hover:bg-[#14b8a6]/10">
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          Paga Canone
-                        </Button>
-                      </div>
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Sezione Requisiti e Documentazione - Stile Autorizzazione */}
+              <Card className="bg-gradient-to-br from-[#1a2332] to-[#0b1220] border-[#14b8a6]/30">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-[#14b8a6] flex items-center gap-2 text-lg">
+                    <Calendar className="h-5 w-5" />
+                    Requisiti e Documentazione
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">DURC Valido</p>
+                      <p className="text-[#e8fbff] font-medium">
+                        {selectedConcessione.durc_valido ? (
+                          <span className="text-green-400">✓ Sì</span>
+                        ) : (
+                          <span className="text-red-400">✗ No</span>
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Data DURC</p>
+                      <p className="text-[#e8fbff] font-medium">{selectedConcessione.durc_data ? new Date(selectedConcessione.durc_data).toLocaleDateString('it-IT') : '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Requisiti Morali</p>
+                      <p className="text-[#e8fbff] font-medium">
+                        {selectedConcessione.requisiti_morali ? (
+                          <span className="text-green-400">✓ Verificati</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Requisiti Professionali</p>
+                      <p className="text-[#e8fbff] font-medium">
+                        {selectedConcessione.requisiti_professionali ? (
+                          <span className="text-green-400">✓ Verificati</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
