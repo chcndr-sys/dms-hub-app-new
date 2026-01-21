@@ -1135,6 +1135,34 @@ export default function DashboardPA() {
       })
       .catch(err => console.log('Notifiche risposte fetch error:', err));
     
+    // Fetch messaggi inviati - Enti Formatori (ID=1)
+    fetch(`${MIHUB_API}/notifiche/messaggi/ENTE_FORMATORE/1?filtro=inviati`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          setMessaggiInviatiEnti(data.data.map((m: any) => ({
+            ...m,
+            destinatari: m.totale_destinatari || 0,
+            lette: m.letti || 0
+          })));
+        }
+      })
+      .catch(err => console.log('Messaggi inviati Enti fetch error:', err));
+    
+    // Fetch messaggi inviati - Associazioni (ID=2)
+    fetch(`${MIHUB_API}/notifiche/messaggi/ASSOCIAZIONE/2?filtro=inviati`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          setMessaggiInviatiAssoc(data.data.map((m: any) => ({
+            ...m,
+            destinatari: m.totale_destinatari || 0,
+            lette: m.letti || 0
+          })));
+        }
+      })
+      .catch(err => console.log('Messaggi inviati Assoc fetch error:', err));
+    
     // Fetch lista mercati
     fetch(`${MIHUB_API}/stats/overview`)
       .then(res => res.json())
