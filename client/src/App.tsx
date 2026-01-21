@@ -31,6 +31,7 @@ import HubMapTestPage from "./pages/HubMapTestPage";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import DashboardImpresa from "./pages/DashboardImpresa";
+import AppImpresaNotifiche from "./pages/AppImpresaNotifiche";
 
 function Router() {
   return (
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/auth/callback" component={AuthCallback} />
       <Route path="/dashboard-impresa" component={DashboardImpresa} />
+      <Route path="/app/impresa/notifiche" component={AppImpresaNotifiche} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

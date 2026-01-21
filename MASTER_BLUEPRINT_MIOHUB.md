@@ -4170,3 +4170,129 @@ const handleStallUpdate = async () => {
 ---
 
 *Aggiornamento del 21 Gennaio 2026 - Manus AI*
+
+
+---
+
+## 🆕 PROGETTO: Sistema di Notifiche Bidirezionale (v3.47.0)
+
+> **Versione Target:** 3.47.0  
+> **Data Pianificazione:** 21 Gennaio 2026  
+> **Stato:** 📝 IN PROGETTAZIONE
+
+### 1. Obiettivo
+
+Creare un **sistema di notifiche bidirezionale** per facilitare la comunicazione tra la **Pubblica Amministrazione (PA) / Associazioni** e le **Imprese** (ambulanti e negozi). Il sistema permetterà l'invio di notifiche massive e singole, e consentirà alle imprese di rispondere e interagire tramite una nuova app dedicata.
+
+### 2. Architettura e Flusso
+
+Il sistema si baserà su tre componenti principali: la Dashboard PA, il Backend e una nuova App Impresa.
+
+```mermaid
+graph TD
+    subgraph Dashboard PA
+        A[Tab Enti & Associazioni] --> C{Invia Notifica};
+        B[Tab Enti Formatori] --> C;
+    end
+
+    subgraph App Impresa (Nuova Pagina)
+        F[Operatore Impresa] --> G{Leggi/Rispondi Notifiche};
+        G --> H[Richiedi Appuntamento];
+        G --> I[Iscriviti a Corso];
+    end
+
+    subgraph Backend (API REST)
+        D[Endpoints Notifiche];
+    end
+
+    subgraph Database (Neon)
+        E[Tabelle: notifiche, notifiche_destinatari];
+    end
+
+    C -- "POST /api/notifiche/send" --> D;
+    D -- Salva/Recupera --> E;
+    D -- "GET /api/notifiche/impresa/:id" --> G;
+    G -- "POST /api/notifiche/reply" --> D;
+```
+
+**Flusso Operativo:**
+1.  **Invio da PA:** Un operatore PA compone una notifica nei tab "Enti & Associazioni" o "Enti Formatori". Può scegliere destinatari multipli (tutte le imprese di un mercato/HUB) o un'impresa singola.
+2.  **Salvataggio Backend:** L'API salva la notifica e la associa ai destinatari nella tabella `notifiche_destinatari`.
+3.  **Visualizzazione Impresa:** L'operatore dell'impresa apre la nuova "App Impresa" (accessibile dal nuovo tab "Notifiche" nella barra rapida) e visualizza le notifiche ricevute.
+4.  **Interazione Impresa:** L'operatore può rispondere alla notifica, richiedere un appuntamento o avviare l'iscrizione a un corso, inviando una richiesta al backend.
+
+### 3. Tabelle Database
+
+Saranno create due nuove tabelle.
+
+**Tabella `notifiche`**
+
+| Campo | Tipo | Descrizione |
+|---|---|---|
+| `id` | SERIAL | ID univoco della notifica |
+| `mittente_id` | INTEGER | ID utente PA/associazione che invia |
+| `mittente_tipo` | VARCHAR | 'PA', 'ASSOCIAZIONE', 'ENTE_FORMATORE' |
+| `titolo` | VARCHAR(255) | Titolo della notifica |
+| `messaggio` | TEXT | Corpo del messaggio (supporta Markdown) |
+| `tipo_messaggio` | VARCHAR | 'INFORMATIVA', 'PROMOZIONALE', 'RISPOSTA' |
+| `data_invio` | TIMESTAMP | Data e ora di invio |
+| `id_conversazione` | INTEGER | ID per raggruppare messaggi della stessa conversazione |
+
+**Tabella `notifiche_destinatari`**
+
+| Campo | Tipo | Descrizione |
+|---|---|---|
+| `id` | SERIAL | ID univoco |
+| `notifica_id` | INTEGER | FK a `notifiche.id` |
+| `impresa_id` | INTEGER | FK a `imprese.id` (destinatario) |
+| `data_lettura` | TIMESTAMP | Data e ora di prima lettura (NULL se non letta) |
+| `stato` | VARCHAR | 'INVIATO', 'LETTO', 'ARCHIVIATO' |
+
+### 4. API Endpoints
+
+| Endpoint | Metodo | Descrizione |
+|---|---|---|
+| `/api/notifiche/send` | POST | Invia una nuova notifica (singola o massiva) |
+| `/api/notifiche/impresa/:id` | GET | Recupera tutte le notifiche per un'impresa |
+| `/api/notifiche/conversazione/:id` | GET | Recupera i messaggi di una specifica conversazione |
+| `/api/notifiche/leggi/:id` | PUT | Segna una notifica come letta |
+| `/api/notifiche/reply` | POST | Invia una risposta a una notifica esistente |
+| `/api/notifiche/stats` | GET | Statistiche notifiche (inviate, lette) per la Dashboard PA |
+
+### 5. Modifiche Frontend (Dashboard PA)
+
+1.  **Container "Invia Notifica":**
+    *   **Posizione:** Aggiunto nei tab `Enti & Associazioni` e `Enti Formatori`.
+    *   **Campi:**
+        *   **Destinatari:** Dropdown con opzioni: "Impresa singola" (con ricerca), "Tutte le imprese del Mercato..." (con selezione mercato), "Tutti i negozi dell'HUB..." (con selezione HUB).
+        *   **Titolo:** Campo di testo.
+        *   **Messaggio:** Text area con supporto Markdown.
+        *   **Pulsante "Invia Notifica"**.
+
+2.  **Tab "Notifiche" nella Barra Rapida:**
+    *   **Posizione:** Inserito tra "Hub Operatore" e "BUS HUB".
+    *   **Icona:** `Bell` o simile.
+    *   **Azione:** Apre la nuova pagina/app dedicata alle notifiche per le imprese in una nuova scheda del browser.
+
+### 6. Nuova App Impresa (Pagina Web Dedicata)
+
+*   **URL:** `/app/impresa/notifiche`
+*   **Layout:** Simile a un'app di messaggistica.
+    *   **Colonna Sinistra:** Lista delle conversazioni, ordinate per data più recente. Ogni item mostra il mittente, il titolo e un'anteprima del messaggio.
+    *   **Area Destra:** Visualizzazione dei messaggi della conversazione selezionata.
+    *   **Area Input Risposta:** In fondo all'area destra, per permettere all'operatore di rispondere.
+    *   **Pulsanti Azione:** "Richiedi Appuntamento" e "Iscriviti a Corso" che pre-compilano una risposta o reindirizzano alla pagina corretta.
+
+### 7. Fasi di Sviluppo
+
+1.  **Fase 1: Progettazione (Corrente)** - Definizione requisiti e schemi nel Blueprint.
+2.  **Fase 2: Database** - Creazione tabelle `notifiche` e `notifiche_destinatari`.
+3.  **Fase 3: Backend** - Sviluppo dei 6 nuovi endpoint API per la gestione delle notifiche.
+4.  **Fase 4: Frontend (Dashboard PA)** - Implementazione del form di invio nei tab `Enti & Associazioni` e `Enti Formatori`.
+5.  **Fase 5: Frontend (App Impresa)** - Creazione della nuova pagina `/app/impresa/notifiche` per la visualizzazione e gestione delle notifiche lato impresa.
+6.  **Fase 6: Frontend (Dashboard PA)** - Aggiunta del nuovo tab "Notifiche" nella barra di accesso rapido.
+7.  **Fase 7: Test e Deploy** - Test end-to-end del flusso di notifica e deploy in produzione.
+
+---
+
+*Progetto del 21 Gennaio 2026 - Manus AI*

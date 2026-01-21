@@ -1644,6 +1644,8 @@ export default function DashboardPA() {
       className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
         color === 'orange'
           ? 'bg-[#f59e0b]/10 border-[#f59e0b]/30 hover:bg-[#f59e0b]/20 text-[#f59e0b]'
+          : color === 'yellow'
+          ? 'bg-[#eab308]/10 border-[#eab308]/30 hover:bg-[#eab308]/20 text-[#eab308]'
           : 'bg-[#14b8a6]/10 border-[#14b8a6]/30 hover:bg-[#14b8a6]/20 text-[#14b8a6]'
       }`}
     >
@@ -1769,6 +1771,7 @@ export default function DashboardPA() {
             <QuickAccessButton href="/civic" icon={<AlertCircle className="h-5 w-5" />} label="Segnala" />
             <QuickAccessButton href="/vetrine" icon={<Store className="h-5 w-5" />} label="Vetrine" />
             <QuickAccessButton href="/hub-operatore" icon={<Activity className="h-5 w-5" />} label="Hub Operatore" color="orange" />
+            <QuickAccessButton href="/app/impresa/notifiche" icon={<Bell className="h-5 w-5" />} label="Notifiche" color="yellow" />
             <button
               onClick={() => window.open('https://api.mio-hub.me/tools/bus_hub.html', '_blank')}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/20 text-[#8b5cf6]"
@@ -5173,6 +5176,89 @@ export default function DashboardPA() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Form Invio Notifiche Enti Formatori */}
+                <Card className="bg-[#1a2332] border-[#3b82f6]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-[#3b82f6]" />
+                      Invia Notifica alle Imprese
+                      <Badge className="bg-blue-500/20 text-blue-400 ml-2">Nuovo</Badge>
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Invia comunicazioni informative o promozionali alle imprese iscritte
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.target as HTMLFormElement;
+                      const formData = new FormData(form);
+                      const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+                      
+                      try {
+                        const response = await fetch(`${MIHUB_API}/notifiche/send`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            mittente_tipo: 'ENTE_FORMATORE',
+                            mittente_nome: 'Ente Formatore',
+                            titolo: formData.get('titolo'),
+                            messaggio: formData.get('messaggio'),
+                            tipo_messaggio: formData.get('tipo_messaggio'),
+                            target_tipo: formData.get('target_tipo'),
+                            target_id: formData.get('target_id') || null,
+                            target_nome: formData.get('target_nome') || null
+                          })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          alert(`Notifica inviata a ${data.data.destinatari_count} destinatari!`);
+                          form.reset();
+                        } else {
+                          alert('Errore: ' + data.error);
+                        }
+                      } catch (err) {
+                        alert('Errore invio notifica');
+                      }
+                    }} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-[#e8fbff]/70 mb-1">Destinatari</label>
+                          <select name="target_tipo" className="w-full bg-[#0b1220] border border-[#3b82f6]/30 rounded-lg p-2 text-[#e8fbff]" required>
+                            <option value="TUTTI">Tutte le Imprese</option>
+                            <option value="MERCATO">Imprese del Mercato...</option>
+                            <option value="HUB">Negozi dell'HUB...</option>
+                            <option value="IMPRESA">Impresa Singola...</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-[#e8fbff]/70 mb-1">Tipo Messaggio</label>
+                          <select name="tipo_messaggio" className="w-full bg-[#0b1220] border border-[#3b82f6]/30 rounded-lg p-2 text-[#e8fbff]" required>
+                            <option value="INFORMATIVA">Informativa</option>
+                            <option value="PROMOZIONALE">Promozionale (Corsi)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#e8fbff]/70 mb-1">Titolo</label>
+                        <input type="text" name="titolo" placeholder="Es: Nuovo corso HACCP disponibile" 
+                          className="w-full bg-[#0b1220] border border-[#3b82f6]/30 rounded-lg p-2 text-[#e8fbff]" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#e8fbff]/70 mb-1">Messaggio</label>
+                        <textarea name="messaggio" rows={4} placeholder="Scrivi il messaggio da inviare alle imprese..."
+                          className="w-full bg-[#0b1220] border border-[#3b82f6]/30 rounded-lg p-2 text-[#e8fbff]" required />
+                      </div>
+                      <div className="flex justify-end">
+                        <button type="submit" className="px-6 py-3 bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] rounded-lg text-white font-medium hover:opacity-90 transition-opacity flex items-center gap-2">
+                          <Send className="w-4 h-4" />
+                          Invia Notifica
+                        </button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               {/* SOTTO-TAB: ASSOCIAZIONI & BANDI */}
@@ -5598,6 +5684,89 @@ export default function DashboardPA() {
                         </div>
                       )}
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Form Invio Notifiche Associazioni */}
+                <Card className="bg-[#1a2332] border-[#10b981]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-[#10b981]" />
+                      Invia Notifica alle Imprese
+                      <Badge className="bg-emerald-500/20 text-emerald-400 ml-2">Nuovo</Badge>
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Invia comunicazioni su bandi, servizi o avvisi importanti
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.target as HTMLFormElement;
+                      const formData = new FormData(form);
+                      const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+                      
+                      try {
+                        const response = await fetch(`${MIHUB_API}/notifiche/send`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            mittente_tipo: 'ASSOCIAZIONE',
+                            mittente_nome: 'Associazione di Categoria',
+                            titolo: formData.get('titolo'),
+                            messaggio: formData.get('messaggio'),
+                            tipo_messaggio: formData.get('tipo_messaggio'),
+                            target_tipo: formData.get('target_tipo'),
+                            target_id: formData.get('target_id') || null,
+                            target_nome: formData.get('target_nome') || null
+                          })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          alert(`Notifica inviata a ${data.data.destinatari_count} destinatari!`);
+                          form.reset();
+                        } else {
+                          alert('Errore: ' + data.error);
+                        }
+                      } catch (err) {
+                        alert('Errore invio notifica');
+                      }
+                    }} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-[#e8fbff]/70 mb-1">Destinatari</label>
+                          <select name="target_tipo" className="w-full bg-[#0b1220] border border-[#10b981]/30 rounded-lg p-2 text-[#e8fbff]" required>
+                            <option value="TUTTI">Tutte le Imprese</option>
+                            <option value="MERCATO">Imprese del Mercato...</option>
+                            <option value="HUB">Negozi dell'HUB...</option>
+                            <option value="IMPRESA">Impresa Singola...</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-[#e8fbff]/70 mb-1">Tipo Messaggio</label>
+                          <select name="tipo_messaggio" className="w-full bg-[#0b1220] border border-[#10b981]/30 rounded-lg p-2 text-[#e8fbff]" required>
+                            <option value="INFORMATIVA">Informativa</option>
+                            <option value="PROMOZIONALE">Promozionale (Bandi/Servizi)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#e8fbff]/70 mb-1">Titolo</label>
+                        <input type="text" name="titolo" placeholder="Es: Nuovo bando contributi digitalizzazione" 
+                          className="w-full bg-[#0b1220] border border-[#10b981]/30 rounded-lg p-2 text-[#e8fbff]" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#e8fbff]/70 mb-1">Messaggio</label>
+                        <textarea name="messaggio" rows={4} placeholder="Scrivi il messaggio da inviare alle imprese..."
+                          className="w-full bg-[#0b1220] border border-[#10b981]/30 rounded-lg p-2 text-[#e8fbff]" required />
+                      </div>
+                      <div className="flex justify-end">
+                        <button type="submit" className="px-6 py-3 bg-gradient-to-r from-[#10b981] to-[#3b82f6] rounded-lg text-white font-medium hover:opacity-90 transition-opacity flex items-center gap-2">
+                          <Send className="w-4 h-4" />
+                          Invia Notifica
+                        </button>
+                      </div>
+                    </form>
                   </CardContent>
                 </Card>
               </TabsContent>
