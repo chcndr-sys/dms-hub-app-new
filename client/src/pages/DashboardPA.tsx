@@ -949,7 +949,7 @@ export default function DashboardPA() {
     // Il conversation_id 'user-manus-direct' è già sufficiente
   });
   
-  const manusMessages = manusMessagesRaw.map(msg => ({
+  const manusMessages = (manusMessagesRaw || []).map(msg => ({
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
@@ -971,7 +971,7 @@ export default function DashboardPA() {
     // Il conversation_id 'user-abacus-direct' è già sufficiente
   });
   
-  const abacusMessages = abacusMessagesRaw.map(msg => ({
+  const abacusMessages = (abacusMessagesRaw || []).map(msg => ({
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
@@ -1006,7 +1006,7 @@ export default function DashboardPA() {
     // Il conversation_id 'user-gptdev-direct' è già sufficiente
   });
   
-  const gptdevMessages = gptdevMessagesRaw.map(msg => ({
+  const gptdevMessages = (gptdevMessagesRaw || []).map(msg => ({
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
@@ -1015,7 +1015,7 @@ export default function DashboardPA() {
     pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
-  const zapierMessages = zapierMessagesRaw.map(msg => ({
+  const zapierMessages = (zapierMessagesRaw || []).map(msg => ({
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
@@ -1559,7 +1559,7 @@ export default function DashboardPA() {
 
   // Scroll MIO quando cambiano messaggi
   useEffect(() => {
-    if (!mioMessagesRef.current || mioMessages.length === 0) return;
+    if (!mioMessagesRef.current || !mioMessages || mioMessages.length === 0) return;
     
     // Timeout per assicurarsi che il DOM sia aggiornato
     const timeoutId = setTimeout(() => {
@@ -5414,21 +5414,21 @@ export default function DashboardPA() {
                               if (targetIdSelect) {
                                 targetIdSelect.innerHTML = '<option value="">Seleziona...</option>';
                                 if (e.target.value === 'MERCATO') {
-                                  mercatiList.forEach(m => {
+                                  (mercatiList || []).forEach(m => {
                                     const opt = document.createElement('option');
                                     opt.value = m.id;
                                     opt.textContent = m.name || m.nome;
                                     targetIdSelect.appendChild(opt);
                                   });
                                 } else if (e.target.value === 'HUB') {
-                                  hubList.forEach(h => {
+                                  (hubList || []).forEach(h => {
                                     const opt = document.createElement('option');
                                     opt.value = h.hub_id;
                                     opt.textContent = h.comune_nome;
                                     targetIdSelect.appendChild(opt);
                                   });
                                 } else if (e.target.value === 'IMPRESA') {
-                                  impreseList.forEach(i => {
+                                  (impreseList || []).forEach(i => {
                                     const opt = document.createElement('option');
                                     opt.value = i.id;
                                     opt.textContent = i.denominazione;
@@ -6101,21 +6101,21 @@ export default function DashboardPA() {
                               if (targetIdSelect) {
                                 targetIdSelect.innerHTML = '<option value="">Seleziona...</option>';
                                 if (e.target.value === 'MERCATO') {
-                                  mercatiList.forEach(m => {
+                                  (mercatiList || []).forEach(m => {
                                     const opt = document.createElement('option');
                                     opt.value = m.id;
                                     opt.textContent = m.name || m.nome;
                                     targetIdSelect.appendChild(opt);
                                   });
                                 } else if (e.target.value === 'HUB') {
-                                  hubList.forEach(h => {
+                                  (hubList || []).forEach(h => {
                                     const opt = document.createElement('option');
                                     opt.value = h.hub_id;
                                     opt.textContent = h.comune_nome;
                                     targetIdSelect.appendChild(opt);
                                   });
                                 } else if (e.target.value === 'IMPRESA') {
-                                  impreseList.forEach(i => {
+                                  (impreseList || []).forEach(i => {
                                     const opt = document.createElement('option');
                                     opt.value = i.id;
                                     opt.textContent = i.denominazione;
@@ -6335,7 +6335,7 @@ export default function DashboardPA() {
                       {/* Area messaggi */}
                       <div className="relative">
                         <div ref={mioMessagesRef} className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-scroll space-y-3 chat-messages-container">
-                        {mioMessages.length === 0 ? (
+                        {(!mioMessages || mioMessages.length === 0) ? (
                           <p className="text-[#e8fbff]/50 text-center text-sm">Nessun messaggio</p>
                         ) : (
                           mioMessages.map((msg) => (
