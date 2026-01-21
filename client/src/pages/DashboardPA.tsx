@@ -2844,7 +2844,7 @@ export default function DashboardPA() {
                     {tccComuni.length === 0 && (
                       <option value="">Caricamento comuni...</option>
                     )}
-                    {tccComuni.map((comune) => (
+                    {(tccComuni || []).map((comune) => (
                       <option key={comune.hub_id} value={comune.hub_id}>
                         {comune.nome} ({comune.provincia}) - {comune.hub_name}
                       </option>
@@ -3919,7 +3919,7 @@ export default function DashboardPA() {
                         </ul>
                       </div>
                     </div>
-                    {chatMessages.map((msg, i) => (
+                    {(chatMessages || []).map((msg, i) => (
                       <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                         {msg.role === 'ai' && (
                           <div className="w-8 h-8 rounded-full bg-[#14b8a6]/20 flex items-center justify-center flex-shrink-0">
@@ -6611,7 +6611,7 @@ export default function DashboardPA() {
                           )}
                           
                           {/* Messaggi GPT Developer */}
-                          {selectedAgent === 'gptdev' && gptdevMessages.map((msg, idx) => (
+                          {selectedAgent === 'gptdev' && (gptdevMessages || []).map((msg, idx) => (
                             <div key={idx} className={`mb-3 ${msg.role === 'user' ? 'ml-8' : 'mr-8'}`}>
                               <div className={`p-3 rounded-lg ${
                                 msg.role === 'user' 
@@ -6632,7 +6632,7 @@ export default function DashboardPA() {
                           ))}
                           
                           {/* Messaggi Manus */}
-                          {selectedAgent === 'manus' && manusMessages.map((msg, idx) => (
+                          {selectedAgent === 'manus' && (manusMessages || []).map((msg, idx) => (
                             <div key={idx} className={`mb-3 ${msg.role === 'user' ? 'ml-8' : 'mr-8'}`}>
                               <div className={`p-3 rounded-lg ${
                                 msg.role === 'user' 
@@ -6653,7 +6653,7 @@ export default function DashboardPA() {
                           ))}
                           
                           {/* Messaggi Abacus */}
-                          {selectedAgent === 'abacus' && abacusMessages.map((msg, idx) => (
+                          {selectedAgent === 'abacus' && (abacusMessages || []).map((msg, idx) => (
                             <div key={idx} className={`mb-3 ${msg.role === 'user' ? 'ml-8' : 'mr-8'}`}>
                               <div className={`p-3 rounded-lg ${
                                 msg.role === 'user' 
@@ -6674,7 +6674,7 @@ export default function DashboardPA() {
                           ))}
                           
                           {/* Messaggi Zapier */}
-                          {selectedAgent === 'zapier' && zapierMessages.map((msg, idx) => (
+                          {selectedAgent === 'zapier' && (zapierMessages || []).map((msg, idx) => (
                             <div key={idx} className={`mb-3 ${msg.role === 'user' ? 'ml-8' : 'mr-8'}`}>
                               <div className={`p-3 rounded-lg ${
                                 msg.role === 'user' 
@@ -6897,7 +6897,7 @@ export default function DashboardPA() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {guardianLogs
+                  {(guardianLogs || [])
                     .filter(log => {
                       // Vista 4 agenti: mostra tutti gli agenti (mio, gptdev, manus, abacus, zapier)
                       if (viewMode === 'quad') {
@@ -7094,7 +7094,7 @@ export default function DashboardPA() {
                       center={gisMapCenter}
                       zoom={17}
                       height="100%"
-                      stallsData={filteredGisStalls.map(s => ({
+                      stallsData={(filteredGisStalls || []).map(s => ({
                         id: s.id,
                         number: s.number,
                         status: s.status,
@@ -7289,7 +7289,7 @@ function LogsSection() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {systemLogs.map((log) => (
+                {(systemLogs || []).map((log) => (
                   <div
                     key={log.id}
                     className="p-3 rounded-lg border bg-[#0b1220] border-[#14b8a6]/20"
@@ -7512,7 +7512,7 @@ function LogsSection() {
                       center={gisMapCenter}
                       zoom={17}
                       height="100%"
-                      stallsData={filteredGisStalls.map(s => ({
+                      stallsData={(filteredGisStalls || []).map(s => ({
                         id: s.id,
                         number: s.number,
                         status: s.status,
