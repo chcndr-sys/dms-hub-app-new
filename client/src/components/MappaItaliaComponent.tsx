@@ -1288,6 +1288,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   const [isSpuntaMode, setIsSpuntaMode] = useState(false);
   const [showCompanyModal, setShowCompanyModal] = useState(false);
   const [selectedCompanyForModal, setSelectedCompanyForModal] = useState<CompanyRow | null>(null);
+  const [showConcessionDetailModal, setShowConcessionDetailModal] = useState(false);
+  const [selectedConcessionForModal, setSelectedConcessionForModal] = useState<any>(null);
   const listContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1880,8 +1882,30 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 </div>
               </div>
 
-              {/* Pulsante per aprire il modal completo */}
-              <div className="p-4 border-t border-[#14b8a6]/20 bg-[#0b1220]/50">
+              {/* Pulsanti per aprire i modal */}
+              <div className="p-4 border-t border-[#14b8a6]/20 bg-[#0b1220]/50 space-y-2">
+                {/* Pulsante Vista Concessione */}
+                {selectedStall.concession_id && (
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`${API_BASE_URL}/api/concessions/${selectedStall.concession_id}`);
+                        const data = await response.json();
+                        if (data.success && data.data) {
+                          setSelectedConcessionForModal(data.data);
+                          setShowConcessionDetailModal(true);
+                        }
+                      } catch (error) {
+                        console.error('Error loading concession:', error);
+                        toast.error('Errore nel caricamento della concessione');
+                      }
+                    }}
+                    className="w-full bg-[#8b5cf6] hover:bg-[#8b5cf6]/80 text-white"
+                  >
+                    <FileText className="h-4 w-4 mr-2" /> Vista Concessione
+                  </Button>
+                )}
+                {/* Pulsante Modifica Impresa */}
                 <Button
                   onClick={async () => {
                     // Carica i dati completi dell'impresa e apri il modal
@@ -1920,6 +1944,192 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       </div>
 
 
+      {/* Modal Dettaglio Concessione */}
+      {showConcessionDetailModal && selectedConcessionForModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-[#0b1220] border-b border-[#14b8a6]/20 p-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-[#14b8a6]">
+                Concessione #{selectedConcessionForModal.numero_protocollo || selectedConcessionForModal.id}
+              </h2>
+              <button onClick={() => setShowConcessionDetailModal(false)} className="text-[#e8fbff]/50 hover:text-[#e8fbff]">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Dati Concessione */}
+              <div className="bg-[#0d1829] rounded-lg p-4 border border-[#14b8a6]/20">
+                <h3 className="text-[#14b8a6] font-semibold mb-4 flex items-center gap-2">
+                  <FileText className="h-4 w-4" /> Dati Concessione
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Tipo</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.tipo_concessione || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Stato</span>
+                    <Badge className={selectedConcessionForModal.stato === 'ATTIVA' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}>
+                      {selectedConcessionForModal.stato || 'N/A'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Valida Dal</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.valid_from ? new Date(selectedConcessionForModal.valid_from).toLocaleDateString('it-IT') : '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Valida Al</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.valid_to ? new Date(selectedConcessionForModal.valid_to).toLocaleDateString('it-IT') : '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Concessionario */}
+              <div className="bg-[#0d1829] rounded-lg p-4 border border-[#14b8a6]/20">
+                <h3 className="text-[#14b8a6] font-semibold mb-4 flex items-center gap-2">
+                  <User className="h-4 w-4" /> Concessionario
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="col-span-2">
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Ragione Sociale</span>
+                    <p className="text-[#e8fbff] font-semibold">{selectedConcessionForModal.ragione_sociale || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Nome</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.nome || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Cognome</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.cognome || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Partita IVA</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.partita_iva || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Codice Fiscale</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.cf_concessionario || '-'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Sede Legale</span>
+                    <p className="text-[#e8fbff]">
+                      {[selectedConcessionForModal.sede_legale_via, selectedConcessionForModal.sede_legale_cap, selectedConcessionForModal.sede_legale_comune, selectedConcessionForModal.sede_legale_provincia].filter(Boolean).join(', ') || '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dati Posteggio e Mercato */}
+              <div className="bg-[#0d1829] rounded-lg p-4 border border-[#14b8a6]/20">
+                <h3 className="text-[#14b8a6] font-semibold mb-4 flex items-center gap-2">
+                  <MapPin className="h-4 w-4" /> Dati Posteggio e Mercato
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Mercato</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.market_name || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Posteggio</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.stall_code || selectedConcessionForModal.stall_number || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Ubicazione</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.ubicazione || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Giorno</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.giorno || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">MQ</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.mq || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Dimensioni</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.dimensioni_lineari || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dati Economici */}
+              <div className="bg-[#0d1829] rounded-lg p-4 border border-[#14b8a6]/20">
+                <h3 className="text-[#14b8a6] font-semibold mb-4 flex items-center gap-2">
+                  <Building2 className="h-4 w-4" /> Dati Economici
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Canone Unico</span>
+                    <p className={`font-semibold ${parseFloat(selectedConcessionForModal.canone_unico || '0') > 0 ? 'text-red-400' : 'text-[#e8fbff]'}`}>
+                      € {parseFloat(selectedConcessionForModal.canone_unico || '0').toLocaleString('it-IT', {minimumFractionDigits: 2})}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Tipo Posteggio</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.tipo_posteggio || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wallet Concessione */}
+              <div className="bg-[#0d1829] rounded-lg p-4 border border-[#14b8a6]/20">
+                <h3 className="text-[#14b8a6] font-semibold mb-4 flex items-center gap-2">
+                  <Building2 className="h-4 w-4" /> Wallet Concessione
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">ID Wallet</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.wallet_id || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Saldo</span>
+                    <p className={`font-semibold ${parseFloat(selectedConcessionForModal.wallet_balance || '0') >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      € {parseFloat(selectedConcessionForModal.wallet_balance || '0').toLocaleString('it-IT', {minimumFractionDigits: 2})}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Stato Wallet</span>
+                    <p className={`${selectedConcessionForModal.wallet_status === 'ACTIVE' ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {selectedConcessionForModal.wallet_status === 'ACTIVE' ? '✓ Attivo' : selectedConcessionForModal.wallet_status || '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Requisiti e Documentazione */}
+              <div className="bg-[#0d1829] rounded-lg p-4 border border-[#14b8a6]/20">
+                <h3 className="text-[#14b8a6] font-semibold mb-4 flex items-center gap-2">
+                  <FileText className="h-4 w-4" /> Requisiti e Documentazione
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">DURC Valido</span>
+                    <p className={selectedConcessionForModal.durc_scadenza ? (new Date(selectedConcessionForModal.durc_scadenza) > new Date() ? 'text-green-400' : 'text-yellow-400') : 'text-red-400'}>
+                      {selectedConcessionForModal.durc_scadenza ? (new Date(selectedConcessionForModal.durc_scadenza) > new Date() ? '✓ Sì' : '⚠ Scaduto') : '✗ Non presente'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Scadenza DURC</span>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.durc_scadenza ? new Date(selectedConcessionForModal.durc_scadenza).toLocaleDateString('it-IT') : '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Requisiti Morali</span>
+                    <p className={selectedConcessionForModal.requisiti_morali ? 'text-green-400' : 'text-[#e8fbff]/50'}>
+                      {selectedConcessionForModal.requisiti_morali ? '✓ Verificati' : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-[#e8fbff]/50 uppercase">Requisiti Professionali</span>
+                    <p className={selectedConcessionForModal.requisiti_professionali ? 'text-green-400' : 'text-[#e8fbff]/50'}>
+                      {selectedConcessionForModal.requisiti_professionali ? '✓ Verificati' : '-'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
