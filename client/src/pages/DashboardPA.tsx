@@ -145,16 +145,18 @@ function useDashboardData() {
       .then(res => res.json())
       .then(async data => {
         if (data.success) {
-          // Fetch anche lista enti e corsi
-          const [entiRes, corsiRes] = await Promise.all([
+          // Fetch anche lista enti, corsi e iscrizioni
+          const [entiRes, corsiRes, iscrizioniRes] = await Promise.all([
             fetch(`${MIHUB_API}/formazione/enti`).then(r => r.json()),
-            fetch(`${MIHUB_API}/formazione/corsi`).then(r => r.json())
+            fetch(`${MIHUB_API}/formazione/corsi`).then(r => r.json()),
+            fetch(`${MIHUB_API}/formazione/iscrizioni/stats`).then(r => r.json())
           ]);
           
           setFormazioneStats({
             stats: data.data,
             enti: entiRes.success ? entiRes.data : [],
-            corsi: corsiRes.success ? corsiRes.data : []
+            corsi: corsiRes.success ? corsiRes.data : [],
+            iscrizioni: iscrizioniRes.success ? iscrizioniRes.data : null
           });
         }
       })
@@ -165,16 +167,22 @@ function useDashboardData() {
       .then(res => res.json())
       .then(async data => {
         if (data.success) {
-          // Fetch anche lista associazioni e bandi
-          const [assocRes, catalogoRes] = await Promise.all([
+          // Fetch anche lista associazioni, bandi, servizi, richieste e regolarità
+          const [assocRes, catalogoRes, serviziRes, richiesteRes, regolaritaRes] = await Promise.all([
             fetch(`${MIHUB_API}/bandi/associazioni`).then(r => r.json()),
-            fetch(`${MIHUB_API}/bandi/catalogo`).then(r => r.json())
+            fetch(`${MIHUB_API}/bandi/catalogo`).then(r => r.json()),
+            fetch(`${MIHUB_API}/bandi/servizi`).then(r => r.json()),
+            fetch(`${MIHUB_API}/bandi/richieste/stats`).then(r => r.json()),
+            fetch(`${MIHUB_API}/bandi/regolarita/stats`).then(r => r.json())
           ]);
           
           setBandiStats({
             stats: data.data,
             associazioni: assocRes.success ? assocRes.data : [],
-            catalogo: catalogoRes.success ? catalogoRes.data : []
+            catalogo: catalogoRes.success ? catalogoRes.data : [],
+            servizi: serviziRes.success ? serviziRes.data : [],
+            richieste: richiesteRes.success ? richiesteRes.data : null,
+            regolarita: regolaritaRes.success ? regolaritaRes.data : null
           });
         }
       })
@@ -941,7 +949,7 @@ export default function DashboardPA() {
     // Il conversation_id 'user-manus-direct' è già sufficiente
   });
   
-  const manusMessages = manusMessagesRaw.map(msg => ({
+  const manusMessages = (manusMessagesRaw || []).map(msg => ({
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
@@ -963,7 +971,7 @@ export default function DashboardPA() {
     // Il conversation_id 'user-abacus-direct' è già sufficiente
   });
   
-  const abacusMessages = abacusMessagesRaw.map(msg => ({
+  const abacusMessages = (abacusMessagesRaw || []).map(msg => ({
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
@@ -998,7 +1006,7 @@ export default function DashboardPA() {
     // Il conversation_id 'user-gptdev-direct' è già sufficiente
   });
   
-  const gptdevMessages = gptdevMessagesRaw.map(msg => ({
+  const gptdevMessages = (gptdevMessagesRaw || []).map(msg => ({
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
@@ -1007,7 +1015,7 @@ export default function DashboardPA() {
     pending: msg.pending  // Preserva flag pending per Optimistic UI
   }));
   
-  const zapierMessages = zapierMessagesRaw.map(msg => ({
+  const zapierMessages = (zapierMessagesRaw || []).map(msg => ({
     role: msg.role as 'user' | 'assistant',
     content: msg.content,  // Backend ora restituisce già 'content'
     agent: msg.agent_name,
@@ -1082,6 +1090,159 @@ export default function DashboardPA() {
       });
     }
   }, [fetchedTraces]);
+
+  // 🔔 NOTIFICHE STATE - Sistema bidirezionale PA/Associazioni ↔ Imprese
+  const [notificheStats, setNotificheStats] = useState<any>(null);
+  const [notificheRisposte, setNotificheRisposte] = useState<any[]>([]);
+  const [mercatiList, setMercatiList] = useState<any[]>([]);
+  const [hubList, setHubList] = useState<any[]>([]);
+  const [impreseList, setImpreseList] = useState<any[]>([]);
+  const [invioNotificaLoading, setInvioNotificaLoading] = useState(false);
+  const [selectedNotifica, setSelectedNotifica] = useState<any>(null);
+  const [notificheNonLette, setNotificheNonLette] = useState(0);
+  // Nuovi state per messaggi unificati con filtri e ID separati
+  const [messaggiEnti, setMessaggiEnti] = useState<any[]>([]);
+  const [messaggiAssociazioni, setMessaggiAssociazioni] = useState<any[]>([]);
+  const [filtroMessaggiEnti, setFiltroMessaggiEnti] = useState<'tutti' | 'inviati' | 'ricevuti'>('tutti');
+  const [filtroMessaggiAssoc, setFiltroMessaggiAssoc] = useState<'tutti' | 'inviati' | 'ricevuti'>('tutti');
+  const [nonLetteEnti, setNonLetteEnti] = useState(0);
+  const [nonLetteAssoc, setNonLetteAssoc] = useState(0);
+  // ID fissi per Enti Formatori (1) e Associazioni (2)
+  const ENTE_FORMATORE_ID = 1;
+  const ASSOCIAZIONE_ID = 2;
+  
+  // Fetch messaggi per Enti Formatori
+  const fetchMessaggiEnti = async () => {
+    const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+    try {
+      const res = await fetch(`${MIHUB_API}/notifiche/messaggi/ENTE_FORMATORE/${ENTE_FORMATORE_ID}?filtro=${filtroMessaggiEnti}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setMessaggiEnti(data.data);
+        setNonLetteEnti(data.non_letti || 0);
+      } else {
+        setMessaggiEnti([]);
+        setNonLetteEnti(0);
+      }
+    } catch (err) {
+      console.log('Messaggi Enti fetch error:', err);
+      setMessaggiEnti([]);
+      setNonLetteEnti(0);
+    }
+  };
+  
+  // Fetch messaggi per Associazioni
+  const fetchMessaggiAssociazioni = async () => {
+    const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+    try {
+      const res = await fetch(`${MIHUB_API}/notifiche/messaggi/ASSOCIAZIONE/${ASSOCIAZIONE_ID}?filtro=${filtroMessaggiAssoc}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setMessaggiAssociazioni(data.data);
+        setNonLetteAssoc(data.non_letti || 0);
+      } else {
+        setMessaggiAssociazioni([]);
+        setNonLetteAssoc(0);
+      }
+    } catch (err) {
+      console.log('Messaggi Associazioni fetch error:', err);
+      setMessaggiAssociazioni([]);
+      setNonLetteAssoc(0);
+    }
+  };
+  
+  // Segna messaggio come letto
+  const segnaMessaggioLetto = async (id: number, mittenteId: number, mittenteTipo: string) => {
+    const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+    try {
+      await fetch(`${MIHUB_API}/notifiche/segna-letto/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mittente_tipo: mittenteTipo, mittente_id: mittenteId })
+      });
+      // Refresh messaggi
+      if (mittenteTipo === 'ENTE_FORMATORE') fetchMessaggiEnti();
+      else fetchMessaggiAssociazioni();
+    } catch (err) {
+      console.log('Segna letto error:', err);
+    }
+  };
+  
+  // Fetch notifiche stats e risposte
+  useEffect(() => {
+    const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+    
+    // Fetch stats notifiche
+    fetch(`${MIHUB_API}/notifiche/stats`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setNotificheStats(data.data);
+        }
+      })
+      .catch(err => console.log('Notifiche stats fetch error:', err));
+    
+    // Fetch risposte (messaggi dalle imprese) - per backward compatibility
+    fetch(`${MIHUB_API}/notifiche/risposte`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setNotificheRisposte(data.data || []);
+        }
+      })
+      .catch(err => console.log('Notifiche risposte fetch error:', err));
+    
+    // Fetch messaggi separati per Enti e Associazioni
+    fetchMessaggiEnti();
+    fetchMessaggiAssociazioni();
+    
+    // Fetch lista mercati
+    fetch(`${MIHUB_API}/notifiche/markets`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setMercatiList(data.data);
+        }
+      })
+      .catch(err => console.log('Mercati fetch error:', err));
+    
+    // Fetch lista hub
+    fetch(`${MIHUB_API}/tcc/v2/comuni`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.comuni) {
+          setHubList(data.comuni);
+        }
+      })
+      .catch(err => console.log('Hub fetch error:', err));
+    
+    // Fetch lista imprese
+    fetch(`${MIHUB_API}/notifiche/imprese`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setImpreseList(data.data);
+        }
+      })
+      .catch(err => console.log('Imprese fetch error:', err));
+    
+    // Polling ogni 30 secondi per aggiornare notifiche
+    const interval = setInterval(() => {
+      fetchMessaggiEnti();
+      fetchMessaggiAssociazioni();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Aggiorna quando cambia filtro
+  useEffect(() => { fetchMessaggiEnti(); }, [filtroMessaggiEnti]);
+  useEffect(() => { fetchMessaggiAssociazioni(); }, [filtroMessaggiAssoc]);
+  
+  // Calcola totale notifiche non lette per badge barra rapida
+  useEffect(() => {
+    setNotificheNonLette(nonLetteEnti + nonLetteAssoc);
+  }, [nonLetteEnti, nonLetteAssoc]);
 
   // GIS Map state (blocco ufficiale da GestioneMercati)
   const [gisStalls, setGisStalls] = useState<any[]>([]);
@@ -1398,7 +1559,7 @@ export default function DashboardPA() {
 
   // Scroll MIO quando cambiano messaggi
   useEffect(() => {
-    if (!mioMessagesRef.current || mioMessages.length === 0) return;
+    if (!mioMessagesRef.current || !mioMessages || mioMessages.length === 0) return;
     
     // Timeout per assicurarsi che il DOM sia aggiornato
     const timeoutId = setTimeout(() => {
@@ -1630,17 +1791,24 @@ export default function DashboardPA() {
     setDocModalContent(content[docKey]);
   };
 
-  const QuickAccessButton = ({ href, icon, label, color = 'teal' }: any) => (
+  const QuickAccessButton = ({ href, icon, label, color = 'teal', badge = 0 }: any) => (
     <button
       onClick={() => setLocation(href)}
-      className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+      className={`relative flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
         color === 'orange'
           ? 'bg-[#f59e0b]/10 border-[#f59e0b]/30 hover:bg-[#f59e0b]/20 text-[#f59e0b]'
+          : color === 'yellow'
+          ? 'bg-[#eab308]/10 border-[#eab308]/30 hover:bg-[#eab308]/20 text-[#eab308]'
           : 'bg-[#14b8a6]/10 border-[#14b8a6]/30 hover:bg-[#14b8a6]/20 text-[#14b8a6]'
       }`}
     >
       {icon}
       <span className="text-sm font-medium">{label}</span>
+      {badge > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+          {badge > 9 ? '9+' : badge}
+        </span>
+      )}
     </button>
   );
 
@@ -1761,6 +1929,7 @@ export default function DashboardPA() {
             <QuickAccessButton href="/civic" icon={<AlertCircle className="h-5 w-5" />} label="Segnala" />
             <QuickAccessButton href="/vetrine" icon={<Store className="h-5 w-5" />} label="Vetrine" />
             <QuickAccessButton href="/hub-operatore" icon={<Activity className="h-5 w-5" />} label="Hub Operatore" color="orange" />
+            <QuickAccessButton href="/app/impresa/notifiche" icon={<Bell className="h-5 w-5" />} label="Notifiche" color="yellow" badge={notificheNonLette} />
             <button
               onClick={() => window.open('https://api.mio-hub.me/tools/bus_hub.html', '_blank')}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-all bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/20 text-[#8b5cf6]"
@@ -2675,7 +2844,7 @@ export default function DashboardPA() {
                     {tccComuni.length === 0 && (
                       <option value="">Caricamento comuni...</option>
                     )}
-                    {tccComuni.map((comune) => (
+                    {(tccComuni || []).map((comune) => (
                       <option key={comune.hub_id} value={comune.hub_id}>
                         {comune.nome} ({comune.provincia}) - {comune.hub_name}
                       </option>
@@ -3750,7 +3919,7 @@ export default function DashboardPA() {
                         </ul>
                       </div>
                     </div>
-                    {chatMessages.map((msg, i) => (
+                    {(chatMessages || []).map((msg, i) => (
                       <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
                         {msg.role === 'ai' && (
                           <div className="w-8 h-8 rounded-full bg-[#14b8a6]/20 flex items-center justify-center flex-shrink-0">
@@ -4758,21 +4927,28 @@ export default function DashboardPA() {
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 text-emerald-400 text-sm mb-1">
                         <FileCheck className="w-4 h-4" />
-                        Corsi Completati
+                        Attestati Registrati
+                        {realData.formazioneStats?.stats?.attestati && <span className="text-xs text-[#10b981]">● Live</span>}
                       </div>
                       <div className="text-2xl font-bold text-white">
-                        {realData.formazioneStats?.stats?.corsi?.completati ?? 0}
+                        {realData.formazioneStats?.stats?.attestati?.totale ?? 0}
+                      </div>
+                      <div className="text-xs text-[#e8fbff]/50">
+                        {realData.formazioneStats?.stats?.attestati?.attivi ?? 0} attivi
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+                  <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-2 text-purple-400 text-sm mb-1">
-                        <Activity className="w-4 h-4" />
-                        In Corso
+                      <div className="flex items-center gap-2 text-red-400 text-sm mb-1">
+                        <AlertTriangle className="w-4 h-4" />
+                        In Scadenza
                       </div>
                       <div className="text-2xl font-bold text-white">
-                        {realData.formazioneStats?.stats?.corsi?.in_corso ?? 0}
+                        {realData.formazioneStats?.stats?.attestati?.in_scadenza_30 ?? 0}
+                      </div>
+                      <div className="text-xs text-[#e8fbff]/50">
+                        {realData.formazioneStats?.stats?.attestati?.scaduti ?? 0} scaduti
                       </div>
                     </CardContent>
                   </Card>
@@ -4865,6 +5041,68 @@ export default function DashboardPA() {
                         <div className="col-span-2 text-center text-[#e8fbff]/50 py-8">
                           <BookOpen className="w-12 h-12 mx-auto mb-2 opacity-30" />
                           <p>Caricamento corsi...</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Lista Imprese con Attestati - Scadenze */}
+                <Card className="bg-[#1a2332] border-[#f59e0b]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-[#f59e0b]" />
+                      Scadenze Attestati Imprese
+                      {realData.formazioneStats?.stats?.scadenze_imprese && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Attestati in scadenza e scaduti ordinati per data
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
+                      {(realData.formazioneStats?.stats?.scadenze_imprese || []).map((item: any, idx: number) => (
+                        <div key={item.id || idx} className={`flex items-center justify-between p-3 rounded-lg border ${
+                          item.stato_scadenza === 'scaduto' ? 'bg-red-500/10 border-red-500/30' :
+                          item.stato_scadenza === 'urgente' ? 'bg-orange-500/10 border-orange-500/30' :
+                          item.stato_scadenza === 'in_scadenza' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                          'bg-[#0b1220] border-[#3b82f6]/10'
+                        }`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Building2 className="w-4 h-4 text-[#e8fbff]/50" />
+                              <span className="text-[#e8fbff] font-medium">{item.impresa_nome}</span>
+                            </div>
+                            <div className="flex items-center gap-4 mt-1 text-xs text-[#e8fbff]/50">
+                              <span className="flex items-center gap-1">
+                                <FileCheck className="w-3 h-3" />
+                                {item.tipo}
+                              </span>
+                              <span>{item.ente_rilascio}</span>
+                              {item.numero_certificato && <span>#{item.numero_certificato}</span>}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-sm font-bold ${
+                              item.stato_scadenza === 'scaduto' ? 'text-red-400' :
+                              item.stato_scadenza === 'urgente' ? 'text-orange-400' :
+                              item.stato_scadenza === 'in_scadenza' ? 'text-yellow-400' :
+                              'text-emerald-400'
+                            }`}>
+                              {item.stato_scadenza === 'scaduto' ? `Scaduto da ${Math.abs(item.giorni_rimanenti)} gg` :
+                               item.giorni_rimanenti <= 0 ? 'Scaduto' :
+                               `${item.giorni_rimanenti} giorni`}
+                            </div>
+                            <div className="text-xs text-[#e8fbff]/50">
+                              Scade: {new Date(item.data_scadenza).toLocaleDateString('it-IT')}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {(!realData.formazioneStats?.stats?.scadenze_imprese || realData.formazioneStats.stats.scadenze_imprese.length === 0) && (
+                        <div className="text-center text-[#e8fbff]/50 py-8">
+                          <FileCheck className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                          <p>Nessun attestato registrato</p>
                         </div>
                       )}
                     </div>
@@ -5008,6 +5246,352 @@ export default function DashboardPA() {
                         </button>
                       </div>
                     </form>
+                  </CardContent>
+                </Card>
+
+                {/* LISTA ISCRIZIONI AI CORSI */}
+                <Card className="bg-[#1a2332] border-[#8b5cf6]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <Users className="h-5 w-5 text-[#8b5cf6]" />
+                      Imprese Iscritte ai Corsi
+                      {realData.formazioneStats?.iscrizioni && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
+                      <Badge className="bg-purple-500/20 text-purple-400 ml-2">Nuovo</Badge>
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Iscrizioni registrate dall'app imprese - {realData.formazioneStats?.iscrizioni?.conteggi?.totale || 0} totali
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {/* KPI Iscrizioni */}
+                    <div className="grid grid-cols-4 gap-3 mb-4">
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#8b5cf6]/20 text-center">
+                        <div className="text-2xl font-bold text-[#8b5cf6]">{realData.formazioneStats?.iscrizioni?.conteggi?.iscritti || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Iscritti</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#10b981]/20 text-center">
+                        <div className="text-2xl font-bold text-[#10b981]">{realData.formazioneStats?.iscrizioni?.conteggi?.confermati || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Confermati</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#3b82f6]/20 text-center">
+                        <div className="text-2xl font-bold text-[#3b82f6]">{realData.formazioneStats?.iscrizioni?.conteggi?.completati || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Completati</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#ef4444]/20 text-center">
+                        <div className="text-2xl font-bold text-[#ef4444]">{realData.formazioneStats?.iscrizioni?.conteggi?.annullati || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Annullati</div>
+                      </div>
+                    </div>
+                    
+                    {/* Lista Iscrizioni */}
+                    <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
+                      {(realData.formazioneStats?.iscrizioni?.iscrizioni_recenti || []).map((item: any, idx: number) => (
+                        <div key={item.id || idx} className={`flex items-center justify-between p-3 rounded-lg border ${
+                          item.stato === 'COMPLETATO' ? 'bg-blue-500/10 border-blue-500/30' :
+                          item.stato === 'CONFERMATO' ? 'bg-green-500/10 border-green-500/30' :
+                          item.stato === 'ANNULLATO' ? 'bg-red-500/10 border-red-500/30' :
+                          'bg-purple-500/10 border-purple-500/30'
+                        }`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-[#e8fbff]">{item.impresa_nome}</span>
+                              <Badge className={`text-xs ${
+                                item.stato === 'COMPLETATO' ? 'bg-blue-500/20 text-blue-400' :
+                                item.stato === 'CONFERMATO' ? 'bg-green-500/20 text-green-400' :
+                                item.stato === 'ANNULLATO' ? 'bg-red-500/20 text-red-400' :
+                                'bg-purple-500/20 text-purple-400'
+                              }`}>
+                                {item.stato}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-[#e8fbff]/60 mt-1">
+                              <span className="text-[#3b82f6]">{item.corso_titolo}</span>
+                              {item.ente_nome && <span className="ml-2">• {item.ente_nome}</span>}
+                            </div>
+                            {item.utente_nome && (
+                              <div className="text-xs text-[#e8fbff]/40 mt-1">
+                                Partecipante: {item.utente_nome}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-[#e8fbff]/70">
+                              {item.corso_data ? new Date(item.corso_data).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                            </div>
+                            <div className="text-xs text-[#e8fbff]/40">
+                              Iscritto: {item.data_iscrizione ? new Date(item.data_iscrizione).toLocaleDateString('it-IT') : '-'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {(!realData.formazioneStats?.iscrizioni?.iscrizioni_recenti || realData.formazioneStats.iscrizioni.iscrizioni_recenti.length === 0) && (
+                        <div className="text-center text-[#e8fbff]/50 py-8">
+                          <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                          <p>Nessuna iscrizione registrata</p>
+                          <p className="text-xs mt-1">Le imprese potranno iscriversi ai corsi dall'app</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Form Invio Notifiche Enti Formatori */}
+                <Card className="bg-[#1a2332] border-[#3b82f6]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-[#3b82f6]" />
+                      Invia Notifica alle Imprese
+                      {notificheNonLette > 0 && (
+                        <Badge className="bg-red-500 text-white ml-2 animate-pulse">{notificheNonLette} nuove</Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Invia comunicazioni informative o promozionali alle imprese iscritte
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.target as HTMLFormElement;
+                      const formData = new FormData(form);
+                      const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+                      
+                      setInvioNotificaLoading(true);
+                      try {
+                        const targetTipo = formData.get('target_tipo');
+                        const targetId = formData.get('target_id');
+                        let targetNome = null;
+                        
+                        if (targetTipo === 'MERCATO' && targetId) {
+                          const mercato = mercatiList.find(m => m.id === parseInt(targetId as string));
+                          targetNome = mercato?.name || mercato?.nome;
+                        } else if (targetTipo === 'HUB' && targetId) {
+                          const hub = hubList.find(h => h.hub_id === parseInt(targetId as string));
+                          targetNome = hub?.comune_nome;
+                        } else if (targetTipo === 'IMPRESA' && targetId) {
+                          const impresa = impreseList.find(i => i.id === parseInt(targetId as string));
+                          targetNome = impresa?.denominazione;
+                        }
+                        
+                        const response = await fetch(`${MIHUB_API}/notifiche/send`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            mittente_id: ENTE_FORMATORE_ID,
+                            mittente_tipo: 'ENTE_FORMATORE',
+                            mittente_nome: 'Ente Formatore',
+                            titolo: formData.get('titolo'),
+                            messaggio: formData.get('messaggio'),
+                            tipo_messaggio: formData.get('tipo_messaggio'),
+                            target_tipo: targetTipo,
+                            target_id: targetId || null,
+                            target_nome: targetNome
+                          })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          alert(`✅ Notifica inviata con successo a ${data.data.destinatari_count} destinatari!`);
+                          form.reset();
+                        } else {
+                          alert('❌ Errore: ' + data.error);
+                        }
+                      } catch (err) {
+                        alert('❌ Errore invio notifica');
+                      } finally {
+                        setInvioNotificaLoading(false);
+                      }
+                    }} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-[#e8fbff]/70 mb-1">Destinatari</label>
+                          <select name="target_tipo" id="enti_target_tipo" className="w-full bg-[#0b1220] border border-[#3b82f6]/30 rounded-lg p-2 text-[#e8fbff]" required
+                            onChange={(e) => {
+                              const targetIdSelect = document.getElementById('enti_target_id') as HTMLSelectElement;
+                              const targetIdContainer = document.getElementById('enti_target_id_container');
+                              if (targetIdContainer) {
+                                targetIdContainer.style.display = ['MERCATO', 'HUB', 'IMPRESA'].includes(e.target.value) ? 'block' : 'none';
+                              }
+                              if (targetIdSelect) {
+                                targetIdSelect.innerHTML = '<option value="">Seleziona...</option>';
+                                if (e.target.value === 'MERCATO') {
+                                  (mercatiList || []).forEach(m => {
+                                    const opt = document.createElement('option');
+                                    opt.value = m.id;
+                                    opt.textContent = m.name || m.nome;
+                                    targetIdSelect.appendChild(opt);
+                                  });
+                                } else if (e.target.value === 'HUB') {
+                                  (hubList || []).forEach(h => {
+                                    const opt = document.createElement('option');
+                                    opt.value = h.hub_id;
+                                    opt.textContent = h.comune_nome;
+                                    targetIdSelect.appendChild(opt);
+                                  });
+                                } else if (e.target.value === 'IMPRESA') {
+                                  (impreseList || []).forEach(i => {
+                                    const opt = document.createElement('option');
+                                    opt.value = i.id;
+                                    opt.textContent = i.denominazione;
+                                    targetIdSelect.appendChild(opt);
+                                  });
+                                }
+                              }
+                            }}>
+                            <option value="TUTTI">Tutte le Imprese</option>
+                            <option value="MERCATO">Imprese del Mercato...</option>
+                            <option value="HUB">Negozi dell'HUB...</option>
+                            <option value="IMPRESA">Impresa Singola...</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-[#e8fbff]/70 mb-1">Tipo Messaggio</label>
+                          <select name="tipo_messaggio" className="w-full bg-[#0b1220] border border-[#3b82f6]/30 rounded-lg p-2 text-[#e8fbff]" required>
+                            <option value="INFORMATIVA">Informativa</option>
+                            <option value="PROMOZIONALE">Promozionale (Corsi)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div id="enti_target_id_container" style={{ display: 'none' }}>
+                        <label className="block text-sm text-[#e8fbff]/70 mb-1">Seleziona Destinatario Specifico</label>
+                        <select name="target_id" id="enti_target_id" className="w-full bg-[#0b1220] border border-[#3b82f6]/30 rounded-lg p-2 text-[#e8fbff]">
+                          <option value="">Seleziona...</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#e8fbff]/70 mb-1">Titolo</label>
+                        <input type="text" name="titolo" placeholder="Es: Nuovo corso HACCP disponibile" 
+                          className="w-full bg-[#0b1220] border border-[#3b82f6]/30 rounded-lg p-2 text-[#e8fbff]" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#e8fbff]/70 mb-1">Messaggio</label>
+                        <textarea name="messaggio" rows={4} placeholder="Scrivi il messaggio da inviare alle imprese..."
+                          className="w-full bg-[#0b1220] border border-[#3b82f6]/30 rounded-lg p-2 text-[#e8fbff]" required />
+                      </div>
+                      <div className="flex justify-end">
+                        <button type="submit" disabled={invioNotificaLoading}
+                          className="px-6 py-3 bg-gradient-to-r from-[#3b82f6] to-[#8b5cf6] rounded-lg text-white font-medium hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
+                          {invioNotificaLoading ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              Invio in corso...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4" />
+                              Invia Notifica
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                {/* Lista Messaggi Unificata - Enti Formatori */}
+                <Card className="bg-[#1a2332] border-[#3b82f6]/20">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5 text-[#3b82f6]" />
+                        Messaggi
+                        {nonLetteEnti > 0 && (
+                          <Badge className="bg-red-500 text-white ml-2">
+                            {nonLetteEnti} da leggere
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      {/* Filtro Messaggi */}
+                      <div className="flex gap-2">
+                        <button onClick={() => setFiltroMessaggiEnti('tutti')}
+                          className={`px-3 py-1 rounded text-sm ${filtroMessaggiEnti === 'tutti' ? 'bg-blue-500 text-white' : 'bg-[#0b1220] text-[#e8fbff]/70'}`}>
+                          Tutti
+                        </button>
+                        <button onClick={() => setFiltroMessaggiEnti('inviati')}
+                          className={`px-3 py-1 rounded text-sm ${filtroMessaggiEnti === 'inviati' ? 'bg-blue-500 text-white' : 'bg-[#0b1220] text-[#e8fbff]/70'}`}>
+                          Inviati
+                        </button>
+                        <button onClick={() => setFiltroMessaggiEnti('ricevuti')}
+                          className={`px-3 py-1 rounded text-sm ${filtroMessaggiEnti === 'ricevuti' ? 'bg-blue-500 text-white' : 'bg-[#0b1220] text-[#e8fbff]/70'}`}>
+                          Ricevuti
+                        </button>
+                      </div>
+                    </div>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Storico messaggi inviati e ricevuti
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-[500px] overflow-y-auto space-y-3">
+                      {Array.isArray(messaggiEnti) && messaggiEnti.slice(0, 20).map((msg: any, idx: number) => (
+                        <div key={idx} 
+                          onClick={() => msg.direzione === 'RICEVUTO' && msg.non_letti > 0 && segnaMessaggioLetto(msg.id, ENTE_FORMATORE_ID, 'ENTE_FORMATORE')}
+                          className={`p-3 rounded-lg border cursor-pointer transition-all hover:border-blue-400/50 ${
+                            msg.direzione === 'INVIATO' 
+                              ? 'bg-[#0b1220] border-[#3b82f6]/20' 
+                              : msg.non_letti > 0 
+                                ? 'bg-blue-500/10 border-blue-500/30' 
+                                : 'bg-[#0b1220] border-[#3b82f6]/20'
+                          }`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              {/* Icona busta aperta/chiusa */}
+                              {msg.direzione === 'INVIATO' ? (
+                                <Send className="w-4 h-4 text-blue-400" />
+                              ) : msg.non_letti > 0 ? (
+                                <Mail className="w-4 h-4 text-amber-400" />
+                              ) : (
+                                <MailOpen className="w-4 h-4 text-green-400" />
+                              )}
+                              <span className="text-[#e8fbff] font-medium">
+                                {msg.direzione === 'INVIATO' ? `A: ${msg.target_nome || msg.target_tipo}` : msg.mittente_nome || 'Impresa'}
+                              </span>
+                              {/* Badge direzione */}
+                              <Badge className={msg.direzione === 'INVIATO' ? 'bg-blue-500/20 text-blue-400 text-xs' : 'bg-amber-500/20 text-amber-400 text-xs'}>
+                                {msg.direzione === 'INVIATO' ? 'Inviato' : 'Ricevuto'}
+                              </Badge>
+                              {msg.direzione === 'RICEVUTO' && msg.non_letti > 0 && (
+                                <Badge className="bg-red-500 text-white text-xs">Nuovo</Badge>
+                              )}
+                            </div>
+                            <span className="text-xs text-[#e8fbff]/50">
+                              {new Date(msg.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-[#e8fbff]/80">{msg.titolo}</p>
+                          <p className="text-xs text-[#e8fbff]/60 mt-1 line-clamp-2">{msg.messaggio}</p>
+                          {/* Tracking letture per invii di gruppo */}
+                          {msg.direzione === 'INVIATO' && msg.totale_destinatari > 1 && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-[#e8fbff]/50">Inviato a {msg.totale_destinatari} imprese</span>
+                              <div className="flex items-center gap-1">
+                                <span className={`w-2 h-2 rounded-full ${msg.letti > 0 ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                <span className="text-xs text-[#e8fbff]/70">{msg.letti}/{msg.totale_destinatari} letti</span>
+                              </div>
+                            </div>
+                          )}
+                          {/* Semaforo lettura per invio singolo */}
+                          {msg.direzione === 'INVIATO' && msg.totale_destinatari === 1 && (
+                            <div className="flex items-center gap-1 mt-2">
+                              <span className={`w-2 h-2 rounded-full ${msg.letti > 0 ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                              <span className="text-xs text-[#e8fbff]/50">{msg.letti > 0 ? 'Letto' : 'Non letto'}</span>
+                            </div>
+                          )}
+                          {msg.tipo_messaggio === 'RICHIESTA_APPUNTAMENTO' && (
+                            <Badge className="bg-amber-500/20 text-amber-400 mt-2">Richiesta Appuntamento</Badge>
+                          )}
+                          {msg.tipo_messaggio === 'ISCRIZIONE_CORSO' && (
+                            <Badge className="bg-green-500/20 text-green-400 mt-2">Iscrizione Corso</Badge>
+                          )}
+                        </div>
+                      ))}
+                      {(!Array.isArray(messaggiEnti) || messaggiEnti.length === 0) && (
+                        <div className="text-center text-[#e8fbff]/50 py-8">
+                          <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                          <p>Nessun messaggio</p>
+                          <p className="text-xs mt-1">I messaggi inviati e ricevuti appariranno qui</p>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -5164,6 +5748,539 @@ export default function DashboardPA() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* CATALOGO SERVIZI ASSOCIAZIONI */}
+                <Card className="bg-[#1a2332] border-[#8b5cf6]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <Briefcase className="h-5 w-5 text-[#8b5cf6]" />
+                      Servizi Professionali
+                      {realData.bandiStats?.servizi && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
+                      <Badge className="bg-purple-500/20 text-purple-400 ml-2">Nuovo</Badge>
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      DURC, SCIA, Contabilità, Paghe, Consulenza - {realData.bandiStats?.servizi?.length || 0} servizi disponibili
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+                      {[
+                        { cat: 'REGOLARIZZAZIONE', nome: 'DURC', icona: Shield, colore: 'red' },
+                        { cat: 'PRATICHE', nome: 'SCIA & Pratiche', icona: FileText, colore: 'blue' },
+                        { cat: 'CONTABILITA', nome: 'Contabilità', icona: Calculator, colore: 'green' },
+                        { cat: 'PAGHE', nome: 'Paghe', icona: Users, colore: 'yellow' },
+                        { cat: 'CONSULENZA', nome: 'Consulenza', icona: Briefcase, colore: 'purple' },
+                        { cat: 'ASSOCIATIVO', nome: 'Associativo', icona: Award, colore: 'cyan' }
+                      ].map(({ cat, nome, icona: Icona, colore }) => {
+                        const count = (realData.bandiStats?.servizi || []).filter((s: any) => s.categoria === cat).length;
+                        return (
+                          <div key={cat} className={`bg-[#0b1220] p-3 rounded-lg border border-${colore}-500/20 text-center`}>
+                            <Icona className={`w-6 h-6 mx-auto mb-1 text-${colore}-400`} />
+                            <div className="text-lg font-bold text-white">{count}</div>
+                            <div className="text-xs text-[#e8fbff]/50">{nome}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
+                      {(realData.bandiStats?.servizi || []).slice(0, 12).map((servizio: any, idx: number) => (
+                        <div key={servizio.id || idx} className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg border border-[#8b5cf6]/10">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-[#e8fbff]">{servizio.nome}</span>
+                              <Badge className={`text-xs ${
+                                servizio.categoria === 'REGOLARIZZAZIONE' ? 'bg-red-500/20 text-red-400' :
+                                servizio.categoria === 'PRATICHE' ? 'bg-blue-500/20 text-blue-400' :
+                                servizio.categoria === 'CONTABILITA' ? 'bg-green-500/20 text-green-400' :
+                                servizio.categoria === 'PAGHE' ? 'bg-yellow-500/20 text-yellow-400' :
+                                servizio.categoria === 'CONSULENZA' ? 'bg-purple-500/20 text-purple-400' :
+                                'bg-cyan-500/20 text-cyan-400'
+                              }`}>
+                                {servizio.categoria}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-[#e8fbff]/50 mt-1">
+                              {servizio.associazione_nome || 'Tutte le associazioni'}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-[#10b981]">€{servizio.prezzo_associati || servizio.prezzo_base}</div>
+                            {servizio.prezzo_base !== servizio.prezzo_associati && (
+                              <div className="text-xs text-[#e8fbff]/30 line-through">€{servizio.prezzo_base}</div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* RICHIESTE SERVIZI DALLE IMPRESE */}
+                <Card className="bg-[#1a2332] border-[#f59e0b]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <ClipboardCheck className="h-5 w-5 text-[#f59e0b]" />
+                      Richieste Servizi
+                      {realData.bandiStats?.richieste && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
+                      <Badge className="bg-orange-500/20 text-orange-400 ml-2">Nuovo</Badge>
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Richieste dalle imprese - {realData.bandiStats?.richieste?.conteggi?.totale || 0} totali
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {/* KPI Richieste */}
+                    <div className="grid grid-cols-5 gap-3 mb-4">
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#f59e0b]/20 text-center">
+                        <div className="text-2xl font-bold text-[#f59e0b]">{realData.bandiStats?.richieste?.conteggi?.in_attesa || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">In Attesa</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#3b82f6]/20 text-center">
+                        <div className="text-2xl font-bold text-[#3b82f6]">{realData.bandiStats?.richieste?.conteggi?.in_lavorazione || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">In Lavorazione</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#10b981]/20 text-center">
+                        <div className="text-2xl font-bold text-[#10b981]">{realData.bandiStats?.richieste?.conteggi?.completate || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Completate</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#ef4444]/20 text-center">
+                        <div className="text-2xl font-bold text-[#ef4444]">{realData.bandiStats?.richieste?.conteggi?.urgenti || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Urgenti</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#e8fbff]/10 text-center">
+                        <div className="text-2xl font-bold text-[#e8fbff]">{realData.bandiStats?.richieste?.conteggi?.totale || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Totale</div>
+                      </div>
+                    </div>
+                    
+                    {/* Lista Richieste */}
+                    <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2">
+                      {(realData.bandiStats?.richieste?.richieste_recenti || []).map((item: any, idx: number) => (
+                        <div key={item.id || idx} className={`flex items-center justify-between p-3 rounded-lg border ${
+                          item.priorita === 'URGENTE' ? 'bg-red-500/10 border-red-500/30' :
+                          item.priorita === 'ALTA' ? 'bg-orange-500/10 border-orange-500/30' :
+                          item.stato === 'COMPLETATA' ? 'bg-green-500/10 border-green-500/30' :
+                          item.stato === 'IN_LAVORAZIONE' ? 'bg-blue-500/10 border-blue-500/30' :
+                          'bg-[#0b1220] border-[#e8fbff]/10'
+                        }`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-[#e8fbff]">{item.impresa_nome}</span>
+                              <Badge className={`text-xs ${
+                                item.stato === 'COMPLETATA' ? 'bg-green-500/20 text-green-400' :
+                                item.stato === 'IN_LAVORAZIONE' ? 'bg-blue-500/20 text-blue-400' :
+                                item.stato === 'ANNULLATA' ? 'bg-gray-500/20 text-gray-400' :
+                                'bg-orange-500/20 text-orange-400'
+                              }`}>
+                                {item.stato}
+                              </Badge>
+                              {item.priorita === 'URGENTE' && (
+                                <Badge className="bg-red-500/20 text-red-400 text-xs">URGENTE</Badge>
+                              )}
+                              {item.priorita === 'ALTA' && (
+                                <Badge className="bg-orange-500/20 text-orange-400 text-xs">ALTA</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-[#e8fbff]/60 mt-1">
+                              <span className="text-[#8b5cf6]">{item.servizio_nome}</span>
+                              <span className="ml-2 text-[#e8fbff]/40">({item.servizio_categoria})</span>
+                            </div>
+                            {item.operatore_assegnato && (
+                              <div className="text-xs text-[#e8fbff]/40 mt-1">
+                                Operatore: {item.operatore_assegnato}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-[#e8fbff]/50">
+                              {item.data_richiesta ? new Date(item.data_richiesta).toLocaleDateString('it-IT') : '-'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {(!realData.bandiStats?.richieste?.richieste_recenti || realData.bandiStats.richieste.richieste_recenti.length === 0) && (
+                        <div className="text-center text-[#e8fbff]/50 py-8">
+                          <ClipboardCheck className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                          <p>Nessuna richiesta registrata</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* IMPRESE CON PROBLEMI DI REGOLARITÀ */}
+                <Card className="bg-[#1a2332] border-[#ef4444]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-[#ef4444]" />
+                      Imprese con Problemi di Regolarità
+                      {realData.bandiStats?.regolarita && <span className="text-xs text-[#10b981] ml-2">● Live</span>}
+                      <Badge className="bg-red-500/20 text-red-400 ml-2">Attenzione</Badge>
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      DURC irregolare, SCIA scaduta, Autorizzazioni mancanti
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {/* KPI Regolarità */}
+                    <div className="grid grid-cols-5 gap-3 mb-4">
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#ef4444]/20 text-center">
+                        <div className="text-2xl font-bold text-[#ef4444]">{realData.bandiStats?.regolarita?.conteggi?.irregolari || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Irregolari</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#f59e0b]/20 text-center">
+                        <div className="text-2xl font-bold text-[#f59e0b]">{realData.bandiStats?.regolarita?.conteggi?.scaduti || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Scaduti</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-yellow-500/20 text-center">
+                        <div className="text-2xl font-bold text-yellow-400">{realData.bandiStats?.regolarita?.conteggi?.in_scadenza || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">In Scadenza</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#8b5cf6]/20 text-center">
+                        <div className="text-2xl font-bold text-[#8b5cf6]">{realData.bandiStats?.regolarita?.conteggi?.da_verificare || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Da Verificare</div>
+                      </div>
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-[#10b981]/20 text-center">
+                        <div className="text-2xl font-bold text-[#10b981]">{realData.bandiStats?.regolarita?.conteggi?.regolari || 0}</div>
+                        <div className="text-xs text-[#e8fbff]/50">Regolari</div>
+                      </div>
+                    </div>
+
+                    {/* Conteggi per Tipo */}
+                    <div className="grid grid-cols-5 gap-2 mb-4">
+                      {(realData.bandiStats?.regolarita?.per_tipo || []).map((tipo: any) => (
+                        <div key={tipo.tipo} className="bg-[#0b1220] p-2 rounded border border-[#e8fbff]/10 text-center">
+                          <div className="text-xs text-[#e8fbff]/50">{tipo.tipo}</div>
+                          <div className="text-sm font-bold text-white">{tipo.totale}</div>
+                          {tipo.problematici > 0 && (
+                            <div className="text-xs text-[#ef4444]">{tipo.problematici} problemi</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Lista Imprese Problematiche */}
+                    <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
+                      {(realData.bandiStats?.regolarita?.imprese_problematiche || []).map((item: any, idx: number) => (
+                        <div key={item.id || idx} className={`flex items-center justify-between p-3 rounded-lg border ${
+                          item.stato === 'IRREGOLARE' ? 'bg-red-500/10 border-red-500/30' :
+                          item.stato === 'SCADUTO' ? 'bg-orange-500/10 border-orange-500/30' :
+                          item.stato === 'IN_SCADENZA' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                          'bg-purple-500/10 border-purple-500/30'
+                        }`}>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-[#e8fbff]">{item.impresa_nome}</span>
+                              <Badge className={`text-xs ${
+                                item.stato === 'IRREGOLARE' ? 'bg-red-500/20 text-red-400' :
+                                item.stato === 'SCADUTO' ? 'bg-orange-500/20 text-orange-400' :
+                                item.stato === 'IN_SCADENZA' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-purple-500/20 text-purple-400'
+                              }`}>
+                                {item.stato}
+                              </Badge>
+                              <Badge className="bg-[#e8fbff]/10 text-[#e8fbff]/70 text-xs">
+                                {item.tipo}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-[#e8fbff]/60 mt-1">
+                              {item.impresa_piva && <span>P.IVA: {item.impresa_piva}</span>}
+                              {item.impresa_comune && <span className="ml-2">• {item.impresa_comune}</span>}
+                            </div>
+                            {item.note && (
+                              <div className="text-xs text-[#e8fbff]/40 mt-1">
+                                {item.note}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            {item.data_scadenza && (
+                              <div className={`text-sm font-bold ${
+                                item.giorni_rimanenti < 0 ? 'text-[#ef4444]' :
+                                item.giorni_rimanenti <= 30 ? 'text-[#f59e0b]' :
+                                'text-yellow-400'
+                              }`}>
+                                {item.giorni_rimanenti < 0 
+                                  ? `Scaduto da ${Math.abs(item.giorni_rimanenti)} gg`
+                                  : `${item.giorni_rimanenti} gg`
+                                }
+                              </div>
+                            )}
+                            <div className="text-xs text-[#e8fbff]/50">
+                              {item.data_scadenza ? new Date(item.data_scadenza).toLocaleDateString('it-IT') : 'N/D'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {(!realData.bandiStats?.regolarita?.imprese_problematiche || realData.bandiStats.regolarita.imprese_problematiche.length === 0) && (
+                        <div className="text-center text-[#e8fbff]/50 py-8">
+                          <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-30 text-[#10b981]" />
+                          <p>Tutte le imprese sono in regola!</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Form Invio Notifiche Associazioni */}
+                <Card className="bg-[#1a2332] border-[#10b981]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-[#10b981]" />
+                      Invia Notifica alle Imprese
+                      {notificheNonLette > 0 && (
+                        <Badge className="bg-red-500 text-white ml-2 animate-pulse">{notificheNonLette} nuove</Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Invia comunicazioni su bandi, servizi o avvisi importanti
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.target as HTMLFormElement;
+                      const formData = new FormData(form);
+                      const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+                      
+                      setInvioNotificaLoading(true);
+                      try {
+                        const targetTipo = formData.get('target_tipo');
+                        const targetId = formData.get('target_id');
+                        let targetNome = null;
+                        
+                        if (targetTipo === 'MERCATO' && targetId) {
+                          const mercato = mercatiList.find(m => m.id === parseInt(targetId as string));
+                          targetNome = mercato?.name || mercato?.nome;
+                        } else if (targetTipo === 'HUB' && targetId) {
+                          const hub = hubList.find(h => h.hub_id === parseInt(targetId as string));
+                          targetNome = hub?.comune_nome;
+                        } else if (targetTipo === 'IMPRESA' && targetId) {
+                          const impresa = impreseList.find(i => i.id === parseInt(targetId as string));
+                          targetNome = impresa?.denominazione;
+                        }
+                        
+                        const response = await fetch(`${MIHUB_API}/notifiche/send`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            mittente_id: ASSOCIAZIONE_ID,
+                            mittente_tipo: 'ASSOCIAZIONE',
+                            mittente_nome: 'Associazione di Categoria',
+                            titolo: formData.get('titolo'),
+                            messaggio: formData.get('messaggio'),
+                            tipo_messaggio: formData.get('tipo_messaggio'),
+                            target_tipo: targetTipo,
+                            target_id: targetId || null,
+                            target_nome: targetNome
+                          })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          alert(`✅ Notifica inviata con successo a ${data.data.destinatari_count} destinatari!`);
+                          form.reset();
+                        } else {
+                          alert('❌ Errore: ' + data.error);
+                        }
+                      } catch (err) {
+                        alert('❌ Errore invio notifica');
+                      } finally {
+                        setInvioNotificaLoading(false);
+                      }
+                    }} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-[#e8fbff]/70 mb-1">Destinatari</label>
+                          <select name="target_tipo" id="assoc_target_tipo" className="w-full bg-[#0b1220] border border-[#10b981]/30 rounded-lg p-2 text-[#e8fbff]" required
+                            onChange={(e) => {
+                              const targetIdSelect = document.getElementById('assoc_target_id') as HTMLSelectElement;
+                              const targetIdContainer = document.getElementById('assoc_target_id_container');
+                              if (targetIdContainer) {
+                                targetIdContainer.style.display = ['MERCATO', 'HUB', 'IMPRESA'].includes(e.target.value) ? 'block' : 'none';
+                              }
+                              if (targetIdSelect) {
+                                targetIdSelect.innerHTML = '<option value="">Seleziona...</option>';
+                                if (e.target.value === 'MERCATO') {
+                                  (mercatiList || []).forEach(m => {
+                                    const opt = document.createElement('option');
+                                    opt.value = m.id;
+                                    opt.textContent = m.name || m.nome;
+                                    targetIdSelect.appendChild(opt);
+                                  });
+                                } else if (e.target.value === 'HUB') {
+                                  (hubList || []).forEach(h => {
+                                    const opt = document.createElement('option');
+                                    opt.value = h.hub_id;
+                                    opt.textContent = h.comune_nome;
+                                    targetIdSelect.appendChild(opt);
+                                  });
+                                } else if (e.target.value === 'IMPRESA') {
+                                  (impreseList || []).forEach(i => {
+                                    const opt = document.createElement('option');
+                                    opt.value = i.id;
+                                    opt.textContent = i.denominazione;
+                                    targetIdSelect.appendChild(opt);
+                                  });
+                                }
+                              }
+                            }}>
+                            <option value="TUTTI">Tutte le Imprese</option>
+                            <option value="MERCATO">Imprese del Mercato...</option>
+                            <option value="HUB">Negozi dell'HUB...</option>
+                            <option value="IMPRESA">Impresa Singola...</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-[#e8fbff]/70 mb-1">Tipo Messaggio</label>
+                          <select name="tipo_messaggio" className="w-full bg-[#0b1220] border border-[#10b981]/30 rounded-lg p-2 text-[#e8fbff]" required>
+                            <option value="INFORMATIVA">Informativa</option>
+                            <option value="PROMOZIONALE">Promozionale (Bandi/Servizi)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div id="assoc_target_id_container" style={{ display: 'none' }}>
+                        <label className="block text-sm text-[#e8fbff]/70 mb-1">Seleziona Destinatario Specifico</label>
+                        <select name="target_id" id="assoc_target_id" className="w-full bg-[#0b1220] border border-[#10b981]/30 rounded-lg p-2 text-[#e8fbff]">
+                          <option value="">Seleziona...</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#e8fbff]/70 mb-1">Titolo</label>
+                        <input type="text" name="titolo" placeholder="Es: Nuovo bando contributi digitalizzazione" 
+                          className="w-full bg-[#0b1220] border border-[#10b981]/30 rounded-lg p-2 text-[#e8fbff]" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-[#e8fbff]/70 mb-1">Messaggio</label>
+                        <textarea name="messaggio" rows={4} placeholder="Scrivi il messaggio da inviare alle imprese..."
+                          className="w-full bg-[#0b1220] border border-[#10b981]/30 rounded-lg p-2 text-[#e8fbff]" required />
+                      </div>
+                      <div className="flex justify-end">
+                        <button type="submit" disabled={invioNotificaLoading}
+                          className="px-6 py-3 bg-gradient-to-r from-[#10b981] to-[#3b82f6] rounded-lg text-white font-medium hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50">
+                          {invioNotificaLoading ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              Invio in corso...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4" />
+                              Invia Notifica
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                {/* Lista Messaggi Unificata - Associazioni */}
+                <Card className="bg-[#1a2332] border-[#10b981]/20">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5 text-[#10b981]" />
+                        Messaggi
+                        {nonLetteAssoc > 0 && (
+                          <Badge className="bg-red-500 text-white ml-2">
+                            {nonLetteAssoc} da leggere
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      {/* Filtro Messaggi */}
+                      <div className="flex gap-2">
+                        <button onClick={() => setFiltroMessaggiAssoc('tutti')}
+                          className={`px-3 py-1 rounded text-sm ${filtroMessaggiAssoc === 'tutti' ? 'bg-emerald-500 text-white' : 'bg-[#0b1220] text-[#e8fbff]/70'}`}>
+                          Tutti
+                        </button>
+                        <button onClick={() => setFiltroMessaggiAssoc('inviati')}
+                          className={`px-3 py-1 rounded text-sm ${filtroMessaggiAssoc === 'inviati' ? 'bg-emerald-500 text-white' : 'bg-[#0b1220] text-[#e8fbff]/70'}`}>
+                          Inviati
+                        </button>
+                        <button onClick={() => setFiltroMessaggiAssoc('ricevuti')}
+                          className={`px-3 py-1 rounded text-sm ${filtroMessaggiAssoc === 'ricevuti' ? 'bg-emerald-500 text-white' : 'bg-[#0b1220] text-[#e8fbff]/70'}`}>
+                          Ricevuti
+                        </button>
+                      </div>
+                    </div>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Storico messaggi inviati e ricevuti
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-[500px] overflow-y-auto space-y-3">
+                      {Array.isArray(messaggiAssociazioni) && messaggiAssociazioni.slice(0, 20).map((msg: any, idx: number) => (
+                        <div key={idx} 
+                          onClick={() => msg.direzione === 'RICEVUTO' && msg.non_letti > 0 && segnaMessaggioLetto(msg.id, ASSOCIAZIONE_ID, 'ASSOCIAZIONE')}
+                          className={`p-3 rounded-lg border cursor-pointer transition-all hover:border-emerald-400/50 ${
+                            msg.direzione === 'INVIATO' 
+                              ? 'bg-[#0b1220] border-[#10b981]/20' 
+                              : msg.non_letti > 0 
+                                ? 'bg-emerald-500/10 border-emerald-500/30' 
+                                : 'bg-[#0b1220] border-[#10b981]/20'
+                          }`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              {/* Icona busta aperta/chiusa */}
+                              {msg.direzione === 'INVIATO' ? (
+                                <Send className="w-4 h-4 text-emerald-400" />
+                              ) : msg.non_letti > 0 ? (
+                                <Mail className="w-4 h-4 text-amber-400" />
+                              ) : (
+                                <MailOpen className="w-4 h-4 text-green-400" />
+                              )}
+                              <span className="text-[#e8fbff] font-medium">
+                                {msg.direzione === 'INVIATO' ? `A: ${msg.target_nome || msg.target_tipo}` : msg.mittente_nome || 'Impresa'}
+                              </span>
+                              {/* Badge direzione */}
+                              <Badge className={msg.direzione === 'INVIATO' ? 'bg-emerald-500/20 text-emerald-400 text-xs' : 'bg-amber-500/20 text-amber-400 text-xs'}>
+                                {msg.direzione === 'INVIATO' ? 'Inviato' : 'Ricevuto'}
+                              </Badge>
+                              {msg.direzione === 'RICEVUTO' && msg.non_letti > 0 && (
+                                <Badge className="bg-red-500 text-white text-xs">Nuovo</Badge>
+                              )}
+                            </div>
+                            <span className="text-xs text-[#e8fbff]/50">
+                              {new Date(msg.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-[#e8fbff]/80">{msg.titolo}</p>
+                          <p className="text-xs text-[#e8fbff]/60 mt-1 line-clamp-2">{msg.messaggio}</p>
+                          {/* Tracking letture per invii di gruppo */}
+                          {msg.direzione === 'INVIATO' && msg.totale_destinatari > 1 && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-[#e8fbff]/50">Inviato a {msg.totale_destinatari} imprese</span>
+                              <div className="flex items-center gap-1">
+                                <span className={`w-2 h-2 rounded-full ${msg.letti > 0 ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                <span className="text-xs text-[#e8fbff]/70">{msg.letti}/{msg.totale_destinatari} letti</span>
+                              </div>
+                            </div>
+                          )}
+                          {/* Semaforo lettura per invio singolo */}
+                          {msg.direzione === 'INVIATO' && msg.totale_destinatari === 1 && (
+                            <div className="flex items-center gap-1 mt-2">
+                              <span className={`w-2 h-2 rounded-full ${msg.letti > 0 ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                              <span className="text-xs text-[#e8fbff]/50">{msg.letti > 0 ? 'Letto' : 'Non letto'}</span>
+                            </div>
+                          )}
+                          {msg.tipo_messaggio === 'RICHIESTA_APPUNTAMENTO' && (
+                            <Badge className="bg-amber-500/20 text-amber-400 mt-2">Richiesta Appuntamento</Badge>
+                          )}
+                          {msg.tipo_messaggio === 'ISCRIZIONE_CORSO' && (
+                            <Badge className="bg-green-500/20 text-green-400 mt-2">Iscrizione Corso</Badge>
+                          )}
+                        </div>
+                      ))}
+                      {(!Array.isArray(messaggiAssociazioni) || messaggiAssociazioni.length === 0) && (
+                        <div className="text-center text-[#e8fbff]/50 py-8">
+                          <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                          <p>Nessun messaggio</p>
+                          <p className="text-xs mt-1">I messaggi inviati e ricevuti appariranno qui</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -5218,7 +6335,7 @@ export default function DashboardPA() {
                       {/* Area messaggi */}
                       <div className="relative">
                         <div ref={mioMessagesRef} className="h-96 bg-[#0a0f1a] rounded-lg p-4 overflow-y-scroll space-y-3 chat-messages-container">
-                        {mioMessages.length === 0 ? (
+                        {(!mioMessages || mioMessages.length === 0) ? (
                           <p className="text-[#e8fbff]/50 text-center text-sm">Nessun messaggio</p>
                         ) : (
                           mioMessages.map((msg) => (
@@ -5494,7 +6611,7 @@ export default function DashboardPA() {
                           )}
                           
                           {/* Messaggi GPT Developer */}
-                          {selectedAgent === 'gptdev' && gptdevMessages.map((msg, idx) => (
+                          {selectedAgent === 'gptdev' && (gptdevMessages || []).map((msg, idx) => (
                             <div key={idx} className={`mb-3 ${msg.role === 'user' ? 'ml-8' : 'mr-8'}`}>
                               <div className={`p-3 rounded-lg ${
                                 msg.role === 'user' 
@@ -5515,7 +6632,7 @@ export default function DashboardPA() {
                           ))}
                           
                           {/* Messaggi Manus */}
-                          {selectedAgent === 'manus' && manusMessages.map((msg, idx) => (
+                          {selectedAgent === 'manus' && (manusMessages || []).map((msg, idx) => (
                             <div key={idx} className={`mb-3 ${msg.role === 'user' ? 'ml-8' : 'mr-8'}`}>
                               <div className={`p-3 rounded-lg ${
                                 msg.role === 'user' 
@@ -5536,7 +6653,7 @@ export default function DashboardPA() {
                           ))}
                           
                           {/* Messaggi Abacus */}
-                          {selectedAgent === 'abacus' && abacusMessages.map((msg, idx) => (
+                          {selectedAgent === 'abacus' && (abacusMessages || []).map((msg, idx) => (
                             <div key={idx} className={`mb-3 ${msg.role === 'user' ? 'ml-8' : 'mr-8'}`}>
                               <div className={`p-3 rounded-lg ${
                                 msg.role === 'user' 
@@ -5557,7 +6674,7 @@ export default function DashboardPA() {
                           ))}
                           
                           {/* Messaggi Zapier */}
-                          {selectedAgent === 'zapier' && zapierMessages.map((msg, idx) => (
+                          {selectedAgent === 'zapier' && (zapierMessages || []).map((msg, idx) => (
                             <div key={idx} className={`mb-3 ${msg.role === 'user' ? 'ml-8' : 'mr-8'}`}>
                               <div className={`p-3 rounded-lg ${
                                 msg.role === 'user' 
@@ -5780,7 +6897,7 @@ export default function DashboardPA() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {guardianLogs
+                  {(guardianLogs || [])
                     .filter(log => {
                       // Vista 4 agenti: mostra tutti gli agenti (mio, gptdev, manus, abacus, zapier)
                       if (viewMode === 'quad') {
@@ -5977,7 +7094,7 @@ export default function DashboardPA() {
                       center={gisMapCenter}
                       zoom={17}
                       height="100%"
-                      stallsData={filteredGisStalls.map(s => ({
+                      stallsData={(filteredGisStalls || []).map(s => ({
                         id: s.id,
                         number: s.number,
                         status: s.status,
@@ -6172,7 +7289,7 @@ function LogsSection() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {systemLogs.map((log) => (
+                {(systemLogs || []).map((log) => (
                   <div
                     key={log.id}
                     className="p-3 rounded-lg border bg-[#0b1220] border-[#14b8a6]/20"
@@ -6395,7 +7512,7 @@ function LogsSection() {
                       center={gisMapCenter}
                       zoom={17}
                       height="100%"
-                      stallsData={filteredGisStalls.map(s => ({
+                      stallsData={(filteredGisStalls || []).map(s => ({
                         id: s.id,
                         number: s.number,
                         status: s.status,
