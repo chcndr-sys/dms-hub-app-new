@@ -43,6 +43,7 @@ import SecurityTab from '@/components/SecurityTab';
 import ClientiTab from '@/components/ClientiTab';
 import GestioneHubPanel from '@/components/GestioneHubPanel';
 import { BusHubEditor } from '@/components/bus-hub';
+import { ProtectedTab, ProtectedQuickAccess } from '@/components/ProtectedTab';
 import { MessageContent } from '@/components/MessageContent';
 import { callOrchestrator } from '@/api/orchestratorClient';
 import { sendAgentMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient';
@@ -2123,6 +2124,7 @@ export default function DashboardPA() {
               <span className="text-xs font-medium">Real-time</span>
             </button>
             {!isImpersonating && (
+            <ProtectedTab tabId="sistema">
             <button
               onClick={() => setActiveTab('sistema')}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
@@ -2134,6 +2136,7 @@ export default function DashboardPA() {
               <Terminal className="h-6 w-6" />
               <span className="text-xs font-medium">Sistema</span>
             </button>
+            </ProtectedTab>
             )}
             <button
               onClick={() => setActiveTab('ai')}
@@ -2147,6 +2150,7 @@ export default function DashboardPA() {
               <span className="text-xs font-medium">Agente AI</span>
             </button>
             {!isImpersonating && (
+            <ProtectedTab tabId="security">
             <button
               onClick={() => setActiveTab('security')}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
@@ -2158,6 +2162,7 @@ export default function DashboardPA() {
               <Shield className="h-6 w-6" />
               <span className="text-xs font-medium">Sicurezza</span>
             </button>
+            </ProtectedTab>
             )}
             <button
               onClick={() => setActiveTab('ssosuap')}
@@ -2193,6 +2198,7 @@ export default function DashboardPA() {
               <span className="text-xs font-medium">Segnalazioni & IoT</span>
             </button>
             {!isImpersonating && (
+            <ProtectedTab tabId="comuni">
             <button
               onClick={() => setActiveTab('comuni')}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
@@ -2204,6 +2210,7 @@ export default function DashboardPA() {
               <Building2 className="h-6 w-6" />
               <span className="text-xs font-medium">Comuni</span>
             </button>
+            </ProtectedTab>
             )}
             <button
               onClick={() => setActiveTab('inspections')}
@@ -2239,6 +2246,7 @@ export default function DashboardPA() {
               <span className="text-xs font-medium">Centro Mobilità</span>
             </button>
             {!isImpersonating && (
+            <ProtectedTab tabId="reports">
             <button
               onClick={() => setActiveTab('reports')}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
@@ -2250,8 +2258,10 @@ export default function DashboardPA() {
               <FileBarChart className="h-6 w-6" />
               <span className="text-xs font-medium">Report</span>
             </button>
+            </ProtectedTab>
             )}
             {!isImpersonating && (
+            <ProtectedTab tabId="integrations">
             <button
               onClick={() => setActiveTab('integrations')}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
@@ -2263,8 +2273,10 @@ export default function DashboardPA() {
               <Plug className="h-6 w-6" />
               <span className="text-xs font-medium">Integrazioni</span>
             </button>
+            </ProtectedTab>
             )}
             {!isImpersonating && (
+            <ProtectedTab tabId="settings">
             <button
               onClick={() => setActiveTab('settings')}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
@@ -2276,6 +2288,7 @@ export default function DashboardPA() {
               <SettingsIcon className="h-6 w-6" />
               <span className="text-xs font-medium">Impostazioni</span>
             </button>
+            </ProtectedTab>
             )}
             <button
               onClick={() => setActiveTab('mercati')}
