@@ -2995,29 +2995,39 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               {/* Contenuto Vista Concessione */}
               {sidebarView === 'concessione' && sidebarConcessionData && (
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {/* Dati Concessione */}
+                  {/* Frontespizio */}
                   <div className="bg-[#0d1829] rounded-lg p-3 border border-[#14b8a6]/20">
                     <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
-                      <FileText className="h-4 w-4" /> Dati Concessione
+                      <FileText className="h-4 w-4" /> Frontespizio
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">Tipo</span>
-                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.tipo_concessione || '-'}</p>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">N. Protocollo</span>
+                        <p className="text-[#e8fbff] text-sm">#{sidebarConcessionData.id || sidebarConcessionData.numero_protocollo || '-'}</p>
                       </div>
                       <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">Stato</span>
-                        <Badge className={sidebarConcessionData.stato === 'ATTIVA' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}>
-                          {sidebarConcessionData.stato || 'N/A'}
-                        </Badge>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Data Protocollazione</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.data_protocollazione ? new Date(sidebarConcessionData.data_protocollazione).toLocaleDateString('it-IT') : (sidebarConcessionData.valid_from ? new Date(sidebarConcessionData.valid_from).toLocaleDateString('it-IT') : '-')}</p>
                       </div>
                       <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">Valida Dal</span>
-                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.valid_from ? new Date(sidebarConcessionData.valid_from).toLocaleDateString('it-IT') : '-'}</p>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Comune Rilascio</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.comune_rilascio || sidebarConcessionData.ubicazione || '-'}</p>
                       </div>
                       <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">Valida Al</span>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Durata</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.durata_anni ? `${sidebarConcessionData.durata_anni} anni` : '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Data Decorrenza</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.data_decorrenza ? new Date(sidebarConcessionData.data_decorrenza).toLocaleDateString('it-IT') : (sidebarConcessionData.valid_from ? new Date(sidebarConcessionData.valid_from).toLocaleDateString('it-IT') : '-')}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Scadenza</span>
                         <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.valid_to ? new Date(sidebarConcessionData.valid_to).toLocaleDateString('it-IT') : '-'}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Oggetto</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.oggetto || '-'}</p>
                       </div>
                     </div>
                   </div>
@@ -3027,10 +3037,18 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
                       <User className="h-4 w-4" /> Concessionario
                     </h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="col-span-2">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
                         <span className="text-xs text-[#e8fbff]/50 uppercase">Ragione Sociale</span>
                         <p className="text-[#e8fbff] font-semibold text-sm">{sidebarConcessionData.ragione_sociale || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Partita IVA</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.partita_iva || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Codice Fiscale</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.cf_concessionario || '-'}</p>
                       </div>
                       <div>
                         <span className="text-xs text-[#e8fbff]/50 uppercase">Nome</span>
@@ -3041,14 +3059,10 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                         <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.cognome || '-'}</p>
                       </div>
                       <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">Partita IVA</span>
-                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.partita_iva || '-'}</p>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Settore Merceologico</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.settore_merceologico || '-'}</p>
                       </div>
-                      <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">Codice Fiscale</span>
-                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.cf_concessionario || '-'}</p>
-                      </div>
-                      <div className="col-span-2">
+                      <div className="col-span-3">
                         <span className="text-xs text-[#e8fbff]/50 uppercase">Sede Legale</span>
                         <p className="text-[#e8fbff] text-sm">
                           {[sidebarConcessionData.sede_legale_via, sidebarConcessionData.sede_legale_cap, sidebarConcessionData.sede_legale_comune, sidebarConcessionData.sede_legale_provincia].filter(Boolean).join(', ') || '-'}
@@ -3062,13 +3076,13 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
                       <MapPin className="h-4 w-4" /> Dati Posteggio e Mercato
                     </h4>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-4 gap-3">
                       <div>
                         <span className="text-xs text-[#e8fbff]/50 uppercase">Mercato</span>
                         <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.market_name || '-'}</p>
                       </div>
                       <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">Posteggio</span>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Numero Posteggio</span>
                         <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.stall_code || sidebarConcessionData.stall_number || '-'}</p>
                       </div>
                       <div>
@@ -3076,29 +3090,33 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                         <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.ubicazione || '-'}</p>
                       </div>
                       <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">Giorno</span>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Giorno Mercato</span>
                         <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.giorno || '-'}</p>
                       </div>
                       <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">MQ</span>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Fila</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.fila || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Dimensioni (MQ)</span>
                         <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.mq || '-'}</p>
                       </div>
                       <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">Dimensioni</span>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Dimensioni Lineari</span>
                         <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.dimensioni_lineari || '-'}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Dati Economici */}
+                  {/* Dati Economici e Attrezzature */}
                   <div className="bg-[#0d1829] rounded-lg p-3 border border-[#14b8a6]/20">
                     <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
-                      <Building2 className="h-4 w-4" /> Dati Economici
+                      <Building2 className="h-4 w-4" /> Dati Economici e Attrezzature
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <span className="text-xs text-[#e8fbff]/50 uppercase">Canone Unico</span>
-                        <p className={`font-semibold text-sm ${parseFloat(sidebarConcessionData.canone_unico || '0') > 0 ? 'text-red-400' : 'text-[#e8fbff]'}`}>
+                        <p className="font-semibold text-sm text-[#14b8a6]">
                           € {parseFloat(sidebarConcessionData.canone_unico || '0').toLocaleString('it-IT', {minimumFractionDigits: 2})}
                         </p>
                       </div>
@@ -3126,7 +3144,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                         </p>
                       </div>
                       <div>
-                        <span className="text-xs text-[#e8fbff]/50 uppercase">Stato</span>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Stato Wallet</span>
                         <p className={`text-sm ${sidebarConcessionData.wallet_status === 'ACTIVE' ? 'text-green-400' : 'text-yellow-400'}`}>
                           {sidebarConcessionData.wallet_status === 'ACTIVE' ? '✓ Attivo' : sidebarConcessionData.wallet_status || '-'}
                         </p>
@@ -3139,7 +3157,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     <h4 className="text-[#14b8a6] font-semibold mb-3 flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4" /> Requisiti e Documentazione
                     </h4>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-4 gap-3">
                       <div>
                         <span className="text-xs text-[#e8fbff]/50 uppercase">DURC Valido</span>
                         <p className={`text-sm ${sidebarConcessionData.durc_scadenza_qualifica ? (new Date(sidebarConcessionData.durc_scadenza_qualifica) > new Date() ? 'text-green-400' : 'text-yellow-400') : 'text-red-400'}`}>
