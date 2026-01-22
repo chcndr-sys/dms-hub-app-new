@@ -1315,6 +1315,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   const [selectedConcessionForModal, setSelectedConcessionForModal] = useState<any>(null);
   const [sidebarView, setSidebarView] = useState<'impresa' | 'concessione'>('impresa');
   const [sidebarConcessionData, setSidebarConcessionData] = useState<any>(null);
+  const [sidebarCompanyData, setSidebarCompanyData] = useState<any>(null);
+  const [sidebarCompanyLoading, setSidebarCompanyLoading] = useState(false);
   const listContainerRef = React.useRef<HTMLDivElement>(null);
   
   // Nuovi state per presenze e graduatoria (integrazione lista unificata)
@@ -1353,6 +1355,47 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       loadConcessionData();
     }
   }, [selectedStallId, stalls]);
+
+  // Carica dati impresa quando viene selezionato un posteggio
+  useEffect(() => {
+    const loadCompanyData = async () => {
+      const stall = stalls.find(s => s.id === selectedStallId);
+      const companyId = stall?.impresa_id || stall?.vendor_id || concessionsByStallId[stall?.number || '']?.companyId;
+      
+      if (companyId) {
+        setSidebarCompanyLoading(true);
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/imprese/${companyId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data) {
+              setSidebarCompanyData({
+                id: data.data.id,
+                code: data.data.codice_fiscale || data.data.code,
+                denominazione: data.data.denominazione,
+                partita_iva: data.data.partita_iva,
+                referente: data.data.referente || data.data.email,
+                telefono: data.data.telefono,
+                stato: data.data.stato || 'active',
+                ...data.data
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error loading company:', error);
+        } finally {
+          setSidebarCompanyLoading(false);
+        }
+      } else {
+        setSidebarCompanyData(null);
+      }
+    };
+    if (selectedStallId) {
+      loadCompanyData();
+    } else {
+      setSidebarCompanyData(null);
+    }
+  }, [selectedStallId, stalls, concessionsByStallId]);
 
   const fetchData = async () => {
     try {
@@ -2905,58 +2948,35 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 </div>
               )}
               
-              {/* Contenuto Vista Impresa */}
+              {/* Contenuto Vista Impresa - Mostra CompanyModal inline */}
               {sidebarView === 'impresa' && (
                 <>
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {/* Nome Impresa */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Building2 className="h-4 w-4 text-[#14b8a6]" />
-                        <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Impresa</span>
-                      </div>
-                      <p className="text-[#e8fbff] font-semibold">
-                        {concessionsByStallId[selectedStall.number]?.companyName || selectedStall.vendor_business_name || 'N/A'}
+                  {sidebarCompanyLoading ? (
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14b8a6]"></div>
+                    </div>
+                  ) : sidebarCompanyData ? (
+                    <CompanyModal
+                      marketId={marketCode}
+                      company={sidebarCompanyData}
+                      inline={true}
+                      onClose={() => {
+                        setSelectedStallId(null);
+                        setSidebarCompanyData(null);
+                      }}
+                      onSaved={() => {
+                        fetchData();
+                        toast.success('Impresa aggiornata con successo');
+                      }}
+                    />
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+                      <Building2 className="h-12 w-12 text-[#14b8a6]/30 mb-4" />
+                      <p className="text-[#e8fbff]/50 text-sm">
+                        Nessun dato impresa disponibile
                       </p>
                     </div>
-
-                    {/* Tipo Concessione */}
-                    {concessionsByStallId[selectedStall.number]?.tipoConcessione && (
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <FileText className="h-4 w-4 text-[#8b5cf6]" />
-                          <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Concessione</span>
-                        </div>
-                        <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
-                          {concessionsByStallId[selectedStall.number].tipoConcessione}
-                        </Badge>
-                      </div>
-                    )}
-
-                    {/* Referente */}
-                    {selectedStall.vendor_contact_name && (
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <User className="h-4 w-4 text-[#f59e0b]" />
-                          <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Referente</span>
-                        </div>
-                        <p className="text-[#e8fbff] text-sm">{selectedStall.vendor_contact_name}</p>
-                      </div>
-                    )}
-
-                    {/* Tipo Posteggio */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <MapPin className="h-4 w-4 text-[#8b5cf6]" />
-                        <span className="text-xs text-[#e8fbff]/50 uppercase tracking-wide">Tipo Posteggio</span>
-                      </div>
-                      <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30">
-                        {selectedStall.type}
-                      </Badge>
-                    </div>
-                  </div>
-
-
+                  )}
                 </>
               )}
 
