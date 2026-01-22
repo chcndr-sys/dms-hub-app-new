@@ -67,10 +67,12 @@ interface Impresa {
 interface ConcessioneFormProps {
   onCancel: () => void;
   onSubmit: (data: any) => void;
-  initialData?: any; // Dati pre-compilati da SCIA
+  initialData?: any; // Dati pre-compilati da SCIA o concessione esistente
+  mode?: 'create' | 'edit'; // Modalità: create (default) o edit
+  concessioneId?: number; // ID concessione per modalità edit
 }
 
-export default function ConcessioneForm({ onCancel, onSubmit, initialData }: ConcessioneFormProps) {
+export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode = 'create', concessioneId }: ConcessioneFormProps) {
   // Stati per dati dal database
   const [markets, setMarkets] = useState<Market[]>([]);
   const [stalls, setStalls] = useState<Stall[]>([]);
@@ -636,8 +638,16 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
         scia_id: initialData?.scia_id || null
       };
       
-      const response = await fetch(`${API_URL}/api/concessions`, {
-        method: 'POST',
+      // In modalità edit usa PUT, altrimenti POST
+      const isEditMode = mode === 'edit' && (concessioneId || initialData?.id);
+      const editId = concessioneId || initialData?.id;
+      
+      const url = isEditMode 
+        ? `${API_URL}/api/concessions/${editId}`
+        : `${API_URL}/api/concessions`;
+      
+      const response = await fetch(url, {
+        method: isEditMode ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -647,7 +657,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
       const result = await response.json();
       
       if (result.success) {
-        toast.success('Concessione salvata con successo!');
+        toast.success(isEditMode ? 'Concessione aggiornata con successo!' : 'Concessione creata con successo!');
         onSubmit(result.data);
       } else {
         // Gestione errori specifici
@@ -686,10 +696,10 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
       <CardHeader>
         <CardTitle className="text-[#e8fbff] flex items-center gap-2">
           <FileText className="text-[#00f0ff]" />
-          Generazione Atto di Concessione
+          {mode === 'edit' ? 'Modifica Concessione' : 'Generazione Atto di Concessione'}
         </CardTitle>
         <CardDescription className="text-[#e8fbff]/60">
-          Frontespizio Documento Informatico e Concessione
+          {mode === 'edit' ? `Modifica concessione #${concessioneId || initialData?.id}` : 'Frontespizio Documento Informatico e Concessione'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -1413,6 +1423,8 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
             <Button type="submit" className="bg-[#00f0ff] text-black hover:bg-[#00f0ff]/90" disabled={saving}>
               {saving ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvataggio...</>
+              ) : mode === 'edit' ? (
+                <><Printer className="mr-2 h-4 w-4" /> Salva Modifiche</>
               ) : (
                 <><Printer className="mr-2 h-4 w-4" /> Genera Atto</>
               )}

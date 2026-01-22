@@ -194,6 +194,8 @@ export default function SuapPanel() {
   const [autorizzazioneMode, setAutorizzazioneMode] = useState<'create' | 'view' | 'edit'>('create');
   const [domandaSpuntaMode, setDomandaSpuntaMode] = useState<'create' | 'view' | 'edit'>('create');
   const [concessionePreData, setConcessionePreData] = useState<any>(null);
+  const [concessioneMode, setConcessioneMode] = useState<'create' | 'edit'>('create');
+  const [selectedConcessioneId, setSelectedConcessioneId] = useState<number | null>(null);
   const [concessioni, setConcessioni] = useState<any[]>([]);
   const [searchConcessioni, setSearchConcessioni] = useState('');
   const [showConcessioniFilters, setShowConcessioniFilters] = useState(false);
@@ -446,7 +448,12 @@ export default function SuapPanel() {
             Nuova SCIA
           </Button>
           <Button 
-            onClick={() => setShowConcessioneForm(true)}
+            onClick={() => {
+              setConcessioneMode('create');
+              setSelectedConcessioneId(null);
+              setConcessionePreData(null);
+              setShowConcessioneForm(true);
+            }}
             variant="outline"
             className="border-[#14b8a6]/30 text-[#e8fbff] hover:bg-[#1e293b]"
           >
@@ -887,6 +894,8 @@ export default function SuapPanel() {
                         scia_id: selectedPratica.id
                       };
                       setConcessionePreData(preData);
+                      setConcessioneMode('create');
+                      setSelectedConcessioneId(null);
                       setShowConcessioneForm(true);
                     }}
                     className="bg-[#14b8a6] text-black hover:bg-[#14b8a6]/90"
@@ -1815,6 +1824,8 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
             <Button 
               onClick={() => {
                 setConcessionePreData(null);
+                setConcessioneMode('create');
+                setSelectedConcessioneId(null);
                 setShowConcessioneForm(true);
               }}
               className="bg-[#14b8a6] text-black hover:bg-[#14b8a6]/90"
@@ -2032,6 +2043,8 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                             title="Modifica"
                             onClick={() => {
                               setConcessionePreData(conc);
+                              setConcessioneMode('edit');
+                              setSelectedConcessioneId(conc.id);
                               setShowConcessioneForm(true);
                             }}
                           >
@@ -2193,6 +2206,8 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
             onSubmit={(savedConcessione) => {
               setShowConcessioneForm(false);
               setConcessionePreData(null);
+              setConcessioneMode('create');
+              setSelectedConcessioneId(null);
               loadConcessioni(); // Ricarica le concessioni
               // Aggiorna la pratica selezionata con il nuovo concessione_id
               if (selectedPratica && savedConcessione?.id) {
@@ -2208,15 +2223,19 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                 ));
               }
               setActiveTab('concessioni'); // Vai al tab concessioni
-              toast.success('Concessione salvata!', { 
+              toast.success(concessioneMode === 'edit' ? 'Concessione aggiornata!' : 'Concessione salvata!', { 
                 description: `N. ${savedConcessione?.numero_protocollo || savedConcessione?.id}` 
               });
             }}
             onCancel={() => {
               setShowConcessioneForm(false);
               setConcessionePreData(null);
+              setConcessioneMode('create');
+              setSelectedConcessioneId(null);
             }}
             initialData={concessionePreData}
+            mode={concessioneMode}
+            concessioneId={selectedConcessioneId || undefined}
           />
         </div>
       )}
