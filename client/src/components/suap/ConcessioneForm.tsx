@@ -664,7 +664,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode 
         giorno: sanitizeValue(formData.giorno),
         tipo_posteggio: sanitizeValue(formData.tipo_posteggio),
         attrezzature: sanitizeValue(formData.attrezzature),
-        merceologia: sanitizeValue(formData.merceologia),
+        settore_merceologico: sanitizeValue(formData.merceologia),
         limitazioni_merceologia: sanitizeValue(formData.limitazioni_merceologia),
         canone_unico: sanitizeValue(formData.canone_unico),
         planimetria_allegata: formData.planimetria_allegata || false,
