@@ -3142,13 +3142,13 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <span className="text-xs text-[#e8fbff]/50 uppercase">DURC Valido</span>
-                        <p className={`text-sm ${sidebarConcessionData.durc_scadenza ? (new Date(sidebarConcessionData.durc_scadenza) > new Date() ? 'text-green-400' : 'text-yellow-400') : 'text-red-400'}`}>
-                          {sidebarConcessionData.durc_scadenza ? (new Date(sidebarConcessionData.durc_scadenza) > new Date() ? '✓ Sì' : '⚠ Scaduto') : '✗ Non presente'}
+                        <p className={`text-sm ${sidebarConcessionData.durc_scadenza_qualifica ? (new Date(sidebarConcessionData.durc_scadenza_qualifica) > new Date() ? 'text-green-400' : 'text-yellow-400') : 'text-red-400'}`}>
+                          {sidebarConcessionData.durc_scadenza_qualifica ? (new Date(sidebarConcessionData.durc_scadenza_qualifica) > new Date() ? '✓ Sì' : '⚠ Scaduto') : '✗ Non presente'}
                         </p>
                       </div>
                       <div>
                         <span className="text-xs text-[#e8fbff]/50 uppercase">Scadenza DURC</span>
-                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.durc_scadenza ? new Date(sidebarConcessionData.durc_scadenza).toLocaleDateString('it-IT') : '-'}</p>
+                        <p className="text-[#e8fbff] text-sm">{sidebarConcessionData.durc_scadenza_qualifica ? new Date(sidebarConcessionData.durc_scadenza_qualifica).toLocaleDateString('it-IT') : '-'}</p>
                       </div>
                       <div>
                         <span className="text-xs text-[#e8fbff]/50 uppercase">Requisiti Morali</span>
@@ -3375,13 +3375,13 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <span className="text-xs text-[#e8fbff]/50 uppercase">DURC Valido</span>
-                    <p className={selectedConcessionForModal.durc_scadenza ? (new Date(selectedConcessionForModal.durc_scadenza) > new Date() ? 'text-green-400' : 'text-yellow-400') : 'text-red-400'}>
-                      {selectedConcessionForModal.durc_scadenza ? (new Date(selectedConcessionForModal.durc_scadenza) > new Date() ? '✓ Sì' : '⚠ Scaduto') : '✗ Non presente'}
+                    <p className={selectedConcessionForModal.durc_scadenza_qualifica ? (new Date(selectedConcessionForModal.durc_scadenza_qualifica) > new Date() ? 'text-green-400' : 'text-yellow-400') : 'text-red-400'}>
+                      {selectedConcessionForModal.durc_scadenza_qualifica ? (new Date(selectedConcessionForModal.durc_scadenza_qualifica) > new Date() ? '✓ Sì' : '⚠ Scaduto') : '✗ Non presente'}
                     </p>
                   </div>
                   <div>
                     <span className="text-xs text-[#e8fbff]/50 uppercase">Scadenza DURC</span>
-                    <p className="text-[#e8fbff]">{selectedConcessionForModal.durc_scadenza ? new Date(selectedConcessionForModal.durc_scadenza).toLocaleDateString('it-IT') : '-'}</p>
+                    <p className="text-[#e8fbff]">{selectedConcessionForModal.durc_scadenza_qualifica ? new Date(selectedConcessionForModal.durc_scadenza_qualifica).toLocaleDateString('it-IT') : '-'}</p>
                   </div>
                   <div>
                     <span className="text-xs text-[#e8fbff]/50 uppercase">Requisiti Morali</span>
