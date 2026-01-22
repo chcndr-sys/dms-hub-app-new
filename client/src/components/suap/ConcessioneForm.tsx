@@ -614,12 +614,19 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // In modalità edit, usa i dati da initialData se selectedMarketId/selectedStallId non sono impostati
+    const effectiveMarketId = selectedMarketId || (mode === 'edit' ? Number(initialData?.mercato_id || initialData?.market_id) : null);
+    const effectiveStallId = selectedStallId || (mode === 'edit' ? Number(initialData?.posteggio_id || initialData?.stall_id) : null);
+    
+    console.log('[ConcessioneForm] Submit - effectiveMarketId:', effectiveMarketId, 'effectiveStallId:', effectiveStallId);
+    console.log('[ConcessioneForm] Submit - initialData:', initialData);
+    
     // Validazione campi obbligatori
-    if (!selectedMarketId) {
+    if (!effectiveMarketId) {
       toast.error('Seleziona un mercato');
       return;
     }
-    if (!selectedStallId) {
+    if (!effectiveStallId) {
       toast.error('Seleziona un posteggio');
       return;
     }
@@ -630,8 +637,8 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode 
       // Prepara i dati per l'API
       const dataToSave = {
         ...formData,
-        market_id: selectedMarketId,
-        stall_id: selectedStallId,
+        market_id: effectiveMarketId,
+        stall_id: effectiveStallId,
         valid_from: formData.data_decorrenza,
         valid_to: formData.data_scadenza,
         impresa_id: selectedImpresaId || null,
