@@ -646,6 +646,14 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode 
         ? `${API_URL}/api/concessions/${editId}`
         : `${API_URL}/api/concessions`;
       
+      console.log('[ConcessioneForm] Salvataggio concessione:', {
+        isEditMode,
+        editId,
+        url,
+        method: isEditMode ? 'PUT' : 'POST',
+        dataToSave
+      });
+      
       const response = await fetch(url, {
         method: isEditMode ? 'PUT' : 'POST',
         headers: {
@@ -654,14 +662,18 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode 
         body: JSON.stringify(dataToSave),
       });
       
+      console.log('[ConcessioneForm] Response status:', response.status);
+      
       const result = await response.json();
+      
+      console.log('[ConcessioneForm] Response body:', result);
       
       if (result.success) {
         toast.success(isEditMode ? 'Concessione aggiornata con successo!' : 'Concessione creata con successo!');
         onSubmit(result.data);
       } else {
         // Gestione errori specifici
-        const errorMsg = result.error || 'Impossibile salvare la concessione';
+        const errorMsg = result.error || result.message || 'Impossibile salvare la concessione';
         
         if (errorMsg.toLowerCase().includes('overlapping') || errorMsg.toLowerCase().includes('conflict')) {
           toast.error('Concessione già esistente per questo posteggio', {
