@@ -2581,12 +2581,17 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               <TableBody>
                 {[...stalls]
                   // Filtra per tipo in base al tab selezionato
-                  // Concessionari = TUTTI i posteggi (default)
+                  // Concessionari = solo posteggi che esistono nella mappa (con poligono)
                   // Fiere = solo posteggi straordinari/fiere
                   .filter(stall => {
-                    if (listFilter === 'concessionari') return true; // Mostra TUTTI
-                    if (listFilter === 'fiere') return stall.type === 'straordinario' || stall.type === 'fiera';
-                    return true;
+                    // Prima verifica che il posteggio esista nel GeoJSON della mappa
+                    const existsInMap = mapData?.stalls_geojson?.features?.some(
+                      f => f.properties.number === stall.number
+                    ) ?? false;
+                    
+                    if (listFilter === 'concessionari') return existsInMap; // Solo posteggi con poligono
+                    if (listFilter === 'fiere') return existsInMap && (stall.type === 'straordinario' || stall.type === 'fiera');
+                    return existsInMap;
                   })
                   .sort((a, b) => {
                   // Ordina per numero crescente (gestisce sia numeri che stringhe)
