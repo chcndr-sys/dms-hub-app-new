@@ -526,15 +526,24 @@ export default function ComuniPanel() {
             // Costruisci URL impersonificazione
             const impersonateUrl = `/dashboard-pa?comune_id=${comune.id}&comune_nome=${comuneNomeEncoded}&user_email=${userEmail}&impersonate=true`;
             
-            // Prova ad aprire in nuova finestra, se fallisce (iOS) usa redirect
-            const newWindow = window.open(impersonateUrl, '_blank');
-            if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-              // Popup bloccato o iOS - chiedi se vuole navigare nella stessa finestra
-              if (confirm(`✅ Sessione pronta per ${comune.nome}\n\nIl tuo browser ha bloccato l'apertura di una nuova finestra.\n\nVuoi aprire la vista del comune in questa finestra?`)) {
-                window.location.href = impersonateUrl;
-              }
+            // Rileva se siamo su mobile/tablet (iOS, Android)
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+              // Su mobile usa sempre redirect diretto (popup spesso bloccati)
+              alert(`✅ Sessione di impersonificazione avviata per ${comune.nome}\n\nVerrai reindirizzato alla vista del comune.`);
+              window.location.href = impersonateUrl;
             } else {
-              alert(`✅ Sessione di impersonificazione avviata per ${comune.nome}\n\nTutte le azioni saranno registrate nel log di sicurezza.`);
+              // Su desktop prova ad aprire nuova finestra
+              const newWindow = window.open(impersonateUrl, '_blank');
+              if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                // Popup bloccato - usa redirect
+                if (confirm(`✅ Sessione pronta per ${comune.nome}\n\nIl browser ha bloccato il popup.\n\nVuoi aprire la vista del comune in questa finestra?`)) {
+                  window.location.href = impersonateUrl;
+                }
+              } else {
+                alert(`✅ Sessione di impersonificazione avviata per ${comune.nome}\n\nTutte le azioni saranno registrate nel log di sicurezza.`);
+              }
             }
           } else {
             alert(`❌ Errore: ${impData.error || 'Impossibile avviare impersonificazione'}`);
