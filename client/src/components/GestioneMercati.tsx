@@ -2585,9 +2585,14 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   // Fiere = solo posteggi straordinari/fiere
                   .filter(stall => {
                     // Prima verifica che il posteggio esista nel GeoJSON della mappa
+                    // Converti entrambi a stringa per confronto sicuro
+                    const stallNumber = String(stall.number);
                     const existsInMap = mapData?.stalls_geojson?.features?.some(
-                      f => f.properties.number === stall.number
+                      f => String(f.properties.number) === stallNumber
                     ) ?? false;
+                    
+                    // Se mapData non è ancora caricato, mostra tutti i posteggi temporaneamente
+                    if (!mapData?.stalls_geojson?.features) return true;
                     
                     if (listFilter === 'concessionari') return existsInMap; // Solo posteggi con poligono
                     if (listFilter === 'fiere') return existsInMap && (stall.type === 'straordinario' || stall.type === 'fiera');
