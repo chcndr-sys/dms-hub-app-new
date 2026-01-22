@@ -1683,15 +1683,23 @@ function QualificazioneModal({ company, qualificazione, onClose, onSaved }: Qual
   };
 
   const handleDelete = async () => {
-    if (!qualificazione) return;
+    console.log('[DELETE DEBUG] qualificazione:', qualificazione);
+    console.log('[DELETE DEBUG] company:', company);
+    if (!qualificazione) {
+      console.log('[DELETE DEBUG] qualificazione is null, returning');
+      return;
+    }
     setDeleting(true);
     setError(null);
 
     try {
+      const deleteUrl = `${API_BASE_URL}/api/imprese/${company.id}/qualificazioni/${qualificazione.id}`;
+      console.log('[DELETE DEBUG] URL:', deleteUrl);
       const response = await fetch(
-        `${API_BASE_URL}/api/imprese/${company.id}/qualificazioni/${qualificazione.id}`,
+        deleteUrl,
         { method: 'DELETE' }
       );
+      console.log('[DELETE DEBUG] Response status:', response.status);
 
       if (!response.ok) {
         const data = await response.json();
