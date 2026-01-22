@@ -523,9 +523,19 @@ export default function ComuniPanel() {
             const comuneNomeEncoded = encodeURIComponent(comune.nome);
             const userEmail = encodeURIComponent(adminUser.email || impData.data?.target_user?.email || '');
             
-            // Apri nuova finestra con tutti i dati nell'URL
-            window.open(`/dashboard-pa?comune_id=${comune.id}&comune_nome=${comuneNomeEncoded}&user_email=${userEmail}&impersonate=true`, '_blank');
-            alert(`✅ Sessione di impersonificazione avviata per ${comune.nome}\n\nTutte le azioni saranno registrate nel log di sicurezza.`);
+            // Costruisci URL impersonificazione
+            const impersonateUrl = `/dashboard-pa?comune_id=${comune.id}&comune_nome=${comuneNomeEncoded}&user_email=${userEmail}&impersonate=true`;
+            
+            // Prova ad aprire in nuova finestra, se fallisce (iOS) usa redirect
+            const newWindow = window.open(impersonateUrl, '_blank');
+            if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+              // Popup bloccato o iOS - chiedi se vuole navigare nella stessa finestra
+              if (confirm(`✅ Sessione pronta per ${comune.nome}\n\nIl tuo browser ha bloccato l'apertura di una nuova finestra.\n\nVuoi aprire la vista del comune in questa finestra?`)) {
+                window.location.href = impersonateUrl;
+              }
+            } else {
+              alert(`✅ Sessione di impersonificazione avviata per ${comune.nome}\n\nTutte le azioni saranno registrate nel log di sicurezza.`);
+            }
           } else {
             alert(`❌ Errore: ${impData.error || 'Impossibile avviare impersonificazione'}`);
           }
