@@ -2041,11 +2041,40 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                             variant="ghost"
                             className="text-yellow-400 hover:bg-yellow-400/10"
                             title="Modifica"
-                            onClick={() => {
-                              setConcessionePreData(conc);
-                              setConcessioneMode('edit');
-                              setSelectedConcessioneId(conc.id);
-                              setShowConcessioneForm(true);
+                            onClick={async () => {
+                              // Carica i dettagli completi della concessione prima di aprire il form
+                              try {
+                                const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`);
+                                const data = await response.json();
+                                if (data.success && data.data) {
+                                  // Combina i dati della lista con i dettagli completi
+                                  const fullConcessioneData = {
+                                    ...conc,
+                                    ...data.data,
+                                    // Assicurati che mercato_id e posteggio_id siano presenti
+                                    mercato_id: data.data.market_id || conc.market_id,
+                                    posteggio_id: data.data.stall_id || conc.stall_id,
+                                    posteggio: data.data.stall_number || conc.stall_number
+                                  };
+                                  setConcessionePreData(fullConcessioneData);
+                                  setConcessioneMode('edit');
+                                  setSelectedConcessioneId(conc.id);
+                                  setShowConcessioneForm(true);
+                                } else {
+                                  // Fallback: usa i dati dalla lista
+                                  setConcessionePreData(conc);
+                                  setConcessioneMode('edit');
+                                  setSelectedConcessioneId(conc.id);
+                                  setShowConcessioneForm(true);
+                                }
+                              } catch (error) {
+                                console.error('Errore caricamento dettagli concessione:', error);
+                                // Fallback: usa i dati dalla lista
+                                setConcessionePreData(conc);
+                                setConcessioneMode('edit');
+                                setSelectedConcessioneId(conc.id);
+                                setShowConcessioneForm(true);
+                              }
                             }}
                           >
                             <Edit className="h-4 w-4" />
