@@ -176,15 +176,36 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
   // Pre-compila il form se ci sono dati iniziali (da SCIA)
   useEffect(() => {
     if (initialData) {
+      // Formatta le date da ISO a YYYY-MM-DD per i campi input type="date"
+      const formatDate = (dateStr: string | null | undefined): string => {
+        if (!dateStr) return '';
+        try {
+          const d = new Date(dateStr);
+          if (isNaN(d.getTime())) return '';
+          return d.toISOString().split('T')[0];
+        } catch {
+          return '';
+        }
+      };
+      
+      const formattedData = {
+        ...initialData,
+        data_protocollazione: formatDate(initialData.data_protocollazione) || formatDate(initialData.valid_from) || new Date().toISOString().split('T')[0],
+        data_decorrenza: formatDate(initialData.data_decorrenza) || formatDate(initialData.valid_from) || new Date().toISOString().split('T')[0],
+        data_scadenza: formatDate(initialData.data_scadenza) || formatDate(initialData.valid_to) || '',
+        data_nascita: formatDate(initialData.data_nascita),
+        autorizzazione_precedente_data: formatDate(initialData.autorizzazione_precedente_data),
+      };
+      
       setFormData(prev => ({
         ...prev,
-        ...initialData
+        ...formattedData
       }));
       
       // NOTA: La pre-selezione del mercato viene gestita nell'useEffect che carica i mercati
       // per evitare race condition
       
-      toast.info('Form pre-compilato con i dati della SCIA', { description: 'Verifica e completa i dati mancanti' });
+      toast.info('Form pre-compilato con i dati della concessione', { description: 'Verifica e completa i dati mancanti' });
     }
   }, [initialData]);
 
@@ -556,8 +577,13 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
   };
 
   const calculateExpiry = (years: string) => {
-    const date = new Date(formData.data_decorrenza || formData.data_protocollazione);
-    date.setFullYear(date.getFullYear() + parseInt(years));
+    const baseDate = formData.data_decorrenza || formData.data_protocollazione || new Date().toISOString().split('T')[0];
+    const date = new Date(baseDate);
+    if (isNaN(date.getTime())) {
+      console.warn('[ConcessioneForm] Invalid date for calculateExpiry:', baseDate);
+      return;
+    }
+    date.setFullYear(date.getFullYear() + parseInt(years || '10'));
     setFormData(prev => ({
       ...prev,
       durata_anni: years,
@@ -567,8 +593,13 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData }: Con
 
   // Ricalcola scadenza quando cambia data decorrenza
   const handleDecorrenzaChange = (dataDecorrenza: string) => {
+    if (!dataDecorrenza) return;
     const date = new Date(dataDecorrenza);
-    date.setFullYear(date.getFullYear() + parseInt(formData.durata_anni));
+    if (isNaN(date.getTime())) {
+      console.warn('[ConcessioneForm] Invalid date for handleDecorrenzaChange:', dataDecorrenza);
+      return;
+    }
+    date.setFullYear(date.getFullYear() + parseInt(formData.durata_anni || '10'));
     setFormData(prev => ({
       ...prev,
       data_decorrenza: dataDecorrenza,
