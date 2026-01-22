@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.47.0  
-> **Data:** 21 Gennaio 2026  
+> **Versione:** 3.49.0  
+> **Data:** 22 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1410,6 +1410,48 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 **Commit:**
 - Backend: `b6a23ea` - fix: syntax error query mercati
 - Frontend: (in corso) - Tab HUB + link Gestione Hub
+
+---
+
+### v3.49.0 (22/01/2026) - Vista Impresa/Concessione e Fix Dimensioni Posteggi Grosseto
+
+**Nuove Funzionalità Gestione Mercati:**
+- ✅ **Vista Impresa con Form Completo:** Tab "Vista Impresa" mostra CompanyModal inline con 38 campi editabili
+- ✅ **Vista Concessione Funzionante:** Tab "Vista Concessione" mostra tutti i dati della concessione (dati, concessionario, posteggio, economici, wallet, documenti)
+- ✅ **Tab Sempre Visibili:** I tab Vista Impresa/Concessione rimangono visibili quando si seleziona un posteggio
+- ✅ **CompanyModal Inline:** Modificato per non coprire i tab (usa flex-1 invece di absolute)
+
+**Fix Dimensioni Posteggi Grosseto:**
+- ✅ **Dimensioni Corrette:** Tutti i 160 posteggi aggiornati a 8x5 metri (40 m²)
+- ✅ **Campi Aggiornati:** `width=8`, `depth=5`, `area_mq=40`, `dimensions='8x5'`
+- ✅ **Concessioni Aggiornate:** `mq=40`, `dimensioni_lineari='8 x 5'` per le 6 concessioni attive
+- ✅ **Popup Mappa:** Ora mostra correttamente 8m x 5m = 40 m²
+- ✅ **Vista Concessione:** Ora mostra MQ: 40 e Dimensioni: 8 x 5
+
+**Fix Import Lucide-React:**
+- ✅ **Wallet e Calendar:** Aggiunti import mancanti per Vista Concessione
+
+**Stato Posteggi Grosseto (market_id=1):**
+- 160 posteggi totali con geometry_geojson
+- Numerazione: 1-185 (con 22 gap per posteggi eliminati dopo ristrutturazione)
+- Dimensioni uniformi: 8m x 5m = 40 m²
+- Costo suolo: €36.00 (40 m² × €0.90)
+
+**File Modificati Frontend (Vercel):**
+- `client/src/components/GestioneMercati.tsx` - Vista Impresa/Concessione con tab sempre visibili
+- `client/src/components/markets/MarketCompaniesTab.tsx` - CompanyModal inline senza absolute positioning
+
+**File Modificati Backend (Hetzner):**
+- `routes/markets.js` - Filtro geometry_geojson IS NOT NULL
+- `routes/stalls.js` - Filtro geometry_geojson IS NOT NULL
+
+**Modifiche Database (Neon):**
+- `UPDATE stalls SET width=8, depth=5, area_mq=40, dimensions='8x5' WHERE market_id=1` (160 righe)
+- `UPDATE concessions SET mq=40, dimensioni_lineari='8 x 5' WHERE stall_id IN (SELECT id FROM stalls WHERE market_id=1)` (6 righe)
+
+**Commit:**
+- Frontend: `169b76f` - Fix filtro posteggi
+- Backend: `93cbacf` - Fix filtro geometry_geojson
 
 ---
 
