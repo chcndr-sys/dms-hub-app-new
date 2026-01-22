@@ -634,15 +634,41 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode 
     setSaving(true);
     
     try {
-      // Prepara i dati per l'API
+      // Funzione per convertire stringhe vuote in null
+      const sanitizeValue = (value: any) => {
+        if (value === '' || value === undefined) return null;
+        return value;
+      };
+      
+      // Prepara i dati per l'API - sanitizza tutti i campi
       const dataToSave = {
-        ...formData,
+        numero_protocollo: sanitizeValue(formData.numero_protocollo),
+        data_protocollazione: sanitizeValue(formData.data_protocollazione),
+        comune_rilascio: sanitizeValue(formData.comune_rilascio),
+        numero_file: sanitizeValue(formData.numero_file),
+        oggetto: sanitizeValue(formData.oggetto),
+        tipo_concessione: sanitizeValue(formData.tipo_concessione),
+        durata_anni: sanitizeValue(formData.durata_anni),
+        data_decorrenza: sanitizeValue(formData.data_decorrenza),
+        data_scadenza: sanitizeValue(formData.data_scadenza),
         market_id: effectiveMarketId,
         stall_id: effectiveStallId,
-        valid_from: formData.data_decorrenza,
-        valid_to: formData.data_scadenza,
+        valid_from: sanitizeValue(formData.data_decorrenza),
+        valid_to: sanitizeValue(formData.data_scadenza),
         impresa_id: selectedImpresaId || null,
-        scia_id: initialData?.scia_id || null
+        scia_id: sanitizeValue(initialData?.scia_id),
+        fila: sanitizeValue(formData.fila),
+        posteggio: sanitizeValue(formData.posteggio),
+        mq: sanitizeValue(formData.mq),
+        dimensioni_lineari: sanitizeValue(formData.dimensioni_lineari),
+        giorno: sanitizeValue(formData.giorno),
+        tipo_posteggio: sanitizeValue(formData.tipo_posteggio),
+        attrezzature: sanitizeValue(formData.attrezzature),
+        merceologia: sanitizeValue(formData.merceologia),
+        limitazioni_merceologia: sanitizeValue(formData.limitazioni_merceologia),
+        canone_unico: sanitizeValue(formData.canone_unico),
+        planimetria_allegata: formData.planimetria_allegata || false,
+        prescrizioni: sanitizeValue(formData.prescrizioni)
       };
       
       // In modalità edit usa PUT, altrimenti POST
