@@ -2345,8 +2345,9 @@ export function CompanyModal({ marketId, company, onClose, onSaved, inline = fal
   };
 
   // Stili condizionali per modalità inline vs modal
+  // NOTA: quando inline=true, non usa absolute positioning per permettere ai tab di rimanere visibili
   const containerClass = inline 
-    ? "absolute inset-0 z-10 flex flex-col bg-[#0b1220]"
+    ? "flex-1 flex flex-col bg-[#0b1220] overflow-hidden"
     : "fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4";
   
   const modalClass = inline
@@ -2354,7 +2355,7 @@ export function CompanyModal({ marketId, company, onClose, onSaved, inline = fal
     : "bg-gray-900 border border-gray-700 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto";
   
   const headerClass = inline
-    ? "sticky top-0 bg-[#0b1220] border-b border-[#14b8a6]/20 px-4 py-3 flex items-center justify-between"
+    ? "hidden" // Nascondi header in modalità inline (i tab sono già visibili)
     : "sticky top-0 bg-gray-900 border-b border-gray-700 px-6 py-4 flex items-center justify-between";
   
   const formClass = inline
