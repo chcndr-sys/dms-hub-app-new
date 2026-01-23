@@ -13,7 +13,7 @@ import {
   Radio, CloudRain, Wind, UserCog, ClipboardCheck, Scale, Bell, BellRing,
   Navigation, Train, ParkingCircle, TrafficCone, FileBarChart, Plug, SettingsIcon, Euro, Newspaper, Rocket,
   XCircle, Lightbulb, MessageSquare, Brain, Calculator, ExternalLink, StopCircle,
-  Search, Filter, Plus, Landmark, BookOpen, Star, FileCheck, HandCoins, Mail, MailOpen
+  Search, Filter, Plus, Landmark, BookOpen, Star, FileCheck, HandCoins, Mail, MailOpen, Home
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -1914,6 +1914,16 @@ export default function DashboardPA() {
       <header className="bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white py-3 px-6 sticky top-0 z-50 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
+            {/* Pulsante Home per tornare alla pagina principale */}
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setLocation('/')}
+              className="bg-white/20 hover:bg-white/30 text-white border-none"
+              title="Torna alla Home"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
             <BarChart3 className="h-6 w-6" />
             <div>
               <h1 className="text-xl font-bold">Dashboard PA - DMS HUB</h1>
