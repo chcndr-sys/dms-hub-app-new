@@ -27,6 +27,7 @@ import AutorizzazioneDetail from '@/components/suap/AutorizzazioneDetail';
 import DomandaSpuntaDetail from '@/components/suap/DomandaSpuntaDetail';
 import NotificationManager from '@/components/suap/NotificationManager';
 import { toast } from 'sonner';
+import { getImpersonationParams } from '@/hooks/useImpersonation';
 
 // Ente ID hardcoded per ora - in futuro da contesto utente
 const ENTE_ID = 'ente_modena';
@@ -209,6 +210,49 @@ export default function SuapPanel() {
   const [concessioneDetailTab, setConcessioneDetailTab] = useState<'dati' | 'posteggio' | 'esporta'>('dati');
   const [domandeSpuntaDashboard, setDomandeSpuntaDashboard] = useState<any[]>([]);
   const [notificheNonLette, setNotificheNonLette] = useState<number>(0);
+  
+  // Dati comune per notifiche dinamiche
+  const [comuneData, setComuneData] = useState<{id: number, nome: string} | null>(null);
+
+  // Carica dati comune all'avvio
+  useEffect(() => {
+    loadComuneData();
+  }, []);
+
+  // Carica dati del comune corrente
+  const loadComuneData = async () => {
+    try {
+      const { comuneId, comuneNome } = getImpersonationParams();
+      const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+      
+      // Se siamo in modalità impersonificazione, usa quei dati
+      if (comuneId) {
+        // Fetch nome comune se non presente
+        if (!comuneNome) {
+          const response = await fetch(`${MIHUB_API}/comuni/${comuneId}`);
+          const data = await response.json();
+          if (data.success && data.data) {
+            setComuneData({ id: parseInt(comuneId), nome: data.data.nome });
+            return;
+          }
+        }
+        setComuneData({ id: parseInt(comuneId), nome: comuneNome || 'Comune' });
+        return;
+      }
+      
+      // Default: Grosseto (id=1)
+      const response = await fetch(`${MIHUB_API}/comuni/1`);
+      const data = await response.json();
+      if (data.success && data.data) {
+        setComuneData({ id: 1, nome: data.data.nome });
+      } else {
+        setComuneData({ id: 1, nome: 'Grosseto' });
+      }
+    } catch (error) {
+      console.error('Error loading comune data:', error);
+      setComuneData({ id: 1, nome: 'Grosseto' });
+    }
+  };
 
   // Carica dati iniziali
   useEffect(() => {
@@ -301,8 +345,9 @@ export default function SuapPanel() {
   const loadNotificheCount = async () => {
     try {
       const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
-      // Usa comune_id 1 come default (da parametrizzare in futuro)
-      const response = await fetch(`${MIHUB_API}/notifiche/messaggi/SUAP/1`);
+      // Usa il comune_id dinamico dal contesto
+      const currentComuneId = comuneData?.id || 1;
+      const response = await fetch(`${MIHUB_API}/notifiche/messaggi/SUAP/${currentComuneId}`);
       const data = await response.json();
       if (data.success) {
         setNotificheNonLette(data.non_letti || 0);
@@ -2251,8 +2296,8 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
         <TabsContent value="notifiche" className="space-y-6 mt-6">
           <NotificationManager 
             mittenteTipo="SUAP"
-            mittenteId={1}
-            mittenteNome="SUAP - Sportello Unico Attività Produttive"
+            mittenteId={comuneData?.id || 1}
+            mittenteNome={`SUAP Comune di ${comuneData?.nome || 'Grosseto'}`}
             onNotificheUpdate={loadNotificheCount}
           />
         </TabsContent>
