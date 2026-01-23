@@ -295,7 +295,7 @@ export default function WalletPanel() {
       if (canoneFilters.mercato_id && canoneFilters.mercato_id !== 'all') params.append('mercato_id', canoneFilters.mercato_id);
       if (canoneFilters.impresa_search) params.append('impresa_search', canoneFilters.impresa_search);
       
-      const response = await fetch(`${API_URL}/api/canone-unico/ricariche-spunta?${params.toString()}`);
+      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/ricariche-spunta?${params.toString()}`));
       const data = await response.json();
       if (data.success) {
         setRicaricheSpunta(data.data);
@@ -509,10 +509,19 @@ export default function WalletPanel() {
   const fetchMercatiList = async () => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
-      const response = await fetch(`${API_URL}/api/markets`);
+      // Usa addComuneIdToUrl per filtrare i mercati per comune (v3.60.0)
+      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/markets`));
       const data = await response.json();
       if (data.success && data.data) {
-        setMercatiList(data.data.map((m: any) => ({ id: m.id, name: m.name })));
+        const mercati = data.data.map((m: any) => ({ id: m.id, name: m.name }));
+        setMercatiList(mercati);
+        
+        // v3.60.0: Pre-seleziona il primo mercato del comune se non già selezionato
+        if (mercati.length > 0 && !selectedMercatoId) {
+          const primoMercato = mercati[0].id.toString();
+          setSelectedMercatoId(primoMercato);
+          setCanoneFilters(prev => ({ ...prev, mercato_id: primoMercato }));
+        }
       }
     } catch (err) {
       console.error('Errore caricamento mercati:', err);
