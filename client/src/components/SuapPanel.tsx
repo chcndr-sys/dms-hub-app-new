@@ -25,6 +25,7 @@ import ListaAutorizzazioniSuap from '@/components/suap/ListaAutorizzazioniSuap';
 import ListaDomandeSpuntaSuap from '@/components/suap/ListaDomandeSpuntaSuap';
 import AutorizzazioneDetail from '@/components/suap/AutorizzazioneDetail';
 import DomandaSpuntaDetail from '@/components/suap/DomandaSpuntaDetail';
+import NotificationManager from '@/components/suap/NotificationManager';
 import { toast } from 'sonner';
 
 // Ente ID hardcoded per ora - in futuro da contesto utente
@@ -180,7 +181,7 @@ function timeAgo(dateStr?: string | null) {
 
 export default function SuapPanel() {
   // State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'lista' | 'dettaglio' | 'concessioni' | 'autorizzazioni' | 'domandespunta'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'lista' | 'dettaglio' | 'concessioni' | 'autorizzazioni' | 'domandespunta' | 'notifiche'>('dashboard');
   const [stats, setStats] = useState<SuapStats | null>(null);
   const [pratiche, setPratiche] = useState<SuapPratica[]>([]);
   const [selectedPratica, setSelectedPratica] = useState<SuapPraticaFull | null>(null);
@@ -467,9 +468,9 @@ export default function SuapPanel() {
       {/* Tabs di navigazione */}
       <Tabs 
         value={activeTab} 
-        onValueChange={(v) => setActiveTab(v as 'dashboard' | 'lista' | 'dettaglio' | 'concessioni' | 'autorizzazioni' | 'domandespunta')}
+        onValueChange={(v) => setActiveTab(v as 'dashboard' | 'lista' | 'dettaglio' | 'concessioni' | 'autorizzazioni' | 'domandespunta' | 'notifiche')}
       >
-        <TabsList className="grid w-full grid-cols-6 bg-[#0b1220]/50">
+        <TabsList className="grid w-full grid-cols-7 bg-[#0b1220]/50">
           <TabsTrigger 
             value="dashboard"
             className="data-[state=active]:bg-[#14b8a6]/20 data-[state=active]:text-[#14b8a6]"
@@ -512,6 +513,13 @@ export default function SuapPanel() {
           >
             <Users className="mr-2 h-4 w-4" />
             Domande Spunta
+          </TabsTrigger>
+          <TabsTrigger 
+            value="notifiche"
+            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400"
+          >
+            <Bell className="mr-2 h-4 w-4" />
+            Notifiche
           </TabsTrigger>
         </TabsList>
 
@@ -2213,6 +2221,17 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
               }}
             />
           )}
+        </TabsContent>
+
+        {/* ================================================================== */}
+        {/* TAB NOTIFICHE */}
+        {/* ================================================================== */}
+        <TabsContent value="notifiche" className="space-y-6 mt-6">
+          <NotificationManager 
+            mittenteTipo="SUAP"
+            mittenteId={1}
+            mittenteNome="SUAP - Sportello Unico Attività Produttive"
+          />
         </TabsContent>
       </Tabs>
 
