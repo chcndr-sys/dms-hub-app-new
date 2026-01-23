@@ -76,23 +76,24 @@ async function determineUserRoleId(): Promise<{ roleId: number; isImpersonating:
   try {
     const user = JSON.parse(userStr);
     
-    // 3. Se l'utente ha assigned_roles, usa il primo
+    // 3. PRIORITÀ MASSIMA: Se l'utente è super admin (email specifica o flag)
+    // Questo controllo deve venire PRIMA di assigned_roles e base_role!
+    if (user.email === 'chcndr@gmail.com' || user.is_super_admin) {
+      console.log('[PermissionsContext] Super Admin rilevato - accesso completo');
+      return { roleId: ROLE_IDS.SUPER_ADMIN, isImpersonating: false };
+    }
+
+    // 4. Se l'utente ha assigned_roles, usa il primo
     if (user.assigned_roles && user.assigned_roles.length > 0) {
       const firstRole = user.assigned_roles[0];
       console.log(`[PermissionsContext] Utente con ruolo assegnato: ${firstRole.role_code} (ID=${firstRole.role_id})`);
       return { roleId: firstRole.role_id, isImpersonating: false };
     }
 
-    // 4. Se l'utente ha base_role "admin", usa admin_pa
+    // 5. Se l'utente ha base_role "admin", usa admin_pa
     if (user.base_role === 'admin') {
       console.log('[PermissionsContext] Utente admin - usando ruolo admin_pa');
       return { roleId: ROLE_IDS.ADMIN_PA, isImpersonating: false };
-    }
-
-    // 5. Se l'utente è super admin (email specifica o flag)
-    if (user.email === 'chcndr@gmail.com' || user.is_super_admin) {
-      console.log('[PermissionsContext] Super Admin rilevato');
-      return { roleId: ROLE_IDS.SUPER_ADMIN, isImpersonating: false };
     }
 
     // 6. Default: citizen
