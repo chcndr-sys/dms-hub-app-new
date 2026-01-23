@@ -208,6 +208,7 @@ export default function SuapPanel() {
   const [selectedConcessione, setSelectedConcessione] = useState<any | null>(null);
   const [concessioneDetailTab, setConcessioneDetailTab] = useState<'dati' | 'posteggio' | 'esporta'>('dati');
   const [domandeSpuntaDashboard, setDomandeSpuntaDashboard] = useState<any[]>([]);
+  const [notificheNonLette, setNotificheNonLette] = useState<number>(0);
 
   // Carica dati iniziali
   useEffect(() => {
@@ -228,9 +229,10 @@ export default function SuapPanel() {
       );
       setPratiche(sorted);
       
-      // Carica anche le concessioni e le domande spunta
+      // Carica anche le concessioni, le domande spunta e le notifiche
       await loadConcessioni();
       await loadDomandeSpuntaDashboard();
+      await loadNotificheCount();
     } catch (error) {
       console.error('Error loading SUAP data:', error);
       toast.error('Errore nel caricamento dei dati');
@@ -292,6 +294,21 @@ export default function SuapPanel() {
       }
     } catch (error) {
       console.error('Error loading domande spunta:', error);
+    }
+  };
+
+  // Carica conteggio notifiche non lette per il badge sul tab
+  const loadNotificheCount = async () => {
+    try {
+      const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+      // Usa comune_id 1 come default (da parametrizzare in futuro)
+      const response = await fetch(`${MIHUB_API}/notifiche/messaggi/SUAP/1`);
+      const data = await response.json();
+      if (data.success) {
+        setNotificheNonLette(data.non_letti || 0);
+      }
+    } catch (error) {
+      console.error('Error loading notifiche count:', error);
     }
   };
 
@@ -516,10 +533,15 @@ export default function SuapPanel() {
           </TabsTrigger>
           <TabsTrigger 
             value="notifiche"
-            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400"
+            className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400 relative"
           >
             <Bell className="mr-2 h-4 w-4" />
             Notifiche
+            {notificheNonLette > 0 && (
+              <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                {notificheNonLette}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -2231,6 +2253,7 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
             mittenteTipo="SUAP"
             mittenteId={1}
             mittenteNome="SUAP - Sportello Unico Attività Produttive"
+            onNotificheUpdate={loadNotificheCount}
           />
         </TabsContent>
       </Tabs>

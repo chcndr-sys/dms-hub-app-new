@@ -61,9 +61,10 @@ interface NotificationManagerProps {
   mittenteTipo: string;      // 'SUAP' | 'POLIZIA_MUNICIPALE' | 'TRIBUTI'
   mittenteId: number;        // ID del comune
   mittenteNome: string;      // Nome visualizzato (es. "SUAP Comune di Grosseto")
+  onNotificheUpdate?: () => void;  // Callback per aggiornare il conteggio notifiche nel parent
 }
 
-export function NotificationManager({ mittenteTipo, mittenteId, mittenteNome }: NotificationManagerProps) {
+export function NotificationManager({ mittenteTipo, mittenteId, mittenteNome, onNotificheUpdate }: NotificationManagerProps) {
   // State
   const [messaggi, setMessaggi] = useState<Messaggio[]>([]);
   const [filtroMessaggi, setFiltroMessaggi] = useState<'tutti' | 'inviati' | 'ricevuti'>('tutti');
@@ -211,6 +212,11 @@ export function NotificationManager({ mittenteTipo, mittenteId, mittenteNome }: 
         m.id === msg.id ? { ...m, letta: true } : m
       ));
       setNonLetti(prev => Math.max(0, prev - 1));
+      
+      // Notifica il parent per aggiornare il badge sul tab
+      if (onNotificheUpdate) {
+        onNotificheUpdate();
+      }
     } catch (error) {
       console.error('Errore segna letta:', error);
     }
