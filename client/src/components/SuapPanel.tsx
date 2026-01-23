@@ -264,10 +264,11 @@ export default function SuapPanel() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Carica tutte le pratiche SCIA (il filtro per comune sarà implementato quando i dati saranno corretti)
+      // Filtra le pratiche SCIA per comune tramite mercato.municipality
+      const comuneNomeFilter = comuneData?.nome?.toUpperCase() || '';
       const [statsData, praticheData] = await Promise.all([
         getSuapStats(ENTE_ID),
-        getSuapPratiche(ENTE_ID, {})
+        getSuapPratiche(ENTE_ID, { comune_nome: comuneNomeFilter })
       ]);
       setStats(statsData);
       // Ordina per data creazione (più recenti prima)
