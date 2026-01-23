@@ -4,15 +4,26 @@
  * Questo context carica e memorizza i permessi dell'utente loggato
  * per controllare la visibilità dei tab nella dashboard.
  * 
- * @version 1.1.0
- * @date 23 Gennaio 2026
+ * @version 2.0.0
+ * @date 24 Gennaio 2026
  * 
- * NOTA: Non usa useAuth per evitare problemi con getLoginUrl.
- * Invece, carica i permessi in modo indipendente.
+ * LOGICA RUOLI:
+ * 1. Se utente ha assigned_roles → usa il primo ruolo assegnato
+ * 2. Se utente ha base_role: "admin" → usa ruolo admin_pa (ID=2)
+ * 3. Se in impersonificazione → usa ruolo admin_pa (ID=2) del comune
+ * 4. Altrimenti → usa ruolo citizen (ID=13) - nessun permesso dashboard
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { ORCHESTRATORE_API_BASE_URL } from '@/config/api';
+import { getImpersonationParams } from '@/hooks/useImpersonation';
+
+// Costanti per i ruoli
+const ROLE_IDS = {
+  SUPER_ADMIN: 1,
+  ADMIN_PA: 2,
+  CITIZEN: 13,
+};
 
 // Tipi
 interface Permission {
@@ -28,6 +39,8 @@ interface PermissionsContextType {
   permissionCodes: string[];
   loading: boolean;
   error: string | null;
+  userRoleId: number | null;
+  isImpersonating: boolean;
   hasPermission: (code: string) => boolean;
   hasAnyPermission: (codes: string[]) => boolean;
   hasAllPermissions: (codes: string[]) => boolean;
@@ -44,12 +57,62 @@ interface PermissionsProviderProps {
   children: ReactNode;
 }
 
+// Funzione per determinare il ruolo dell'utente
+async function determineUserRoleId(): Promise<{ roleId: number; isImpersonating: boolean }> {
+  // 1. Controlla se siamo in modalità impersonificazione
+  const impersonation = getImpersonationParams();
+  if (impersonation.isImpersonating && impersonation.comuneId) {
+    console.log('[PermissionsContext] Modalità impersonificazione - usando ruolo admin_pa');
+    return { roleId: ROLE_IDS.ADMIN_PA, isImpersonating: true };
+  }
+
+  // 2. Controlla se c'è un utente loggato in localStorage
+  const userStr = localStorage.getItem('user');
+  if (!userStr) {
+    console.log('[PermissionsContext] Nessun utente loggato - usando ruolo citizen');
+    return { roleId: ROLE_IDS.CITIZEN, isImpersonating: false };
+  }
+
+  try {
+    const user = JSON.parse(userStr);
+    
+    // 3. Se l'utente ha assigned_roles, usa il primo
+    if (user.assigned_roles && user.assigned_roles.length > 0) {
+      const firstRole = user.assigned_roles[0];
+      console.log(`[PermissionsContext] Utente con ruolo assegnato: ${firstRole.role_code} (ID=${firstRole.role_id})`);
+      return { roleId: firstRole.role_id, isImpersonating: false };
+    }
+
+    // 4. Se l'utente ha base_role "admin", usa admin_pa
+    if (user.base_role === 'admin') {
+      console.log('[PermissionsContext] Utente admin - usando ruolo admin_pa');
+      return { roleId: ROLE_IDS.ADMIN_PA, isImpersonating: false };
+    }
+
+    // 5. Se l'utente è super admin (email specifica o flag)
+    if (user.email === 'chcndr@gmail.com' || user.is_super_admin) {
+      console.log('[PermissionsContext] Super Admin rilevato');
+      return { roleId: ROLE_IDS.SUPER_ADMIN, isImpersonating: false };
+    }
+
+    // 6. Default: citizen
+    console.log('[PermissionsContext] Utente standard - usando ruolo citizen');
+    return { roleId: ROLE_IDS.CITIZEN, isImpersonating: false };
+
+  } catch (err) {
+    console.error('[PermissionsContext] Errore parsing user:', err);
+    return { roleId: ROLE_IDS.CITIZEN, isImpersonating: false };
+  }
+}
+
 // Provider Component
 export function PermissionsProvider({ children }: PermissionsProviderProps) {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [permissionCodes, setPermissionCodes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userRoleId, setUserRoleId] = useState<number | null>(null);
+  const [isImpersonating, setIsImpersonating] = useState(false);
 
   // Carica i permessi dell'utente
   const loadUserPermissions = useCallback(async () => {
@@ -57,25 +120,35 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     setError(null);
 
     try {
-      // Per ora usiamo super_admin (ID=1) come default per tutti gli utenti
-      // In futuro questo verrà determinato dal profilo utente
-      const userRoleId = 1; // super_admin - tutti i permessi
+      // Determina il ruolo dell'utente
+      const { roleId, isImpersonating: impersonating } = await determineUserRoleId();
+      setUserRoleId(roleId);
+      setIsImpersonating(impersonating);
+      
+      console.log(`[PermissionsContext] Caricamento permessi per ruolo ID=${roleId}`);
       
       // Carica i permessi del ruolo
-      const response = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${userRoleId}/permissions`);
+      const response = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${roleId}/permissions`);
       const data = await response.json();
 
-      if (data.success) {
+      if (data.success && data.data && data.data.permissions) {
+        const perms = data.data.permissions;
+        setPermissions(perms);
+        setPermissionCodes(perms.map((p: Permission) => p.code));
+        console.log(`[PermissionsContext] Caricati ${perms.length} permessi`);
+      } else if (data.success && Array.isArray(data.data)) {
+        // Fallback per vecchio formato API
         setPermissions(data.data);
         setPermissionCodes(data.data.map((p: Permission) => p.code));
+        console.log(`[PermissionsContext] Caricati ${data.data.length} permessi (formato legacy)`);
       } else {
         throw new Error(data.error || 'Errore nel caricamento permessi');
       }
     } catch (err: any) {
       console.error('[PermissionsContext] Errore:', err);
       setError(err.message);
-      // In caso di errore, NON blocchiamo l'accesso
-      // Lasciamo permissionCodes vuoto, il fallback garantirà l'accesso
+      // In caso di errore, impostiamo permessi vuoti
+      // Il fallback NON concede più accesso automatico
       setPermissions([]);
       setPermissionCodes([]);
     } finally {
@@ -83,33 +156,53 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     }
   }, []);
 
-  // Carica permessi all'avvio
+  // Carica permessi all'avvio e quando cambia l'URL (impersonificazione)
   useEffect(() => {
     loadUserPermissions();
+    
+    // Ricarica quando cambia l'URL (per impersonificazione)
+    const handleUrlChange = () => {
+      loadUserPermissions();
+    };
+    
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
   }, [loadUserPermissions]);
 
   // Verifica se l'utente ha un permesso specifico
   const hasPermission = useCallback((code: string): boolean => {
-    // Se non ci sono permessi caricati e non stiamo caricando, concedi accesso (fallback)
-    if (permissionCodes.length === 0 && !loading) {
-      return true; // Fallback: accesso consentito
+    // Se stiamo ancora caricando, non bloccare l'accesso
+    if (loading) {
+      return true;
+    }
+    // Se non ci sono permessi caricati, nega l'accesso (tranne per super admin)
+    if (permissionCodes.length === 0) {
+      // Controlla se è super admin
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user.email === 'chcndr@gmail.com' || user.is_super_admin) {
+            return true; // Super admin ha sempre accesso
+          }
+        } catch {}
+      }
+      return false;
     }
     return permissionCodes.includes(code);
   }, [permissionCodes, loading]);
 
   // Verifica se l'utente ha almeno uno dei permessi
   const hasAnyPermission = useCallback((codes: string[]): boolean => {
-    if (permissionCodes.length === 0 && !loading) {
-      return true; // Fallback
-    }
+    if (loading) return true;
+    if (permissionCodes.length === 0) return false;
     return codes.some(code => permissionCodes.includes(code));
   }, [permissionCodes, loading]);
 
   // Verifica se l'utente ha tutti i permessi
   const hasAllPermissions = useCallback((codes: string[]): boolean => {
-    if (permissionCodes.length === 0 && !loading) {
-      return true; // Fallback
-    }
+    if (loading) return true;
+    if (permissionCodes.length === 0) return false;
     return codes.every(code => permissionCodes.includes(code));
   }, [permissionCodes, loading]);
 
@@ -135,6 +228,8 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     permissionCodes,
     loading,
     error,
+    userRoleId,
+    isImpersonating,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
