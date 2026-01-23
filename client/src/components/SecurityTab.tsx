@@ -56,7 +56,8 @@ import {
   Ban,
   UserPlus,
   Search,
-  Filter
+  Filter,
+  Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -144,6 +145,13 @@ export default function SecurityTab() {
   const [editedRolePermissions, setEditedRolePermissions] = useState<Record<number, number[]>>({});
   const [hasPermissionChanges, setHasPermissionChanges] = useState(false);
   const [savingPermissions, setSavingPermissions] = useState(false);
+  
+  // Quick Access Permissions Management - Gestione permessi barra rapida
+  const [quickAccessPermissions, setQuickAccessPermissions] = useState<Permission[]>([]);
+  const [roleQuickAccessPermissions, setRoleQuickAccessPermissions] = useState<Record<number, number[]>>({});
+  const [editedQuickAccessPermissions, setEditedQuickAccessPermissions] = useState<Record<number, number[]>>({});
+  const [hasQuickAccessChanges, setHasQuickAccessChanges] = useState(false);
+  const [savingQuickAccess, setSavingQuickAccess] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -190,8 +198,9 @@ export default function SecurityTab() {
       if (blacklistRes.success) setIPBlacklist(blacklistRes.data);
       if (usersRes.success) setUsers(usersRes.data);
       
-      // Carica permessi tab separatamente
+      // Carica permessi tab e quick access separatamente
       await loadTabPermissions();
+      await loadQuickAccessPermissions();
       
       toast.success('Dati sicurezza caricati');
     } catch (err: any) {
@@ -244,6 +253,72 @@ export default function SecurityTab() {
     } catch (err) {
       console.error('Error loading tab permissions:', err);
     }
+  };
+
+  // Carica permessi Quick Access e matrice ruolo-permessi
+  const loadQuickAccessPermissions = async () => {
+    try {
+      // Carica permessi quick access
+      const quickPermsRes = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/permissions/quick-access`);
+      const quickPermsData = await quickPermsRes.json();
+      
+      if (quickPermsData.success) {
+        setQuickAccessPermissions(quickPermsData.data);
+        
+        // Costruisci la matrice ruolo -> permessi quick access
+        const rolePermsMap: Record<number, number[]> = {};
+        
+        // Per ogni ruolo, carica i suoi permessi
+        const rolesRes = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles`);
+        const rolesData = await rolesRes.json();
+        
+        if (rolesData.success) {
+          for (const role of rolesData.data) {
+            const rolePermsRes = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${role.id}/permissions`);
+            const rolePermsData = await rolePermsRes.json();
+            
+            if (rolePermsData.success) {
+              // Filtra solo i permessi quick access
+              const quickPermIds = quickPermsData.data.map((p: Permission) => p.id);
+              const permsArray = rolePermsData.data.permissions || rolePermsData.data;
+              rolePermsMap[role.id] = (Array.isArray(permsArray) ? permsArray : [])
+                .filter((p: Permission) => quickPermIds.includes(p.id))
+                .map((p: Permission) => p.id);
+            }
+          }
+        }
+        
+        setRoleQuickAccessPermissions(rolePermsMap);
+        setEditedQuickAccessPermissions(rolePermsMap);
+        setHasQuickAccessChanges(false);
+      }
+    } catch (err) {
+      console.error('Error loading quick access permissions:', err);
+    }
+  };
+
+  // Toggle permesso Quick Access per un ruolo
+  const toggleQuickAccessPermission = (roleId: number, permissionId: number) => {
+    setEditedQuickAccessPermissions(prev => {
+      const current = prev[roleId] || [];
+      const newPerms = current.includes(permissionId)
+        ? current.filter(id => id !== permissionId)
+        : [...current, permissionId];
+      
+      const updated = { ...prev, [roleId]: newPerms };
+      
+      // Verifica se ci sono modifiche rispetto all'originale
+      const hasChanges = Object.keys(updated).some(key => {
+        const roleIdNum = parseInt(key);
+        const original = roleQuickAccessPermissions[roleIdNum] || [];
+        const edited = updated[roleIdNum] || [];
+        return original.length !== edited.length || 
+               !original.every(id => edited.includes(id));
+      });
+      setHasQuickAccessChanges(hasChanges);
+      
+      return updated;
+    });
   };
 
   // Toggle permesso per un ruolo
@@ -327,6 +402,62 @@ export default function SecurityTab() {
   const cancelPermissionChanges = () => {
     setEditedRolePermissions(roleTabPermissions);
     setHasPermissionChanges(false);
+  };
+
+  // Salva le modifiche ai permessi Quick Access
+  const saveQuickAccessChanges = async () => {
+    setSavingQuickAccess(true);
+    try {
+      // Per ogni ruolo modificato, aggiorna i permessi
+      for (const [roleId, edited] of Object.entries(editedQuickAccessPermissions)) {
+        const original = roleQuickAccessPermissions[parseInt(roleId)] || [];
+        
+        // Verifica se ci sono differenze
+        if (original.length !== edited.length || !original.every(id => edited.includes(id))) {
+          // Carica permessi attuali del ruolo
+          const rolePermsRes = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${roleId}/permissions`);
+          const rolePermsData = await rolePermsRes.json();
+          
+          if (rolePermsData.success) {
+            // Mantieni i permessi non-quick-access, sostituisci i quick access
+            const quickPermIds = quickAccessPermissions.map(p => p.id);
+            const permsArraySave = rolePermsData.data.permissions || rolePermsData.data;
+            const nonQuickPerms = (Array.isArray(permsArraySave) ? permsArraySave : [])
+              .filter((p: Permission) => !quickPermIds.includes(p.id))
+              .map((p: Permission) => p.id);
+            
+            const allPermIds = [...nonQuickPerms, ...edited];
+            
+            // Salva
+            const saveRes = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${roleId}/permissions`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ permission_ids: allPermIds })
+            });
+            
+            const saveData = await saveRes.json();
+            if (!saveData.success) {
+              throw new Error(saveData.error || 'Errore nel salvataggio');
+            }
+          }
+        }
+      }
+      
+      toast.success('Permessi Quick Access salvati!');
+      setRoleQuickAccessPermissions(editedQuickAccessPermissions);
+      setHasQuickAccessChanges(false);
+      loadData(); // Ricarica tutti i dati
+    } catch (err: any) {
+      toast.error('Errore: ' + err.message);
+    } finally {
+      setSavingQuickAccess(false);
+    }
+  };
+
+  // Annulla le modifiche Quick Access
+  const cancelQuickAccessChanges = () => {
+    setEditedQuickAccessPermissions(roleQuickAccessPermissions);
+    setHasQuickAccessChanges(false);
   };
 
   // API Actions
@@ -1221,6 +1352,112 @@ export default function SecurityTab() {
                                   checked={isChecked}
                                   onChange={() => toggleRolePermission(role.id, perm.id)}
                                   className="w-5 h-5 rounded border-[#14b8a6]/30 bg-[#0b1220] text-[#14b8a6] focus:ring-[#14b8a6] focus:ring-offset-0 cursor-pointer"
+                                />
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {roles.length > 8 && (
+                <div className="mt-4 text-sm text-[#e8fbff]/50 text-center">
+                  Mostrando i primi 8 ruoli. Per gestire altri ruoli, selezionali dalla sezione Ruoli.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* NUOVA SEZIONE: Gestione Permessi Quick Access */}
+          <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-[#8b5cf6]" />
+                  Gestione Permessi Barra Rapida
+                  <Badge className="bg-[#8b5cf6]/20 text-[#8b5cf6] border-[#8b5cf6]/30 ml-2">
+                    {quickAccessPermissions.length} Quick Access
+                  </Badge>
+                </CardTitle>
+                {hasQuickAccessChanges && (
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={cancelQuickAccessChanges}
+                      className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Annulla
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={saveQuickAccessChanges}
+                      disabled={savingQuickAccess}
+                      className="bg-[#8b5cf6] hover:bg-[#8b5cf6]/80"
+                    >
+                      {savingQuickAccess ? (
+                        <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                      )}
+                      Salva Modifiche
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-[#e8fbff]/60 mt-2">
+                Configura quali pulsanti della barra rapida sono visibili per ogni ruolo. I pulsanti controllano l'accesso rapido alle applicazioni.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {quickAccessPermissions.length === 0 ? (
+                <div className="text-center py-8 text-[#e8fbff]/50">
+                  <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                  <p>Caricamento permessi quick access...</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[#8b5cf6]/20">
+                        <th className="text-left py-3 px-2 text-[#e8fbff]/70 font-medium sticky left-0 bg-[#1a2332] min-w-[200px]">
+                          Quick Access
+                        </th>
+                        {roles.slice(0, 8).map(role => (
+                          <th key={role.id} className="text-center py-3 px-2 text-[#e8fbff]/70 font-medium min-w-[100px]">
+                            <div className="truncate" title={role.name}>
+                              {role.name.length > 12 ? role.name.substring(0, 12) + '...' : role.name}
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quickAccessPermissions.map((perm) => (
+                        <tr key={perm.id} className="border-b border-[#8b5cf6]/10 hover:bg-[#0b1220]/50">
+                          <td className="py-2 px-2 sticky left-0 bg-[#1a2332]">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[#e8fbff]">{perm.name.replace('Accesso Rapido ', '')}</span>
+                              {perm.is_sensitive && (
+                                <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
+                                  ⚠️
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-[#e8fbff]/40">{perm.code}</div>
+                          </td>
+                          {roles.slice(0, 8).map(role => {
+                            const isChecked = (editedQuickAccessPermissions[role.id] || []).includes(perm.id);
+                            return (
+                              <td key={role.id} className="text-center py-2 px-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleQuickAccessPermission(role.id, perm.id)}
+                                  className="w-5 h-5 rounded border-[#8b5cf6]/30 bg-[#0b1220] text-[#8b5cf6] focus:ring-[#8b5cf6] focus:ring-offset-0 cursor-pointer"
                                 />
                               </td>
                             );
