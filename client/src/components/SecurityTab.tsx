@@ -228,7 +228,9 @@ export default function SecurityTab() {
             if (rolePermsData.success) {
               // Filtra solo i permessi tab
               const tabPermIds = tabPermsData.data.map((p: Permission) => p.id);
-              rolePermsMap[role.id] = rolePermsData.data
+              // FIX: data contiene {role, permissions, count}, non un array diretto
+              const permsArray = rolePermsData.data.permissions || rolePermsData.data;
+              rolePermsMap[role.id] = (Array.isArray(permsArray) ? permsArray : [])
                 .filter((p: Permission) => tabPermIds.includes(p.id))
                 .map((p: Permission) => p.id);
             }
@@ -287,7 +289,9 @@ export default function SecurityTab() {
           if (rolePermsData.success) {
             // Mantieni i permessi non-tab, sostituisci i tab
             const tabPermIds = tabPermissions.map(p => p.id);
-            const nonTabPerms = rolePermsData.data
+            // FIX: data contiene {role, permissions, count}, non un array diretto
+            const permsArraySave = rolePermsData.data.permissions || rolePermsData.data;
+            const nonTabPerms = (Array.isArray(permsArraySave) ? permsArraySave : [])
               .filter((p: Permission) => !tabPermIds.includes(p.id))
               .map((p: Permission) => p.id);
             
