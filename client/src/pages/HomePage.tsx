@@ -305,7 +305,8 @@ export default function HomePage() {
           {/* Tab Impresa - Riga 2 (v3.70.0) */}
           <div className="flex flex-wrap justify-center gap-4 w-full max-w-4xl">
             {/* Presenze - apre app Heroku */}
-            <Button
+            {(permissionsLoading || canViewTab('presenze')) && (
+              <Button
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/app/impresa/presenze')}
@@ -314,8 +315,10 @@ export default function HomePage() {
                 <ClipboardList className="w-6 h-6" />
                 <span>Presenze</span>
               </Button>
+            )}
             {/* Wallet Impresa - pagamenti PagoPA */}
-            <Button
+            {(permissionsLoading || canViewTab('wallet_impresa')) && (
+              <Button
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/app/impresa/wallet')}
@@ -324,8 +327,10 @@ export default function HomePage() {
                 <Wallet className="w-6 h-6" />
                 <span>Wallet Impresa</span>
               </Button>
+            )}
             {/* Hub Operatore - già esistente */}
-            <Button
+            {(permissionsLoading || canViewTab('hub_operatore')) && (
+              <Button
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/hub-operatore')}
@@ -334,8 +339,10 @@ export default function HomePage() {
                 <Activity className="w-6 h-6" />
                 <span>Hub Operatore</span>
               </Button>
+            )}
             {/* Notifiche - già esistente */}
-            <Button
+            {(permissionsLoading || canViewTab('notifiche')) && (
+              <Button
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/app/impresa/notifiche')}
@@ -344,8 +351,10 @@ export default function HomePage() {
                 <Bell className="w-6 h-6" />
                 <span>Notifiche</span>
               </Button>
+            )}
             {/* Anagrafica - placeholder per sviluppi futuri */}
-            <Button
+            {(permissionsLoading || canViewTab('anagrafica')) && (
+              <Button
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/app/impresa/anagrafica')}
@@ -354,6 +363,7 @@ export default function HomePage() {
                 <Menu className="w-6 h-6" />
                 <span>Anagrafica</span>
               </Button>
+            )}
           </div>
         </main>
 
