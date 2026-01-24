@@ -103,6 +103,9 @@ export default function WalletImpresaPage() {
   const [ricaricaAmount, setRicaricaAmount] = useState('');
   const [isProcessingRicarica, setIsProcessingRicarica] = useState(false);
   
+  // Stato per transazioni (storico ricariche)
+  const [transactions, setTransactions] = useState<any[]>([]);
+  
   // ID impresa dall'utente loggato
   const getImpresaId = () => {
     const userStr = localStorage.getItem('user');
@@ -178,6 +181,28 @@ export default function WalletImpresaPage() {
           setScadenze(scadenzeData.data || []);
         }
       }
+      
+      // v3.73.1: Fetch transazioni per tutti i wallet (storico ricariche)
+      const allWallets = [...spuntaWallets, ...concessionWallets];
+      const allTransactions: any[] = [];
+      for (const wallet of allWallets) {
+        try {
+          const txRes = await fetch(`${API_BASE_URL}/api/wallets/${wallet.id}/transactions`);
+          const txData = await txRes.json();
+          if (txData.success && txData.data) {
+            allTransactions.push(...txData.data.map((tx: any) => ({
+              ...tx,
+              wallet_type: wallet.type,
+              market_name: wallet.market_name
+            })));
+          }
+        } catch (e) {
+          console.error(`Errore fetch transazioni wallet ${wallet.id}:`, e);
+        }
+      }
+      // Ordina per data decrescente
+      allTransactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setTransactions(allTransactions);
     } catch (error) {
       console.error('Errore caricamento dati wallet:', error);
     } finally {
@@ -607,17 +632,43 @@ export default function WalletImpresaPage() {
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                   <Receipt className="w-5 h-5 text-[#14b8a6]" />
-                  Storico Pagamenti
+                  Storico Movimenti
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {scadenze.filter(s => s.stato === 'PAGATO').length === 0 ? (
+                {scadenze.filter(s => s.stato === 'PAGATO').length === 0 && transactions.length === 0 ? (
                   <div className="text-center py-8">
                     <Receipt className="w-12 h-12 mx-auto mb-4 text-[#e8fbff]/30" />
-                    <p className="text-[#e8fbff]/50">Nessun pagamento effettuato</p>
+                    <p className="text-[#e8fbff]/50">Nessun movimento effettuato</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {/* v3.73.1: Ricariche Wallet */}
+                    {transactions.filter(tx => tx.type === 'DEPOSIT').map((tx) => (
+                      <div key={`tx-${tx.id}`} className="p-4 bg-[#0b1220] rounded-lg border border-blue-500/10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-[#e8fbff]">
+                              <Plus className="w-4 h-4 inline mr-1 text-blue-400" />
+                              Ricarica Wallet {tx.wallet_type === 'GENERICO' ? 'Generico' : tx.market_name || 'Spunta'}
+                            </p>
+                            <p className="text-sm text-[#e8fbff]/50">
+                              {tx.description || 'Ricarica PagoPA'}
+                            </p>
+                            <p className="text-xs text-[#e8fbff]/30">
+                              {new Date(tx.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge className="bg-blue-500/20 text-blue-400">RICARICA</Badge>
+                            <p className="text-lg font-bold text-blue-400">
+                              +€{parseFloat(tx.amount).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Pagamenti Canone */}
                     {scadenze.filter(s => s.stato === 'PAGATO').map((scadenza) => (
                       <div key={scadenza.id} className="p-4 bg-[#0b1220] rounded-lg border border-green-500/10">
                         <div className="flex items-center justify-between">

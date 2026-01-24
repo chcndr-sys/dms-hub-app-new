@@ -948,7 +948,7 @@ export default function WalletPanel() {
             size="sm"
             variant={subTab === 'notifiche' ? 'default' : 'outline'}
             onClick={() => setSubTab('notifiche')}
-            className={subTab === 'notifiche' ? 'bg-[#8b5cf6]' : 'border-slate-700 text-slate-300'}
+            className={`flex-shrink-0 whitespace-nowrap ${subTab === 'notifiche' ? 'bg-[#8b5cf6]' : 'border-slate-700 text-slate-300'}`}
           >
             <Bell className="mr-1 h-4 w-4" /> Notifiche
             {notificheNonLette > 0 && (
