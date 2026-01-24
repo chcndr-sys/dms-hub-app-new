@@ -49,17 +49,26 @@ export default function AppImpresaNotifiche() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // ID impresa demo (in produzione verrà dall'autenticazione)
-  const IMPRESA_ID = 1;
-  const IMPRESA_NOME = 'Mercato Centrale S.r.l.';
+  const getImpresaData = () => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      return { id: user.impresa_id || null, nome: user.impresa_nome || user.name || 'Impresa' };
+    }
+    return { id: null, nome: 'Impresa' };
+  };
+  const impresaData = getImpresaData();
+  const IMPRESA_ID = impresaData.id;
+  const IMPRESA_NOME = impresaData.nome;
   
-  const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me/api';
 
   // Carica notifiche
   const fetchNotifiche = async () => {
     try {
       setLoading(true);
       const statoParam = filtro === 'non_lette' ? '&stato=INVIATO' : filtro === 'lette' ? '&stato=LETTO' : '';
-      const response = await fetch(`${MIHUB_API}/notifiche/impresa/${IMPRESA_ID}?limit=50${statoParam}`);
+      const response = await fetch(`${API_BASE_URL}/notifiche/impresa/${IMPRESA_ID}?limit=50${statoParam}`);
       const data = await response.json();
       
       if (data.success) {
@@ -76,7 +85,7 @@ export default function AppImpresaNotifiche() {
   useEffect(() => {
     fetchNotifiche();
     // Fetch messaggi inviati dall'impresa (risposte)
-    fetch(`${MIHUB_API}/notifiche/risposte`)
+    fetch(`${API_BASE_URL}/notifiche/risposte`)
       .then(res => res.json())
       .then(data => {
         if (data.success && Array.isArray(data.data)) {
@@ -96,7 +105,7 @@ export default function AppImpresaNotifiche() {
     if (notifica.stato === 'LETTO') return;
     
     try {
-      await fetch(`${MIHUB_API}/notifiche/leggi/${notifica.id}`, {
+      await fetch(`${API_BASE_URL}/notifiche/leggi/${notifica.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ impresa_id: IMPRESA_ID })
@@ -118,7 +127,7 @@ export default function AppImpresaNotifiche() {
     
     setInvioRisposta(true);
     try {
-      const response = await fetch(`${MIHUB_API}/notifiche/reply`, {
+      const response = await fetch(`${API_BASE_URL}/notifiche/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -148,7 +157,7 @@ export default function AppImpresaNotifiche() {
   // Archivia notifica
   const archiviaNotifica = async (notifica: Notifica) => {
     try {
-      await fetch(`${MIHUB_API}/notifiche/archivia/${notifica.id}`, {
+      await fetch(`${API_BASE_URL}/notifiche/archivia/${notifica.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ impresa_id: IMPRESA_ID })
