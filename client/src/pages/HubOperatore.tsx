@@ -22,8 +22,10 @@ import {
   ArrowDownCircle,
   Send,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
+import { useLocation, Link } from 'wouter';
 
 // API Base URL
 const API_BASE = 'https://orchestratore.mio-hub.me/api/tcc/v2';
@@ -539,10 +541,22 @@ export default function HubOperatore() {
     setIsScanning(false);
   };
 
+  // Verifica se arriviamo dalla HomePage
+  const [location] = useLocation();
+  const fromHome = location.includes('/hub-operatore');
+
   return (
     <div className="min-h-screen bg-[#0b1220] text-[#e8fbff]">
+      {/* Torna alla Home */}
+      <div className="container mx-auto px-4 pt-4">
+        <Link href="/" className="inline-flex items-center gap-2 text-[#4fd1c5] hover:text-[#81e6d9] transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          <span>Torna alla Home</span>
+        </Link>
+      </div>
+      
       {/* Header */}
-      <header className="bg-gradient-to-r from-[#f97316] to-[#f59e0b] p-4 shadow-lg">
+      <header className="bg-gradient-to-r from-[#f97316] to-[#f59e0b] p-4 shadow-lg mt-2">
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
