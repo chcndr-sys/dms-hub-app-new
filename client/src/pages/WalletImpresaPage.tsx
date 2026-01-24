@@ -1,7 +1,7 @@
 /**
  * Wallet Impresa - Pagamenti PagoPA
  * Pagina dedicata per visualizzare il wallet dell'impresa loggata
- * v3.71.0 - Fix scadenze e pulsante pagamento
+ * v3.73.0 - Fix wallet GENERICO: testo corretto, pulsante Ricarica, dialog ricarica
  */
 
 import { useState, useEffect } from 'react';
@@ -10,11 +10,13 @@ import {
   Wallet, Euro, Calendar, Clock, CreditCard, CheckCircle, 
   AlertCircle, ArrowLeft, RefreshCw, FileText, Building2,
   Receipt, TrendingUp, ChevronRight, ChevronDown, ChevronUp,
-  Store, MapPin, AlertTriangle
+  Store, MapPin, AlertTriangle, Plus, Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Collapsible,
@@ -25,6 +27,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -89,10 +92,16 @@ export default function WalletImpresaPage() {
   const [scadenze, setScadenze] = useState<ScadenzaAPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('wallet');
-  const [expandedSpunta, setExpandedSpunta] = useState(false);
+  const [expandedSpunta, setExpandedSpunta] = useState(true);
   const [expandedConcessioni, setExpandedConcessioni] = useState(true);
   const [selectedScadenza, setSelectedScadenza] = useState<ScadenzaAPI | null>(null);
   const [showPagamentoDialog, setShowPagamentoDialog] = useState(false);
+  
+  // Stati per dialog ricarica wallet GENERICO
+  const [showRicaricaDialog, setShowRicaricaDialog] = useState(false);
+  const [selectedWalletRicarica, setSelectedWalletRicarica] = useState<WalletItem | null>(null);
+  const [ricaricaAmount, setRicaricaAmount] = useState('');
+  const [isProcessingRicarica, setIsProcessingRicarica] = useState(false);
   
   // ID impresa dall'utente loggato
   const getImpresaId = () => {
@@ -232,6 +241,48 @@ export default function WalletImpresaPage() {
     }
   };
 
+  // Gestisce apertura dialog ricarica wallet GENERICO
+  const handleOpenRicarica = (wallet: WalletItem) => {
+    setSelectedWalletRicarica(wallet);
+    setRicaricaAmount('');
+    setShowRicaricaDialog(true);
+  };
+
+  // Esegue ricarica wallet GENERICO
+  const handleExecuteRicarica = async (mode: 'AVVISO' | 'PAGA_ORA') => {
+    if (!selectedWalletRicarica || !ricaricaAmount) return;
+    setIsProcessingRicarica(true);
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const description = `Ricarica Wallet Generico - ${company?.ragione_sociale}`;
+      
+      const response = await fetch(`${API_URL}/api/wallets/deposit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet_id: selectedWalletRicarica.id,
+          amount: parseFloat(ricaricaAmount),
+          description
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(mode === 'AVVISO' ? "Avviso PagoPA generato con successo!" : "Ricarica effettuata con successo!");
+        setShowRicaricaDialog(false);
+        fetchData(); // Ricarica dati wallet
+      } else {
+        alert("Errore: " + data.error);
+      }
+    } catch (err) {
+      console.error('Errore ricarica:', err);
+      alert('Errore di connessione');
+    } finally {
+      setIsProcessingRicarica(false);
+    }
+  };
+
   // Colore stato wallet
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -288,11 +339,11 @@ export default function WalletImpresaPage() {
             Torna alla Home
           </Button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#14b8a6] to-[#3b82f6] flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-full bg-[#14b8a6]/20 flex items-center justify-center">
+              <Wallet className="w-5 h-5 text-[#14b8a6]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-[#e8fbff]">Wallet Impresa</h1>
+              <h1 className="text-lg font-bold text-[#e8fbff]">Wallet Impresa</h1>
               <p className="text-sm text-[#e8fbff]/50">{company?.ragione_sociale || 'Caricamento...'}</p>
             </div>
           </div>
@@ -302,65 +353,39 @@ export default function WalletImpresaPage() {
             onClick={fetchData}
             className="border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/10"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className="w-4 h-4 mr-2" />
             Aggiorna
           </Button>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="container mx-auto p-4 space-y-6">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Cards Riepilogo */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-[#1a2332] border-[#14b8a6]/20">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-[#e8fbff]/50">Saldo Totale</p>
-                  <p className={`text-2xl font-bold ${totaleSaldo >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
-                    €{totaleSaldo.toFixed(2)}
-                  </p>
-                </div>
-                <Euro className="w-8 h-8 text-[#14b8a6]/50" />
-              </div>
+              <p className="text-sm text-[#e8fbff]/50">Saldo Totale</p>
+              <p className={`text-2xl font-bold ${totaleSaldo >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
+                €{totaleSaldo.toFixed(2)}
+              </p>
             </CardContent>
           </Card>
-          
           <Card className="bg-[#1a2332] border-[#14b8a6]/20">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-[#e8fbff]/50">Wallet Spunta</p>
-                  <p className="text-2xl font-bold text-[#14b8a6]">{company?.spunta_wallets?.length || 0}</p>
-                </div>
-                <Wallet className="w-8 h-8 text-[#14b8a6]/50" />
-              </div>
+              <p className="text-sm text-[#e8fbff]/50">Wallet Spunta</p>
+              <p className="text-2xl font-bold text-[#14b8a6]">{company?.spunta_wallets?.length || 0}</p>
             </CardContent>
           </Card>
-          
           <Card className="bg-[#1a2332] border-[#14b8a6]/20">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-[#e8fbff]/50">Concessioni</p>
-                  <p className="text-2xl font-bold text-[#3b82f6]">{company?.concession_wallets?.length || 0}</p>
-                </div>
-                <Store className="w-8 h-8 text-[#3b82f6]/50" />
-              </div>
+              <p className="text-sm text-[#e8fbff]/50">Concessioni</p>
+              <p className="text-2xl font-bold text-[#3b82f6]">{company?.concession_wallets?.length || 0}</p>
             </CardContent>
           </Card>
-          
           <Card className="bg-[#1a2332] border-[#14b8a6]/20">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-[#e8fbff]/50">Da Pagare</p>
-                  <p className={`text-2xl font-bold ${totaleDaPagare > 0 ? 'text-[#f59e0b]' : 'text-[#10b981]'}`}>
-                    €{totaleDaPagare.toFixed(2)}
-                  </p>
-                </div>
-                <Receipt className="w-8 h-8 text-[#f59e0b]/50" />
-              </div>
+              <p className="text-sm text-[#e8fbff]/50">Da Pagare</p>
+              <p className="text-2xl font-bold text-[#ef4444]">€{totaleDaPagare.toFixed(2)}</p>
             </CardContent>
           </Card>
         </div>
@@ -373,11 +398,11 @@ export default function WalletImpresaPage() {
               Wallet
             </TabsTrigger>
             <TabsTrigger value="scadenze" className="data-[state=active]:bg-[#14b8a6]/20">
-              <Receipt className="w-4 h-4 mr-2" />
+              <Calendar className="w-4 h-4 mr-2" />
               Scadenze ({scadenzeNonPagate.length})
             </TabsTrigger>
             <TabsTrigger value="storico" className="data-[state=active]:bg-[#14b8a6]/20">
-              <FileText className="w-4 h-4 mr-2" />
+              <Receipt className="w-4 h-4 mr-2" />
               Storico
             </TabsTrigger>
           </TabsList>
@@ -385,19 +410,17 @@ export default function WalletImpresaPage() {
           {/* Tab Wallet */}
           <TabsContent value="wallet">
             <Card className="bg-[#1a2332] border-[#14b8a6]/20">
-              <CardHeader>
+              <CardHeader className="border-b border-[#14b8a6]/10">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                      <Building2 className="w-5 h-5 text-[#14b8a6]" />
-                      {company?.ragione_sociale || 'Impresa'}
-                    </CardTitle>
-                    <CardDescription className="text-[#e8fbff]/50">
-                      P.IVA: {company?.partita_iva || 'N/A'}
-                    </CardDescription>
+                  <div className="flex items-center gap-3">
+                    <Building2 className="w-6 h-6 text-[#14b8a6]" />
+                    <div>
+                      <CardTitle className="text-[#e8fbff]">{company?.ragione_sociale}</CardTitle>
+                      <CardDescription className="text-[#e8fbff]/50">P.IVA: {company?.partita_iva}</CardDescription>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <Badge className="bg-[#14b8a6]/20 text-[#14b8a6] mb-1">
+                    <Badge variant="outline" className="border-[#14b8a6]/30 text-[#14b8a6]">
                       WALLET: {(company?.spunta_wallets?.length || 0) + (company?.concession_wallets?.length || 0)}
                     </Badge>
                     <p className={`text-lg font-bold ${totaleSaldo >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
@@ -414,7 +437,7 @@ export default function WalletImpresaPage() {
                   </div>
                 ) : (
                   <>
-                    {/* Portafogli Spunta */}
+                    {/* Portafogli Spunta / Generici */}
                     <Collapsible open={expandedSpunta} onOpenChange={setExpandedSpunta}>
                       <CollapsibleTrigger className="w-full flex items-center justify-between p-3 bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 hover:border-[#14b8a6]/40 transition-colors">
                         <div className="flex items-center gap-2 text-[#14b8a6]">
@@ -425,8 +448,8 @@ export default function WalletImpresaPage() {
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2 space-y-2">
                         {company?.spunta_wallets?.map((wallet) => (
-                          <div key={wallet.id} className="p-3 bg-[#0b1220]/50 rounded-lg border border-[#14b8a6]/10">
-                            <div className="flex items-center justify-between">
+                          <div key={wallet.id} className="p-4 bg-[#0b1220]/50 rounded-lg border border-[#14b8a6]/10">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                               <div className="flex items-center gap-3">
                                 {wallet.type === 'GENERICO' ? (
                                   <Badge className="bg-slate-600 text-white">GENERICO</Badge>
@@ -434,17 +457,31 @@ export default function WalletImpresaPage() {
                                   <Badge className="bg-[#14b8a6]/20 text-[#14b8a6]">{wallet.market_name}</Badge>
                                 )}
                                 <div>
-                                  <p className="font-medium text-[#e8fbff]">
-                                    {wallet.type === 'GENERICO' ? 'Credito Spunta' : wallet.market_name}
-                                  </p>
                                   <p className="text-sm text-[#e8fbff]/50">ID Wallet: #{wallet.id}</p>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <Badge className={getStatusColor(wallet.status)}>{wallet.status}</Badge>
-                                <p className={`text-lg font-bold ${wallet.balance >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
-                                  €{wallet.balance.toFixed(2)}
-                                </p>
+                              
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <p className="text-xs text-[#e8fbff]/50 uppercase">Saldo Wallet</p>
+                                  <p className={`text-xl font-bold ${wallet.balance >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
+                                    €{wallet.balance.toFixed(2)}
+                                  </p>
+                                  <p className={`text-xs ${wallet.balance <= 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                    {wallet.balance <= 0 ? 'Da Ricaricare' : 'In Regola'}
+                                  </p>
+                                </div>
+                                
+                                {/* Pulsante Ricarica per wallet GENERICO */}
+                                {wallet.type === 'GENERICO' && (
+                                  <Button 
+                                    variant="outline"
+                                    className="border-[#14b8a6]/30 hover:bg-[#14b8a6]/10 text-[#e8fbff] gap-2"
+                                    onClick={() => handleOpenRicarica(wallet)}
+                                  >
+                                    <Plus className="h-4 w-4" /> Ricarica
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -466,22 +503,30 @@ export default function WalletImpresaPage() {
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2 space-y-2">
                         {company?.concession_wallets?.map((wallet) => (
-                          <div key={wallet.id} className="p-3 bg-[#0b1220]/50 rounded-lg border border-[#3b82f6]/10">
-                            <div className="flex items-center justify-between">
+                          <div key={wallet.id} className="p-4 bg-[#0b1220]/50 rounded-lg border border-[#3b82f6]/10">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                               <div className="flex items-center gap-3">
-                                <Store className="w-4 h-4 text-[#3b82f6]" />
+                                <Badge className="bg-[#3b82f6]/20 text-[#3b82f6]">{wallet.market_name}</Badge>
                                 <div>
-                                  <p className="font-medium text-[#e8fbff]">{wallet.market_name}</p>
+                                  <p className="font-medium text-[#e8fbff]">Posteggio {wallet.stall_number}</p>
                                   <p className="text-sm text-[#e8fbff]/50">
-                                    Concessione: #{wallet.concession_code} • {wallet.stall_area} mq
+                                    Area: {wallet.stall_area} mq
                                   </p>
                                 </div>
                               </div>
-                              <div className="text-right">
+                              
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <p className="text-xs text-[#e8fbff]/50 uppercase">Saldo Wallet</p>
+                                  <p className={`text-xl font-bold ${wallet.balance >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
+                                    €{wallet.balance.toFixed(2)}
+                                  </p>
+                                  <p className={`text-xs ${wallet.balance <= 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                    {wallet.balance <= 0 ? 'Da Ricaricare' : 'In Regola'}
+                                  </p>
+                                </div>
+                                
                                 <Badge className={getStatusColor(wallet.status)}>{wallet.status}</Badge>
-                                <p className={`text-lg font-bold ${wallet.balance >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
-                                  €{wallet.balance.toFixed(2)}
-                                </p>
                               </div>
                             </div>
                           </div>
@@ -502,77 +547,54 @@ export default function WalletImpresaPage() {
             <Card className="bg-[#1a2332] border-[#14b8a6]/20">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-[#14b8a6]" />
+                  <Calendar className="w-5 h-5 text-[#14b8a6]" />
                   Scadenze da Pagare
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {scadenzeNonPagate.length === 0 ? (
-                  <div className="text-center py-8 text-[#e8fbff]/50">
-                    <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-400" />
-                    <p>Nessuna scadenza da pagare</p>
+                  <div className="text-center py-8">
+                    <CheckCircle className="w-12 h-12 mx-auto mb-4 text-[#10b981]" />
+                    <p className="text-[#e8fbff]/70">Nessuna scadenza da pagare</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {scadenzeNonPagate.map((scadenza) => {
-                      const importo = parseFloat(scadenza.importo_dovuto) || 0;
-                      const mora = parseFloat(scadenza.importo_mora) || 0;
-                      const interessi = parseFloat(scadenza.importo_interessi) || 0;
-                      const totale = importo + mora + interessi;
-                      const inMora = scadenza.stato === 'IN_MORA' || scadenza.stato_dinamico === 'IN_MORA';
-                      
-                      return (
-                        <div 
-                          key={scadenza.id} 
-                          className={`p-4 bg-[#0b1220] rounded-lg border ${inMora ? 'border-red-500/30' : 'border-[#14b8a6]/10'}`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              {inMora ? (
-                                <AlertTriangle className="w-5 h-5 text-red-400" />
-                              ) : (
-                                <Receipt className="w-5 h-5 text-[#14b8a6]" />
-                              )}
-                              <div>
-                                <h4 className="font-medium text-[#e8fbff]">
-                                  {scadenza.tipo === 'CANONE_ANNUO' ? 'Canone Annuo' : scadenza.tipo} - Rata {scadenza.rata_numero}/{scadenza.rata_totale}
-                                </h4>
-                                <p className="text-sm text-[#e8fbff]/50">
-                                  {scadenza.mercato_nome} • Posteggio {scadenza.posteggio}
-                                </p>
-                                <p className="text-sm text-[#e8fbff]/50">
-                                  Scadenza: {new Date(scadenza.data_scadenza).toLocaleDateString('it-IT')}
-                                  {inMora && (
-                                    <span className="text-red-400 ml-2">
-                                      ({scadenza.giorni_ritardo_calc || scadenza.giorni_ritardo} gg MORA)
-                                    </span>
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <div className="text-right">
-                                <Badge className={getStatoColor(scadenza.stato_dinamico || scadenza.stato)}>
-                                  {(scadenza.stato_dinamico || scadenza.stato).replace('_', ' ')}
-                                </Badge>
-                                <p className="text-lg font-bold text-[#e8fbff]">€{importo.toFixed(2)}</p>
-                                {mora > 0 && (
-                                  <p className="text-sm text-red-400">+€{(mora + interessi).toFixed(2)} mora</p>
-                                )}
-                              </div>
-                              <Button 
-                                size="sm" 
-                                onClick={() => handlePaga(scadenza)} 
-                                className={`${inMora ? 'bg-red-600 hover:bg-red-700' : 'bg-[#14b8a6] hover:bg-[#14b8a6]/80'}`}
-                              >
-                                <CreditCard className="w-4 h-4 mr-2" />
-                                Paga €{totale.toFixed(2)}
-                              </Button>
-                            </div>
+                    {scadenzeNonPagate.map((scadenza) => (
+                      <div key={scadenza.id} className="p-4 bg-[#0b1220] rounded-lg border border-[#14b8a6]/10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-[#e8fbff]">{scadenza.mercato_nome}</p>
+                            <p className="text-sm text-[#e8fbff]/50">
+                              Posteggio {scadenza.posteggio} • Rata {scadenza.rata_numero}/{scadenza.rata_totale}
+                            </p>
+                            <p className="text-xs text-[#e8fbff]/30">
+                              Scadenza: {new Date(scadenza.data_scadenza).toLocaleDateString('it-IT')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge className={getStatoColor(scadenza.stato_dinamico || scadenza.stato)}>
+                              {scadenza.stato_dinamico || scadenza.stato}
+                            </Badge>
+                            <p className="text-lg font-bold text-[#e8fbff]">
+                              €{(parseFloat(scadenza.importo_dovuto) + parseFloat(scadenza.importo_mora || '0')).toFixed(2)}
+                            </p>
+                            {parseFloat(scadenza.importo_mora) > 0 && (
+                              <p className="text-xs text-red-400">
+                                +€{parseFloat(scadenza.importo_mora).toFixed(2)} mora
+                              </p>
+                            )}
+                            <Button 
+                              size="sm" 
+                              className="mt-2 bg-[#14b8a6] hover:bg-[#14b8a6]/80"
+                              onClick={() => handlePaga(scadenza)}
+                            >
+                              <CreditCard className="w-4 h-4 mr-1" />
+                              Paga
+                            </Button>
                           </div>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -584,40 +606,42 @@ export default function WalletImpresaPage() {
             <Card className="bg-[#1a2332] border-[#14b8a6]/20">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-[#14b8a6]" />
+                  <Receipt className="w-5 h-5 text-[#14b8a6]" />
                   Storico Pagamenti
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {scadenze.filter(s => s.stato === 'PAGATO').length === 0 ? (
-                  <div className="text-center py-8 text-[#e8fbff]/50">
-                    <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Nessun pagamento effettuato</p>
+                  <div className="text-center py-8">
+                    <Receipt className="w-12 h-12 mx-auto mb-4 text-[#e8fbff]/30" />
+                    <p className="text-[#e8fbff]/50">Nessun pagamento effettuato</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {scadenze
-                      .filter(s => s.stato === 'PAGATO')
-                      .map((scadenza) => (
-                        <div key={scadenza.id} className="flex items-center justify-between p-4 bg-[#0b1220] rounded-lg border border-green-500/20">
-                          <div className="flex items-center gap-4">
-                            <CheckCircle className="w-5 h-5 text-green-400" />
-                            <div>
-                              <h4 className="font-medium text-[#e8fbff]">
-                                {scadenza.tipo === 'CANONE_ANNUO' ? 'Canone Annuo' : scadenza.tipo} - Rata {scadenza.rata_numero}/{scadenza.rata_totale}
-                              </h4>
-                              <p className="text-sm text-[#e8fbff]/50">
-                                Pagato il: {scadenza.data_pagamento ? new Date(scadenza.data_pagamento).toLocaleDateString('it-IT') : 'N/A'}
-                                {scadenza.pagato_in_mora && <span className="text-yellow-400 ml-2">(pagato in mora)</span>}
-                              </p>
-                            </div>
+                    {scadenze.filter(s => s.stato === 'PAGATO').map((scadenza) => (
+                      <div key={scadenza.id} className="p-4 bg-[#0b1220] rounded-lg border border-green-500/10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-[#e8fbff]">{scadenza.mercato_nome}</p>
+                            <p className="text-sm text-[#e8fbff]/50">
+                              Posteggio {scadenza.posteggio} • Rata {scadenza.rata_numero}/{scadenza.rata_totale}
+                            </p>
+                            <p className="text-xs text-[#e8fbff]/30">
+                              Pagato il: {scadenza.data_pagamento ? new Date(scadenza.data_pagamento).toLocaleDateString('it-IT') : 'N/A'}
+                            </p>
                           </div>
-                          <div className="flex items-center gap-4">
+                          <div className="text-right">
                             <Badge className="bg-green-500/20 text-green-400">PAGATO</Badge>
-                            <span className="text-xl font-bold text-green-400">€{parseFloat(scadenza.importo_pagato || scadenza.importo_dovuto).toFixed(2)}</span>
+                            <p className="text-lg font-bold text-green-400">
+                              €{parseFloat(scadenza.importo_pagato || scadenza.importo_dovuto).toFixed(2)}
+                            </p>
+                            {scadenza.pagato_in_mora && (
+                              <p className="text-xs text-red-400">Pagato in mora</p>
+                            )}
                           </div>
                         </div>
-                      ))}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -626,7 +650,7 @@ export default function WalletImpresaPage() {
         </Tabs>
       </div>
 
-      {/* Dialog Pagamento */}
+      {/* Dialog Pagamento Scadenza */}
       <Dialog open={showPagamentoDialog} onOpenChange={setShowPagamentoDialog}>
         <DialogContent className="bg-[#1a2332] border-[#14b8a6]/20 text-[#e8fbff]">
           <DialogHeader>
@@ -677,6 +701,54 @@ export default function WalletImpresaPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Ricarica Wallet GENERICO */}
+      <Dialog open={showRicaricaDialog} onOpenChange={setShowRicaricaDialog}>
+        <DialogContent className="bg-[#1a2332] border-[#14b8a6]/20 text-[#e8fbff] sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-[#14b8a6]" />
+              Ricarica Wallet Generico
+            </DialogTitle>
+            <DialogDescription className="text-[#e8fbff]/70">
+              {company?.ragione_sociale} - Borsellino Ricaricabile
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-6 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-[#e8fbff]/70">Importo da Ricaricare (€)</Label>
+              <Input 
+                type="number" 
+                value={ricaricaAmount}
+                onChange={(e) => setRicaricaAmount(e.target.value)}
+                className="bg-[#0b1220] border-[#14b8a6]/30 text-[#e8fbff] text-lg"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              className="border-[#14b8a6]/30 text-[#e8fbff]/70 hover:bg-[#14b8a6]/10"
+              onClick={() => handleExecuteRicarica('AVVISO')}
+              disabled={isProcessingRicarica || !ricaricaAmount}
+            >
+              {isProcessingRicarica ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+              Genera Avviso PagoPA
+            </Button>
+            <Button 
+              className="bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white"
+              onClick={() => handleExecuteRicarica('PAGA_ORA')}
+              disabled={isProcessingRicarica || !ricaricaAmount}
+            >
+              {isProcessingRicarica ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+              Paga Ora (Simulazione)
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

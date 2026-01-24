@@ -64,9 +64,10 @@ export default function HomePage() {
         const response = await fetch(`${API_BASE_URL}/api/notifiche/impresa/${impresaId}?limit=100`);
         if (response.ok) {
           const data = await response.json();
-          // Conta solo le notifiche non lette
-          const unread = data.notifiche?.filter((n: any) => !n.letto)?.length || 0;
-          setUnreadNotifications(unread);
+          // v3.73.0: Usa il conteggio non_lette dal backend invece di filtrare
+          if (data.success && data.data) {
+            setUnreadNotifications(data.data.non_lette || 0);
+          }
         }
       } catch (error) {
         console.error('Errore fetch notifiche:', error);
