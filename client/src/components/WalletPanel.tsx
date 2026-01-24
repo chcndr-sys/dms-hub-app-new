@@ -903,7 +903,7 @@ export default function WalletPanel() {
             Gestione borsellini digitali: Spunta (ricaricabile) e Concessioni (canone annuo)
           </p>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 pr-4 scrollbar-thin scrollbar-thumb-slate-600">
+        <div className="flex gap-2 flex-wrap">
           <Button 
             size="sm"
             variant={subTab === 'wallet' ? 'default' : 'outline'}
