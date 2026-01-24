@@ -1976,9 +1976,7 @@ export default function DashboardPA() {
             <ProtectedQuickAccess quickId="hub_operatore">
               <QuickAccessButton href="/hub-operatore" icon={<Activity className="h-5 w-5" />} label="Hub Operatore" color="orange" />
             </ProtectedQuickAccess>
-            <ProtectedQuickAccess quickId="notifiche">
-              <QuickAccessButton href="/app/impresa/notifiche" icon={<Bell className="h-5 w-5" />} label="Notifiche" color="yellow" badge={notificheNonLette} />
-            </ProtectedQuickAccess>
+
             <ProtectedQuickAccess quickId="bus_hub">
             <button
               onClick={() => window.open('https://api.mio-hub.me/tools/bus_hub.html', '_blank')}
@@ -2280,7 +2278,7 @@ export default function DashboardPA() {
             <ProtectedTab tabId="notifications">
             <button
               onClick={() => setActiveTab('notifications')}
-              className={`relative flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
+              className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 activeTab === 'notifications'
                   ? 'bg-[#ec4899] border-[#ec4899] text-white shadow-lg'
                   : 'bg-[#ec4899]/10 border-[#ec4899]/30 hover:bg-[#ec4899]/20 text-[#ec4899]'
@@ -2288,11 +2286,6 @@ export default function DashboardPA() {
             >
               <Bell className="h-6 w-6" />
               <span className="text-xs font-medium">Notifiche</span>
-              {notificheNonLette > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {notificheNonLette > 99 ? '99+' : notificheNonLette}
-                </span>
-              )}
             </button>
             </ProtectedTab>
             <ProtectedTab tabId="mobility">

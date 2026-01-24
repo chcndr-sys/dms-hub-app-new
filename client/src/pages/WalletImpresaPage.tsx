@@ -643,8 +643,8 @@ export default function WalletImpresaPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* v3.73.1: Ricariche Wallet */}
-                    {transactions.filter(tx => tx.type === 'DEPOSIT').map((tx) => (
+                    {/* v3.73.1: Ricariche Wallet - Solo wallet SPUNTISTA/GENERICO, non CONCESSION */}
+                    {transactions.filter(tx => tx.type === 'DEPOSIT' && tx.wallet_type === 'SPUNTISTA').map((tx) => (
                       <div key={`tx-${tx.id}`} className="p-4 bg-[#0b1220] rounded-lg border border-blue-500/10">
                         <div className="flex items-center justify-between">
                           <div>

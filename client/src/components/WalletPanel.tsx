@@ -908,7 +908,7 @@ export default function WalletPanel() {
             size="sm"
             variant={subTab === 'wallet' ? 'default' : 'outline'}
             onClick={() => setSubTab('wallet')}
-            className={subTab === 'wallet' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
+            className={`flex-shrink-0 ${subTab === 'wallet' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}`}
           >
             <Wallet className="mr-1 h-4 w-4" /> Wallet
           </Button>
@@ -916,7 +916,7 @@ export default function WalletPanel() {
             size="sm"
             variant={subTab === 'pagopa' ? 'default' : 'outline'}
             onClick={() => setSubTab('pagopa')}
-            className={subTab === 'pagopa' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
+            className={`flex-shrink-0 ${subTab === 'pagopa' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}`}
           >
             <CreditCard className="mr-1 h-4 w-4" /> PagoPA
           </Button>
@@ -924,7 +924,7 @@ export default function WalletPanel() {
             size="sm"
             variant={subTab === 'riconciliazione' ? 'default' : 'outline'}
             onClick={() => setSubTab('riconciliazione')}
-            className={subTab === 'riconciliazione' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
+            className={`flex-shrink-0 ${subTab === 'riconciliazione' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}`}
           >
             <RefreshCw className="mr-1 h-4 w-4" /> Riconc.
           </Button>
@@ -932,7 +932,7 @@ export default function WalletPanel() {
             size="sm"
             variant={subTab === 'storico' ? 'default' : 'outline'}
             onClick={() => setSubTab('storico')}
-            className={subTab === 'storico' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}
+            className={`flex-shrink-0 ${subTab === 'storico' ? 'bg-[#3b82f6]' : 'border-slate-700 text-slate-300'}`}
           >
             <HistoryIcon className="mr-1 h-4 w-4" /> Storico
           </Button>
@@ -940,7 +940,7 @@ export default function WalletPanel() {
             size="sm"
             variant={subTab === 'canone' ? 'default' : 'outline'}
             onClick={() => setSubTab('canone')}
-            className={subTab === 'canone' ? 'bg-[#f59e0b]' : 'border-slate-700 text-slate-300'}
+            className={`flex-shrink-0 ${subTab === 'canone' ? 'bg-[#f59e0b]' : 'border-slate-700 text-slate-300'}`}
           >
             <Euro className="mr-1 h-4 w-4" /> Canone
           </Button>
