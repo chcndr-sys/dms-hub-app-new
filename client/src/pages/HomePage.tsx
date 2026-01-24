@@ -33,6 +33,7 @@ export default function HomePage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   
   // Permessi utente per controllare visibilità tab
   const { canViewTab, canViewQuickAccess, loading: permissionsLoading } = usePermissions();
@@ -48,6 +49,37 @@ export default function HomePage() {
     window.addEventListener('storage', checkAuth);
     return () => window.removeEventListener('storage', checkAuth);
   }, []);
+
+  // Fetch notifiche non lette per l'impresa dell'utente
+  useEffect(() => {
+    const fetchUnreadNotifications = async () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) return;
+        const user = JSON.parse(userStr);
+        const impresaId = user.impresa_id;
+        if (!impresaId) return;
+        
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+        const response = await fetch(`${API_BASE_URL}/api/notifiche/impresa/${impresaId}?limit=100`);
+        if (response.ok) {
+          const data = await response.json();
+          // Conta solo le notifiche non lette
+          const unread = data.notifiche?.filter((n: any) => !n.letto)?.length || 0;
+          setUnreadNotifications(unread);
+        }
+      } catch (error) {
+        console.error('Errore fetch notifiche:', error);
+      }
+    };
+    
+    if (isAuthenticated) {
+      fetchUnreadNotifications();
+      // Aggiorna ogni 60 secondi
+      const interval = setInterval(fetchUnreadNotifications, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
 
   // Naviga dopo login riuscito
   useEffect(() => {
@@ -396,10 +428,15 @@ export default function HomePage() {
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/app/impresa/notifiche')}
-                className="h-24 w-36 flex-col gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+                className="h-24 w-36 flex-col gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 relative"
               >
                 <Bell className="w-6 h-6" />
                 <span>Notifiche</span>
+                {unreadNotifications > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                  </span>
+                )}
               </Button>
             )}
             {/* Anagrafica - placeholder per sviluppi futuri */}
