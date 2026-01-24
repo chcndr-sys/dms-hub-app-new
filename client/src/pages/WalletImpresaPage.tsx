@@ -125,9 +125,10 @@ export default function WalletImpresaPage() {
       
       if (walletsData.success && walletsData.data) {
         const wallets = walletsData.data;
-        spuntaWallets = wallets.filter((w: any) => w.type === 'SPUNTA' || w.type === 'GENERICO').map((w: any) => ({
+        // v3.73.0: Aggiunto supporto per tipo SPUNTISTA (mostrato come GENERICO)
+        spuntaWallets = wallets.filter((w: any) => w.type === 'SPUNTA' || w.type === 'GENERICO' || w.type === 'SPUNTISTA').map((w: any) => ({
           id: w.id,
-          type: (w.type === 'GENERICO' ? 'GENERICO' : 'SPUNTA') as 'SPUNTA' | 'GENERICO',
+          type: (w.type === 'GENERICO' || w.type === 'SPUNTISTA' ? 'GENERICO' : 'SPUNTA') as 'SPUNTA' | 'GENERICO',
           balance: parseFloat(w.balance) || 0,
           status: w.status,
           market_name: w.market_name,
