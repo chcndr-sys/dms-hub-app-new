@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.73.1  
-> **Data:** 24 Gennaio 2026  
+> **Versione:** 3.73.12  
+> **Data:** 25 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -4752,4 +4752,192 @@ FLUSSO CREAZIONE:
 2. **NON usare `data.notifiche.filter(!n.letto)`** - usare `data.data.non_lette` dal backend
 3. **NON rimuovere i filtri notifiche** - gli utenti vogliono vedere sia ricevuti che inviati
 4. **NON dimenticare `flex-shrink-0`** sui pulsanti in container con overflow-x-auto
+
+
+
+---
+
+## 💡 AGGIORNAMENTO 25 GENNAIO 2026 - SESSIONE COMPLETA
+
+### ✅ Modifiche Implementate
+
+#### 1. Fix Barra Rapida Dashboard PA (v3.73.5)
+**Problema:** I tasti della barra rapida "Accesso Rapido Applicativi" andavano a capo invece di stare su una riga.
+
+**File:** `client/src/pages/DashboardPA.tsx`
+
+**Fix:**
+- Cambiato da `grid-cols-5 md:grid-cols-10` a `grid-cols-11` per forzare tutti gli 11 tasti su una riga
+- Ridotto gap da `gap-3` a `gap-2` per risparmiare spazio
+
+---
+
+#### 2. Fix Sub-Tab WalletPanel (v3.73.6 - v3.73.7)
+**Problema:** Il sub-tab "Notifiche" nel WalletPanel era tagliato e il badge notifiche non appariva.
+
+**File:** `client/src/components/WalletPanel.tsx`
+
+**Fix:**
+- Sub-tab spostati su riga separata sotto il titolo per avere più spazio
+- Endpoint notifiche corretto: `/api/notifiche/messaggi/TRIBUTI/1`
+- Badge rosso con numero notifiche non lette ora visibile
+
+---
+
+#### 3. Fix Saldo Wallet Lista Posteggi (v3.73.8)
+**Problema:** Nella simulazione mercato, il saldo wallet del posteggio 5 (Intim8) mostrava il saldo sbagliato perché cercava nella graduatoria invece di usare il saldo diretto.
+
+**Causa:** Intim8 aveva 2 posteggi (5 e 6) con 2 wallet diversi, ma la graduatoria aveva solo 1 record.
+
+**File:** `client/src/components/GestioneMercati.tsx`
+
+**Fix:**
+```javascript
+// PRIMA (errato) - cercava nella graduatoria
+const gradRecord = graduatoria.find(g => g.stall_id === stall.id);
+const walletBalance = gradRecord?.wallet_balance;
+
+// DOPO (corretto) - usa direttamente il saldo dal posteggio
+const walletBalance = stall.wallet_balance;
+```
+
+---
+
+#### 4. Form SCIA Migliorato (v3.73.9)
+
+**4.1 Form Allargato**
+- Cambiato da `max-w-4xl` a `w-full` come gli altri form
+
+**4.2 Auto-compilazione Comune Presentazione**
+- Quando si seleziona un mercato, il campo "Comune Presentazione" si compila automaticamente con il comune del mercato
+
+**4.3 Ricerca Imprese Migliorata (TUTTI I FORM)**
+| Form | File |
+|------|------|
+| SciaForm | `client/src/components/suap/SciaForm.tsx` |
+| ConcessioneForm | `client/src/components/suap/ConcessioneForm.tsx` |
+| DomandaSpuntaForm | `client/src/components/suap/DomandaSpuntaForm.tsx` |
+| AutorizzazioneForm | `client/src/components/suap/AutorizzazioneForm.tsx` |
+
+**Modifiche applicate a tutti:**
+- Ricerca attiva dalla **prima lettera** (invece di 2)
+- Limite risultati aumentato da **10 a 15**
+- Altezza dropdown aumentata da **max-h-60 a max-h-96**
+
+---
+
+#### 5. Fix CHECK_LIMITE_POSTEGGI (v3.73.10 Backend)
+**Problema:** Il check contava TUTTI i posteggi dell'impresa in TUTTI i mercati, invece di contare solo quelli nello stesso mercato.
+
+**Regola corretta:**
+- Mercati < 100 posteggi: max 2 posteggi per impresa nello stesso mercato
+- Mercati ≥ 100 posteggi: max 3 posteggi per impresa nello stesso mercato
+
+**File:** `mihub-backend-rest/src/modules/suap/service.js`
+
+**Fix:**
+```sql
+-- PRIMA (errato)
+SELECT COUNT(*) FROM concessions c
+JOIN vendors v ON c.vendor_id = v.id
+WHERE v.impresa_id = $1
+
+-- DOPO (corretto)
+SELECT COUNT(*) FROM concessions c
+JOIN vendors v ON c.vendor_id = v.id
+JOIN stalls s ON c.stall_id = s.id
+WHERE v.impresa_id = $1 
+AND s.market_id = $2  -- Filtro per mercato specifico
+```
+
+---
+
+#### 6. Fix Creazione Concessione da SCIA (v3.73.11 Backend)
+**Problema:** Errore "Failed to create concession" quando si generava la concessione da una SCIA di subingresso.
+
+**Causa:** Il backend provava a eliminare il wallet del cedente, ma c'erano ancora presenze (vendor_presences) collegate.
+
+**File:** `mihub-backend-rest/routes/concessions.js`
+
+**Fix:**
+```javascript
+// Prima di eliminare il wallet, eliminare le presenze collegate
+await client.query('DELETE FROM vendor_presences WHERE wallet_id = $1', [oldWalletId]);
+await client.query('DELETE FROM wallet_transactions WHERE wallet_id = $1', [oldWalletId]);
+await client.query('DELETE FROM wallets WHERE id = $1', [oldWalletId]);
+```
+
+---
+
+#### 7. Subingresso: Storico Wallet e Trasferimento Scadenze (v3.73.12 Backend) ⏳
+**Problema:** Quando si faceva un subingresso:
+1. Non veniva registrato il trasferimento nello storico wallet
+2. Le scadenze canone venivano cancellate invece di essere trasferite al subentrante
+
+**File:** `mihub-backend-rest/routes/concessions.js`
+
+**Fix implementato (da deployare):**
+
+**Storico Wallet:**
+```javascript
+// TRASFERIMENTO_OUT per cedente
+INSERT INTO wallet_history (wallet_id, impresa_id, event_type, motivo, saldo, ...)
+VALUES ($1, $2, 'TRASFERIMENTO_OUT', 'Subingresso a [Subentrante] - Posteggio X', ...);
+
+// TRASFERIMENTO_IN per subentrante
+INSERT INTO wallet_history (wallet_id, impresa_id, event_type, motivo, saldo, ...)
+VALUES ($1, $2, 'TRASFERIMENTO_IN', 'Subingresso da [Cedente] - Posteggio X', ...);
+```
+
+**Trasferimento Scadenze:**
+```javascript
+// 1. Scollega scadenze dal vecchio wallet (prima di eliminarlo)
+UPDATE wallet_scadenze SET wallet_id = NULL WHERE wallet_id = $1;
+
+// 2. Dopo creazione nuovo wallet, riassegna le scadenze
+UPDATE wallet_scadenze 
+SET wallet_id = $1, note = CONCAT(COALESCE(note, ''), ' [Trasferito da subingresso]')
+WHERE wallet_id IS NULL AND stall_id = $2;
+```
+
+---
+
+### 📝 COMMIT DELLA SESSIONE
+
+| Commit | Versione | Descrizione | Repository |
+|--------|----------|-------------|------------|
+| `40b1fef` | v3.73.4 | Ripristino griglia barra rapida | dms-hub-app-new |
+| `f4a0e59` | v3.73.5 | Barra rapida 11 colonne | dms-hub-app-new |
+| `80dd598` | v3.73.6 | Fix sub-tab flex-wrap | dms-hub-app-new |
+| `d3a4cf6` | v3.73.7 | Sub-tab su riga separata + endpoint notifiche | dms-hub-app-new |
+| `3318a89` | v3.73.8 | Fix saldo wallet lista posteggi | dms-hub-app-new |
+| `6e7c5ca` | v3.73.9 | Form SCIA + ricerca imprese migliorata | dms-hub-app-new |
+| `94a3538` | v3.73.10 | Fix CHECK_LIMITE_POSTEGGI per mercato | mihub-backend-rest |
+| `7fee704` | v3.73.11 | Fix eliminazione wallet con presenze | mihub-backend-rest |
+| `bd0366c` | v3.73.12 | Storico wallet + trasferimento scadenze | mihub-backend-rest |
+
+---
+
+### ⚠️ VINCOLI NEGATIVI (Cosa NON fare)
+
+1. **NON contare posteggi di tutti i mercati** per CHECK_LIMITE_POSTEGGI - filtrare sempre per `market_id`
+2. **NON eliminare wallet** senza prima eliminare `vendor_presences` e `wallet_transactions` collegate
+3. **NON cancellare scadenze canone** nel subingresso - devono essere trasferite al subentrante
+4. **NON usare graduatoria** per il saldo wallet nella lista posteggi - usare `stall.wallet_balance`
+5. **NON cercare imprese** con minLength > 1 - gli utenti vogliono risultati dalla prima lettera
+
+---
+
+### 🔄 STATO DEPLOY
+
+| Componente | Versione | Stato |
+|------------|----------|-------|
+| **Frontend (Vercel)** | v3.73.9 | ✅ Deployato |
+| **Backend (Hetzner)** | v3.73.11 | ✅ Deployato |
+| **Backend v3.73.12** | v3.73.12 | ⏳ Da deployare |
+
+**Comando deploy backend:**
+```bash
+ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -i ~/.ssh/manus_hetzner_key root@157.90.29.66 "cd /root/mihub-backend-rest && git pull && pm2 restart mihub-backend"
+```
 
