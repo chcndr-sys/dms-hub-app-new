@@ -150,8 +150,8 @@ export default function ControlliSanzioniPanel() {
       const typesData = await typesRes.json();
       if (typesData.success) setInfractionTypes(typesData.data || []);
 
-      // Fetch pratiche SUAP
-      const praticheRes = await fetch(`${MIHUB_API}/suap/pratiche?limit=50`);
+      // Fetch pratiche SUAP (solo espletate, negate, revocate)
+      const praticheRes = await fetch(`${MIHUB_API}/suap/pratiche?limit=50&stato=APPROVATA,RIFIUTATA,REVOCATA`);
       const praticheData = await praticheRes.json();
       if (praticheData.success) setPraticheSuap(praticheData.data || []);
 
@@ -838,8 +838,8 @@ export default function ControlliSanzioniPanel() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-[#8b5cf6]" />
-                  Pratiche SUAP - Nuove Autorizzazioni e Concessioni
+<Briefcase className="h-5 w-5 text-[#8b5cf6]" />
+                Pratiche SUAP - Esiti (Approvate/Negate/Revocate)
                 </CardTitle>
                 <Button 
                   size="sm" 
@@ -852,7 +852,7 @@ export default function ControlliSanzioniPanel() {
                 </Button>
               </div>
               <CardDescription className="text-[#e8fbff]/60">
-                Nuove pratiche, concessioni, autorizzazioni e domande spunta dal sistema SUAP
+                Pratiche espletate, negate o revocate dal sistema SUAP - per verifica e controllo
               </CardDescription>
             </CardHeader>
             <CardContent>
