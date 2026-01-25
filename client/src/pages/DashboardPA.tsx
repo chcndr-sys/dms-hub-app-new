@@ -42,6 +42,7 @@ import WalletPanel from '@/components/WalletPanel';
 import SecurityTab from '@/components/SecurityTab';
 import ClientiTab from '@/components/ClientiTab';
 import GestioneHubPanel from '@/components/GestioneHubPanel';
+import ControlliSanzioniPanel from '@/components/ControlliSanzioniPanel';
 import { BusHubEditor } from '@/components/bus-hub';
 import { ProtectedTab, ProtectedQuickAccess } from '@/components/ProtectedTab';
 import { MessageContent } from '@/components/MessageContent';
@@ -4569,112 +4570,8 @@ export default function DashboardPA() {
 
           {/* TAB 16: CONTROLLI/SANZIONI */}
           <TabsContent value="inspections" className="space-y-6">
-            {/* Avviso modulo in sviluppo */}
-            <Card className="bg-[#1a2332] border-[#f59e0b]/30">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-[#f59e0b]/10 rounded-lg">
-                    <Clock className="h-8 w-8 text-[#f59e0b]" />
-                  </div>
-                  <div>
-                    <h3 className="text-[#e8fbff] font-semibold text-lg">Modulo Controlli in Sviluppo</h3>
-                    <p className="text-[#e8fbff]/70">I dati sui controlli saranno disponibili con l'integrazione Guardian (Q2 2026)</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Preview KPI - Struttura Futura */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 opacity-60">
-              <Card className="bg-gradient-to-br from-[#f59e0b]/20 to-[#f59e0b]/5 border-[#f59e0b]/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-[#e8fbff] text-sm">Programmati</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-[#f59e0b]">-</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-[#10b981]/20 to-[#10b981]/5 border-[#10b981]/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-[#e8fbff] text-sm">Completati</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-[#10b981]">-</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-[#ef4444]/20 to-[#ef4444]/5 border-[#ef4444]/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-[#e8fbff] text-sm">Violazioni</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-[#ef4444]">-</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-[#e8fbff] text-sm">Multe Totali</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-[#ef4444]">€-</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="bg-[#1a2332] border-[#f59e0b]/30 opacity-60">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff]">Prossimi Controlli <span className="text-xs text-[#f59e0b] ml-2">Preview</span></CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Shield className="h-12 w-12 text-[#f59e0b]/30 mx-auto mb-3" />
-                  <p className="text-[#e8fbff]/50">Nessun controllo programmato</p>
-                  <p className="text-[#e8fbff]/30 text-sm mt-1">Richiede integrazione con sistema Guardian</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Mappa Mercato Grosseto (GIS UFFICIALE) */}
-            <Card className="bg-[#1a2332] border-[#f59e0b]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-[#f59e0b]" />
-                  Mappa Mercato Grosseto
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {gisMapData && gisStalls.length > 0 ? (
-                  <div className="h-[500px] rounded-lg overflow-hidden">
-                    {(() => {
-                      const stallsDataForMap = gisStalls.map(s => ({
-                        id: s.id,
-                        number: s.number,
-                        status: s.status,
-                        type: s.type,
-                        vendor_name: s.vendor_business_name || undefined,
-                        impresa_id: s.impresa_id || undefined
-                      }));
-                      return (
-                        <MarketMapComponent
-                          refreshKey={gisMapRefreshKey}
-                          mapData={gisMapData}
-                          center={gisMapCenter}
-                          zoom={18}
-                          height="100%"
-                          stallsData={stallsDataForMap}
-                        />
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-[400px] text-[#94a3b8]">
-                    <p>Caricamento mappa...</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ControlliSanzioniPanel />
           </TabsContent>
-
-          {/* TAB 17: NOTIFICHE - Componente Dinamico */}
           <TabsContent value="notifications" className="space-y-6">
             <NotificationsPanel />
           </TabsContent>
