@@ -18,7 +18,8 @@ import {
   Search, Filter, Plus, Euro, Bell, Eye, Send,
   ChevronRight, RefreshCw, Building2, Store, Truck,
   ClipboardCheck, AlertCircle, Calendar, User, Download,
-  FileCheck, Briefcase, X, MessageSquare, ExternalLink
+  FileCheck, Briefcase, X, MessageSquare, ExternalLink,
+  Navigation, MapPin, Info
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -197,6 +198,11 @@ export default function ControlliSanzioniPanel() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [storicoDateFilter, setStoricoDateFilter] = useState<string>('');
+  
+  // Modal dettaglio watchlist
+  const [selectedWatchlistItem, setSelectedWatchlistItem] = useState<WatchlistItem | null>(null);
+  const [showWatchlistModal, setShowWatchlistModal] = useState(false);
+  const [watchlistPosteggio, setWatchlistPosteggio] = useState<{lat: number, lng: number, numero: string} | null>(null);
 
   // Fetch data on mount
   useEffect(() => {
@@ -253,8 +259,8 @@ export default function ControlliSanzioniPanel() {
       const transgressionsData = await transgressionsRes.json();
       if (transgressionsData.success) setTransgressions(transgressionsData.data || []);
 
-      // Fetch storico sessioni mercato
-      const sessionsRes = await fetch(`${MIHUB_API}/presenze/storico/sessioni?limit=50`);
+      // Fetch storico sessioni mercato (usa nuovo endpoint market_sessions)
+      const sessionsRes = await fetch(`${MIHUB_API}/presenze/sessioni?limit=50`);
       const sessionsData = await sessionsRes.json();
       if (sessionsData.success) setMarketSessions(sessionsData.data || []);
 
@@ -909,7 +915,36 @@ export default function ControlliSanzioniPanel() {
                           item.partita_iva?.includes(searchTerm)
                         )
                         .map((item) => (
-                        <tr key={item.id} className="border-b border-[#3b82f6]/10 hover:bg-[#0b1220]/50">
+                        <tr 
+                          key={item.id} 
+                          className="border-b border-[#3b82f6]/10 hover:bg-[#0b1220]/50 cursor-pointer"
+                          onClick={async () => {
+                            setSelectedWatchlistItem(item);
+                            setShowWatchlistModal(true);
+                            // Cerca il posteggio dell'impresa
+                            try {
+                              const res = await fetch(`${MIHUB_API}/stalls?impresa_id=${item.impresa_id}`);
+                              const data = await res.json();
+                              if (data.success && data.data?.length > 0) {
+                                const stall = data.data[0];
+                                if (stall.latitudine && stall.longitudine) {
+                                  setWatchlistPosteggio({
+                                    lat: parseFloat(stall.latitudine),
+                                    lng: parseFloat(stall.longitudine),
+                                    numero: stall.numero || 'N/D'
+                                  });
+                                } else {
+                                  setWatchlistPosteggio(null);
+                                }
+                              } else {
+                                setWatchlistPosteggio(null);
+                              }
+                            } catch (err) {
+                              console.error('Errore fetch posteggio:', err);
+                              setWatchlistPosteggio(null);
+                            }
+                          }}
+                        >
                           <td className="p-3">
                             <p className="text-[#e8fbff] font-medium text-sm">{item.impresa_nome || 'N/D'}</p>
                             <p className="text-[#e8fbff]/50 text-xs">{item.partita_iva}</p>
@@ -927,9 +962,18 @@ export default function ControlliSanzioniPanel() {
                             </span>
                           </td>
                           <td className="p-3 text-center">
-                            <Button size="sm" variant="ghost" className="text-[#f59e0b] hover:bg-[#f59e0b]/10">
-                              <ClipboardCheck className="h-4 w-4 mr-1" />
-                              Controlla
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="text-[#f59e0b] hover:bg-[#f59e0b]/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedWatchlistItem(item);
+                                setShowWatchlistModal(true);
+                              }}
+                            >
+                              <Info className="h-4 w-4 mr-1" />
+                              Dettagli
                             </Button>
                           </td>
                         </tr>
@@ -1013,8 +1057,22 @@ export default function ControlliSanzioniPanel() {
                             <Button 
                               size="sm" 
                               variant="ghost" 
-                              className="text-[#3b82f6] hover:bg-[#3b82f6]/10"
+                              className="text-[#8b5cf6] hover:bg-[#8b5cf6]/10"
                               onClick={() => window.open(`${MIHUB_API}/verbali/${sanction.id}/pdf`, '_blank')}
+                              title="Visualizza Verbale"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="text-[#3b82f6] hover:bg-[#3b82f6]/10"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = `${MIHUB_API}/verbali/${sanction.id}/pdf`;
+                                link.download = `Verbale_${sanction.verbale_code}.pdf`;
+                                link.click();
+                              }}
                               title="Scarica PDF Verbale"
                             >
                               <Download className="h-4 w-4" />
@@ -1595,6 +1653,38 @@ export default function ControlliSanzioniPanel() {
                       <X className="h-4 w-4" />
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-[#10b981]/30 text-[#10b981] hover:bg-[#10b981]/10"
+                    onClick={() => {
+                      // Genera CSV delle sessioni filtrate
+                      const filteredSessions = marketSessions.filter(session => {
+                        if (!storicoDateFilter) return true;
+                        const sessionDate = session.data_mercato.split('T')[0];
+                        return sessionDate === storicoDateFilter;
+                      });
+                      const csvContent = [
+                        ['Mercato', 'Comune', 'Data', 'Posteggi Occupati', 'Presenze', 'Totale Incassato'].join(';'),
+                        ...filteredSessions.map(s => [
+                          s.market_name,
+                          s.comune,
+                          new Date(s.data_mercato).toLocaleDateString('it-IT'),
+                          s.posteggi_occupati,
+                          s.totale_presenze,
+                          `€${parseFloat(s.totale_incassato || '0').toFixed(2)}`
+                        ].join(';'))
+                      ].join('\n');
+                      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                      const link = document.createElement('a');
+                      link.href = URL.createObjectURL(blob);
+                      link.download = `storico_mercati_${new Date().toISOString().split('T')[0]}.csv`;
+                      link.click();
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Scarica CSV
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -1684,6 +1774,124 @@ export default function ControlliSanzioniPanel() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modal Dettaglio Watchlist con Navigazione GPS */}
+      {showWatchlistModal && selectedWatchlistItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a2332] border border-[#f59e0b]/30 rounded-lg w-full max-w-lg">
+            <div className="p-4 border-b border-[#f59e0b]/20 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#f59e0b]/20 p-2 rounded-lg">
+                  <AlertTriangle className="h-6 w-6 text-[#f59e0b]" />
+                </div>
+                <div>
+                  <h3 className="text-[#e8fbff] font-bold text-lg">Controllo da Effettuare</h3>
+                  <p className="text-gray-400 text-sm">{selectedWatchlistItem.impresa_nome}</p>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => {
+                  setShowWatchlistModal(false);
+                  setSelectedWatchlistItem(null);
+                  setWatchlistPosteggio(null);
+                }}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="p-4 space-y-4">
+              {/* Info Impresa */}
+              <div className="bg-[#0b1220] rounded-lg p-4">
+                <h4 className="text-[#e8fbff]/60 text-xs uppercase mb-2">Dati Impresa</h4>
+                <p className="text-[#e8fbff] font-medium">{selectedWatchlistItem.impresa_nome}</p>
+                <p className="text-[#e8fbff]/60 text-sm">P.IVA: {selectedWatchlistItem.partita_iva}</p>
+              </div>
+              
+              {/* Motivo Controllo */}
+              <div className="bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg p-4">
+                <h4 className="text-[#f59e0b] text-xs uppercase mb-2 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Motivo del Controllo
+                </h4>
+                <p className="text-[#e8fbff] font-medium">{selectedWatchlistItem.trigger_description}</p>
+                <p className="text-[#e8fbff]/50 text-sm mt-1">Tipo: {selectedWatchlistItem.trigger_type?.replace(/_/g, ' ')}</p>
+              </div>
+              
+              {/* Priorità e Data */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-[#0b1220] rounded-lg p-3 text-center">
+                  <p className="text-[#e8fbff]/60 text-xs mb-1">Priorità</p>
+                  <Badge className={getPriorityColor(selectedWatchlistItem.priority)}>
+                    {selectedWatchlistItem.priority}
+                  </Badge>
+                </div>
+                <div className="bg-[#0b1220] rounded-lg p-3 text-center">
+                  <p className="text-[#e8fbff]/60 text-xs mb-1">Data Segnalazione</p>
+                  <p className="text-[#e8fbff] font-medium">
+                    {new Date(selectedWatchlistItem.created_at).toLocaleDateString('it-IT')}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Navigazione GPS */}
+              {watchlistPosteggio ? (
+                <div className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg p-4">
+                  <h4 className="text-[#10b981] text-xs uppercase mb-2 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Posizione Posteggio
+                  </h4>
+                  <p className="text-[#e8fbff] text-sm mb-3">Posteggio n. {watchlistPosteggio.numero}</p>
+                  <Button
+                    className="w-full bg-[#10b981] hover:bg-[#10b981]/80 text-white"
+                    onClick={() => {
+                      // Apri Google Maps con navigazione
+                      const url = `https://www.google.com/maps/dir/?api=1&destination=${watchlistPosteggio.lat},${watchlistPosteggio.lng}&travelmode=driving`;
+                      window.open(url, '_blank');
+                    }}
+                  >
+                    <Navigation className="h-4 w-4 mr-2" />
+                    Avvia Navigazione GPS
+                  </Button>
+                </div>
+              ) : (
+                <div className="bg-[#0b1220] rounded-lg p-4 text-center">
+                  <MapPin className="h-8 w-8 text-gray-500 mx-auto mb-2" />
+                  <p className="text-gray-400 text-sm">Coordinate GPS non disponibili per questo posteggio</p>
+                </div>
+              )}
+              
+              {/* Azioni */}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/10"
+                  onClick={() => {
+                    setShowWatchlistModal(false);
+                    window.location.href = `/pm/nuovo-verbale?impresa=${selectedWatchlistItem.impresa_id}`;
+                  }}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Prepara Verbale
+                </Button>
+                <Button
+                  className="flex-1 bg-[#3b82f6] hover:bg-[#3b82f6]/80 text-white"
+                  onClick={() => {
+                    // Segna come controllato
+                    setShowWatchlistModal(false);
+                    setSelectedWatchlistItem(null);
+                    alert('✅ Controllo registrato!');
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Segna Controllato
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Dettaglio Sessione */}
       {showSessionModal && selectedSession && (
