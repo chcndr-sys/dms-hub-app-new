@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.82.0  
-> **Data:** 26 Gennaio 2026 (Aggiornamento Pomeriggio)  
+> **Versione:** 3.83.0  
+> **Data:** 26 Gennaio 2026 (Aggiornamento Sera)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -5292,4 +5292,47 @@ Quando si seleziona un'impresa nel form verbale, vengono auto-compilati:
 
 ---
 
-*Ultimo aggiornamento: 26 Gennaio 2026 ore 15:30*
+## 📝 AGGIORNAMENTO v3.83.0 - 26 Gennaio 2026 (Sera)
+
+### Tab Storico Sessioni Mercato
+
+**Nuovo sotto-tab "Storico"** aggiunto in Controlli/Sanzioni:
+
+| Componente | Descrizione |
+|------------|-------------|
+| Lista sessioni | Mostra mercati chiusi con data, posteggi, incassato |
+| Modal dettaglio | Cronologia presenze con N°, Impresa, Accesso, Rifiuti, Uscita |
+| Stats rapide | Posteggi occupati, presenze, uscite registrate, totale incassato |
+
+### Nuovi Endpoint Backend
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/presenze/storico/sessioni` | GET | Lista sessioni mercato chiuse |
+| `/api/presenze/storico/dettaglio/:marketId/:data` | GET | Dettaglio cronologia presenze |
+
+### Filtro Mercati per Comune
+
+Implementato filtro in Gestione Mercati:
+- **Super Admin** → Vede tutti i mercati
+- **Utente Comune** → Vede solo mercati del proprio comune
+- **Impersonificazione** → Vede solo mercati del comune impersonificato
+
+### Commit Sessione Sera
+
+| Commit | Descrizione |
+|--------|-------------|
+| `88c6339` | Endpoint storico sessioni mercato |
+| `d26439b` | Tab Storico in Controlli/Sanzioni |
+| `65af4fd` | Filtro mercati per comune |
+
+### Statistiche Aggiornate v3.83.0
+
+- **Versione:** 3.83.0
+- **Endpoint totali:** 465 (153 REST + 312 tRPC)
+- **Nuovi endpoint:** 2 (storico sessioni + dettaglio)
+- **Tab Controlli/Sanzioni:** 9 (Panoramica, Da Controllare, Verbali, Tipi Infrazione, Pratiche SUAP, Notifiche PM, Giustifiche, **Storico**)
+
+---
+
+*Ultimo aggiornamento: 26 Gennaio 2026 ore 16:30*
