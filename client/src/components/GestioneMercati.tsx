@@ -37,6 +37,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { MIHUB_API_BASE_URL } from '@/config/api';
+import { useImpersonation } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = MIHUB_API_BASE_URL;
 
@@ -176,19 +177,56 @@ export default function GestioneMercati() {
   const [searchQuery, setSearchQuery] = useState('');
   const [marketStalls, setMarketStalls] = useState<Stall[]>([]);
   const [refreshStallsCallback, setRefreshStallsCallback] = useState<(() => Promise<void>) | null>(null);
+  
+  // Hook per impersonificazione - filtro mercati per comune
+  const { isImpersonating, comuneNome } = useImpersonation();
 
   useEffect(() => {
     fetchMarkets();
-  }, []);
+  }, [isImpersonating, comuneNome]);
 
   const fetchMarkets = async () => {
     try {
-     const response = await fetch(`${API_BASE_URL}/api/markets`);
+      const response = await fetch(`${API_BASE_URL}/api/markets`);
       const data = await response.json();
       if (data.success) {
-        setMarkets(data.data);
-        if (data.data.length > 0 && !selectedMarket) {
-          setSelectedMarket(data.data[0]);
+        let filteredMarkets = data.data;
+        
+        // Filtra mercati per comune se in modalità impersonificazione
+        // oppure se l'utente ha un comune assegnato (non super admin)
+        const userStr = localStorage.getItem('user');
+        let userComune: string | null = null;
+        let isSuperAdmin = false;
+        
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            isSuperAdmin = user.email === 'chcndr@gmail.com' || user.is_super_admin;
+            // Se l'utente ha un comune assegnato nei ruoli
+            if (user.assigned_roles && user.assigned_roles.length > 0) {
+              userComune = user.assigned_roles[0].comune_nome || null;
+            }
+          } catch (e) {
+            console.error('Error parsing user:', e);
+          }
+        }
+        
+        // Determina il comune da usare per il filtro
+        const comuneFilter = isImpersonating ? comuneNome : userComune;
+        
+        // Applica filtro solo se NON è super admin e c'è un comune
+        if (!isSuperAdmin && comuneFilter) {
+          filteredMarkets = data.data.filter((market: Market) => 
+            market.municipality?.toLowerCase() === comuneFilter.toLowerCase()
+          );
+          console.log(`[GestioneMercati] Filtro mercati per comune: ${comuneFilter} - ${filteredMarkets.length} mercati`);
+        } else {
+          console.log(`[GestioneMercati] Super Admin o nessun filtro - ${filteredMarkets.length} mercati totali`);
+        }
+        
+        setMarkets(filteredMarkets);
+        if (filteredMarkets.length > 0 && !selectedMarket) {
+          setSelectedMarket(filteredMarkets[0]);
         }
       }
     } catch (error) {
