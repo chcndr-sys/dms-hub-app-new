@@ -388,14 +388,8 @@ export default function ControlliSanzioniPanel() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="h-8 w-8 text-[#f59e0b] animate-spin" />
-        <span className="ml-3 text-[#e8fbff]/70">Caricamento dati...</span>
-      </div>
-    );
-  }
+  // Loading inline - la UI rimane sempre visibile
+  const isLoading = loading;
 
   return (
     <div className="space-y-6">
@@ -415,10 +409,11 @@ export default function ControlliSanzioniPanel() {
             variant="outline" 
             size="sm" 
             onClick={fetchAllData}
+            disabled={isLoading}
             className="border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/10"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Aggiorna
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Caricamento...' : 'Aggiorna'}
           </Button>
           <Button 
             size="sm" 
