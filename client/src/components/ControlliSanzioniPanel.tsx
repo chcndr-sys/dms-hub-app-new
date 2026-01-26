@@ -18,8 +18,9 @@ import {
   Search, Filter, Plus, Euro, Bell, Eye, Send,
   ChevronRight, RefreshCw, Building2, Store, Truck,
   ClipboardCheck, AlertCircle, Calendar, User, Download,
-  FileCheck, Briefcase, X, MessageSquare
+  FileCheck, Briefcase, X, MessageSquare, ExternalLink
 } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -873,10 +874,10 @@ export default function ControlliSanzioniPanel() {
                 <Button 
                   size="sm" 
                   className="bg-[#ef4444] hover:bg-[#ef4444]/80 text-white"
-                  onClick={() => setShowNuovoVerbaleModal(true)}
+                  onClick={() => window.location.href = '/pm/nuovo-verbale'}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Nuovo Verbale
+                  Nuovo Verbale Professionale
                 </Button>
               </div>
               <CardDescription className="text-[#e8fbff]/60">
@@ -929,11 +930,32 @@ export default function ControlliSanzioniPanel() {
                             </span>
                           </td>
                           <td className="p-3 text-center">
-                            <Button size="sm" variant="ghost" className="text-[#3b82f6] hover:bg-[#3b82f6]/10">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-[#10b981] hover:bg-[#10b981]/10">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="text-[#3b82f6] hover:bg-[#3b82f6]/10"
+                              onClick={() => window.open(`${MIHUB_API}/verbali/${sanction.id}/pdf`, '_blank')}
+                              title="Scarica PDF Verbale"
+                            >
                               <Download className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="text-[#10b981] hover:bg-[#10b981]/10"
+                              onClick={async () => {
+                                if (confirm('Inviare notifica verbale all\'impresa?')) {
+                                  try {
+                                    const res = await fetch(`${MIHUB_API}/verbali/${sanction.id}/invia`, { method: 'POST' });
+                                    const data = await res.json();
+                                    if (data.success) alert('✅ Notifica inviata!');
+                                    else alert('❌ Errore: ' + data.error);
+                                  } catch (e) { alert('❌ Errore invio'); }
+                                }
+                              }}
+                              title="Invia Notifica all'Impresa"
+                            >
+                              <Send className="h-4 w-4" />
                             </Button>
                           </td>
                         </tr>

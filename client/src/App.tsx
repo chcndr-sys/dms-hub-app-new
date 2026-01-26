@@ -39,6 +39,8 @@ import WalletImpresaPage from "./pages/WalletImpresaPage";
 import PresenzePage from "./pages/PresenzePage";
 import AnagraficaPage from "./pages/AnagraficaPage";
 import PresentazionePage from "./pages/PresentazionePage";
+// v3.80.0 - Verbali PM Professionali
+import NuovoVerbalePage from "./pages/NuovoVerbalePage";
 
 function Router() {
   return (
@@ -75,6 +77,8 @@ function Router() {
       <Route path="/app/impresa/anagrafica" component={AnagraficaPage} />
       {/* v3.74.0 - Presentazione pubblica */}
       <Route path="/presentazione" component={PresentazionePage} />
+      {/* v3.80.0 - Verbali PM Professionali */}
+      <Route path="/pm/nuovo-verbale" component={NuovoVerbalePage} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
