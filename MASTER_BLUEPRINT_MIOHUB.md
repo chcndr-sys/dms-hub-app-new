@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.81.0  
-> **Data:** 26 Gennaio 2026  
+> **Versione:** 3.82.0  
+> **Data:** 26 Gennaio 2026 (Aggiornamento Pomeriggio)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -5194,3 +5194,102 @@ Sistema completo per la **gestione degli orari mercato** con rilevamento automat
 - **Tabelle nuove:** 2 (`market_settings`, `market_transgressions`)
 - **Colonne nuove `sanctions`:** 14
 
+
+
+---
+
+## 🆕 AGGIORNAMENTI 26 GENNAIO 2026 (POMERIGGIO) - v3.82.0
+
+### Bug Fix Critici
+
+| Bug | Fix | Commit |
+|-----|-----|--------|
+| Watchlist vuota ma conta 1 | Query corretta: `denominazione` invece di `ragione_sociale` | `watchlist.js` |
+| PDF Verbale errore 500 | Query corretta per colonne indirizzo imprese | `verbali.js` |
+| Form Verbale non carica dati impresa | Mappatura corretta campi rappresentante legale | `NuovoVerbalePage.tsx` |
+| ControlliSanzioniPanel lento | Loading inline - UI sempre visibile durante caricamento | `ControlliSanzioniPanel.tsx` |
+| API lente su orchestratore | Cambiato URL da `orchestratore.mio-hub.me` a `api.mio-hub.me` | Frontend |
+
+### Nuove Funzionalità
+
+#### 1. Auto-compilazione Form Verbale
+- **Data odierna** - Auto-compilata al caricamento
+- **Ora corrente** - Auto-compilata al caricamento
+- **Luogo con GPS** - Recupera coordinate GPS del dispositivo
+- **Reverse Geocoding** - Converte coordinate in indirizzo (via Nominatim/OpenStreetMap)
+- **Dropdown Comuni** - Seleziona tra i 5 comuni registrati
+
+#### 2. Mappatura Completa Dati Impresa
+Quando si seleziona un'impresa nel form verbale, vengono auto-compilati:
+- Nome e Cognome Rappresentante Legale
+- Codice Fiscale
+- Data di Nascita
+- Luogo di Nascita
+- Residenza/Domicilio completo
+
+#### 3. Filtro Mercati per Comune
+**Logica implementata in `GestioneMercati.tsx`:**
+- **Super Admin** (`chcndr@gmail.com`) → Vede tutti i mercati
+- **Utente con ruolo assegnato** → Vede solo mercati del proprio comune
+- **Modalità impersonificazione** → Vede solo mercati del comune impersonificato
+
+```javascript
+// Filtro basato su:
+// 1. isImpersonating + comuneNome (da URL params)
+// 2. user.assigned_roles[0].comune_nome (da localStorage)
+// 3. isSuperAdmin (bypass filtro)
+```
+
+### Dati Test Impresa MIO TEST (ID 38)
+
+| Campo | Valore |
+|-------|--------|
+| Rappresentante Legale | Mario Rossi |
+| CF Rappresentante | RSSMRA80A01H501Z |
+| Data Nascita | 01/01/1980 |
+| Luogo Nascita | Roma (RM) |
+| Residenza | Via Garibaldi 15, 58100 Grosseto (GR) |
+| Indirizzo Sede | Via Roma 42, 58100 Grosseto (GR) |
+| Telefono | 0564123456 |
+| Email | info@miotest.it |
+| PEC | miotest@pec.it |
+
+### Commit Sessione Pomeriggio
+
+| Commit | Descrizione | Repository |
+|--------|-------------|------------|
+| `watchlist-fix` | Fix query watchlist denominazione | mihub-backend-rest |
+| `pdf-fix` | Fix query PDF colonne indirizzo | mihub-backend-rest |
+| `3f8eca2` | Mappatura corretta campi impresa form verbale | dms-hub-app-new |
+| `fc93478` | Loading inline ControlliSanzioniPanel | dms-hub-app-new |
+| `5982978` | Auto-compilazione luogo GPS + data/ora | dms-hub-app-new |
+| `65af4fd` | Filtro mercati per comune | dms-hub-app-new |
+
+### Test API Verificati
+
+| Endpoint | Stato | Note |
+|----------|-------|------|
+| `/api/watchlist` | ✅ OK | Mostra impresa MIO TEST |
+| `/api/sanctions` | ✅ OK | 1 verbale |
+| `/api/verbali/1/pdf` | ✅ OK | PDF generato correttamente |
+| `/api/market-settings/1` | ✅ OK | Impostazioni attive |
+| `/api/comuni` | ✅ OK | 5 comuni disponibili |
+| `/api/verbali/infrazioni` | ✅ OK | 16 infrazioni |
+
+### Vincoli Negativi Aggiunti
+
+8. **NON usare `ragione_sociale`** nelle query imprese - il campo corretto è `denominazione`
+9. **NON usare `indirizzo`** singolo nelle query imprese - usare `indirizzo_via`, `indirizzo_civico`, `indirizzo_cap`, `indirizzo_provincia`
+10. **NON bloccare UI durante caricamento** - usare loading inline con spinner nel pulsante Aggiorna
+
+### Statistiche Aggiornate v3.82.0
+
+- **Versione:** 3.82.0
+- **Endpoint totali:** 463 (151 REST + 312 tRPC)
+- **Comuni registrati:** 5 (Bologna, Carpi, Grosseto, Modena, Vignola)
+- **Mercati nel DB:** 2 (Grosseto, Novi Sad Modena)
+- **Verbali emessi:** 1 (VER-2026-6771)
+
+---
+
+*Ultimo aggiornamento: 26 Gennaio 2026 ore 15:30*
