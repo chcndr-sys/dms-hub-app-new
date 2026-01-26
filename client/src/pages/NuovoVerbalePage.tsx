@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 // API Base URL
-const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+const MIHUB_API = 'https://api.mio-hub.me/api';
 
 // Types
 interface ConfigData {
@@ -83,6 +83,8 @@ export default function NuovoVerbalePage() {
   const [config, setConfig] = useState<ConfigData | null>(null);
   const [infrazioni, setInfrazioni] = useState<Infrazione[]>([]);
   const [imprese, setImprese] = useState<Impresa[]>([]);
+  const [comuni, setComuni] = useState<{id: number; nome: string; provincia: string}[]>([]);
+  const [selectedComuneId, setSelectedComuneId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +149,17 @@ export default function NuovoVerbalePage() {
       // Timeout controller
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      // Fetch comuni
+      const comuniRes = await fetch(`${MIHUB_API}/comuni`, { signal: controller.signal });
+      const comuniData = await comuniRes.json();
+      if (comuniData.success) {
+        setComuni(comuniData.data || []);
+        // Seleziona il primo comune di default
+        if (comuniData.data?.length > 0) {
+          setSelectedComuneId(comuniData.data[0].id);
+        }
+      }
 
       // Fetch config
       const configRes = await fetch(`${MIHUB_API}/verbali/config`, { signal: controller.signal });
@@ -405,17 +418,22 @@ export default function NuovoVerbalePage() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[#e8fbff]/70">Comune</Label>
-                <Input 
-                  value={config?.comune.nome || ''} 
-                  disabled 
-                  className="bg-[#0b1220]/50 border-[#3b82f6]/30 text-[#e8fbff]"
-                />
+                <Label className="text-[#e8fbff]/70">Comune *</Label>
+                <select 
+                  value={selectedComuneId || ''}
+                  onChange={(e) => setSelectedComuneId(Number(e.target.value))}
+                  className="w-full h-10 px-3 rounded-md bg-[#0b1220] border border-[#3b82f6]/30 text-[#e8fbff] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                >
+                  <option value="">Seleziona Comune...</option>
+                  {comuni.map(c => (
+                    <option key={c.id} value={c.id}>{c.nome} ({c.provincia})</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]/70">Provincia</Label>
                 <Input 
-                  value={config?.comune.provincia || ''} 
+                  value={comuni.find(c => c.id === selectedComuneId)?.provincia || ''} 
                   disabled 
                   className="bg-[#0b1220]/50 border-[#3b82f6]/30 text-[#e8fbff]"
                 />
@@ -423,7 +441,7 @@ export default function NuovoVerbalePage() {
               <div className="space-y-2 md:col-span-2">
                 <Label className="text-[#e8fbff]/70">Corpo di Polizia Municipale</Label>
                 <Input 
-                  value={config?.corpo_pm.nome || ''} 
+                  value={selectedComuneId ? `Polizia Municipale di ${comuni.find(c => c.id === selectedComuneId)?.nome || ''}` : ''} 
                   disabled 
                   className="bg-[#0b1220]/50 border-[#3b82f6]/30 text-[#e8fbff]"
                 />

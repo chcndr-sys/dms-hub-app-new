@@ -30,7 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 // API Base URL
-const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+const MIHUB_API = 'https://api.mio-hub.me/api';
 
 // Types
 interface InspectionStats {
