@@ -142,21 +142,32 @@ export default function NuovoVerbalePage() {
 
   const fetchInitialData = async () => {
     setLoading(true);
+    setError(null);
     try {
+      // Timeout controller
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       // Fetch config
-      const configRes = await fetch(`${MIHUB_API}/verbali/config`);
+      const configRes = await fetch(`${MIHUB_API}/verbali/config`, { signal: controller.signal });
       const configData = await configRes.json();
       if (configData.success) setConfig(configData.data);
 
       // Fetch infrazioni
-      const infrazioniRes = await fetch(`${MIHUB_API}/verbali/infrazioni`);
+      const infrazioniRes = await fetch(`${MIHUB_API}/verbali/infrazioni`, { signal: controller.signal });
       const infrazioniData = await infrazioniRes.json();
       if (infrazioniData.success) setInfrazioni(infrazioniData.data || []);
 
-      // Fetch imprese
-      const impreseRes = await fetch(`${MIHUB_API}/imprese?limit=500`);
-      const impreseData = await impreseRes.json();
-      if (impreseData.success) setImprese(impreseData.data || []);
+      // Fetch imprese (opzionale, non bloccare se fallisce)
+      try {
+        const impreseRes = await fetch(`${MIHUB_API}/imprese?limit=100`, { signal: controller.signal });
+        const impreseData = await impreseRes.json();
+        if (impreseData.success) setImprese(impreseData.data || []);
+      } catch (e) {
+        console.warn('Imprese fetch failed, continuing without');
+      }
+
+      clearTimeout(timeoutId);
 
       // Set default date/time
       const now = new Date();
@@ -310,6 +321,19 @@ export default function NuovoVerbalePage() {
         <div className="text-center">
           <Shield className="h-12 w-12 text-[#f59e0b] animate-pulse mx-auto mb-4" />
           <p className="text-[#e8fbff]/70">Caricamento form verbale...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0b1220] flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="h-12 w-12 text-[#ef4444] mx-auto mb-4" />
+          <p className="text-[#ef4444] font-bold mb-2">Errore di caricamento</p>
+          <p className="text-[#e8fbff]/70 mb-4">{error}</p>
+          <Button onClick={fetchInitialData} className="bg-[#f59e0b] text-black">Riprova</Button>
         </div>
       </div>
     );
