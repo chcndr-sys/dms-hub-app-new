@@ -196,6 +196,7 @@ export default function ControlliSanzioniPanel() {
   const [sessionDetails, setSessionDetails] = useState<SessionDetail[]>([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [storicoDateFilter, setStoricoDateFilter] = useState<string>('');
 
   // Fetch data on mount
   useEffect(() => {
@@ -1564,13 +1565,38 @@ export default function ControlliSanzioniPanel() {
         <TabsContent value="storico" className="space-y-4 mt-4">
           <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
             <CardHeader>
-              <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-[#8b5cf6]" />
-                Storico Sessioni Mercato
-              </CardTitle>
-              <CardDescription className="text-gray-400">
-                Cronologia dei mercati chiusi con dettaglio presenze
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-[#8b5cf6]" />
+                    Storico Sessioni Mercato
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Cronologia dei mercati chiusi con dettaglio presenze
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-[#e8fbff]/60 text-sm">Cerca per data:</Label>
+                    <Input
+                      type="date"
+                      value={storicoDateFilter}
+                      onChange={(e) => setStoricoDateFilter(e.target.value)}
+                      className="w-44 bg-[#0b1220] border-[#8b5cf6]/30 text-[#e8fbff]"
+                    />
+                  </div>
+                  {storicoDateFilter && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setStoricoDateFilter('')}
+                      className="text-gray-400 hover:text-[#e8fbff]"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {marketSessions.length === 0 ? (
@@ -1579,8 +1605,14 @@ export default function ControlliSanzioniPanel() {
                   <p>Nessuna sessione mercato chiusa</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {marketSessions.map((session, idx) => (
+                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                  {marketSessions
+                    .filter(session => {
+                      if (!storicoDateFilter) return true;
+                      const sessionDate = session.data_mercato.split('T')[0];
+                      return sessionDate === storicoDateFilter;
+                    })
+                    .map((session, idx) => (
                     <div 
                       key={`${session.market_id}-${session.data_mercato}-${idx}`}
                       className="bg-[#0d1520] border border-[#8b5cf6]/20 rounded-lg p-4 hover:border-[#8b5cf6]/50 cursor-pointer transition-colors"
@@ -1636,6 +1668,16 @@ export default function ControlliSanzioniPanel() {
                       </div>
                     </div>
                   ))}
+                  {marketSessions.filter(session => {
+                    if (!storicoDateFilter) return true;
+                    const sessionDate = session.data_mercato.split('T')[0];
+                    return sessionDate === storicoDateFilter;
+                  }).length === 0 && storicoDateFilter && (
+                    <div className="text-center py-8 text-gray-400">
+                      <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nessuna sessione trovata per la data selezionata</p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
