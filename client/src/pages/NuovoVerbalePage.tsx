@@ -196,6 +196,41 @@ export default function NuovoVerbalePage() {
       setViolationDate(now.toISOString().split('T')[0]);
       setViolationTime(now.toTimeString().slice(0, 5));
 
+      // Geolocalizzazione per auto-compilare il luogo
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const { latitude, longitude } = position.coords;
+            try {
+              // Reverse geocoding con Nominatim (OpenStreetMap)
+              const geoRes = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+                { headers: { 'Accept-Language': 'it' } }
+              );
+              const geoData = await geoRes.json();
+              if (geoData.address) {
+                const addr = geoData.address;
+                const luogo = [
+                  addr.road || addr.pedestrian || addr.footway || '',
+                  addr.house_number || '',
+                  addr.suburb || addr.neighbourhood || '',
+                  addr.city || addr.town || addr.village || addr.municipality || '',
+                  addr.county ? `(${addr.county})` : ''
+                ].filter(Boolean).join(' ').trim();
+                setLocation(luogo || `Lat: ${latitude.toFixed(6)}, Lon: ${longitude.toFixed(6)}`);
+              }
+            } catch (geoErr) {
+              console.warn('Reverse geocoding failed:', geoErr);
+              setLocation(`Coordinate: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+            }
+          },
+          (geoErr) => {
+            console.warn('Geolocation error:', geoErr.message);
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      }
+
     } catch (err) {
       setError('Errore nel caricamento dei dati');
       console.error('Fetch error:', err);
