@@ -365,6 +365,7 @@ export default function ControlliSanzioniPanel() {
     const infractionCode = formData.get('infraction_code') as string;
     const amount = formData.get('amount');
     const description = formData.get('description');
+    const luogoAccertamento = formData.get('luogo_accertamento');
     
     // Genera codice verbale
     const verbaleCode = `PM-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
@@ -374,7 +375,8 @@ export default function ControlliSanzioniPanel() {
       infraction_code: infractionCode,
       verbale_code: verbaleCode,
       amount: parseFloat(amount as string) || 0,
-      description: description || `Verbale per ${infractionCode}`
+      description: description || `Verbale per ${infractionCode}`,
+      luogo_accertamento: luogoAccertamento || 'Non specificato'
     };
 
     try {
@@ -606,6 +608,15 @@ export default function ControlliSanzioniPanel() {
                 <Textarea 
                   name="description" 
                   placeholder="Descrizione della violazione..."
+                  className="mt-1 bg-[#0b1220] border-[#ef4444]/30 text-[#e8fbff]"
+                />
+              </div>
+              <div>
+                <Label className="text-[#e8fbff]/70">Luogo Accertamento</Label>
+                <Input 
+                  type="text" 
+                  name="luogo_accertamento" 
+                  placeholder="Es: Mercato Grosseto, Posteggio 15"
                   className="mt-1 bg-[#0b1220] border-[#ef4444]/30 text-[#e8fbff]"
                 />
               </div>
@@ -1954,52 +1965,56 @@ export default function ControlliSanzioniPanel() {
                     const primaEntrata = orariAccesso[0] || '-';
                     const ultimaUscita = orariUscita[orariUscita.length - 1] || '-';
                     
-                    // Header resoconto in formato tabella
+                    // Header resoconto in formato tabella CSV con separatore tab per Excel
+                    const SEP = '\t'; // Tab separator per Excel
                     const csvContent = [
+                      // BOM per Excel UTF-8
+                      '\uFEFF',
                       // Resoconto in formato tabella
                       'RESOCONTO MERCATO',
-                      'Campo;Valore',
-                      `Mercato;${selectedSession.market_name}`,
-                      `Comune;${selectedSession.comune}`,
-                      `Data;${new Date(selectedSession.data_mercato).toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`,
-                      `Prima Entrata;${primaEntrata}`,
-                      `Ultima Uscita;${ultimaUscita}`,
-                      `Posteggi Occupati;${sessionDetails.length}`,
-                      `Presenze Totali;${sessionDetails.length}`,
-                      `Uscite Registrate;${usciteRegistrate}`,
-                      `Totale Incassato;€${totaleIncassato.toFixed(2)}`,
+                      `Campo${SEP}Valore`,
+                      `Mercato${SEP}${selectedSession.market_name}`,
+                      `Comune${SEP}${selectedSession.comune}`,
+                      `Data${SEP}${new Date(selectedSession.data_mercato).toLocaleDateString('it-IT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}`,
+                      `Prima Entrata${SEP}${primaEntrata}`,
+                      `Ultima Uscita${SEP}${ultimaUscita}`,
+                      `Posteggi Occupati${SEP}${sessionDetails.length}`,
+                      `Concessionari${SEP}${concessionari.length}`,
+                      `Spuntisti${SEP}${spuntisti.length}`,
+                      `Uscite Registrate${SEP}${usciteRegistrate}`,
+                      `Totale Incassato${SEP}${totaleIncassato.toFixed(2)} EUR`,
                       '',
                       // Sezione Concessionari
-                      'LISTA CONCESSIONARI',
-                      'N° Posteggio;Impresa;P.IVA;Importo;Giorno;Accesso;Rifiuti;Uscita;Presenze;Assenze',
+                      `LISTA CONCESSIONARI (${concessionari.length})`,
+                      `N° Posteggio${SEP}Impresa${SEP}P.IVA${SEP}Importo${SEP}Giorno${SEP}Accesso${SEP}Rifiuti${SEP}Uscita${SEP}Presenze${SEP}Assenze`,
                       ...concessionari.map(d => [
                         d.stall_number || '',
                         d.impresa_nome || '',
                         d.impresa_piva || '',
-                        `€${parseFloat(d.importo_addebitato || '0').toFixed(2)}`,
+                        parseFloat(d.importo_addebitato || '0').toFixed(2),
                         d.giorno ? new Date(d.giorno).toLocaleDateString('it-IT') : '-',
                         d.ora_accesso || '-',
                         d.ora_rifiuti || '-',
                         d.ora_uscita || '-',
                         d.presenze_totali || 0,
                         d.assenze_non_giustificate || 0
-                      ].join(';')),
+                      ].join(SEP)),
                       '',
                       // Sezione Spuntisti
-                      'LISTA SPUNTISTI',
-                      'N° Posteggio;Impresa;P.IVA;Importo;Giorno;Accesso;Rifiuti;Uscita;Presenze;Assenze',
+                      `LISTA SPUNTISTI (${spuntisti.length})`,
+                      `N° Posteggio${SEP}Impresa${SEP}P.IVA${SEP}Importo${SEP}Giorno${SEP}Accesso${SEP}Rifiuti${SEP}Uscita${SEP}Presenze${SEP}Assenze`,
                       ...spuntisti.map(d => [
                         d.stall_number || '',
                         d.impresa_nome || '',
                         d.impresa_piva || '',
-                        `€${parseFloat(d.importo_addebitato || '0').toFixed(2)}`,
+                        parseFloat(d.importo_addebitato || '0').toFixed(2),
                         d.giorno ? new Date(d.giorno).toLocaleDateString('it-IT') : '-',
                         d.ora_accesso || '-',
                         d.ora_rifiuti || '-',
                         d.ora_uscita || '-',
                         d.presenze_totali || 0,
                         d.assenze_non_giustificate || 0
-                      ].join(';'))
+                      ].join(SEP))
                     ].join('\n');
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const link = document.createElement('a');
