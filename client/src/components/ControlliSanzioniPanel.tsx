@@ -291,9 +291,14 @@ export default function ControlliSanzioniPanel() {
     setLoading(true);
     setError(null);
     
+    // Leggi i parametri URL per il filtro
+    const urlParams = new URLSearchParams(window.location.search);
+    const isImpersonatingFromUrl = urlParams.get('impersonate') === 'true';
+    const comuneNomeFromUrl = urlParams.get('comune_nome');
+    
     // Log impersonificazione per debug
-    if (isImpersonating && impersonatedComuneId) {
-      console.log('[ControlliSanzioni] Modalità impersonificazione attiva, comune_id:', impersonatedComuneId);
+    if (isImpersonatingFromUrl && comuneNomeFromUrl) {
+      console.log('[ControlliSanzioni] Modalità impersonificazione attiva, comune:', comuneNomeFromUrl);
     }
     
     try {
@@ -313,8 +318,8 @@ export default function ControlliSanzioniPanel() {
       if (sanctionsData.success) {
         let sanctionsFiltered = sanctionsData.data || [];
         // Filtro lato frontend per location se in impersonificazione
-        if (urlParams.get('impersonate') === 'true' && urlParams.get('comune_nome')) {
-          const comuneNome = urlParams.get('comune_nome');
+        if (isImpersonatingFromUrl && comuneNomeFromUrl) {
+          const comuneNome = comuneNomeFromUrl;
           sanctionsFiltered = sanctionsFiltered.filter((s: Sanction) => 
             s.location?.toLowerCase().includes(comuneNome?.toLowerCase() || '')
           );
