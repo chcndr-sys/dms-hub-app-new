@@ -294,6 +294,7 @@ export default function ControlliSanzioniPanel() {
     // Leggi i parametri URL per il filtro
     const urlParams = new URLSearchParams(window.location.search);
     const isImpersonatingFromUrl = urlParams.get('impersonate') === 'true';
+    const comuneIdFromUrl = urlParams.get('comune_id');
     const comuneNomeFromUrl = urlParams.get('comune_nome');
     
     // Log impersonificazione per debug
@@ -317,18 +318,32 @@ export default function ControlliSanzioniPanel() {
       const sanctionsData = await sanctionsRes.json();
       if (sanctionsData.success) {
         let sanctionsFiltered = sanctionsData.data || [];
-        // Filtro lato frontend per location se in impersonificazione
-        if (isImpersonatingFromUrl && comuneNomeFromUrl) {
-          const comuneNome = comuneNomeFromUrl;
+        // Filtro lato frontend per comune_id se in impersonificazione
+        if (isImpersonatingFromUrl && comuneIdFromUrl) {
+          const comuneId = parseInt(comuneIdFromUrl);
+          const comuneNome = comuneNomeFromUrl || '';
           sanctionsFiltered = sanctionsFiltered.filter((s: Sanction) => {
-            // Se location è null/undefined, includiamo il verbale solo se non c'è un altro comune nel nome
-            // Se location contiene il nome del comune, lo includiamo
-            if (!s.location) {
-              // Verbali senza location vengono esclusi in modalità impersonificazione
-              // perché non possiamo determinare a quale comune appartengono
-              return false;
+            // Prima prova a usare comune_id dal verbaleDataJson (nuovi verbali)
+            try {
+              const verbaleData = typeof s.verbale_data_json === 'string' 
+                ? JSON.parse(s.verbale_data_json) 
+                : s.verbale_data_json;
+              if (verbaleData?.intestazione?.comune_id) {
+                return verbaleData.intestazione.comune_id === comuneId;
+              }
+              // Fallback: controlla il nome del comune nell'intestazione
+              if (verbaleData?.intestazione?.comune) {
+                return verbaleData.intestazione.comune.toLowerCase().includes(comuneNome.toLowerCase());
+              }
+            } catch (e) {
+              // JSON parsing fallito, usa fallback
             }
-            return s.location.toLowerCase().includes(comuneNome.toLowerCase());
+            // Fallback finale: controlla location (verbali vecchi)
+            if (s.location && comuneNome) {
+              return s.location.toLowerCase().includes(comuneNome.toLowerCase());
+            }
+            // Verbali senza comune_id e senza location vengono esclusi
+            return false;
           });
           
           // Ricalcola le stats localmente dai verbali filtrati
