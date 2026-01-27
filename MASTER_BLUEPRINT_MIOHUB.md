@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.51.0  
-> **Data:** 26 Gennaio 2026  
+> **Versione:** 3.52.0  
+> **Data:** 27 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -388,6 +388,12 @@ Gli endpoint sono documentati in:
 | **Imprese** | `/api/imprese/*` | qualificazioni, rating |
 | **SUAP** | `/api/suap/*` | pratiche, stats, evaluate |
 | **TCC v2** | `/api/tcc/v2/*` | wallet-impresa, qualifiche, settlement |
+| **Notifiche** | `/api/notifiche/*` | suap, impresa, risposte, invio |
+| **Controlli** | `/api/inspections/*` | stats, list, create |
+| **Sanzioni** | `/api/sanctions/*` | list, create, update |
+| **Verbali** | `/api/verbali/*` | pdf, invia, list |
+| **Watchlist** | `/api/watchlist/*` | list, update, resolve |
+| **Presenze** | `/api/presenze/*` | sessioni, dettaglio, chiudi |
 
 ---
 
@@ -1433,6 +1439,45 @@ const forcedZoom = roundedToQuarter + 0.25;
 ---
 
 
+
+### v3.52.0 (27 Gennaio 2026) - Filtro Comune e Notifiche Verbali con PDF
+
+**Obiettivo**: Implementare filtro per comune_id in tutti gli endpoint Controlli/Sanzioni e migliorare sistema notifiche verbali.
+
+**Backend (Hetzner):**
+- ✅ Tutti gli endpoint Controlli/Sanzioni ora filtrano per `comune_id`
+- ✅ Endpoint `/api/notifiche/suap?comune_id=X` per notifiche SUAP filtrate
+- ✅ Endpoint `/api/inspections/stats?comune_id=X` per statistiche filtrate
+- ✅ Endpoint `/api/watchlist?comune_id=X` per watchlist filtrata
+- ✅ Endpoint `/api/sanctions?comune_id=X` per sanzioni filtrate
+- ✅ Endpoint `/api/presenze/sessioni?comune_id=X` per sessioni filtrate
+- ✅ Migliorato `POST /api/verbali/:id/invia` con link diretto al PDF
+- ✅ Notifica verbale ora include: 🔴 semaforo, importo, scadenza, link PDF
+
+**Frontend (Vercel):**
+- ✅ `ControlliSanzioniPanel.tsx` accetta prop `comuneId`
+- ✅ `DashboardPA.tsx` passa `selectedComuneId` al pannello
+- ✅ Tutti gli endpoint chiamati con filtro comune
+- ✅ UI notifiche SUAP con semafori (🟢🟡🔴)
+
+**Guardian**: 556 endpoint totali (+79)
+
+**Nuovi Endpoint Documentati:**
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/notifiche/suap` | GET | Notifiche SUAP filtrate per comune |
+| `/api/inspections/stats` | GET | Statistiche controlli per comune |
+| `/api/watchlist` | GET | Watchlist imprese per comune |
+| `/api/sanctions` | GET | Lista sanzioni per comune |
+| `/api/presenze/sessioni` | GET | Storico sessioni mercato per comune |
+| `/api/verbali/:id/pdf` | GET | Download PDF verbale |
+| `/api/verbali/:id/invia` | POST | Invio notifica verbale con link PDF |
+
+**Commit:**
+- Frontend: `dba4a68` - feat(controlli-sanzioni): filtro notifiche SUAP per comune_id
+- Backend: Modifica diretta `verbali.js` - Notifica con link PDF
+
+---
 
 ### v3.51.0 (26 Gennaio 2026) - Sistema Controlli/Sanzioni e Storico Mercati
 
