@@ -79,6 +79,7 @@ interface Sanction {
   payment_status: string;
   issue_date: string;
   due_date: string;
+  location?: string; // Campo per filtrare per comune
 }
 
 interface InfractionType {
@@ -307,9 +308,36 @@ export default function ControlliSanzioniPanel() {
       if (watchlistData.success) setWatchlist(watchlistData.data || []);
 
       // Fetch sanctions - filtrato per comune se in impersonificazione
-      const sanctionsRes = await fetch(addComuneIdToUrl(`${MIHUB_API}/sanctions?limit=20`));
+      const sanctionsRes = await fetch(`${MIHUB_API}/sanctions?limit=100`); // Prendiamo più dati per filtrare lato frontend
       const sanctionsData = await sanctionsRes.json();
-      if (sanctionsData.success) setSanctions(sanctionsData.data || []);
+      if (sanctionsData.success) {
+        let sanctionsFiltered = sanctionsData.data || [];
+        // Filtro lato frontend per location se in impersonificazione
+        if (urlParams.get('impersonate') === 'true' && urlParams.get('comune_nome')) {
+          const comuneNome = urlParams.get('comune_nome');
+          sanctionsFiltered = sanctionsFiltered.filter((s: Sanction) => 
+            s.location?.toLowerCase().includes(comuneNome?.toLowerCase() || '')
+          );
+          
+          // Ricalcola le stats localmente dai verbali filtrati
+          const totaleImporti = sanctionsFiltered.reduce((sum: number, s: Sanction) => sum + parseFloat(s.amount || '0'), 0);
+          const nonPagati = sanctionsFiltered.filter((s: Sanction) => s.payment_status === 'NON_PAGATO').length;
+          const pagati = sanctionsFiltered.filter((s: Sanction) => s.payment_status === 'PAGATO').length;
+          
+          // Aggiorna le stats con i valori filtrati
+          setStats(prev => prev ? {
+            ...prev,
+            sanzioni: {
+              ...prev.sanzioni,
+              total_verbali: String(sanctionsFiltered.length),
+              totale_importi: totaleImporti.toFixed(2),
+              non_pagati: String(nonPagati),
+              pagati: String(pagati)
+            }
+          } : prev);
+        }
+        setSanctions(sanctionsFiltered);
+      }
 
       // Fetch infraction types (non filtrato - sono globali)
       const typesRes = await fetch(`${MIHUB_API}/sanctions/types`);
@@ -350,9 +378,19 @@ export default function ControlliSanzioniPanel() {
       if (transgressionsData.success) setTransgressions(transgressionsData.data || []);
 
       // Fetch storico sessioni mercato - filtrato per comune se in impersonificazione
-      const sessionsRes = await fetch(addComuneIdToUrl(`${MIHUB_API}/presenze/sessioni?limit=50`));
+      const sessionsRes = await fetch(`${MIHUB_API}/presenze/sessioni?limit=100`); // Prendiamo più dati per filtrare lato frontend
       const sessionsData = await sessionsRes.json();
-      if (sessionsData.success) setMarketSessions(sessionsData.data || []);
+      if (sessionsData.success) {
+        let sessionsFiltered = sessionsData.data || [];
+        // Filtro lato frontend per comune se in impersonificazione
+        if (urlParams.get('impersonate') === 'true' && urlParams.get('comune_nome')) {
+          const comuneNome = urlParams.get('comune_nome');
+          sessionsFiltered = sessionsFiltered.filter((s: MarketSession) => 
+            s.comune?.toLowerCase().includes(comuneNome?.toLowerCase() || '')
+          );
+        }
+        setMarketSessions(sessionsFiltered);
+      }
 
       // Fetch concessioni dal SUAP - filtrato per comune se in impersonificazione
       let concessioniData: any = { data: [] };
