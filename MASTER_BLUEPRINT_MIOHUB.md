@@ -1145,6 +1145,26 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 
 ### 📝 CHANGELOG
 
+### v3.52.0 (27/01/2026) - Fix Storico Sessioni Mercato + Ottimizzazione Polling Vercel
+
+**Bug Fix:**
+- **Endpoint `/api/test-mercato/chiudi-mercato`** ora salva correttamente lo storico in `market_sessions` e `market_session_details`
+  - Prima: l'endpoint chiudeva il mercato ma NON salvava lo storico
+  - Ora: salva sessione + dettagli presenze per consultazione futura
+  - Usa UPSERT per evitare duplicati in caso di ri-chiusura
+- **Polling agenti DashboardPA** ridotto da 10s a 30s + controllo `document.hidden`
+  - Risparmio stimato: 90%+ del consumo CPU Vercel
+  - Il polling si ferma quando la tab è in background
+
+**Endpoint Modificati:**
+- `POST /api/test-mercato/chiudi-mercato` - Aggiunto salvataggio in `market_sessions` + `market_session_details`
+
+**File Modificati:**
+- Backend: `routes/test-mercato.js` (linee 590-750)
+- Frontend: `client/src/pages/DashboardPA.tsx` (linee 1475-1530)
+
+---
+
 ### v3.35.0 (14/01/2026) - Progettazione Gestione Canone Unico e More
 
 **Nuove Funzionalità Progettate:**
