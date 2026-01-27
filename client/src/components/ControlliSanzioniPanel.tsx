@@ -247,9 +247,9 @@ export default function ControlliSanzioniPanel({ comuneId = 1 }: ControlliSanzio
       if (typesData.success) setInfractionTypes(typesData.data || []);
 
       // Fetch notifiche SUAP (dal nuovo endpoint, filtrato per comune)
-      const praticheRes = await fetch(`${MIHUB_API}/notifiche/suap?comune_id=${comuneId}&limit=50`);
+      console.log("Fetching SUAP notifiche per comune:", comuneId); const praticheRes = await fetch(`${MIHUB_API}/notifiche/suap?comune_id=${comuneId}&limit=50`);
       const praticheData = await praticheRes.json();
-      if (praticheData.success) setPraticheSuap(praticheData.data || []);
+      console.log("SUAP data:", praticheData); if (praticheData.success) setPraticheSuap(praticheData.data || []);
 
       // Fetch imprese list for notifications (filtrato per comune)
       const impreseRes = await fetch(`${MIHUB_API}/imprese?limit=100&comune_id=${comuneId}`);
