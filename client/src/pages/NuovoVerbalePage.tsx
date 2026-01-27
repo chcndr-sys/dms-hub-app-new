@@ -360,13 +360,20 @@ export default function NuovoVerbalePage() {
     try {
       const violationDatetime = `${violationDate}T${violationTime || '00:00'}:00`;
       
+      // Ottieni il nome del comune selezionato
+      const selectedComune = comuni.find(c => c.id === selectedComuneId);
+      const comuneNome = selectedComune?.nome || '';
+      
       const payload = {
+        // Comune (per filtro)
+        comune_id: selectedComuneId,
+        comune_nome: comuneNome,
         // Agente
         agent_name: agentName,
         agent_badge: agentBadge,
         agent_qualifica: agentQualifica,
         // Luogo e data
-        location,
+        location,  // Mantieni location originale con geolocalizzazione
         violation_datetime: violationDatetime,
         // Trasgressore
         impresa_id: selectedImpresa?.id || null,
