@@ -983,7 +983,7 @@ export default function ControlliSanzioniPanel() {
             className="data-[state=active]:bg-[#8b5cf6]/20 data-[state=active]:text-[#8b5cf6]"
           >
             <Briefcase className="h-4 w-4 mr-2" />
-            Pratiche SUAP ({praticheSuap.length})
+            Pratiche SUAP ({domandeSpunta.length})
           </TabsTrigger>
           <TabsTrigger 
             value="notifiche" 
