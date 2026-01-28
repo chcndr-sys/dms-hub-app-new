@@ -86,7 +86,7 @@ interface ScadenzaAPI {
   stato_dinamico: string;
 }
 
-// Tipo sanzione/verbale dal backend (v3.53.0)
+// Tipo sanzione/verbale dal backend (v3.53.0, v3.54.1)
 interface SanzioneAPI {
   id: number;
   verbale_code: string;
@@ -97,6 +97,7 @@ interface SanzioneAPI {
   issue_date: string;
   due_date: string;
   notified_at: string | null;
+  paid_date: string | null;  // v3.54.1
   in_periodo_ridotto: boolean;
   importo_ridotto: string;
   scadenza_ridotto: string | null;
@@ -105,6 +106,10 @@ interface SanzioneAPI {
   comune_id: number | null;
   impresa_nome: string;
   partita_iva: string;
+  // v3.54.1: Campi per storico pagamenti
+  pagato_in_ridotto?: boolean;
+  importo_effettivo_pagato?: string;
+  reduced_amount?: string;
 }
 
 export default function WalletImpresaPage() {
@@ -112,6 +117,7 @@ export default function WalletImpresaPage() {
   const [company, setCompany] = useState<CompanyWallets | null>(null);
   const [scadenze, setScadenze] = useState<ScadenzaAPI[]>([]);
   const [sanzioni, setSanzioni] = useState<SanzioneAPI[]>([]);  // v3.53.0: Sanzioni/Verbali PM
+  const [sanzioniPagate, setSanzioniPagate] = useState<SanzioneAPI[]>([]);  // v3.54.1: Storico sanzioni pagate
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('wallet');
   const [expandedSpunta, setExpandedSpunta] = useState(true);
@@ -218,6 +224,42 @@ export default function WalletImpresaPage() {
         }
       } catch (e) {
         console.error('Errore fetch sanzioni:', e);
+      }
+      
+      // v3.54.1: Fetch sanzioni pagate per storico
+      try {
+        const sanzioniPagateRes = await fetch(`${API_BASE_URL}/api/sanctions?impresa_id=${IMPRESA_ID}&payment_status=PAGATO&limit=50`);
+        const sanzioniPagateData = await sanzioniPagateRes.json();
+        if (sanzioniPagateData.success) {
+          // Calcola importo effettivo pagato per ogni sanzione
+          const sanzioniConImporto = (sanzioniPagateData.data || []).map((s: SanzioneAPI) => {
+            // Se reduced_amount è salvato, usalo; altrimenti calcola se pagato in ridotto
+            let importoEffettivo = parseFloat(s.amount);
+            let pagatoInRidotto = false;
+            
+            if (s.reduced_amount) {
+              importoEffettivo = parseFloat(s.reduced_amount);
+              pagatoInRidotto = true;
+            } else if (s.paid_date && s.notified_at) {
+              const paidDate = new Date(s.paid_date);
+              const notifiedDate = new Date(s.notified_at);
+              const diffDays = Math.floor((paidDate.getTime() - notifiedDate.getTime()) / (1000 * 60 * 60 * 24));
+              if (diffDays <= 5) {
+                importoEffettivo = parseFloat(s.amount) * 0.7;
+                pagatoInRidotto = true;
+              }
+            }
+            
+            return {
+              ...s,
+              importo_effettivo_pagato: importoEffettivo.toFixed(2),
+              pagato_in_ridotto: pagatoInRidotto
+            };
+          });
+          setSanzioniPagate(sanzioniConImporto);
+        }
+      } catch (e) {
+        console.error('Errore fetch sanzioni pagate:', e);
       }
       
       // v3.73.1: Fetch transazioni per tutti i wallet (storico ricariche)
@@ -817,7 +859,7 @@ export default function WalletImpresaPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {scadenze.filter(s => s.stato === 'PAGATO').length === 0 && transactions.length === 0 ? (
+                {scadenze.filter(s => s.stato === 'PAGATO').length === 0 && transactions.length === 0 && sanzioniPagate.length === 0 ? (
                   <div className="text-center py-8">
                     <Receipt className="w-12 h-12 mx-auto mb-4 text-[#e8fbff]/30" />
                     <p className="text-[#e8fbff]/50">Nessun movimento effettuato</p>
@@ -869,6 +911,35 @@ export default function WalletImpresaPage() {
                             </p>
                             {scadenza.pagato_in_mora && (
                               <p className="text-xs text-red-400">Pagato in mora</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* v3.54.1: Sanzioni/Verbali PM Pagati */}
+                    {sanzioniPagate.map((sanzione) => (
+                      <div key={`sanzione-${sanzione.id}`} className="p-4 bg-[#0b1220] rounded-lg border border-red-500/10">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-[#e8fbff]">
+                              <AlertTriangle className="w-4 h-4 inline mr-1 text-red-400" />
+                              Verbale {sanzione.verbale_code}
+                            </p>
+                            <p className="text-sm text-[#e8fbff]/50">
+                              {sanzione.infraction_description || sanzione.infraction_code}
+                            </p>
+                            <p className="text-xs text-[#e8fbff]/30">
+                              Pagato il: {sanzione.paid_date ? new Date(sanzione.paid_date).toLocaleDateString('it-IT') : 'N/A'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge className="bg-red-500/20 text-red-400">SANZIONE</Badge>
+                            <p className="text-lg font-bold text-red-400">
+                              €{sanzione.importo_effettivo_pagato || parseFloat(sanzione.amount).toFixed(2)}
+                            </p>
+                            {sanzione.pagato_in_ridotto && (
+                              <p className="text-xs text-green-400">Sconto 30% applicato</p>
                             )}
                           </div>
                         </div>

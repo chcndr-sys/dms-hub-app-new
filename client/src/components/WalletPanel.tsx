@@ -690,6 +690,13 @@ export default function WalletPanel() {
       fetchSanzioni();
     }
   }, [subTab, sanzioniFilters]);
+  
+  // v3.54.1: Carica sanzioni anche nel tab PagoPA per mostrare lo storico pagamenti
+  useEffect(() => {
+    if (subTab === 'pagopa' && sanzioniList.length === 0) {
+      fetchSanzioni();
+    }
+  }, [subTab]);
 
   // v3.53.0: Registra pagamento manuale sanzione
   const handleRegistraPagamentoSanzione = async () => {
@@ -1326,6 +1333,81 @@ export default function WalletPanel() {
                           </td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* v3.54.1: Sezione Sanzioni Pagate */}
+          <Card className="bg-[#1e293b] border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                Pagamenti Sanzioni/Verbali PM
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {sanzioniList.filter(s => s.payment_status === 'PAGATO').length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                  <p>Nessuna sanzione pagata.</p>
+                </div>
+              ) : (
+                <div className="rounded-md border border-slate-700 overflow-hidden">
+                  <table className="w-full text-sm text-left text-slate-300">
+                    <thead className="bg-slate-800 text-slate-100 uppercase text-xs">
+                      <tr>
+                        <th className="px-4 py-3">Data Pagamento</th>
+                        <th className="px-4 py-3">Verbale</th>
+                        <th className="px-4 py-3">Impresa</th>
+                        <th className="px-4 py-3">Infrazione</th>
+                        <th className="px-4 py-3 text-right">Importo Originale</th>
+                        <th className="px-4 py-3 text-right">Importo Pagato</th>
+                        <th className="px-4 py-3 text-center">Sconto</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700">
+                      {sanzioniList.filter(s => s.payment_status === 'PAGATO').map((sanzione, idx) => {
+                        const importoEffettivo = sanzione.importo_effettivo_pagato 
+                          ? parseFloat(sanzione.importo_effettivo_pagato) 
+                          : (sanzione.pagato_in_ridotto ? parseFloat(sanzione.importo_ridotto) : parseFloat(sanzione.amount));
+                        const haSconto = sanzione.pagato_in_ridotto || (sanzione.reduced_amount && parseFloat(sanzione.reduced_amount) < parseFloat(sanzione.amount));
+                        
+                        return (
+                          <tr key={sanzione.id || idx} className="hover:bg-slate-800/50">
+                            <td className="px-4 py-3">
+                              {sanzione.paid_date ? new Date(sanzione.paid_date).toLocaleDateString('it-IT', {
+                                day: '2-digit', month: '2-digit', year: 'numeric'
+                              }) : '-'}
+                            </td>
+                            <td className="px-4 py-3 font-medium text-white">
+                              {sanzione.verbale_code}
+                            </td>
+                            <td className="px-4 py-3">
+                              {sanzione.impresa_nome || '-'}
+                              {sanzione.partita_iva && <span className="block text-xs text-slate-500">P.IVA: {sanzione.partita_iva}</span>}
+                            </td>
+                            <td className="px-4 py-3 text-xs">
+                              {sanzione.infraction_description || sanzione.infraction_code}
+                            </td>
+                            <td className="px-4 py-3 text-right text-slate-400">
+                              € {parseFloat(sanzione.amount).toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-bold text-green-400">
+                              € {importoEffettivo.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {haSconto ? (
+                                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">-30%</Badge>
+                              ) : (
+                                <span className="text-slate-500">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
