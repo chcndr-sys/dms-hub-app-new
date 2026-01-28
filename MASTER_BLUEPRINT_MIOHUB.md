@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.52.0  
-> **Data:** 27 Gennaio 2026  
+> **Versione:** 3.53.0  
+> **Data:** 28 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1169,6 +1169,62 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 ---
 
 ### 📝 CHANGELOG
+
+### v3.53.0 (28/01/2026) - Bug Fix Critici Sistema Verbali e Notifiche PM
+
+**Bug Fix Critici:**
+
+1. **Storico Sessioni Mercato** - Fix salvataggio sessioni
+   - Endpoint `/api/test-mercato/chiudi-mercato` ora salva correttamente in `market_sessions` + `market_session_details`
+   - Prima: chiudeva mercato ma NON salvava storico
+   - Ora: UPSERT per evitare duplicati
+
+2. **Conteggio Posteggi CSV** - Fix export CSV
+   - Prima: contava righe totali (duplicati per ogni presenza)
+   - Ora: conta posteggi unici con `new Set()`
+
+3. **Notifiche Verbali PM** - Fix visibilità notifiche
+   - Aggiunto INSERT in `notifiche_destinatari` con `mittente_id`
+   - Le notifiche ora appaiono correttamente nel tab PM dell'app impresa
+   - Aggiunto `link_riferimento` per accesso diretto al PDF verbale
+
+4. **Link Visualizza Verbale** - Fix route inesistente
+   - Prima: puntava a route frontend `/verbale/:id` (non esistente)
+   - Ora: link diretto API PDF `/api/verbali/:id/pdf`
+
+5. **Creazione Verbali** - Rimossi valori hardcoded
+   - Prima: "Cesena" hardcoded come comune
+   - Ora: usa dati da impersonificazione (`comune_id`, `comune_nome`, `provincia`, `corpo_pm`)
+
+6. **Endpoint Concessioni** - Fix parametro URL
+   - Prima: usava `marketCode` (non esistente)
+   - Ora: usa correttamente `marketId`
+
+7. **Query Database** - Fix colonne errate
+   - Tabella `imprese`: usa `denominazione` (non `ragione_sociale`)
+   - Tabella `pm_watchlist`: usa `trigger_type`, `trigger_description` (non `reason`, `notes`)
+
+**Commit:**
+- Backend: `2c49601` - "fix: corretto colonne i.denominazione e pm_watchlist trigger_type"
+- Frontend: `b7bbdc0` - "fix: corretto endpoint concessioni (marketId invece di marketCode)"
+
+**File Modificati:**
+- `mihub-backend-rest/routes/verbali.js` - Usa dati impersonificazione per comune
+- `mihub-backend-rest/routes/test-mercato.js` - Fix salvataggio sessioni
+- `mihub-backend-rest/routes/notifiche.js` - Aggiunto link_riferimento e mittente_id
+- `mihub-backend-rest/routes/market-settings.js` - Fix query usa i.denominazione
+- `dms-hub-app-new/src/pages/ControlliSanzioniPanel.tsx` - Fix export CSV posteggi unici
+- `dms-hub-app-new/src/pages/AppImpresaNotifiche.tsx` - Fix link visualizza verbale
+- `dms-hub-app-new/src/pages/GestioneMercati.tsx` - Fix endpoint concessioni
+
+**Stato Sistema:**
+- ✅ Sistema stabile e funzionante
+- ✅ Tutti i verbali mostrano il comune corretto
+- ✅ Notifiche verbali arrivano correttamente all'app impresa
+- ✅ Storico sessioni mercato funziona correttamente
+- ✅ Codice allineato: GitHub = Hetzner = Vercel
+
+---
 
 ### v3.52.0 (27/01/2026) - Fix Storico Sessioni Mercato + Ottimizzazione Polling Vercel
 
