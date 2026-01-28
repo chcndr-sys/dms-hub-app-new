@@ -10,7 +10,7 @@ import {
   Bell, BellRing, Mail, MailOpen, Send, Calendar, Clock, 
   Building2, GraduationCap, Landmark, CheckCircle, Archive,
   MessageSquare, ArrowLeft, User, RefreshCw, Filter, Search,
-  AlertCircle, FileText, Briefcase, ChevronRight
+  AlertCircle, FileText, Briefcase, ChevronRight, Download, ExternalLink
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ interface Notifica {
   destinatario_id: number;
   stato: string;
   data_lettura: string | null;
+  link_riferimento: string | null;
 }
 
 export default function AppImpresaNotifiche() {
@@ -433,6 +434,33 @@ export default function AppImpresaNotifiche() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Bottone Visualizza Verbale per notifiche NOTIFICA_VERBALE */}
+                  {notificaSelezionata.tipo_messaggio === 'NOTIFICA_VERBALE' && notificaSelezionata.link_riferimento && (
+                    <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-red-400" />
+                          </div>
+                          <div>
+                            <p className="text-[#e8fbff] font-medium">Verbale di Contestazione</p>
+                            <p className="text-[#e8fbff]/50 text-sm">Clicca per visualizzare il documento completo</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline"
+                            className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                            onClick={() => window.open(notificaSelezionata.link_riferimento!, '_blank')}
+                          >
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Visualizza Verbale
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Azioni Rapide */}
                   <div className="grid grid-cols-2 gap-3">
