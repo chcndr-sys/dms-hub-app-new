@@ -86,16 +86,43 @@ interface ScadenzaAPI {
   stato_dinamico: string;
 }
 
+// Tipo sanzione/verbale dal backend (v3.53.0)
+interface SanzioneAPI {
+  id: number;
+  verbale_code: string;
+  infraction_code: string;
+  infraction_description: string;
+  amount: string;
+  payment_status: string;
+  issue_date: string;
+  due_date: string;
+  notified_at: string | null;
+  in_periodo_ridotto: boolean;
+  importo_ridotto: string;
+  scadenza_ridotto: string | null;
+  giorni_ridotto_rimanenti: number;
+  comune_nome: string | null;
+  comune_id: number | null;
+  impresa_nome: string;
+  partita_iva: string;
+}
+
 export default function WalletImpresaPage() {
   const [, setLocation] = useLocation();
   const [company, setCompany] = useState<CompanyWallets | null>(null);
   const [scadenze, setScadenze] = useState<ScadenzaAPI[]>([]);
+  const [sanzioni, setSanzioni] = useState<SanzioneAPI[]>([]);  // v3.53.0: Sanzioni/Verbali PM
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('wallet');
   const [expandedSpunta, setExpandedSpunta] = useState(true);
   const [expandedConcessioni, setExpandedConcessioni] = useState(true);
   const [selectedScadenza, setSelectedScadenza] = useState<ScadenzaAPI | null>(null);
   const [showPagamentoDialog, setShowPagamentoDialog] = useState(false);
+  
+  // v3.53.0: Stati per pagamento sanzioni
+  const [selectedSanzione, setSelectedSanzione] = useState<SanzioneAPI | null>(null);
+  const [showPagamentoSanzioneDialog, setShowPagamentoSanzioneDialog] = useState(false);
+  const [isProcessingSanzione, setIsProcessingSanzione] = useState(false);
   
   // Stati per dialog ricarica wallet GENERICO
   const [showRicaricaDialog, setShowRicaricaDialog] = useState(false);
@@ -182,6 +209,17 @@ export default function WalletImpresaPage() {
         }
       }
       
+      // v3.53.0: Fetch sanzioni/verbali PM non pagati
+      try {
+        const sanzioniRes = await fetch(`${API_BASE_URL}/api/sanctions/impresa/${IMPRESA_ID}/da-pagare`);
+        const sanzioniData = await sanzioniRes.json();
+        if (sanzioniData.success) {
+          setSanzioni(sanzioniData.data || []);
+        }
+      } catch (e) {
+        console.error('Errore fetch sanzioni:', e);
+      }
+      
       // v3.73.1: Fetch transazioni per tutti i wallet (storico ricariche)
       const allWallets = [...spuntaWallets, ...concessionWallets];
       const allTransactions: any[] = [];
@@ -226,11 +264,61 @@ export default function WalletImpresaPage() {
     const interessi = parseFloat(s.importo_interessi) || 0;
     return sum + importo + mora + interessi;
   }, 0);
+  
+  // v3.53.0: Calcola totale sanzioni da pagare
+  const totaleSanzioni = sanzioni.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
 
   // Gestisce pagamento simulato
   const handlePaga = async (scadenza: ScadenzaAPI) => {
     setSelectedScadenza(scadenza);
     setShowPagamentoDialog(true);
+  };
+  
+  // v3.53.0: Gestisce pagamento sanzione
+  const handlePagaSanzione = (sanzione: SanzioneAPI) => {
+    setSelectedSanzione(sanzione);
+    setShowPagamentoSanzioneDialog(true);
+  };
+  
+  // v3.53.0: Conferma pagamento sanzione
+  const handleConfirmaPagamentoSanzione = async () => {
+    if (!selectedSanzione) return;
+    setIsProcessingSanzione(true);
+    
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      // Usa importo ridotto se nel periodo ridotto
+      const importo = selectedSanzione.in_periodo_ridotto 
+        ? parseFloat(selectedSanzione.importo_ridotto) 
+        : parseFloat(selectedSanzione.amount);
+      
+      // Genera IUV simulato
+      const iuv = `IUV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      
+      const response = await fetch(`${API_URL}/api/sanctions/${selectedSanzione.id}/paga-pagopa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          importo_pagato: importo,
+          pagopa_iuv: iuv,
+          metodo_pagamento: 'PAGOPA'
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert(`Pagamento sanzione completato! IUV: ${iuv}`);
+        setShowPagamentoSanzioneDialog(false);
+        setSelectedSanzione(null);
+        fetchData(); // Ricarica dati
+      } else {
+        alert('Errore: ' + (data.error || 'Errore sconosciuto'));
+      }
+    } catch (err) {
+      console.error('Errore pagamento sanzione:', err);
+      alert('Errore di connessione');
+    } finally {
+      setIsProcessingSanzione(false);
+    }
   };
 
   const handleConfirmaPagamento = async () => {
@@ -624,6 +712,99 @@ export default function WalletImpresaPage() {
                 )}
               </CardContent>
             </Card>
+            
+            {/* v3.53.0: Sezione Sanzioni/Verbali PM */}
+            {sanzioni.length > 0 && (
+              <Card className="bg-[#1a2332] border-[#f59e0b]/20 mt-4">
+                <CardHeader>
+                  <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-[#f59e0b]" />
+                    Sanzioni/Verbali PM da Pagare
+                    <Badge className="bg-[#f59e0b]/20 text-[#f59e0b] ml-2">{sanzioni.length}</Badge>
+                  </CardTitle>
+                  <CardDescription className="text-[#e8fbff]/50">
+                    Verbali di contestazione emessi dalla Polizia Municipale
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {sanzioni.map((sanzione) => (
+                      <div key={sanzione.id} className="p-4 bg-[#0b1220] rounded-lg border border-[#f59e0b]/20">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-[#e8fbff]">{sanzione.verbale_code}</p>
+                              {sanzione.in_periodo_ridotto && (
+                                <Badge className="bg-green-500/20 text-green-400 text-xs">
+                                  Sconto 30%
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-[#e8fbff]/50">
+                              {sanzione.infraction_description || sanzione.infraction_code}
+                            </p>
+                            <p className="text-xs text-[#e8fbff]/30">
+                              Scadenza: {new Date(sanzione.due_date).toLocaleDateString('it-IT')}
+                              {sanzione.comune_nome && ` • ${sanzione.comune_nome}`}
+                            </p>
+                            {sanzione.in_periodo_ridotto && sanzione.giorni_ridotto_rimanenti > 0 && (
+                              <p className="text-xs text-green-400 mt-1">
+                                ⚡ Paga entro {sanzione.giorni_ridotto_rimanenti} giorni per lo sconto!
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <Badge className="bg-[#f59e0b]/20 text-[#f59e0b]">
+                              {sanzione.payment_status}
+                            </Badge>
+                            {sanzione.in_periodo_ridotto ? (
+                              <>
+                                <p className="text-lg font-bold text-green-400">
+                                  €{parseFloat(sanzione.importo_ridotto).toFixed(2)}
+                                </p>
+                                <p className="text-xs text-[#e8fbff]/30 line-through">
+                                  €{parseFloat(sanzione.amount).toFixed(2)}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="text-lg font-bold text-[#e8fbff]">
+                                €{parseFloat(sanzione.amount).toFixed(2)}
+                              </p>
+                            )}
+                            <div className="flex gap-2 mt-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/10"
+                                onClick={() => window.open(`https://api.mio-hub.me/api/verbali/${sanzione.id}/pdf`, '_blank')}
+                              >
+                                <FileText className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-black"
+                                onClick={() => handlePagaSanzione(sanzione)}
+                              >
+                                <CreditCard className="w-4 h-4 mr-1" />
+                                Paga
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Totale Sanzioni */}
+                  <div className="mt-4 p-3 bg-[#f59e0b]/10 rounded-lg border border-[#f59e0b]/20">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#e8fbff]/70">Totale Sanzioni da Pagare:</span>
+                      <span className="text-xl font-bold text-[#f59e0b]">€{totaleSanzioni.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Tab Storico */}
@@ -748,6 +929,74 @@ export default function WalletImpresaPage() {
                 <Button onClick={handleConfirmaPagamento} className="bg-[#14b8a6] hover:bg-[#14b8a6]/80">
                   <CreditCard className="w-4 h-4 mr-2" />
                   Paga Ora (Simulazione)
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* v3.53.0: Dialog Pagamento Sanzione */}
+      <Dialog open={showPagamentoSanzioneDialog} onOpenChange={setShowPagamentoSanzioneDialog}>
+        <DialogContent className="bg-[#1a2332] border-[#f59e0b]/20 text-[#e8fbff]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-[#f59e0b]" />
+              Pagamento Sanzione
+            </DialogTitle>
+            <DialogDescription className="text-[#e8fbff]/70">
+              Verbale {selectedSanzione?.verbale_code}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedSanzione && (
+            <div className="space-y-4">
+              <div className="bg-[#0b1220] p-4 rounded-lg">
+                <p className="text-sm text-[#e8fbff]/70 mb-2">
+                  {selectedSanzione.infraction_description || selectedSanzione.infraction_code}
+                </p>
+                
+                {selectedSanzione.in_periodo_ridotto ? (
+                  <>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-[#e8fbff]/70">Importo Originale</span>
+                      <span className="text-[#e8fbff]/50 line-through">€{parseFloat(selectedSanzione.amount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between mb-2 text-green-400">
+                      <span>Sconto 30% (pagamento entro 5gg)</span>
+                      <span>-€{(parseFloat(selectedSanzione.amount) * 0.3).toFixed(2)}</span>
+                    </div>
+                    <div className="border-t border-[#f59e0b]/20 pt-2 mt-2 flex justify-between font-bold text-lg">
+                      <span>TOTALE DA PAGARE</span>
+                      <span className="text-green-400">€{parseFloat(selectedSanzione.importo_ridotto).toFixed(2)}</span>
+                    </div>
+                    <p className="text-xs text-green-400 mt-2">
+                      ⚡ Hai ancora {selectedSanzione.giorni_ridotto_rimanenti} giorni per usufruire dello sconto!
+                    </p>
+                  </>
+                ) : (
+                  <div className="border-t border-[#f59e0b]/20 pt-2 mt-2 flex justify-between font-bold text-lg">
+                    <span>TOTALE DA PAGARE</span>
+                    <span className="text-[#f59e0b]">€{parseFloat(selectedSanzione.amount).toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" onClick={() => setShowPagamentoSanzioneDialog(false)} className="border-[#f59e0b]/30">
+                  Annulla
+                </Button>
+                <Button 
+                  onClick={handleConfirmaPagamentoSanzione} 
+                  className="bg-[#f59e0b] hover:bg-[#f59e0b]/80 text-black"
+                  disabled={isProcessingSanzione}
+                >
+                  {isProcessingSanzione ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <CreditCard className="w-4 h-4 mr-2" />
+                  )}
+                  Paga Ora (PagoPA)
                 </Button>
               </div>
             </div>

@@ -73,7 +73,7 @@ interface AnnualFeeCalculation {
 }
 
 export default function WalletPanel() {
-  const [subTab, setSubTab] = useState<'wallet' | 'pagopa' | 'riconciliazione' | 'storico' | 'canone' | 'notifiche'>('wallet');
+  const [subTab, setSubTab] = useState<'wallet' | 'pagopa' | 'riconciliazione' | 'storico' | 'canone' | 'sanzioni' | 'notifiche'>('wallet');  // v3.53.0: aggiunto sanzioni
   const [notificheNonLette, setNotificheNonLette] = useState(0);
   const [walletHistory, setWalletHistory] = useState<any[]>([]);
   
@@ -130,6 +130,15 @@ export default function WalletPanel() {
   // Stati per Ricariche Spunta (v3.55.0)
   const [ricaricheSpunta, setRicaricheSpunta] = useState<any[]>([]);
   const [isLoadingRicariche, setIsLoadingRicariche] = useState(false);
+
+  // v3.53.0: Stati per Sanzioni/Verbali PM
+  const [sanzioniList, setSanzioniList] = useState<any[]>([]);
+  const [isLoadingSanzioni, setIsLoadingSanzioni] = useState(false);
+  const [sanzioniFilters, setSanzioniFilters] = useState({ stato: 'all', impresa_search: '' });
+  const [sanzioniTotali, setSanzioniTotali] = useState({ non_pagato: 0, pagato: 0, totale: 0 });
+  const [showRegistraPagamentoDialog, setShowRegistraPagamentoDialog] = useState(false);
+  const [selectedSanzione, setSelectedSanzione] = useState<any>(null);
+  const [isRegistrandoPagamento, setIsRegistrandoPagamento] = useState(false);
 
   // Stati per Impostazioni Mora (v3.46.0)
   const [showImpostazioniMoraDialog, setShowImpostazioniMoraDialog] = useState(false);
@@ -652,6 +661,71 @@ export default function WalletPanel() {
     }
   }, [subTab]);
 
+  // v3.53.0: Carica sanzioni quando si seleziona il subtab
+  const fetchSanzioni = async () => {
+    setIsLoadingSanzioni(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const params = new URLSearchParams();
+      if (sanzioniFilters.stato !== 'all') params.append('stato', sanzioniFilters.stato);
+      if (sanzioniFilters.impresa_search) params.append('impresa_search', sanzioniFilters.impresa_search);
+      params.append('limit', '100');
+      
+      const url = addComuneIdToUrl(`${API_URL}/api/sanctions/riepilogo-pagamenti?${params.toString()}`);
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) {
+        setSanzioniList(data.data || []);
+        setSanzioniTotali(data.totali || { non_pagato: 0, pagato: 0, totale: 0 });
+      }
+    } catch (error) {
+      console.error('Errore caricamento sanzioni:', error);
+    } finally {
+      setIsLoadingSanzioni(false);
+    }
+  };
+
+  useEffect(() => {
+    if (subTab === 'sanzioni') {
+      fetchSanzioni();
+    }
+  }, [subTab, sanzioniFilters]);
+
+  // v3.53.0: Registra pagamento manuale sanzione
+  const handleRegistraPagamentoSanzione = async () => {
+    if (!selectedSanzione) return;
+    setIsRegistrandoPagamento(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const iuv = `MAN-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      
+      const response = await fetch(`${API_URL}/api/sanctions/${selectedSanzione.id}/paga-pagopa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          importo_pagato: parseFloat(selectedSanzione.amount),
+          pagopa_iuv: iuv,
+          metodo_pagamento: 'MANUALE',
+          note: 'Pagamento registrato manualmente da operatore'
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert(`Pagamento registrato! Riferimento: ${iuv}`);
+        setShowRegistraPagamentoDialog(false);
+        setSelectedSanzione(null);
+        fetchSanzioni();
+      } else {
+        alert('Errore: ' + (data.error || 'Errore sconosciuto'));
+      }
+    } catch (err) {
+      console.error('Errore registrazione pagamento:', err);
+      alert('Errore di connessione');
+    } finally {
+      setIsRegistrandoPagamento(false);
+    }
+  };
+
   // Carica conteggio notifiche non lette per Tributi
   const loadNotificheCount = async () => {
     try {
@@ -943,6 +1017,15 @@ export default function WalletPanel() {
             className={`flex-shrink-0 ${subTab === 'canone' ? 'bg-[#f59e0b]' : 'border-slate-700 text-slate-300'}`}
           >
             <Euro className="mr-1 h-4 w-4" /> Canone
+          </Button>
+          {/* v3.53.0: Pulsante Sanzioni */}
+          <Button 
+            size="sm"
+            variant={subTab === 'sanzioni' ? 'default' : 'outline'}
+            onClick={() => setSubTab('sanzioni')}
+            className={`flex-shrink-0 ${subTab === 'sanzioni' ? 'bg-[#ef4444]' : 'border-slate-700 text-slate-300'}`}
+          >
+            <AlertTriangle className="mr-1 h-4 w-4" /> Sanzioni
           </Button>
           <Button 
             size="sm"
@@ -1893,6 +1976,173 @@ export default function WalletPanel() {
         </div>
       )}
 
+      {/* v3.53.0: Tab Sanzioni/Verbali PM */}
+      {subTab === 'sanzioni' && (
+        <div className="space-y-6">
+          {/* Filtri */}
+          <Card className="bg-[#1e293b] border-slate-700">
+            <CardContent className="pt-4">
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex-1 min-w-[200px]">
+                  <Input
+                    placeholder="Cerca impresa..."
+                    value={sanzioniFilters.impresa_search}
+                    onChange={(e) => setSanzioniFilters(prev => ({ ...prev, impresa_search: e.target.value }))}
+                    className="bg-slate-800 border-slate-600 text-white"
+                  />
+                </div>
+                <Select
+                  value={sanzioniFilters.stato}
+                  onValueChange={(value) => setSanzioniFilters(prev => ({ ...prev, stato: value }))}
+                >
+                  <SelectTrigger className="w-[180px] bg-slate-800 border-slate-600 text-white">
+                    <SelectValue placeholder="Stato" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-600">
+                    <SelectItem value="all">Tutti gli stati</SelectItem>
+                    <SelectItem value="NON_PAGATO">Non Pagato</SelectItem>
+                    <SelectItem value="PAGATO">Pagato</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchSanzioni}
+                  className="border-slate-600 text-slate-300"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" /> Aggiorna
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Riepilogo Totali */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-[#1e293b] border-red-500/30">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-400">Da Incassare</p>
+                    <p className="text-2xl font-bold text-red-400">€{sanzioniTotali.non_pagato.toFixed(2)}</p>
+                  </div>
+                  <AlertTriangle className="h-8 w-8 text-red-400/50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-[#1e293b] border-green-500/30">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-400">Incassato</p>
+                    <p className="text-2xl font-bold text-green-400">€{sanzioniTotali.pagato.toFixed(2)}</p>
+                  </div>
+                  <CheckCircle className="h-8 w-8 text-green-400/50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-[#1e293b] border-slate-600">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-400">Totale Verbali</p>
+                    <p className="text-2xl font-bold text-white">€{sanzioniTotali.totale.toFixed(2)}</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-slate-400/50" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Lista Sanzioni */}
+          <Card className="bg-[#1e293b] border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+                Elenco Sanzioni/Verbali PM
+                <Badge className="bg-slate-700 text-slate-300 ml-2">{sanzioniList.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingSanzioni ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                </div>
+              ) : sanzioniList.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-slate-600" />
+                  <p>Nessuna sanzione trovata</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {sanzioniList.map((sanzione) => (
+                    <div key={sanzione.id} className={`p-4 rounded-lg border ${
+                      sanzione.payment_status === 'PAGATO' 
+                        ? 'bg-green-900/20 border-green-500/30' 
+                        : 'bg-red-900/20 border-red-500/30'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-white">{sanzione.verbale_code}</p>
+                            <Badge className={sanzione.payment_status === 'PAGATO' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
+                              {sanzione.payment_status}
+                            </Badge>
+                            {sanzione.pagato_in_ridotto && (
+                              <Badge className="bg-blue-500/20 text-blue-400 text-xs">-30%</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-400">
+                            {sanzione.impresa_nome} - {sanzione.partita_iva}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {sanzione.infraction_description || sanzione.infraction_code}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            Emesso: {new Date(sanzione.issue_date).toLocaleDateString('it-IT')} | 
+                            Scadenza: {new Date(sanzione.due_date).toLocaleDateString('it-IT')}
+                            {sanzione.comune_verbale && ` | ${sanzione.comune_verbale}`}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-white">€{parseFloat(sanzione.amount).toFixed(2)}</p>
+                          {sanzione.payment_status === 'PAGATO' && sanzione.paid_date && (
+                            <p className="text-xs text-green-400">
+                              Pagato il {new Date(sanzione.paid_date).toLocaleDateString('it-IT')}
+                            </p>
+                          )}
+                          <div className="flex gap-2 mt-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-slate-600 text-slate-300"
+                              onClick={() => window.open(`https://api.mio-hub.me/api/verbali/${sanzione.id}/pdf`, '_blank')}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {sanzione.payment_status !== 'PAGATO' && (
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={() => {
+                                  setSelectedSanzione(sanzione);
+                                  setShowRegistraPagamentoDialog(true);
+                                }}
+                              >
+                                <CreditCard className="h-4 w-4 mr-1" /> Registra
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Tab Notifiche */}
       {subTab === 'notifiche' && (
         <div className="space-y-6">
@@ -2582,6 +2832,59 @@ export default function WalletPanel() {
             >
               {isSavingMora ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
               Salva Impostazioni
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* v3.53.0: Dialog Registra Pagamento Sanzione */}
+      <Dialog open={showRegistraPagamentoDialog} onOpenChange={setShowRegistraPagamentoDialog}>
+        <DialogContent className="bg-[#1e293b] border-slate-700 text-white sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-green-400" />
+              Registra Pagamento Sanzione
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Registra manualmente il pagamento di una sanzione (contanti/bonifico)
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedSanzione && (
+            <div className="py-4 space-y-4">
+              <div className="bg-slate-800 p-4 rounded-lg">
+                <p className="font-medium text-white">{selectedSanzione.verbale_code}</p>
+                <p className="text-sm text-slate-400">{selectedSanzione.impresa_nome}</p>
+                <p className="text-xs text-slate-500">{selectedSanzione.infraction_description || selectedSanzione.infraction_code}</p>
+              </div>
+              
+              <div className="flex justify-between items-center p-3 bg-green-900/20 rounded-lg border border-green-500/30">
+                <span className="text-slate-300">Importo da Registrare:</span>
+                <span className="text-2xl font-bold text-green-400">€{parseFloat(selectedSanzione.amount).toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="border-slate-600 text-slate-300"
+              onClick={() => setShowRegistraPagamentoDialog(false)}
+              disabled={isRegistrandoPagamento}
+            >
+              Annulla
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleRegistraPagamentoSanzione}
+              disabled={isRegistrandoPagamento}
+            >
+              {isRegistrandoPagamento ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle className="h-4 w-4 mr-2" />
+              )}
+              Conferma Pagamento
             </Button>
           </DialogFooter>
         </DialogContent>
