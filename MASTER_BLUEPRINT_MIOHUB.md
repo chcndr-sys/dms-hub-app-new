@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.54.0  
-> **Data:** 28 Gennaio 2026  
+> **Versione:** 3.54.4  
+> **Data:** 29 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1169,6 +1169,28 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 ---
 
 ### 📝 CHANGELOG
+
+### v3.54.4 (29/01/2026) - Fix Sconto 30% Verbali
+
+**Bug Fix Critico:**
+
+1. **Fix notified/notified_at alla creazione verbale**
+   - Prima: verbali creati avevano `notified=false` e `notified_at=null`
+   - Conseguenza: lo sconto 30% non appariva in "Sanzioni da Pagare" nel Wallet Impresa
+   - Ora: dopo INSERT notifica, viene eseguito `UPDATE sanctions SET notified=true, notified_at=NOW()`
+   - Aggiunto INSERT in `notifiche_destinatari` per tracciare lettura
+
+2. **Aggiornamento verbali esistenti**
+   - Query SQL per aggiornare verbali con notifica ma `notified=false`
+   - Tutti i verbali esistenti ora hanno `notified=true` e `notified_at` corretto
+
+**Commit:**
+- Backend: `ad79a88` - "fix: notified/notified_at aggiornati alla creazione verbale (v3.54.4)"
+
+**File Modificati:**
+- `mihub-backend-rest/routes/verbali.js` (v2.1.0) - Fix UPDATE notified dopo INSERT notifica
+
+---
 
 ### v3.54.0 (28/01/2026) - Modulo Pagamento Sanzioni/Verbali PM
 
