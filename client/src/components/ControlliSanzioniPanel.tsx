@@ -313,41 +313,18 @@ export default function ControlliSanzioniPanel() {
       const watchlistData = await watchlistRes.json();
       if (watchlistData.success) setWatchlist(watchlistData.data || []);
 
-      // Fetch sanctions - filtrato per comune se in impersonificazione
-      const sanctionsRes = await fetch(`${MIHUB_API}/sanctions?limit=100`); // Prendiamo più dati per filtrare lato frontend
+      // v3.54.2: Fetch sanctions - filtrato per comune_id lato backend
+      let sanctionsUrl = `${MIHUB_API}/sanctions?limit=100`;
+      if (isImpersonatingFromUrl && comuneIdFromUrl) {
+        sanctionsUrl += `&comune_id=${comuneIdFromUrl}`;
+      }
+      const sanctionsRes = await fetch(sanctionsUrl);
       const sanctionsData = await sanctionsRes.json();
       if (sanctionsData.success) {
-        let sanctionsFiltered = sanctionsData.data || [];
-        // Filtro lato frontend per comune_id se in impersonificazione
+        const sanctionsFiltered = sanctionsData.data || [];
+        
+        // Ricalcola le stats localmente dai verbali (già filtrati dal backend)
         if (isImpersonatingFromUrl && comuneIdFromUrl) {
-          const comuneId = parseInt(comuneIdFromUrl);
-          const comuneNome = comuneNomeFromUrl || '';
-          sanctionsFiltered = sanctionsFiltered.filter((s: Sanction) => {
-            // Filtra per comune_id nell'intestazione del verbale
-            // Il campo location contiene la posizione GPS della violazione, NON il comune di appartenenza
-            try {
-              const verbaleData = typeof s.verbale_data_json === 'string' 
-                ? JSON.parse(s.verbale_data_json) 
-                : s.verbale_data_json;
-              
-              // Controlla comune_id nell'intestazione
-              if (verbaleData?.intestazione?.comune_id) {
-                return verbaleData.intestazione.comune_id === comuneId;
-              }
-              
-              // Fallback: controlla il nome del comune nell'intestazione
-              if (verbaleData?.intestazione?.comune && comuneNome) {
-                return verbaleData.intestazione.comune.toLowerCase().includes(comuneNome.toLowerCase());
-              }
-            } catch (e) {
-              // JSON parsing fallito
-            }
-            
-            // Verbali senza comune_id nell'intestazione vengono esclusi
-            return false;
-          });
-          
-          // Ricalcola le stats localmente dai verbali filtrati
           const totaleImporti = sanctionsFiltered.reduce((sum: number, s: Sanction) => sum + parseFloat(s.amount || '0'), 0);
           const nonPagati = sanctionsFiltered.filter((s: Sanction) => s.payment_status === 'NON_PAGATO').length;
           const pagati = sanctionsFiltered.filter((s: Sanction) => s.payment_status === 'PAGATO').length;
