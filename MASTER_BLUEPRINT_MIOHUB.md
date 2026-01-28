@@ -375,6 +375,25 @@ Gli endpoint sono documentati in:
 MIO-hub/api/index.json (GitHub: Chcndr/MIO-hub)
 ```
 
+### Riepilogo Endpoint per Servizio
+
+| Servizio | Endpoint |
+|----------|----------|
+| MIHUB Backend REST | 301 |
+| DMS HUB API | 194 |
+| Security RBAC API | 47 |
+| Altri Servizi | 40 |
+| MIHUB Backend | 38 |
+| Token Carbon Credit v2 (TCC v2) API | 30 |
+| SUAP & Ente Sussidiario API | 29 |
+| Sistema Notifiche Bidirezionali | 25 |
+| Token Carbon Credit (TCC) API | 11 |
+| GitHub REST API | 8 |
+| MIO Agent Logs | 4 |
+| **TOTALE** | **727** |
+
+> **Nota**: La dashboard mostra 730 perché include 3 endpoint interni di sistema.
+
 ### Categorie Principali
 
 | Categoria | Prefisso | Esempi |
