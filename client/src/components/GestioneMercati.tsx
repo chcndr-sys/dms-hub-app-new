@@ -1457,7 +1457,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       const [stallsRes, mapRes, concessionsRes, presenzeRes, graduatoriaRes, spuntistiRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/markets/${marketId}/stalls`),
         fetch(`${API_BASE_URL}/api/gis/market-map/${marketId}`),
-        fetch(`${API_BASE_URL}/api/markets/${marketCode}/stalls/concessions`),
+        fetch(`${API_BASE_URL}/api/markets/${marketId}/concessions`),
         fetch(`${API_BASE_URL}/api/presenze/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) })),
         fetch(`${API_BASE_URL}/api/graduatoria/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) })),
         fetch(`${API_BASE_URL}/api/spuntisti/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) }))
