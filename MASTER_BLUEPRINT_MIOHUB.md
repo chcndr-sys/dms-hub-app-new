@@ -4123,3 +4123,220 @@ const handleStallUpdate = async () => {
 ---
 
 *Aggiornamento del 20 Gennaio 2026 - Manus AI*
+
+
+---
+
+## 🆕 PROGETTO: SEGNALAZIONI CIVICHE (v3.55.0)
+
+> **Data Progetto:** 29 Gennaio 2026  
+> **Autore:** Manus AI  
+> **Stato:** 📋 IN ATTESA APPROVAZIONE
+
+### Obiettivo
+
+Completare il modulo **Segnalazioni Civiche** permettendo a cittadini e imprese di segnalare problemi urbani, con gestione lato PA e Polizia Municipale.
+
+### Schema Flusso Dati
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        FLUSSO SEGNALAZIONI CIVICHE                               │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+  │   Cittadino/     │────▶│   API Backend    │────▶│   Database       │
+  │   Impresa        │     │   civic-reports  │     │   civic_reports  │
+  │   (CivicPage)    │     │                  │     │                  │
+  └──────────────────┘     └──────────────────┘     └──────────────────┘
+                                   │
+                                   │ Notifica
+                                   ▼
+  ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+  │   Dashboard PA   │◀────│   Sistema        │────▶│   Polizia        │
+  │   (Mappa + KPI)  │     │   Notifiche      │     │   Municipale     │
+  │                  │     │                  │     │   (Controlli)    │
+  └──────────────────┘     └──────────────────┘     └──────────────────┘
+         │                                                   │
+         ▼                                                   ▼
+  ┌──────────────────┐                              ┌──────────────────┐
+  │   Gestione       │                              │   Mappa PM       │
+  │   Stato          │                              │   + Assegnazione │
+  │   Segnalazione   │                              │   Agenti         │
+  └──────────────────┘                              └──────────────────┘
+         │                                                   │
+         │ Risoluzione                                       │
+         ▼                                                   ▼
+  ┌──────────────────┐                              ┌──────────────────┐
+  │   Notifica       │                              │   Collegamento   │
+  │   Cittadino      │                              │   Verbale/       │
+  │   +20 TCC        │                              │   Sanzione       │
+  └──────────────────┘                              └──────────────────┘
+```
+
+### Componenti Esistenti
+
+| Componente | Stato | Note |
+|------------|-------|------|
+| `CivicPage.tsx` | ⚠️ PARZIALE | Form presente ma solo simulazione, non salva nel DB |
+| `BottomNav.tsx` | ✅ OK | Route `/civic` con label "Segnala" |
+| `civic_reports` (DB) | ⚠️ PARZIALE | Tabella esiste ma manca `comune_id` per impersonificazione |
+| Backend endpoints | ❌ MANCA | Nessun endpoint `/api/civic-reports` |
+| Dashboard PA tab | ❌ MANCA | Nessuna sezione segnalazioni civiche |
+| ControlliSanzioniPanel | ❌ MANCA | Nessun subtab per segnalazioni |
+
+### Modifiche Database
+
+```sql
+-- ALTER TABLE civic_reports - Aggiungere colonne
+ALTER TABLE civic_reports 
+  ADD COLUMN IF NOT EXISTS comune_id INTEGER,           -- Per impersonificazione
+  ADD COLUMN IF NOT EXISTS impresa_id INTEGER,          -- Se segnalazione da impresa
+  ADD COLUMN IF NOT EXISTS address TEXT,                -- Indirizzo testuale
+  ADD COLUMN IF NOT EXISTS priority VARCHAR(20) DEFAULT 'NORMAL',  -- LOW, NORMAL, HIGH, URGENT
+  ADD COLUMN IF NOT EXISTS assigned_to INTEGER,         -- ID agente PM assegnato
+  ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMP,       -- Data risoluzione
+  ADD COLUMN IF NOT EXISTS resolved_by INTEGER,         -- Chi ha risolto
+  ADD COLUMN IF NOT EXISTS resolution_notes TEXT,       -- Note risoluzione
+  ADD COLUMN IF NOT EXISTS tcc_rewarded BOOLEAN DEFAULT FALSE,  -- TCC già assegnati?
+  ADD COLUMN IF NOT EXISTS linked_sanction_id INTEGER,  -- Collegamento a verbale
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+-- Indici per performance
+CREATE INDEX IF NOT EXISTS idx_civic_reports_comune ON civic_reports(comune_id);
+CREATE INDEX IF NOT EXISTS idx_civic_reports_status ON civic_reports(status);
+CREATE INDEX IF NOT EXISTS idx_civic_reports_type ON civic_reports(type);
+```
+
+### Nuovi Endpoint API
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/civic-reports` | GET | Lista segnalazioni con filtri e impersonificazione |
+| `/api/civic-reports` | POST | Crea nuova segnalazione |
+| `/api/civic-reports/stats` | GET | Statistiche per dashboard PA |
+| `/api/civic-reports/:id/status` | PATCH | Aggiorna stato segnalazione |
+| `/api/civic-reports/:id/assign` | PATCH | Assegna segnalazione a agente PM |
+| `/api/civic-reports/:id/link-sanction` | POST | Collega segnalazione a verbale |
+
+**Totale nuovi endpoint: 6**
+**Nuovo totale endpoint sistema: 733** (727 + 6)
+
+### UI Dashboard PA - Nuovo Tab "Segnalazioni Civiche"
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  🏛️ Segnalazioni Civiche                                         [Aggiorna]    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
+│  │ In Attesa   │  │ In Corso    │  │ Risolte     │  │ Rifiutate   │            │
+│  │     12      │  │      5      │  │     45      │  │      3      │            │
+│  │  ⏳ +3 oggi │  │  🔄 -2 oggi │  │  ✅ +8 oggi │  │  ❌ +1 oggi │            │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘            │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                        MAPPA SEGNALAZIONI                                │   │
+│  │     🔴 Degrado    🟡 Rifiuti    🟢 Illuminazione    🔵 Sicurezza        │   │
+│  │                    [MAPPA INTERATTIVA LEAFLET]                          │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │  Filtri: [Categoria ▼] [Stato ▼] [Priorità ▼] [Data ▼] [🔍 Cerca...]   │   │
+│  ├─────────────────────────────────────────────────────────────────────────┤   │
+│  │  #  │ Data       │ Categoria    │ Descrizione          │ Stato │ Azioni │   │
+│  │ 001 │ 29/01/2026 │ 🗑️ Rifiuti   │ Cassonetti pieni... │ ⏳    │ [👁️]   │   │
+│  │ 002 │ 29/01/2026 │ 🕳️ Buche     │ Buca pericolosa...  │ 🔄    │ [👁️]   │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### UI ControlliSanzioniPanel - Nuovo SubTab "Segnalazioni"
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  [Panoramica] [Da Controllare] [Verbali] [Tipi Infrazione] [Pratiche SUAP]     │
+│  [Notifiche PM] [🆕 Segnalazioni] [Giustifiche] [Storico]                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  📍 Segnalazioni Civiche da Verificare                           [Aggiorna]    │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │                    [MAPPA SEGNALAZIONI PM]                               │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────────────┐   │
+│  │  Lista Segnalazioni (filtrate per comune_id impersonificazione)         │   │
+│  ├─────────────────────────────────────────────────────────────────────────┤   │
+│  │  🔴 URGENTE │ Microcriminalità │ Via Roma 15 │ 29/01 10:30 │ [Assegna] │   │
+│  │  🟡 ALTA    │ Degrado          │ P.za Duomo  │ 29/01 09:15 │ [Assegna] │   │
+│  │  🟢 NORMALE │ Rifiuti          │ Via Verdi 8 │ 28/01 16:45 │ [Assegna] │   │
+│  └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+│  [Crea Verbale da Segnalazione]  [Segna come Risolta]  [Rifiuta]              │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Flusso Stati Segnalazione
+
+```
+┌──────────┐     ┌─────────────┐     ┌──────────┐     ┌──────────┐
+│ PENDING  │────▶│ IN_PROGRESS │────▶│ RESOLVED │     │ REJECTED │
+│ (Nuova)  │     │ (Assegnata) │     │ (+20 TCC)│     │ (Invalida)│
+└──────────┘     └─────────────┘     └──────────┘     └──────────┘
+     │                                                      ▲
+     └──────────────────────────────────────────────────────┘
+                    (Segnalazione non valida)
+```
+
+### Categorie Segnalazioni
+
+| Categoria | Icona | Colore Marker |
+|-----------|-------|---------------|
+| Degrado | 🏚️ | 🔴 Rosso |
+| Rifiuti | 🗑️ | 🟡 Giallo |
+| Illuminazione | 💡 | 🟢 Verde |
+| Sicurezza | 🔒 | 🔵 Blu |
+| Buche | 🕳️ | 🟣 Viola |
+| Microcriminalità | ⚠️ | ⚫ Nero |
+| Altro | 📝 | ⚪ Grigio |
+
+### Checklist Implementazione
+
+- [ ] **Database**: ALTER TABLE civic_reports (aggiungere colonne)
+- [ ] **Database**: CREATE INDEX per performance
+- [ ] **Backend**: Creare `/routes/civic-reports.js`
+- [ ] **Backend**: Registrare in `server.js`
+- [ ] **Backend**: Registrare 6 endpoint in Guardian
+- [ ] **Frontend**: Aggiornare `CivicPage.tsx` con API reale
+- [ ] **Frontend**: Creare componente `CivicReportsPanel.tsx` per Dashboard PA
+- [ ] **Frontend**: Aggiungere subtab "Segnalazioni" in `ControlliSanzioniPanel.tsx`
+- [ ] **Test**: Verifica flusso completo
+- [ ] **Deploy**: Backend (GitHub → Hetzner)
+- [ ] **Deploy**: Frontend (GitHub → Vercel)
+
+### Stima Tempi
+
+| Fase | Tempo |
+|------|-------|
+| Database | 15 min |
+| Backend | 45 min |
+| CivicPage | 30 min |
+| Dashboard PA | 1h 30min |
+| ControlliSanzioniPanel | 1h |
+| Test & Deploy | 30 min |
+| **TOTALE** | **~4-5 ore** |
+
+### Tabelle Collegate
+
+| Tabella | Relazione | Uso |
+|---------|-----------|-----|
+| `users` | FK user_id | Cittadino che segnala |
+| `imprese` | FK impresa_id | Impresa che segnala |
+| `comuni` | FK comune_id | Impersonificazione |
+| `sanctions` | FK linked_sanction_id | Collegamento verbale |
+| `notifiche` | INSERT | Notifiche PA e cittadino |
+| `extended_users` | UPDATE wallet_balance | Reward +20 TCC |
+
+---
+
+*Progetto documentato da Manus AI - 29 Gennaio 2026*
