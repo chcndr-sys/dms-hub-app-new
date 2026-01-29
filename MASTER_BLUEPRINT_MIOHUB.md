@@ -1170,25 +1170,37 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 
 ### 📝 CHANGELOG
 
-### v3.54.4 (29/01/2026) - Fix Sconto 30% Verbali
+### v3.54.4 (29/01/2026) - Fix Sconto 30% Verbali e Notifiche
 
-**Bug Fix Critico:**
+**Bug Fix Critici:**
 
 1. **Fix notified/notified_at alla creazione verbale**
    - Prima: verbali creati avevano `notified=false` e `notified_at=null`
    - Conseguenza: lo sconto 30% non appariva in "Sanzioni da Pagare" nel Wallet Impresa
    - Ora: dopo INSERT notifica, viene eseguito `UPDATE sanctions SET notified=true, notified_at=NOW()`
-   - Aggiunto INSERT in `notifiche_destinatari` per tracciare lettura
 
-2. **Aggiornamento verbali esistenti**
+2. **Fix INSERT notifiche_destinatari**
+   - Prima: usava colonne errate (`destinatario_id`, `letto`) che non esistevano
+   - Conseguenza: errore SQL, notifiche non arrivavano all'impresa
+   - Ora: usa colonne corrette (`impresa_id`, `stato='INVIATO'`)
+
+3. **Aggiornamento verbali esistenti**
    - Query SQL per aggiornare verbali con notifica ma `notified=false`
-   - Tutti i verbali esistenti ora hanno `notified=true` e `notified_at` corretto
+   - Tutti i 12 verbali esistenti ora hanno `notified=true` e `notified_at` corretto
 
 **Commit:**
-- Backend: `ad79a88` - "fix: notified/notified_at aggiornati alla creazione verbale (v3.54.4)"
+- Backend: `ad79a88` - "fix: notified/notified_at aggiornati alla creazione verbale"
+- Backend: `31059a5` - "fix: corretto colonne notifiche_destinatari"
 
 **File Modificati:**
-- `mihub-backend-rest/routes/verbali.js` (v2.1.0) - Fix UPDATE notified dopo INSERT notifica
+- `mihub-backend-rest/routes/verbali.js` (v2.1.0) - Fix UPDATE notified + INSERT notifiche_destinatari
+
+**Stato Allineamento Sistemi:**
+- GitHub Backend: `31059a5` ✅
+- Hetzner PM2: `31059a5` ✅
+- GitHub Frontend: `9a790be` ✅
+- Vercel: autodeploy ✅
+- Neon DB: 12/12 verbali con notified=true ✅
 
 ---
 
