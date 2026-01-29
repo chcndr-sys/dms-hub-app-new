@@ -6920,8 +6920,34 @@ export default function DashboardPA() {
           </TabsContent>
 
           {/* TAB: MAPPA GIS - Ora usa GestioneHubMapWrapper (Vista Italia HUB) */}
-          <TabsContent value="mappa" className="space-y-0">
-            <GestioneHubMapWrapper />
+          <TabsContent value="mappa" className="space-y-4">
+            {/* BUS HUB Editor - Schermo Intero */}
+            {showBusHubEditor ? (
+              <div className="fixed inset-0 z-[100] bg-[#0b1220]">
+                <BusHubEditor
+                  onClose={() => setShowBusHubEditor(false)}
+                  onSaveComplete={(marketId) => {
+                    console.log('Mercato salvato con ID:', marketId);
+                    setShowBusHubEditor(false);
+                  }}
+                />
+              </div>
+            ) : (
+              <>
+                {/* Pulsante BUS HUB - Accesso rapido all'editor */}
+                <div className="flex justify-end px-4">
+                  <Button
+                    onClick={() => setShowBusHubEditor(true)}
+                    className="bg-[#f59e0b] hover:bg-[#d97706] text-white font-medium px-6"
+                  >
+                    <Bus className="h-4 w-4 mr-2" />
+                    BUS HUB Editor
+                  </Button>
+                </div>
+                {/* Vista Italia HUB */}
+                <GestioneHubMapWrapper />
+              </>
+            )}
           </TabsContent>
 
           {/* TAB: GESTIONE HUB */}
@@ -7149,8 +7175,34 @@ function LogsSection() {
           </Card>
         </TabsContent>
           {/* TAB: MAPPA GIS - Ora usa GestioneHubMapWrapper (Vista Italia HUB) */}
-          <TabsContent value="mappa" className="space-y-0">
-            <GestioneHubMapWrapper />
+          <TabsContent value="mappa" className="space-y-4">
+            {/* BUS HUB Editor - Schermo Intero */}
+            {showBusHubEditor ? (
+              <div className="fixed inset-0 z-[100] bg-[#0b1220]">
+                <BusHubEditor
+                  onClose={() => setShowBusHubEditor(false)}
+                  onSaveComplete={(marketId) => {
+                    console.log('Mercato salvato con ID:', marketId);
+                    setShowBusHubEditor(false);
+                  }}
+                />
+              </div>
+            ) : (
+              <>
+                {/* Pulsante BUS HUB - Accesso rapido all'editor */}
+                <div className="flex justify-end px-4">
+                  <Button
+                    onClick={() => setShowBusHubEditor(true)}
+                    className="bg-[#f59e0b] hover:bg-[#d97706] text-white font-medium px-6"
+                  >
+                    <Bus className="h-4 w-4 mr-2" />
+                    BUS HUB Editor
+                  </Button>
+                </div>
+                {/* Vista Italia HUB */}
+                <GestioneHubMapWrapper />
+              </>
+            )}
           </TabsContent>
 
           {/* TAB: GESTIONE HUB (placeholder vuoto) */}
