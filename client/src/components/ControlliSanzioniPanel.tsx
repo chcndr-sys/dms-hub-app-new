@@ -2662,7 +2662,7 @@ function SegnalazioniPMSubtab({ comuneId }: { comuneId: number }) {
       const res = await fetch(`${MIHUB_API}/civic-reports/${reportId}/assign`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assigned_to: 'PM' })
+        body: JSON.stringify({ assigned_to: 1 }) // ID utente PM
       });
       const data = await res.json();
       if (data.success) {
