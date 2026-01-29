@@ -93,6 +93,28 @@ interface HubShop {
   vetrina_url?: string;
 }
 
+// Interface per Segnalazioni Civiche (marker colorati)
+interface CivicReport {
+  id: number;
+  type: string;
+  description?: string;
+  lat: string | number;
+  lng: string | number;
+  status: 'pending' | 'in_progress' | 'resolved';
+  priority?: 'NORMAL' | 'URGENT';
+  created_at?: string;
+}
+
+// Colori marker per categoria segnalazione
+const CIVIC_MARKER_COLORS: Record<string, string> = {
+  'Buche': '#f97316',           // Arancione
+  'Illuminazione': '#eab308',   // Giallo
+  'Rifiuti': '#22c55e',         // Verde
+  'Microcriminalità': '#ef4444', // Rosso
+  'Abusivismo': '#a855f7',      // Viola
+  'default': '#6b7280'          // Grigio
+};
+
 interface HubMarketMapComponentProps {
   mapData?: MapData; // Opzionale per modalità HUB
   center?: [number, number];
@@ -136,6 +158,9 @@ interface HubMarketMapComponentProps {
   onShopClick?: (shop: HubShop) => void; // Callback click su negozio
   hubCenterFixed?: [number, number]; // Centro HUB fisso per zoom
   customZoom?: number; // Zoom personalizzato per navigazione regione/provincia
+  
+  // ============ SEGNALAZIONI CIVICHE ============
+  civicReports?: CivicReport[]; // Segnalazioni civiche da mostrare come marker colorati
 }
 
 // Controller per centrare la mappa programmaticamente
@@ -223,7 +248,9 @@ export function HubMarketMapComponent({
   onHubClick,
   onShopClick,
   hubCenterFixed,
-  customZoom
+  customZoom,
+  // Props per Segnalazioni Civiche
+  civicReports = []
 }: HubMarketMapComponentProps) {
   
   // Ottieni lo stato di animazione dal context per nascondere poligoni durante zoom
@@ -1339,6 +1366,73 @@ export function HubMarketMapComponent({
                   </Popup>
                 </Polygon>
               </React.Fragment>
+            );
+          })}
+
+          {/* ============ MARKER SEGNALAZIONI CIVICHE ============ */}
+          {civicReports && civicReports.length > 0 && civicReports.map((report) => {
+            const lat = parseFloat(String(report.lat));
+            const lng = parseFloat(String(report.lng));
+            if (isNaN(lat) || isNaN(lng)) return null;
+            
+            const color = CIVIC_MARKER_COLORS[report.type] || CIVIC_MARKER_COLORS['default'];
+            const isResolved = report.status === 'resolved';
+            const isUrgent = report.priority === 'URGENT';
+            
+            // Crea icona personalizzata con colore categoria
+            const civicIcon = L.divIcon({
+              className: 'civic-marker',
+              html: `<div style="
+                width: ${isUrgent ? '18px' : '14px'};
+                height: ${isUrgent ? '18px' : '14px'};
+                background-color: ${isResolved ? '#6b7280' : color};
+                border: 2px solid ${isResolved ? '#9ca3af' : '#ffffff'};
+                border-radius: 50%;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                opacity: ${isResolved ? '0.5' : '1'};
+                ${isUrgent && !isResolved ? 'animation: pulse 1.5s infinite;' : ''}
+              "></div>`,
+              iconSize: [isUrgent ? 18 : 14, isUrgent ? 18 : 14],
+              iconAnchor: [isUrgent ? 9 : 7, isUrgent ? 9 : 7],
+            });
+            
+            return (
+              <Marker
+                key={`civic-${report.id}`}
+                position={[lat, lng]}
+                icon={civicIcon}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[200px]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div style={{ 
+                        width: '12px', 
+                        height: '12px', 
+                        backgroundColor: color, 
+                        borderRadius: '50%' 
+                      }}></div>
+                      <span className="font-bold text-sm">{report.type}</span>
+                      {isUrgent && <span className="text-xs bg-red-500 text-white px-1 rounded">URGENTE</span>}
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2">{report.description || 'Nessuna descrizione'}</p>
+                    <div className="flex justify-between items-center">
+                      <span className={`text-xs px-2 py-0.5 rounded ${
+                        report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        report.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {report.status === 'pending' ? 'Da assegnare' :
+                         report.status === 'in_progress' ? 'In corso' : 'Risolto'}
+                      </span>
+                      {report.created_at && (
+                        <span className="text-xs text-gray-400">
+                          {new Date(report.created_at).toLocaleDateString('it-IT')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
             );
           })}
         </MapContainer>

@@ -4379,8 +4379,8 @@ export default function DashboardPA() {
             {/* Pannello Segnalazioni Civiche con dati reali e config TCC */}
             <CivicReportsPanel />
 
-            {/* Mappa Rete HUB Italia - Segnalazioni Civiche */}
-            <GestioneHubMapWrapper />
+            {/* Mappa Rete HUB Italia - Segnalazioni Civiche con marker colorati */}
+            <GestioneHubMapWrapper civicReports={civicReportsQuery.data || []} />
 
             <Card className="bg-[#1a2332] border-[#06b6d4]/30">
               <CardHeader>
