@@ -36,7 +36,7 @@ export default function MappaItaliaPage() {
       </header>
 
       {/* Mappa Container - GestioneHubMapWrapper con toggle Mercati/HUB */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-visible pb-20">
         <GestioneHubMapWrapper />
       </div>
     </div>
