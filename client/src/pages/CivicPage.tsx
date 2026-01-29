@@ -14,7 +14,6 @@ import { AlertCircle, ArrowLeft, Camera, MapPin, CheckCircle2, Shield, Clock, Aw
 import BottomNav from '@/components/BottomNav';
 import { Link } from 'wouter';
 import { toast } from 'sonner';
-import { useAuth } from '@/_core/hooks/useAuth';
 import { useImpersonation } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
@@ -37,15 +36,14 @@ export default function CivicPage() {
   const [submitted, setSubmitted] = useState(false);
   const [tccReward, setTccReward] = useState(20);
   
-  const { user, impresa } = useAuth();
-  const { selectedComune } = useImpersonation();
+  const { comuneId, isImpersonating } = useImpersonation();
 
   // Carica config TCC per il comune
   useEffect(() => {
     const loadConfig = async () => {
-      const comuneId = selectedComune?.id || 1;
+      const currentComuneId = comuneId ? parseInt(comuneId) : 1;
       try {
-        const response = await fetch(`${API_BASE_URL}/api/civic-reports/config?comune_id=${comuneId}`);
+        const response = await fetch(`${API_BASE_URL}/api/civic-reports/config?comune_id=${currentComuneId}`);
         const data = await response.json();
         if (data.success && data.data) {
           setTccReward(data.data.tcc_reward_default || 20);
@@ -55,7 +53,7 @@ export default function CivicPage() {
       }
     };
     loadConfig();
-  }, [selectedComune]);
+  }, [comuneId]);
 
   const handleGetLocation = () => {
     setLoading(true);
@@ -92,16 +90,16 @@ export default function CivicPage() {
     setLoading(true);
 
     try {
-      const comuneId = selectedComune?.id || 1;
+      const currentComuneId = comuneId ? parseInt(comuneId) : 1;
       
       const payload = {
         type: category,
         description: description,
         lat: location.lat.toString(),
         lng: location.lng.toString(),
-        comune_id: comuneId,
-        user_id: user?.id || null,
-        impresa_id: impresa?.id || null,
+        comune_id: currentComuneId,
+        user_id: null,
+        impresa_id: null,
         priority: 'NORMAL'
       };
 
