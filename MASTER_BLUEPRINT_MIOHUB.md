@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.54.4  
+> **Versione:** 3.55.0  
 > **Data:** 29 Gennaio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -1169,6 +1169,49 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 ---
 
 ### 📝 CHANGELOG
+
+### v3.55.0 (29/01/2026) - Modulo Segnalazioni Civiche Completo
+
+**Nuove Funzionalità:**
+
+1. **Backend - 10 Nuovi Endpoint** (`/routes/civic-reports.js`)
+   - `GET /api/civic-reports` - Lista segnalazioni con filtri
+   - `POST /api/civic-reports` - Crea nuova segnalazione
+   - `GET /api/civic-reports/stats` - Statistiche per dashboard
+   - `GET /api/civic-reports/config` - Leggi config TCC
+   - `PUT /api/civic-reports/config` - Aggiorna config TCC
+   - `GET /api/civic-reports/:id` - Dettaglio segnalazione
+   - `PATCH /api/civic-reports/:id/status` - Aggiorna stato
+   - `PATCH /api/civic-reports/:id/assign` - Assegna a PM
+   - `POST /api/civic-reports/:id/resolve` - Risolvi + assegna TCC
+   - `POST /api/civic-reports/:id/link-sanction` - Collega a verbale
+
+2. **Database**
+   - ALTER TABLE `civic_reports` (+13 colonne: comune_id, impresa_id, priority, assigned_to, tcc_reward, etc.)
+   - CREATE TABLE `civic_config` (configurazione TCC per comune)
+   - 5 indici per performance
+
+3. **Frontend - CivicPage.tsx**
+   - Collegamento a API reale invece di simulazione
+   - Invio segnalazione con GPS e categoria
+
+4. **Frontend - Dashboard PA**
+   - Nuovo componente `CivicReportsPanel.tsx`
+   - Dati reali invece di mockData
+   - Card "Configurazione Reward TCC" modificabile
+
+5. **Frontend - ControlliSanzioniPanel**
+   - Nuovo subtab "Segnalazioni" per PM
+   - Lista segnalazioni con azioni: Prendi in carico, Risolvi
+   - Navigazione GPS verso segnalazione
+
+**Commit:**
+- Backend: `9adf514` - "feat: civic-reports.js con 10 endpoint"
+- Frontend: `18425f1` - "feat: Segnalazioni Civiche v3.55.0"
+
+**Totale Endpoint Sistema: 737** (727 + 10)
+
+---
 
 ### v3.54.4 (29/01/2026) - Fix Sconto 30% Verbali e Notifiche
 
