@@ -4133,210 +4133,643 @@ const handleStallUpdate = async () => {
 > **Autore:** Manus AI  
 > **Stato:** 📋 IN ATTESA APPROVAZIONE
 
-### Obiettivo
+---
 
-Completare il modulo **Segnalazioni Civiche** permettendo a cittadini e imprese di segnalare problemi urbani, con gestione lato PA e Polizia Municipale.
+### 1. Obiettivo
 
-### Schema Flusso Dati
+Completare il modulo **Segnalazioni Civiche** permettendo a cittadini e imprese di segnalare problemi urbani (degrado, rifiuti, buche, illuminazione, sicurezza), con gestione completa lato PA e Polizia Municipale, inclusa la configurazione dei **Token Carbon Credit (TCC)** come premio per le segnalazioni risolte.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        FLUSSO SEGNALAZIONI CIVICHE                               │
-└─────────────────────────────────────────────────────────────────────────────────┘
+---
 
-  ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-  │   Cittadino/     │────▶│   API Backend    │────▶│   Database       │
-  │   Impresa        │     │   civic-reports  │     │   civic_reports  │
-  │   (CivicPage)    │     │                  │     │                  │
-  └──────────────────┘     └──────────────────┘     └──────────────────┘
-                                   │
-                                   │ Notifica
-                                   ▼
-  ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-  │   Dashboard PA   │◀────│   Sistema        │────▶│   Polizia        │
-  │   (Mappa + KPI)  │     │   Notifiche      │     │   Municipale     │
-  │                  │     │                  │     │   (Controlli)    │
-  └──────────────────┘     └──────────────────┘     └──────────────────┘
-         │                                                   │
-         ▼                                                   ▼
-  ┌──────────────────┐                              ┌──────────────────┐
-  │   Gestione       │                              │   Mappa PM       │
-  │   Stato          │                              │   + Assegnazione │
-  │   Segnalazione   │                              │   Agenti         │
-  └──────────────────┘                              └──────────────────┘
-         │                                                   │
-         │ Risoluzione                                       │
-         ▼                                                   ▼
-  ┌──────────────────┐                              ┌──────────────────┐
-  │   Notifica       │                              │   Collegamento   │
-  │   Cittadino      │                              │   Verbale/       │
-  │   +20 TCC        │                              │   Sanzione       │
-  └──────────────────┘                              └──────────────────┘
-```
+### 2. Analisi Stato Attuale
 
-### Componenti Esistenti
+#### 2.1 Componenti Esistenti
 
-| Componente | Stato | Note |
-|------------|-------|------|
-| `CivicPage.tsx` | ⚠️ PARZIALE | Form presente ma solo simulazione, non salva nel DB |
-| `BottomNav.tsx` | ✅ OK | Route `/civic` con label "Segnala" |
-| `civic_reports` (DB) | ⚠️ PARZIALE | Tabella esiste ma manca `comune_id` per impersonificazione |
-| Backend endpoints | ❌ MANCA | Nessun endpoint `/api/civic-reports` |
-| Dashboard PA tab | ❌ MANCA | Nessuna sezione segnalazioni civiche |
-| ControlliSanzioniPanel | ❌ MANCA | Nessun subtab per segnalazioni |
+| Componente | File | Stato | Dettaglio |
+|------------|------|-------|----------|
+| **Form Segnalazione (App)** | `CivicPage.tsx` | ⚠️ PARZIALE | Form UI completo con GPS, ma usa `setTimeout` simulato - NON salva nel DB |
+| **Tab BottomNav** | `BottomNav.tsx` | ✅ FUNZIONANTE | Route `/civic` con label "Segnala" e icona |
+| **Tab Dashboard PA** | `DashboardPA.tsx` | ⚠️ PARZIALE | Tab "Segnalazioni & IoT" esiste con UI, ma usa `mockData.civicReports` |
+| **Tabella DB** | `civic_reports` | ⚠️ PARZIALE | Esiste con 9 colonne base, 0 record, manca `comune_id` |
+| **Backend Endpoints** | - | ❌ NON ESISTE | Nessun file `/routes/civic-reports.js` |
+| **Subtab PM** | `ControlliSanzioniPanel.tsx` | ❌ NON ESISTE | Nessun subtab per segnalazioni civiche |
 
-### Modifiche Database
+#### 2.2 Struttura Tabella `civic_reports` Attuale
 
 ```sql
--- ALTER TABLE civic_reports - Aggiungere colonne
+-- TABELLA ESISTENTE (da Neon DB)
+CREATE TABLE civic_reports (
+  id          INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id     INTEGER REFERENCES users(id),
+  type        VARCHAR(100) NOT NULL,        -- Categoria: Degrado, Rifiuti, etc.
+  description TEXT NOT NULL,
+  lat         VARCHAR(20),                  -- Latitudine GPS
+  lng         VARCHAR(20),                  -- Longitudine GPS  
+  photo_url   TEXT,                         -- URL foto (non implementato)
+  status      VARCHAR(50) DEFAULT 'pending', -- pending, in_progress, resolved, rejected
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+-- Record attuali: 0
+```
+
+#### 2.3 Codice Frontend Attuale (CivicPage.tsx)
+
+```typescript
+// PROBLEMA: Simulazione invece di chiamata API reale
+const handleSubmit = async (e: React.FormEvent) => {
+  // ...
+  setLoading(true);
+  // ❌ SIMULA invio API con setTimeout
+  setTimeout(() => {
+    setLoading(false);
+    setSubmitted(true);
+    toast.success('Segnalazione inviata con successo! +20 crediti alla risoluzione');
+  }, 1500);
+};
+```
+
+#### 2.4 Codice Dashboard PA Attuale (DashboardPA.tsx)
+
+```typescript
+// PROBLEMA: Dati mock hardcoded invece di API reale
+const mockData = {
+  civicReports: {
+    total: 127,
+    pending: 45,
+    inProgress: 38,
+    resolved: 44,
+    recent: [
+      { id: 1, type: 'Rifiuti', description: 'Cassonetti pieni', location: 'Via Roma', ... },
+      // ... altri dati mock
+    ]
+  }
+};
+```
+
+---
+
+### 3. Schema Architettura Completo
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                           ARCHITETTURA SEGNALAZIONI CIVICHE                              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+                              ┌─────────────────────┐
+                              │   CONFIGURAZIONE    │
+                              │   TCC REWARD        │
+                              │   (Dashboard PA)    │
+                              │   Default: 20 TCC   │
+                              └──────────┬──────────┘
+                                         │
+                                         ▼
+┌───────────────────┐          ┌─────────────────────┐          ┌───────────────────┐
+│   APP CITTADINO   │          │                     │          │   DASHBOARD PA    │
+│   /IMPRESA        │          │   BACKEND API       │          │   Tab Civic IoT   │
+│                   │          │   /api/civic-reports│          │                   │
+│ ┌───────────────┐ │  POST    │                     │   GET    │ ┌───────────────┐ │
+│ │ CivicPage.tsx │ │─────────▶│ ┌─────────────────┐ │◀─────────│ │ KPI Cards     │ │
+│ │ - Categoria   │ │          │ │ civic-reports.js│ │          │ │ - Pending     │ │
+│ │ - Descrizione │ │          │ │                 │ │          │ │ - In Progress │ │
+│ │ - GPS (lat/lng│ │          │ │ POST /          │ │          │ │ - Resolved    │ │
+│ │ - Foto (TODO) │ │          │ │ GET /           │ │          │ │ - Totali      │ │
+│ └───────────────┘ │          │ │ GET /stats      │ │          │ └───────────────┘ │
+└───────────────────┘          │ │ PATCH /:id/stat │ │          │ ┌───────────────┐ │
+                               │ │ PATCH /:id/assig│ │          │ │ Mappa Leaflet │ │
+                               │ │ POST /:id/link  │ │          │ │ con markers   │ │
+                               │ │ GET /config     │ │          │ └───────────────┘ │
+                               │ │ PUT /config     │ │          │ ┌───────────────┐ │
+                               │ └─────────────────┘ │          │ │ Lista + Filtri│ │
+                               │          │         │          │ └───────────────┘ │
+                               │          ▼         │          │ ┌───────────────┐ │
+                               │ ┌─────────────────┐│          │ │ ⚙️ Config TCC │ │
+                               │ │   DATABASE      ││          │ │ Reward amount │ │
+                               │ │   NEON          ││          │ └───────────────┘ │
+                               │ │                 ││          └───────────────────┘
+                               │ │ civic_reports   ││
+                               │ │ civic_config    ││          ┌───────────────────┐
+                               │ │ notifiche       ││          │  CONTROLLI PM     │
+                               │ │ extended_users  ││          │  (Subtab)         │
+                               │ └─────────────────┘│          │                   │
+                               └─────────────────────┘          │ ┌───────────────┐ │
+                                         │                      │ │ Lista Segnala │ │
+                                         │ Notifica             │ │ da verificare │ │
+                                         ▼                      │ └───────────────┘ │
+                               ┌─────────────────────┐          │ ┌───────────────┐ │
+                               │   SISTEMA NOTIFICHE │          │ │ Mappa PM      │ │
+                               │                     │          │ └───────────────┘ │
+                               │ - Notifica PA       │          │ ┌───────────────┐ │
+                               │ - Notifica PM       │          │ │ Azioni:       │ │
+                               │ - Notifica Cittadino│          │ │ - Assegna     │ │
+                               │   (alla risoluzione)│          │ │ - Risolvi     │ │
+                               └─────────────────────┘          │ │ - Crea Verbale│ │
+                                                                │ └───────────────┘ │
+                                                                └───────────────────┘
+```
+
+---
+
+### 4. Modifiche Database
+
+#### 4.1 ALTER TABLE civic_reports
+
+```sql
+-- Aggiungere colonne mancanti per impersonificazione e gestione completa
 ALTER TABLE civic_reports 
-  ADD COLUMN IF NOT EXISTS comune_id INTEGER,           -- Per impersonificazione
-  ADD COLUMN IF NOT EXISTS impresa_id INTEGER,          -- Se segnalazione da impresa
-  ADD COLUMN IF NOT EXISTS address TEXT,                -- Indirizzo testuale
+  ADD COLUMN IF NOT EXISTS comune_id INTEGER,              -- FK per impersonificazione
+  ADD COLUMN IF NOT EXISTS impresa_id INTEGER,             -- Se segnalazione da impresa
+  ADD COLUMN IF NOT EXISTS address TEXT,                   -- Indirizzo testuale (reverse geocoding)
   ADD COLUMN IF NOT EXISTS priority VARCHAR(20) DEFAULT 'NORMAL',  -- LOW, NORMAL, HIGH, URGENT
-  ADD COLUMN IF NOT EXISTS assigned_to INTEGER,         -- ID agente PM assegnato
-  ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMP,       -- Data risoluzione
-  ADD COLUMN IF NOT EXISTS resolved_by INTEGER,         -- Chi ha risolto
-  ADD COLUMN IF NOT EXISTS resolution_notes TEXT,       -- Note risoluzione
-  ADD COLUMN IF NOT EXISTS tcc_rewarded BOOLEAN DEFAULT FALSE,  -- TCC già assegnati?
-  ADD COLUMN IF NOT EXISTS linked_sanction_id INTEGER,  -- Collegamento a verbale
+  ADD COLUMN IF NOT EXISTS assigned_to INTEGER,            -- ID agente PM assegnato
+  ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMP,          -- Data assegnazione
+  ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMP,          -- Data risoluzione
+  ADD COLUMN IF NOT EXISTS resolved_by INTEGER,            -- ID utente che ha risolto
+  ADD COLUMN IF NOT EXISTS resolution_notes TEXT,          -- Note risoluzione
+  ADD COLUMN IF NOT EXISTS tcc_reward INTEGER DEFAULT 20,  -- TCC assegnati (configurabile)
+  ADD COLUMN IF NOT EXISTS tcc_rewarded BOOLEAN DEFAULT FALSE, -- TCC già assegnati?
+  ADD COLUMN IF NOT EXISTS linked_sanction_id INTEGER,     -- FK a sanctions (se crea verbale)
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+-- Foreign Keys
+ALTER TABLE civic_reports 
+  ADD CONSTRAINT fk_civic_comune FOREIGN KEY (comune_id) REFERENCES comuni(id),
+  ADD CONSTRAINT fk_civic_impresa FOREIGN KEY (impresa_id) REFERENCES imprese(id),
+  ADD CONSTRAINT fk_civic_assigned FOREIGN KEY (assigned_to) REFERENCES users(id),
+  ADD CONSTRAINT fk_civic_resolved FOREIGN KEY (resolved_by) REFERENCES users(id),
+  ADD CONSTRAINT fk_civic_sanction FOREIGN KEY (linked_sanction_id) REFERENCES sanctions(id);
 
 -- Indici per performance
 CREATE INDEX IF NOT EXISTS idx_civic_reports_comune ON civic_reports(comune_id);
 CREATE INDEX IF NOT EXISTS idx_civic_reports_status ON civic_reports(status);
 CREATE INDEX IF NOT EXISTS idx_civic_reports_type ON civic_reports(type);
+CREATE INDEX IF NOT EXISTS idx_civic_reports_priority ON civic_reports(priority);
+CREATE INDEX IF NOT EXISTS idx_civic_reports_created ON civic_reports(created_at DESC);
 ```
 
-### Nuovi Endpoint API
+#### 4.2 Nuova Tabella civic_config (Configurazione TCC per Comune)
 
-| Endpoint | Metodo | Descrizione |
-|----------|--------|-------------|
-| `/api/civic-reports` | GET | Lista segnalazioni con filtri e impersonificazione |
-| `/api/civic-reports` | POST | Crea nuova segnalazione |
-| `/api/civic-reports/stats` | GET | Statistiche per dashboard PA |
-| `/api/civic-reports/:id/status` | PATCH | Aggiorna stato segnalazione |
-| `/api/civic-reports/:id/assign` | PATCH | Assegna segnalazione a agente PM |
-| `/api/civic-reports/:id/link-sanction` | POST | Collega segnalazione a verbale |
+```sql
+-- Tabella per configurazione TCC reward per comune
+CREATE TABLE IF NOT EXISTS civic_config (
+  id SERIAL PRIMARY KEY,
+  comune_id INTEGER UNIQUE REFERENCES comuni(id),
+  tcc_reward_default INTEGER DEFAULT 20,           -- TCC default per segnalazione risolta
+  tcc_reward_urgent INTEGER DEFAULT 30,            -- TCC per segnalazioni urgenti
+  tcc_reward_photo_bonus INTEGER DEFAULT 5,        -- Bonus se include foto
+  auto_assign_enabled BOOLEAN DEFAULT FALSE,       -- Auto-assegnazione a PM
+  notify_pm_enabled BOOLEAN DEFAULT TRUE,          -- Notifica PM su nuova segnalazione
+  notify_pa_enabled BOOLEAN DEFAULT TRUE,          -- Notifica PA su nuova segnalazione
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
 
-**Totale nuovi endpoint: 6**
-**Nuovo totale endpoint sistema: 733** (727 + 6)
-
-### UI Dashboard PA - Nuovo Tab "Segnalazioni Civiche"
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  🏛️ Segnalazioni Civiche                                         [Aggiorna]    │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
-│  │ In Attesa   │  │ In Corso    │  │ Risolte     │  │ Rifiutate   │            │
-│  │     12      │  │      5      │  │     45      │  │      3      │            │
-│  │  ⏳ +3 oggi │  │  🔄 -2 oggi │  │  ✅ +8 oggi │  │  ❌ +1 oggi │            │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘            │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │                        MAPPA SEGNALAZIONI                                │   │
-│  │     🔴 Degrado    🟡 Rifiuti    🟢 Illuminazione    🔵 Sicurezza        │   │
-│  │                    [MAPPA INTERATTIVA LEAFLET]                          │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  Filtri: [Categoria ▼] [Stato ▼] [Priorità ▼] [Data ▼] [🔍 Cerca...]   │   │
-│  ├─────────────────────────────────────────────────────────────────────────┤   │
-│  │  #  │ Data       │ Categoria    │ Descrizione          │ Stato │ Azioni │   │
-│  │ 001 │ 29/01/2026 │ 🗑️ Rifiuti   │ Cassonetti pieni... │ ⏳    │ [👁️]   │   │
-│  │ 002 │ 29/01/2026 │ 🕳️ Buche     │ Buca pericolosa...  │ 🔄    │ [👁️]   │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────────────┘
+-- Inserire config default per comuni esistenti
+INSERT INTO civic_config (comune_id, tcc_reward_default)
+SELECT id, 20 FROM comuni
+ON CONFLICT (comune_id) DO NOTHING;
 ```
 
-### UI ControlliSanzioniPanel - Nuovo SubTab "Segnalazioni"
+---
+
+### 5. Nuovi Endpoint API Backend
+
+#### 5.1 File: `/routes/civic-reports.js`
+
+| # | Endpoint | Metodo | Descrizione | Parametri |
+|---|----------|--------|-------------|----------|
+| 1 | `/api/civic-reports` | GET | Lista segnalazioni con filtri | `?comune_id=&status=&type=&priority=&page=&limit=` |
+| 2 | `/api/civic-reports` | POST | Crea nuova segnalazione | `{type, description, lat, lng, user_id?, impresa_id?, comune_id}` |
+| 3 | `/api/civic-reports/stats` | GET | Statistiche per dashboard | `?comune_id=` |
+| 4 | `/api/civic-reports/:id` | GET | Dettaglio singola segnalazione | - |
+| 5 | `/api/civic-reports/:id/status` | PATCH | Aggiorna stato | `{status, resolution_notes?}` |
+| 6 | `/api/civic-reports/:id/assign` | PATCH | Assegna a agente PM | `{assigned_to}` |
+| 7 | `/api/civic-reports/:id/resolve` | POST | Risolvi e assegna TCC | `{resolution_notes}` |
+| 8 | `/api/civic-reports/:id/link-sanction` | POST | Collega a verbale esistente | `{sanction_id}` |
+| 9 | `/api/civic-reports/config` | GET | Leggi configurazione TCC | `?comune_id=` |
+| 10 | `/api/civic-reports/config` | PUT | Aggiorna configurazione TCC | `{comune_id, tcc_reward_default, ...}` |
+
+**Totale nuovi endpoint: 10**
+**Nuovo totale endpoint sistema: 737** (727 + 10)
+
+#### 5.2 Logica Endpoint Chiave
+
+```javascript
+// POST /api/civic-reports - Crea segnalazione
+router.post('/', async (req, res) => {
+  const { type, description, lat, lng, user_id, impresa_id, comune_id } = req.body;
+  
+  // 1. Inserisci in civic_reports
+  const result = await pool.query(`
+    INSERT INTO civic_reports (type, description, lat, lng, user_id, impresa_id, comune_id, status)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+    RETURNING *
+  `, [type, description, lat, lng, user_id, impresa_id, comune_id]);
+  
+  // 2. Crea notifica per PA
+  await pool.query(`
+    INSERT INTO notifiche (titolo, messaggio, tipo, comune_id, created_at)
+    VALUES ($1, $2, 'SEGNALAZIONE_CIVICA', $3, NOW())
+  `, [`Nuova segnalazione: ${type}`, description.substring(0, 100), comune_id]);
+  
+  // 3. Crea notifica per PM (se abilitato)
+  // ...
+  
+  res.json({ success: true, data: result.rows[0] });
+});
+
+// POST /api/civic-reports/:id/resolve - Risolvi e assegna TCC
+router.post('/:id/resolve', async (req, res) => {
+  const { id } = req.params;
+  const { resolution_notes, resolved_by } = req.body;
+  
+  // 1. Leggi segnalazione
+  const report = await pool.query('SELECT * FROM civic_reports WHERE id = $1', [id]);
+  if (!report.rows[0]) return res.status(404).json({ error: 'Segnalazione non trovata' });
+  
+  // 2. Leggi config TCC per comune
+  const config = await pool.query(
+    'SELECT tcc_reward_default FROM civic_config WHERE comune_id = $1',
+    [report.rows[0].comune_id]
+  );
+  const tccReward = config.rows[0]?.tcc_reward_default || 20;
+  
+  // 3. Aggiorna stato a 'resolved'
+  await pool.query(`
+    UPDATE civic_reports 
+    SET status = 'resolved', resolved_at = NOW(), resolved_by = $1, 
+        resolution_notes = $2, tcc_rewarded = TRUE, tcc_reward = $3
+    WHERE id = $4
+  `, [resolved_by, resolution_notes, tccReward, id]);
+  
+  // 4. Assegna TCC al cittadino
+  if (report.rows[0].user_id) {
+    await pool.query(`
+      UPDATE extended_users 
+      SET wallet_balance = COALESCE(wallet_balance, 0) + $1 
+      WHERE user_id = $2
+    `, [tccReward, report.rows[0].user_id]);
+  }
+  
+  // 5. Notifica cittadino
+  await pool.query(`
+    INSERT INTO notifiche (titolo, messaggio, tipo, destinatario_id, created_at)
+    VALUES ($1, $2, 'TCC_REWARD', $3, NOW())
+  `, [
+    `Segnalazione risolta! +${tccReward} TCC`,
+    `La tua segnalazione "${report.rows[0].type}" è stata risolta. Hai ricevuto ${tccReward} Token Carbon Credit!`,
+    report.rows[0].user_id
+  ]);
+  
+  res.json({ success: true, tcc_awarded: tccReward });
+});
+```
+
+---
+
+### 6. Modifiche Frontend
+
+#### 6.1 CivicPage.tsx - Collegamento API Reale
+
+```typescript
+// PRIMA (simulazione)
+setTimeout(() => {
+  setLoading(false);
+  setSubmitted(true);
+}, 1500);
+
+// DOPO (API reale)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!category || !description || !location) {
+    toast.error('Compila tutti i campi obbligatori');
+    return;
+  }
+  
+  setLoading(true);
+  try {
+    const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+    const response = await fetch(`${MIHUB_API}/civic-reports`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: category,
+        description,
+        lat: location.lat.toString(),
+        lng: location.lng.toString(),
+        user_id: currentUser?.id,        // Da useAuth()
+        impresa_id: currentUser?.impresa_id,
+        comune_id: getComuneIdFromLocation(location) // Reverse geocoding o default
+      })
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      setSubmitted(true);
+      toast.success('Segnalazione inviata! Riceverai TCC quando sarà risolta.');
+    } else {
+      toast.error(data.error || 'Errore invio segnalazione');
+    }
+  } catch (err) {
+    toast.error('Errore di connessione');
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+#### 6.2 DashboardPA.tsx - Tab Civic IoT con Dati Reali + Config TCC
+
+```typescript
+// Aggiungere sezione configurazione TCC nel tab civic
+<Card className="bg-[#1a2332] border-[#06b6d4]/30">
+  <CardHeader>
+    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+      <Settings className="h-5 w-5 text-[#06b6d4]" />
+      Configurazione Reward TCC
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="space-y-2">
+        <Label>TCC per Segnalazione Risolta</Label>
+        <Input 
+          type="number" 
+          value={tccConfig.tcc_reward_default} 
+          onChange={(e) => setTccConfig({...tccConfig, tcc_reward_default: parseInt(e.target.value)})}
+          className="bg-[#0b1220] border-[#14b8a6]/30"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>TCC Bonus Urgenti</Label>
+        <Input 
+          type="number" 
+          value={tccConfig.tcc_reward_urgent} 
+          onChange={(e) => setTccConfig({...tccConfig, tcc_reward_urgent: parseInt(e.target.value)})}
+          className="bg-[#0b1220] border-[#14b8a6]/30"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>TCC Bonus con Foto</Label>
+        <Input 
+          type="number" 
+          value={tccConfig.tcc_reward_photo_bonus} 
+          onChange={(e) => setTccConfig({...tccConfig, tcc_reward_photo_bonus: parseInt(e.target.value)})}
+          className="bg-[#0b1220] border-[#14b8a6]/30"
+        />
+      </div>
+    </div>
+    <Button 
+      onClick={handleSaveTccConfig} 
+      className="mt-4 bg-[#14b8a6] hover:bg-[#0d9488]"
+    >
+      Salva Configurazione
+    </Button>
+  </CardContent>
+</Card>
+```
+
+#### 6.3 ControlliSanzioniPanel.tsx - Nuovo Subtab "Segnalazioni"
+
+```typescript
+// Aggiungere subtab nella lista esistente
+const subTabs = [
+  { id: 'overview', label: 'Panoramica', icon: LayoutDashboard },
+  { id: 'toCheck', label: 'Da Controllare', icon: ClipboardCheck },
+  { id: 'verbali', label: 'Verbali', icon: FileText },
+  { id: 'infractions', label: 'Tipi Infrazione', icon: AlertTriangle },
+  { id: 'suap', label: 'Pratiche SUAP', icon: Building2 },
+  { id: 'notifications', label: 'Notifiche PM', icon: Bell },
+  { id: 'civic', label: 'Segnalazioni', icon: AlertCircle },  // 🆕 NUOVO
+  { id: 'justifications', label: 'Giustifiche', icon: MessageSquare },
+  { id: 'history', label: 'Storico', icon: History },
+];
+
+// Contenuto subtab civic
+{activeSubTab === 'civic' && (
+  <div className="space-y-6">
+    {/* KPI Cards */}
+    <div className="grid grid-cols-4 gap-4">
+      <Card>Pending: {civicStats.pending}</Card>
+      <Card>In Progress: {civicStats.inProgress}</Card>
+      <Card>Resolved: {civicStats.resolved}</Card>
+      <Card>Totali: {civicStats.total}</Card>
+    </div>
+    
+    {/* Mappa con markers segnalazioni */}
+    <Card>
+      <CivicReportsMap reports={civicReports} onMarkerClick={handleSelectReport} />
+    </Card>
+    
+    {/* Lista segnalazioni con azioni */}
+    <Card>
+      <Table>
+        {civicReports.map(report => (
+          <TableRow key={report.id}>
+            <TableCell>{report.type}</TableCell>
+            <TableCell>{report.description}</TableCell>
+            <TableCell>{report.address || `${report.lat}, ${report.lng}`}</TableCell>
+            <TableCell>
+              <Badge variant={getPriorityVariant(report.priority)}>
+                {report.priority}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Button onClick={() => handleAssign(report.id)}>Assegna</Button>
+              <Button onClick={() => handleResolve(report.id)}>Risolvi</Button>
+              <Button onClick={() => handleCreateVerbale(report)}>Crea Verbale</Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </Table>
+    </Card>
+  </div>
+)}
+```
+
+---
+
+### 7. Flusso Stati Segnalazione
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  [Panoramica] [Da Controllare] [Verbali] [Tipi Infrazione] [Pratiche SUAP]     │
-│  [Notifiche PM] [🆕 Segnalazioni] [Giustifiche] [Storico]                       │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│  📍 Segnalazioni Civiche da Verificare                           [Aggiorna]    │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │                    [MAPPA SEGNALAZIONI PM]                               │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  Lista Segnalazioni (filtrate per comune_id impersonificazione)         │   │
-│  ├─────────────────────────────────────────────────────────────────────────┤   │
-│  │  🔴 URGENTE │ Microcriminalità │ Via Roma 15 │ 29/01 10:30 │ [Assegna] │   │
-│  │  🟡 ALTA    │ Degrado          │ P.za Duomo  │ 29/01 09:15 │ [Assegna] │   │
-│  │  🟢 NORMALE │ Rifiuti          │ Via Verdi 8 │ 28/01 16:45 │ [Assegna] │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                 │
-│  [Crea Verbale da Segnalazione]  [Segna come Risolta]  [Rifiuta]              │
-└─────────────────────────────────────────────────────────────────────────────────┘
+                                    ┌─────────────┐
+                                    │   REJECTED  │
+                                    │  (Invalida) │
+                                    └─────────────┘
+                                          ▲
+                                          │ Rifiuta
+                                          │
+┌──────────┐     Assegna      ┌─────────────────┐     Risolvi      ┌──────────────┐
+│ PENDING  │─────────────────▶│  IN_PROGRESS    │─────────────────▶│   RESOLVED   │
+│ (Nuova)  │                  │  (Assegnata)    │                  │  (+N TCC)    │
+└──────────┘                  └─────────────────┘                  └──────────────┘
+     │                               │                                    │
+     │                               │ Crea Verbale                       │
+     │                               ▼                                    │
+     │                        ┌─────────────────┐                         │
+     │                        │ LINKED_SANCTION │                         │
+     │                        │ (Verbale creato)│                         │
+     │                        └─────────────────┘                         │
+     │                                                                    │
+     └────────────────────────────────────────────────────────────────────┘
+                              Notifica cittadino con TCC
 ```
 
-### Flusso Stati Segnalazione
+---
 
+### 8. Categorie e Priorità
+
+#### 8.1 Categorie Segnalazioni
+
+| Categoria | Icona | Colore Marker | Priorità Default |
+|-----------|-------|---------------|------------------|
+| Degrado | 🏚️ | #EF4444 (Rosso) | NORMAL |
+| Rifiuti | 🗑️ | #F59E0B (Giallo) | NORMAL |
+| Illuminazione | 💡 | #10B981 (Verde) | LOW |
+| Sicurezza | 🔒 | #3B82F6 (Blu) | HIGH |
+| Buche | 🕳️ | #8B5CF6 (Viola) | HIGH |
+| Microcriminalità | ⚠️ | #1F2937 (Nero) | URGENT |
+| Strade | 🛣️ | #6B7280 (Grigio) | NORMAL |
+| Altro | 📝 | #9CA3AF (Grigio chiaro) | LOW |
+
+#### 8.2 Livelli Priorità
+
+| Priorità | Badge Color | TCC Multiplier | Tempo Risposta Target |
+|----------|-------------|----------------|----------------------|
+| LOW | Verde | 1x | 7 giorni |
+| NORMAL | Blu | 1x | 3 giorni |
+| HIGH | Arancione | 1.25x | 24 ore |
+| URGENT | Rosso | 1.5x | 4 ore |
+
+---
+
+### 9. Integrazione con Sistema Esistente
+
+#### 9.1 Tabelle Collegate
+
+| Tabella | Tipo Relazione | Campo FK | Uso |
+|---------|----------------|----------|-----|
+| `users` | FK | `user_id` | Cittadino che segnala |
+| `imprese` | FK | `impresa_id` | Impresa che segnala |
+| `comuni` | FK | `comune_id` | Impersonificazione e filtro dati |
+| `sanctions` | FK | `linked_sanction_id` | Collegamento a verbale se creato |
+| `notifiche` | INSERT | - | Notifiche PA, PM e cittadino |
+| `extended_users` | UPDATE | `wallet_balance` | Assegnazione TCC reward |
+| `civic_config` | FK | `comune_id` | Configurazione TCC per comune |
+
+#### 9.2 Impersonificazione
+
+Tutte le query devono rispettare il filtro `comune_id` quando l'utente è in modalità impersonificazione:
+
+```javascript
+// Esempio query con impersonificazione
+const comuneId = req.query.comune_id || req.user?.comune_id;
+const whereClause = comuneId ? 'WHERE comune_id = $1' : '';
+const params = comuneId ? [comuneId] : [];
+
+const result = await pool.query(`
+  SELECT * FROM civic_reports ${whereClause} ORDER BY created_at DESC
+`, params);
 ```
-┌──────────┐     ┌─────────────┐     ┌──────────┐     ┌──────────┐
-│ PENDING  │────▶│ IN_PROGRESS │────▶│ RESOLVED │     │ REJECTED │
-│ (Nuova)  │     │ (Assegnata) │     │ (+20 TCC)│     │ (Invalida)│
-└──────────┘     └─────────────┘     └──────────┘     └──────────┘
-     │                                                      ▲
-     └──────────────────────────────────────────────────────┘
-                    (Segnalazione non valida)
+
+---
+
+### 10. Registrazione Guardian
+
+Aggiungere i 10 nuovi endpoint in `/routes/integrations.js`:
+
+```javascript
+// Sezione CIVIC REPORTS
+{ method: 'GET', path: '/api/civic-reports', description: 'Lista segnalazioni civiche con filtri' },
+{ method: 'POST', path: '/api/civic-reports', description: 'Crea nuova segnalazione civica' },
+{ method: 'GET', path: '/api/civic-reports/stats', description: 'Statistiche segnalazioni per dashboard' },
+{ method: 'GET', path: '/api/civic-reports/:id', description: 'Dettaglio singola segnalazione' },
+{ method: 'PATCH', path: '/api/civic-reports/:id/status', description: 'Aggiorna stato segnalazione' },
+{ method: 'PATCH', path: '/api/civic-reports/:id/assign', description: 'Assegna segnalazione a agente PM' },
+{ method: 'POST', path: '/api/civic-reports/:id/resolve', description: 'Risolvi segnalazione e assegna TCC' },
+{ method: 'POST', path: '/api/civic-reports/:id/link-sanction', description: 'Collega segnalazione a verbale' },
+{ method: 'GET', path: '/api/civic-reports/config', description: 'Leggi configurazione TCC comune' },
+{ method: 'PUT', path: '/api/civic-reports/config', description: 'Aggiorna configurazione TCC comune' },
 ```
 
-### Categorie Segnalazioni
+---
 
-| Categoria | Icona | Colore Marker |
-|-----------|-------|---------------|
-| Degrado | 🏚️ | 🔴 Rosso |
-| Rifiuti | 🗑️ | 🟡 Giallo |
-| Illuminazione | 💡 | 🟢 Verde |
-| Sicurezza | 🔒 | 🔵 Blu |
-| Buche | 🕳️ | 🟣 Viola |
-| Microcriminalità | ⚠️ | ⚫ Nero |
-| Altro | 📝 | ⚪ Grigio |
+### 11. Checklist Implementazione
 
-### Checklist Implementazione
+#### 11.1 Database
+- [ ] ALTER TABLE civic_reports (aggiungere 12 colonne)
+- [ ] CREATE TABLE civic_config
+- [ ] CREATE INDEX (5 indici)
+- [ ] INSERT config default per comuni esistenti
 
-- [ ] **Database**: ALTER TABLE civic_reports (aggiungere colonne)
-- [ ] **Database**: CREATE INDEX per performance
-- [ ] **Backend**: Creare `/routes/civic-reports.js`
-- [ ] **Backend**: Registrare in `server.js`
-- [ ] **Backend**: Registrare 6 endpoint in Guardian
-- [ ] **Frontend**: Aggiornare `CivicPage.tsx` con API reale
-- [ ] **Frontend**: Creare componente `CivicReportsPanel.tsx` per Dashboard PA
-- [ ] **Frontend**: Aggiungere subtab "Segnalazioni" in `ControlliSanzioniPanel.tsx`
-- [ ] **Test**: Verifica flusso completo
-- [ ] **Deploy**: Backend (GitHub → Hetzner)
-- [ ] **Deploy**: Frontend (GitHub → Vercel)
+#### 11.2 Backend
+- [ ] Creare file `/routes/civic-reports.js`
+- [ ] Implementare 10 endpoint
+- [ ] Registrare route in `server.js`
+- [ ] Registrare 10 endpoint in Guardian (`integrations.js`)
+- [ ] Test endpoint con Postman/curl
 
-### Stima Tempi
+#### 11.3 Frontend - CivicPage.tsx
+- [ ] Sostituire setTimeout con fetch API reale
+- [ ] Aggiungere gestione errori
+- [ ] Aggiungere loading state migliorato
 
-| Fase | Tempo |
-|------|-------|
-| Database | 15 min |
-| Backend | 45 min |
-| CivicPage | 30 min |
-| Dashboard PA | 1h 30min |
-| ControlliSanzioniPanel | 1h |
-| Test & Deploy | 30 min |
-| **TOTALE** | **~4-5 ore** |
+#### 11.4 Frontend - DashboardPA.tsx (Tab Civic IoT)
+- [ ] Sostituire mockData con fetch da `/api/civic-reports/stats`
+- [ ] Aggiungere Card configurazione TCC
+- [ ] Collegare lista segnalazioni a dati reali
+- [ ] Aggiungere mappa con markers reali
 
-### Tabelle Collegate
+#### 11.5 Frontend - ControlliSanzioniPanel.tsx
+- [ ] Aggiungere subtab "Segnalazioni" nella lista
+- [ ] Creare contenuto subtab con mappa e lista
+- [ ] Implementare azioni: Assegna, Risolvi, Crea Verbale
 
-| Tabella | Relazione | Uso |
-|---------|-----------|-----|
-| `users` | FK user_id | Cittadino che segnala |
-| `imprese` | FK impresa_id | Impresa che segnala |
-| `comuni` | FK comune_id | Impersonificazione |
-| `sanctions` | FK linked_sanction_id | Collegamento verbale |
-| `notifiche` | INSERT | Notifiche PA e cittadino |
-| `extended_users` | UPDATE wallet_balance | Reward +20 TCC |
+#### 11.6 Test & Deploy
+- [ ] Test flusso completo: Invio → Assegnazione → Risoluzione → TCC
+- [ ] Test impersonificazione
+- [ ] Test configurazione TCC
+- [ ] Deploy Backend (GitHub → Hetzner)
+- [ ] Deploy Frontend (GitHub → Vercel)
+
+---
+
+### 12. Stima Tempi
+
+| Fase | Attività | Tempo Stimato |
+|------|----------|---------------|
+| 1 | Database: ALTER + CREATE + INDEX | 20 min |
+| 2 | Backend: civic-reports.js (10 endpoint) | 1h 30min |
+| 3 | Backend: Registrazione Guardian | 15 min |
+| 4 | Frontend: CivicPage.tsx (API reale) | 30 min |
+| 5 | Frontend: DashboardPA.tsx (dati reali + config TCC) | 1h |
+| 6 | Frontend: ControlliSanzioniPanel.tsx (subtab) | 1h 30min |
+| 7 | Test flusso completo | 30 min |
+| 8 | Deploy e verifica produzione | 15 min |
+| **TOTALE** | | **~5-6 ore** |
+
+---
+
+### 13. Note Implementazione
+
+#### 13.1 Regole Critiche
+
+1. **NON modificare** codice esistente funzionante in altri moduli
+2. **Riutilizzare** componenti esistenti (MarketMapComponent per mappa, Card per KPI)
+3. **Rispettare** pattern impersonificazione esistente (`comune_id` in query params)
+4. **Seguire** stile UI esistente (colori, spacing, componenti shadcn/ui)
+
+#### 13.2 Dipendenze
+
+- Nessuna nuova dipendenza npm richiesta
+- Riutilizzo di: Leaflet (già presente), shadcn/ui, lucide-react
+
+#### 13.3 Backward Compatibility
+
+- La tabella `civic_reports` esistente rimane compatibile
+- I nuovi campi hanno tutti valori default
+- Il frontend continuerà a funzionare anche prima del deploy backend (fallback a mockData)
 
 ---
 
 *Progetto documentato da Manus AI - 29 Gennaio 2026*
+*Versione: 3.55.0 - In attesa approvazione*
