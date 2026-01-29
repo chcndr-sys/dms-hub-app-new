@@ -16,7 +16,7 @@ import {
   CheckCircle, Clock, TrendingUp, Coins, Loader2 
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useImpersonation } from '@/contexts/ImpersonationContext';
+import { useImpersonation } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
 

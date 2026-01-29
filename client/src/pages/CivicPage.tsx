@@ -14,8 +14,8 @@ import { AlertCircle, ArrowLeft, Camera, MapPin, CheckCircle2, Shield, Clock, Aw
 import BottomNav from '@/components/BottomNav';
 import { Link } from 'wouter';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
-import { useImpersonation } from '@/contexts/ImpersonationContext';
+import { useAuth } from '@/_core/hooks/useAuth';
+import { useImpersonation } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
 
