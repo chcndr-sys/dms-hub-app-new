@@ -2690,15 +2690,22 @@ Per ora, se aggiungi endpoint critici, aggiungili in entrambi i file.
 
 | Repository | Tag | Data | Descrizione |
 |------------|-----|------|-------------|
-| dms-hub-app-new | **v3.35.1-stable** | 17/01/2026 | Gestione Mercati Posteggi Tab (Vista Italia, Prepara Spunta) |
+| **dms-hub-app-new** | **v3.55.0-stable** | 29/01/2026 | Segnalazioni Civiche Complete (743 endpoint) |
+| **mihub-backend-rest** | **v3.55.0-stable** | 29/01/2026 | 10 endpoint civic-reports, civic_config table |
+| **MIO-hub** | **v39.0.0-stable** | 29/01/2026 | API Index con 740 endpoint |
+| **miohub-backups** | **v3.55.0-stable** | 29/01/2026 | Database reference (civic_reports, civic_config) |
+| dms-hub-app-new | v3.35.1-stable | 17/01/2026 | Gestione Mercati Posteggi Tab (Vista Italia, Prepara Spunta) |
 | dms-hub-app-new | v3.32.0-stable | 13/01/2026 | TCC transaction numbers, QR validation |
-| mihub-backend-rest | **v3.32.0-stable** | 13/01/2026 | TCC transaction numbers, QR validation |
-| **miohub-backups** | **v3.32.0-stable** | 13/01/2026 | Database dump SQL (29 MB) |
+| mihub-backend-rest | v3.32.0-stable | 13/01/2026 | TCC transaction numbers, QR validation |
+| miohub-backups | v3.32.0-stable | 13/01/2026 | Database dump SQL (29 MB) |
 | MIO-hub | v16.0.0-stable | 12/01/2026 | 353 endpoints |
 
 #### Storico Punti di Ripristino
 | Repository | Tag | Data | Note |
 |------------|-----|------|------|
+| dms-hub-app-new | v3.54.4-stable | 29/01/2026 | Fix sconto 30% verbali |
+| mihub-backend-rest | v3.54.4-stable | 29/01/2026 | Fix notified/notified_at |
+| dms-hub-app-new | v3.35.1-stable | 17/01/2026 | Gestione Mercati |
 | dms-hub-app-new | v3.29.0-stable | 12/01/2026 | Settlement numbers |
 | mihub-backend-rest | v5.7.0-stable | 12/01/2026 | Wallet-Impresa |
 
@@ -2707,22 +2714,26 @@ Per ora, se aggiungi endpoint critici, aggiungili in entrambi i file.
 ```bash
 # Frontend (Vercel si aggiorna automaticamente)
 cd dms-hub-app-new
-git checkout v3.32.0-stable
-git push origin v3.32.0-stable:master --force
+git checkout v3.55.0-stable
+git push origin v3.55.0-stable:master --force
 
 # Backend (Hetzner)
 ssh root@157.90.29.66
 cd /root/mihub-backend-rest
 git fetch --tags
-git checkout v3.32.0-stable
+git checkout v3.55.0-stable
 pm2 restart mihub-backend
+
+# API Index
+cd MIO-hub
+git checkout v39.0.0-stable
+git push origin v39.0.0-stable:master --force
 
 # Database - Opzione 1: Da backup SQL (consigliato)
 # 1. Scarica backup da https://github.com/Chcndr/miohub-backups
-# 2. gunzip backup_miohub_v3.32.0_*.sql.gz
-# 3. psql "postgresql://..." < backup_miohub_v3.32.0_*.sql
+# 2. Vedi database/v3.55.0-stable/README.md per istruzioni
 
-# Database - Opzione 2: Neon Point-in-Time (max 6 ore)
+# Database - Opzione 2: Neon Point-in-Time (max 7 giorni)
 # 1. Vai su https://console.neon.tech
 # 2. Branches > Create Branch > Past data
 ```
