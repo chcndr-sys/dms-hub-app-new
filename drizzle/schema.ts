@@ -128,20 +128,6 @@ export const civicReports = pgTable("civic_reports", {
   photoUrl: text("photo_url"),
   status: varchar("status", { length: 50 }).default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  // Colonne aggiunte in v3.55.0 per gestione completa
-  comuneId: integer("comune_id"),
-  impresaId: integer("impresa_id"),
-  address: text("address"),
-  priority: varchar("priority", { length: 20 }).default("NORMAL"),
-  assignedTo: integer("assigned_to"),
-  assignedAt: timestamp("assigned_at"),
-  resolvedAt: timestamp("resolved_at"),
-  resolvedBy: integer("resolved_by"),
-  resolutionNotes: text("resolution_notes"),
-  tccReward: integer("tcc_reward").default(20),
-  tccRewarded: boolean("tcc_rewarded").default(false),
-  linkedSanctionId: integer("linked_sanction_id"),
-  updatedAt: timestamp("updated_at"),
 });
 
 export const products = pgTable("products", {

@@ -16,7 +16,6 @@ import { MapPin, Building2, Store, Loader2, Map, Navigation, ChevronDown, Chevro
 import { Input } from '@/components/ui/input';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 import { toast } from 'sonner';
-import { CivicReport } from './CivicReportsLayer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -134,12 +133,7 @@ const StatIndicator = ({
   );
 };
 
-// Props per il wrapper
-interface GestioneHubMapWrapperProps {
-  civicReports?: CivicReport[];
-}
-
-export default function GestioneHubMapWrapper({ civicReports = [] }: GestioneHubMapWrapperProps) {
+export default function GestioneHubMapWrapper() {
   // Stati
   const [mode, setMode] = useState<'mercato' | 'hub'>('hub');
   const [loading, setLoading] = useState(true);
@@ -978,7 +972,6 @@ export default function GestioneHubMapWrapper({ civicReports = [] }: GestioneHub
             ] : customCenter || undefined
           ) : customCenter || undefined}
           customZoom={customZoom || undefined}
-          civicReports={civicReports}
         />
       </div>
     </div>
