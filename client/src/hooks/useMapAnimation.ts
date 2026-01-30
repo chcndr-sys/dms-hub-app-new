@@ -31,14 +31,14 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
           // con padding per non tagliare i bordi
           const latLngBounds = bounds instanceof L.LatLngBounds ? bounds : L.latLngBounds(bounds as L.LatLngBoundsLiteral);
           
-          // Calcola lo zoom ottimale per i bounds
-          const rawZoom = map.getBoundsZoom(latLngBounds, false, [50, 50]);
+          // P20 FIX: Corner a filo schermo
+          // Calcola lo zoom ottimale per i bounds SENZA padding
+          // così i corner dell'area arrivano esattamente ai bordi dello schermo
+          const rawZoom = map.getBoundsZoom(latLngBounds, false, [0, 0]);
           // Arrotonda a 0.25 più vicino per quarti di scatto (la mappa ha zoomSnap: 0.25)
-          // Permette zoom precisi come 17.25, 17.5, 17.75 per adattarsi perfettamente
           const roundedToQuarter = Math.round(rawZoom * 4) / 4;
-          // P19 FIX: Cambiato da -0.5 a +0.5 per zoomare di più (4 scatti in più)
-          // L'area deve essere più vicina per vedere i dettagli
-          const forcedZoom = Math.min(roundedToQuarter + 0.5, 19);
+          // Usa lo zoom calcolato direttamente, senza margini aggiuntivi
+          const forcedZoom = Math.min(roundedToQuarter, 19);
           
           const currentZoom = map.getZoom();
           const zoomDiff = Math.abs(forcedZoom - currentZoom);
