@@ -36,9 +36,9 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
           // Arrotonda a 0.25 più vicino per quarti di scatto (la mappa ha zoomSnap: 0.25)
           // Permette zoom precisi come 17.25, 17.5, 17.75 per adattarsi perfettamente
           const roundedToQuarter = Math.round(rawZoom * 4) / 4;
-          // Aggiungi -0.5 per lasciare margine e vedere tutta l'area
-          // Rimuove il limite minimo 17 per aree grandi come Carpi
-          const forcedZoom = Math.min(roundedToQuarter - 0.5, 19);
+          // P19 FIX: Cambiato da -0.5 a +0.5 per zoomare di più (4 scatti in più)
+          // L'area deve essere più vicina per vedere i dettagli
+          const forcedZoom = Math.min(roundedToQuarter + 0.5, 19);
           
           const currentZoom = map.getZoom();
           const zoomDiff = Math.abs(forcedZoom - currentZoom);
