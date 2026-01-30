@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, Marker, Popup, Polygon, LayersControl, Tooltip
 import { Link } from 'wouter';
 import { ZoomFontUpdater } from './ZoomFontUpdater';
 import { RouteLayer } from './RouteLayer';
-import { CivicReportsLayer, CivicReport } from './CivicReportsLayer';
 import { getStallMapFillColor, getStallStatusLabel } from '@/lib/stallStatus';
 import { calculatePolygonDimensions } from '@/lib/geodesic';
 import { useMapAnimation } from '@/hooks/useMapAnimation';
@@ -137,9 +136,6 @@ interface HubMarketMapComponentProps {
   onShopClick?: (shop: HubShop) => void; // Callback click su negozio
   hubCenterFixed?: [number, number]; // Centro HUB fisso per zoom
   customZoom?: number; // Zoom personalizzato per navigazione regione/provincia
-  
-  // ============ PROPS PER SEGNALAZIONI CIVICHE ============
-  civicReports?: CivicReport[]; // Segnalazioni civiche da visualizzare sulla mappa
 }
 
 // Controller per centrare la mappa programmaticamente
@@ -227,9 +223,7 @@ export function HubMarketMapComponent({
   onHubClick,
   onShopClick,
   hubCenterFixed,
-  customZoom,
-  // Props per Segnalazioni Civiche
-  civicReports = []
+  customZoom
 }: HubMarketMapComponentProps) {
   
   // Ottieni lo stato di animazione dal context per nascondere poligoni durante zoom
@@ -1347,9 +1341,6 @@ export function HubMarketMapComponent({
               </React.Fragment>
             );
           })}
-          
-          {/* Civic Reports Layer - Segnalazioni Civiche */}
-          <CivicReportsLayer reports={civicReports} />
         </MapContainer>
       </div>
     </>

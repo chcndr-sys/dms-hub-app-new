@@ -9,7 +9,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { HubMarketMapComponent } from './HubMarketMapComponent';
-import { CivicReport } from './CivicReportsLayer';
 import { MarketMapComponent } from './MarketMapComponent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -134,12 +133,7 @@ const StatIndicator = ({
   );
 };
 
-// Props interface per il wrapper
-interface GestioneHubMapWrapperProps {
-  civicReports?: CivicReport[];
-}
-
-export default function GestioneHubMapWrapper({ civicReports = [] }: GestioneHubMapWrapperProps) {
+export default function GestioneHubMapWrapper() {
   // Stati
   const [mode, setMode] = useState<'mercato' | 'hub'>('hub');
   const [loading, setLoading] = useState(true);
@@ -978,7 +972,6 @@ export default function GestioneHubMapWrapper({ civicReports = [] }: GestioneHub
             ] : customCenter || undefined
           ) : customCenter || undefined}
           customZoom={customZoom || undefined}
-          civicReports={civicReports}
         />
       </div>
     </div>
