@@ -175,9 +175,6 @@ importers:
       leaflet-routing-machine:
         specifier: ^3.2.12
         version: 3.2.12
-      leaflet.heat:
-        specifier: ^0.2.0
-        version: 0.2.0
       lucide-react:
         specifier: ^0.453.0
         version: 0.453.0(react@19.2.0)
@@ -4191,9 +4188,6 @@ packages:
 
   leaflet-routing-machine@3.2.12:
     resolution: {integrity: sha512-HLde58G1YtD9xSIzZavJ6BPABZaV1hHeGst8ouhzuxmSC3s32NVtADT+njbIUMW1maHRCrsgTk/E4hz5QH7FrA==}
-
-  leaflet.heat@0.2.0:
-    resolution: {integrity: sha512-Cd5PbAA/rX3X3XKxfDoUGi9qp78FyhWYurFg3nsfhntcM/MCNK08pRkf4iEenO1KNqwVPKCmkyktjW3UD+h9bQ==}
 
   leaflet@1.9.4:
     resolution: {integrity: sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==}
@@ -9924,8 +9918,6 @@ snapshots:
       '@mapbox/corslite': 0.0.7
       '@mapbox/polyline': 0.2.0
       osrm-text-instructions: 0.13.4
-
-  leaflet.heat@0.2.0: {}
 
   leaflet@1.9.4: {}
 

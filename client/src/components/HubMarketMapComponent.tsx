@@ -7,7 +7,6 @@ import { getStallMapFillColor, getStallStatusLabel } from '@/lib/stallStatus';
 import { calculatePolygonDimensions } from '@/lib/geodesic';
 import { useMapAnimation } from '@/hooks/useMapAnimation';
 import { useAnimation } from '@/contexts/AnimationContext';
-import { CivicReportsLayer, CivicReport } from './CivicReportsLayer';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -137,12 +136,6 @@ interface HubMarketMapComponentProps {
   onShopClick?: (shop: HubShop) => void; // Callback click su negozio
   hubCenterFixed?: [number, number]; // Centro HUB fisso per zoom
   customZoom?: number; // Zoom personalizzato per navigazione regione/provincia
-  
-  // ============ PROPS PER SEGNALAZIONI CIVICHE ============
-  civicReports?: CivicReport[]; // Segnalazioni civiche da visualizzare
-  showCivicMarkers?: boolean; // Mostra marker colorati (default: true)
-  showCivicHeatmap?: boolean; // Mostra heatmap zone di calore (default: true)
-  onCivicReportClick?: (report: CivicReport) => void; // Callback click su segnalazione
 }
 
 // Controller per centrare la mappa programmaticamente
@@ -230,12 +223,7 @@ export function HubMarketMapComponent({
   onHubClick,
   onShopClick,
   hubCenterFixed,
-  customZoom,
-  // Props per Segnalazioni Civiche
-  civicReports = [],
-  showCivicMarkers = true,
-  showCivicHeatmap = true,
-  onCivicReportClick
+  customZoom
 }: HubMarketMapComponentProps) {
   
   // Ottieni lo stato di animazione dal context per nascondere poligoni durante zoom
@@ -1353,17 +1341,6 @@ export function HubMarketMapComponent({
               </React.Fragment>
             );
           })}
-          
-          {/* ============ LAYER SEGNALAZIONI CIVICHE ============ */}
-          {/* Renderizza marker colorati e heatmap per segnalazioni civiche */}
-          {civicReports.length > 0 && (
-            <CivicReportsLayer
-              civicReports={civicReports}
-              showMarkers={showCivicMarkers}
-              showHeatmap={showCivicHeatmap}
-              onReportClick={onCivicReportClick}
-            />
-          )}
         </MapContainer>
       </div>
     </>

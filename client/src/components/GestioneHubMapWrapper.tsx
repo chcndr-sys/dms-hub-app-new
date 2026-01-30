@@ -9,7 +9,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { HubMarketMapComponent } from './HubMarketMapComponent';
-import { CivicReport } from './CivicReportsLayer';
 import { MarketMapComponent } from './MarketMapComponent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -134,20 +133,7 @@ const StatIndicator = ({
   );
 };
 
-// Props per segnalazioni civiche (opzionali)
-interface GestioneHubMapWrapperProps {
-  civicReports?: CivicReport[];
-  showCivicMarkers?: boolean;
-  showCivicHeatmap?: boolean;
-  onCivicReportClick?: (report: CivicReport) => void;
-}
-
-export default function GestioneHubMapWrapper({
-  civicReports = [],
-  showCivicMarkers = true,
-  showCivicHeatmap = true,
-  onCivicReportClick
-}: GestioneHubMapWrapperProps = {}) {
+export default function GestioneHubMapWrapper() {
   // Stati
   const [mode, setMode] = useState<'mercato' | 'hub'>('hub');
   const [loading, setLoading] = useState(true);
@@ -986,11 +972,6 @@ export default function GestioneHubMapWrapper({
             ] : customCenter || undefined
           ) : customCenter || undefined}
           customZoom={customZoom || undefined}
-          // Props per segnalazioni civiche
-          civicReports={civicReports}
-          showCivicMarkers={showCivicMarkers}
-          showCivicHeatmap={showCivicHeatmap}
-          onCivicReportClick={onCivicReportClick}
         />
       </div>
     </div>

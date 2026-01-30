@@ -121,17 +121,13 @@ export const reimbursements = pgTable("reimbursements", {
 export const civicReports = pgTable("civic_reports", {
   id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
   userId: integer("user_id").references(() => users.id),
-  comuneId: integer("comune_id"), // ID comune per filtro impersonificazione
   type: varchar("type", { length: 100 }).notNull(),
   description: text("description").notNull(),
   lat: varchar("lat", { length: 20 }),
   lng: varchar("lng", { length: 20 }),
   photoUrl: text("photo_url"),
   status: varchar("status", { length: 50 }).default("pending").notNull(),
-  priority: varchar("priority", { length: 20 }).default("NORMAL"), // LOW, NORMAL, HIGH, URGENT
-  address: text("address"), // Indirizzo testuale (reverse geocoding)
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const products = pgTable("products", {
