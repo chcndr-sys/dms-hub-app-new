@@ -139,7 +139,7 @@ interface CivicReport {
   type: string;
   description?: string;
   status: 'pending' | 'in_progress' | 'resolved';
-  priority: 'NORMAL' | 'URGENT';
+  priority?: 'NORMAL' | 'URGENT';
   lat: number | string;
   lng: number | string;
   created_at?: string;
