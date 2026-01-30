@@ -4380,7 +4380,7 @@ export default function DashboardPA() {
             <CivicReportsPanel />
 
             {/* Mappa Rete HUB Italia - Segnalazioni Civiche */}
-            <GestioneHubMapWrapper />
+            <GestioneHubMapWrapper civicReports={civicReportsQuery.data || []} />
 
             <Card className="bg-[#1a2332] border-[#06b6d4]/30">
               <CardHeader>
