@@ -688,7 +688,7 @@ export default function GestioneHubMapWrapper() {
   }
 
   return (
-    <div className="space-y-3 p-4">
+    <div className="space-y-3 p-4 h-full flex flex-col">
       {/* Header unico con Titolo + Indicatori nella stessa barra */}
       <div className="flex flex-wrap items-center gap-4 bg-[#0b1220] rounded-lg p-4 border border-[#14b8a6]/30">
         {/* Titolo e Vista - come primo indicatore */}
@@ -949,8 +949,8 @@ export default function GestioneHubMapWrapper() {
         })}
       </div>
 
-      {/* Mappa - altezza responsive per adattarsi allo schermo */}
-      <div className="h-[calc(100vh-320px)] min-h-[500px] rounded-lg overflow-hidden border border-[#14b8a6]/30">
+      {/* Mappa - altezza flessibile che si adatta al container padre */}
+      <div className="flex-1 min-h-[500px] rounded-lg overflow-hidden border border-[#14b8a6]/30">
         <MapWithTransportLayer
           referencePoint={(() => {
             // Determina il punto di riferimento corrente (HUB o Mercato selezionato)
