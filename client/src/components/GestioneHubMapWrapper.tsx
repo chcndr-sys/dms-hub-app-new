@@ -25,6 +25,9 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 
+// Componenti Layer Trasporto Pubblico
+import { MapWithTransportLayer } from './MapWithTransportLayer';
+
 // Interfacce
 interface Market {
   id: number;
@@ -948,6 +951,29 @@ export default function GestioneHubMapWrapper() {
 
       {/* Mappa - altezza maggiore */}
       <div className="h-[650px] rounded-lg overflow-hidden border border-[#14b8a6]/30">
+        <MapWithTransportLayer
+          referencePoint={(() => {
+            // Determina il punto di riferimento corrente (HUB o Mercato selezionato)
+            if (mode === 'hub' && selectedHub) {
+              const lat = parseFloat(String(selectedHub.lat || selectedHub.latitude)) || 0;
+              const lng = parseFloat(String(selectedHub.lng || selectedHub.longitude)) || 0;
+              if (lat && lng) {
+                return { lat, lng, name: selectedHub.name, type: 'hub' as const };
+              }
+            }
+            if (mode === 'mercato' && selectedMarket) {
+              const lat = parseFloat(String(selectedMarket.latitude)) || 0;
+              const lng = parseFloat(String(selectedMarket.longitude)) || 0;
+              if (lat && lng) {
+                return { lat, lng, name: selectedMarket.name, type: 'mercato' as const };
+              }
+            }
+            return undefined;
+          })()}
+          searchRadiusKm={2}
+          togglePosition="top-right"
+          className="h-full"
+        >
         <HubMarketMapComponent
           mode={mode}
           mapData={mapData || undefined}
@@ -977,6 +1003,7 @@ export default function GestioneHubMapWrapper() {
           ) : customCenter || undefined}
           customZoom={customZoom || undefined}
         />
+        </MapWithTransportLayer>
       </div>
     </div>
   );
