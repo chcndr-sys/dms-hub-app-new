@@ -820,7 +820,7 @@ export default function RoutePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden" style={{ height: '600px' }}>
+              <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-visible relative" style={{ height: '700px' }}>
                 <GestioneHubMapWrapper />
               </div>
             </CardContent>
