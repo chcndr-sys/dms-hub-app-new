@@ -4583,8 +4583,7 @@ export default function DashboardPA() {
               </Card>
             </div>
 
-            {/* Mappa Interattiva Fermate */}
-            {(realData.mobilityData || []).length > 0 && (
+            {/* Mappa Interattiva Fermate - P22 FIX: Mostra sempre la mappa */}
               <Card className="bg-[#1a2332] border-[#3b82f6]/30">
                 <CardHeader>
                   <CardTitle className="text-[#e8fbff] flex items-center gap-2">
@@ -4615,7 +4614,6 @@ export default function DashboardPA() {
                   </div>
                 </CardContent>
               </Card>
-            )}
           </TabsContent>
 
           {/* TAB 19: REPORT & DOCUMENTAZIONE */}
