@@ -971,7 +971,7 @@ export default function GestioneHubMapWrapper() {
             return undefined;
           })()}
           searchRadiusKm={2}
-          togglePosition="top-right"
+          togglePosition="bottom-left"
           className="h-full"
         >
         <HubMarketMapComponent
