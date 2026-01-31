@@ -4583,34 +4583,18 @@ export default function DashboardPA() {
               </Card>
             </div>
 
-            {/* Mappa Interattiva Fermate - P22 FIX: Mostra sempre la mappa */}
+            {/* Mappa Interattiva - Riusa la mappa del Gemello Digitale con HUB e Mercati */}
               <Card className="bg-[#1a2332] border-[#3b82f6]/30">
                 <CardHeader>
                   <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-[#3b82f6]" />
-                    Mappa Trasporti Pubblici
+                    Mappa Trasporti Pubblici - Rete HUB Italia
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[500px] rounded-lg overflow-hidden">
-                    <MobilityMap
-                      stops={(realData.mobilityData || []).map((m: any) => ({
-                        id: m.id,
-                        type: m.type,
-                        stopName: m.stopName,
-                        lineNumber: m.lineNumber,
-                        lineName: m.lineName,
-                        lat: m.lat,
-                        lng: m.lng,
-                        nextArrival: m.nextArrival,
-                        occupancy: m.occupancy,
-                        status: m.status,
-                        totalSpots: m.totalSpots,
-                        availableSpots: m.availableSpots
-                      }))}
-                      center={{ lat: 42.7606, lng: 11.1133 }}
-                      zoom={12}
-                    />
+                    {/* Riutilizzo del componente GestioneHubMapWrapper che mostra HUB, Mercati e layer Trasporti */}
+                    <GestioneHubMapWrapper />
                   </div>
                 </CardContent>
               </Card>

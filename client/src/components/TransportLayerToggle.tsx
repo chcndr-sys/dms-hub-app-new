@@ -38,7 +38,7 @@ export function TransportLayerToggle({
   const positionClasses = {
     'top-left': 'top-4 left-4',
     'top-right': 'top-16 right-4', // Spostato più in basso (era top-4)
-    'bottom-left': 'bottom-20 left-4', // Sopra i controlli zoom
+    'bottom-left': 'bottom-4 left-4', // Angolo inferiore sinistro
     'bottom-right': 'bottom-4 right-4',
   };
 
