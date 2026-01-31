@@ -125,7 +125,7 @@ export function NearbyStopsPanel({
   }
 
   return (
-    <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-[#0b1220] border-l border-gray-700 shadow-2xl z-[1001] flex flex-col">
+    <div className="absolute right-0 top-0 h-full w-full sm:w-96 bg-[#0b1220] border-l border-gray-700 shadow-2xl z-[1001] flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-gray-700 bg-[#1e293b]">
         <div className="flex items-center justify-between mb-2">
