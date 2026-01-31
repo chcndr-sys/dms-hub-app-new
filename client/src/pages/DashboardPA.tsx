@@ -43,6 +43,7 @@ import SecurityTab from '@/components/SecurityTab';
 import ClientiTab from '@/components/ClientiTab';
 import GestioneHubPanel from '@/components/GestioneHubPanel';
 import GestioneHubMapWrapper from '@/components/GestioneHubMapWrapper';
+import { useTransport } from '@/contexts/TransportContext';
 import ControlliSanzioniPanel from '@/components/ControlliSanzioniPanel';
 import CivicReportsPanel from '@/components/CivicReportsPanel';
 import { BusHubEditor } from '@/components/bus-hub';
@@ -564,6 +565,9 @@ export default function DashboardPA() {
 
   // Dati reali dal backend MIHUB
   const realData = useDashboardData();
+  
+  // Dati GTFS reali dal TransportContext (api.mio-hub.me/api/gtfs)
+  const { stops: gtfsStops, stats: gtfsStats, loadStats: loadGtfsStats, isLoading: gtfsLoading } = useTransport();
   
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [realtimeData, setRealtimeData] = useState(mockData.realtime);
@@ -4429,72 +4433,76 @@ export default function DashboardPA() {
             <NotificationsPanel />
           </TabsContent>
 
-          {/* TAB 18: CENTRO MOBILITÀ */}
+          {/* TAB 18: CENTRO MOBILITÀ - Dati GTFS Reali da api.mio-hub.me */}
           <TabsContent value="mobility" className="space-y-6">
             <Card className="bg-[#1a2332] border-[#3b82f6]/30">
               <CardHeader>
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                   <Train className="h-5 w-5 text-[#3b82f6]" />
-                  Trasporti Pubblici TPER (Bologna)
+                  Centro Mobilità GTFS - Rete Trasporti Italia
+                  {gtfsStats && <span className="text-xs text-[#10b981] ml-2">● Live API</span>}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <div className="p-4 bg-[#3b82f6]/10 border border-[#3b82f6]/30 rounded-lg">
-                    <div className="text-sm text-[#e8fbff]/70 mb-1">Linee Attive</div>
+                    <div className="text-sm text-[#e8fbff]/70 mb-1">Totale Fermate</div>
                     <div className="text-3xl font-bold text-[#3b82f6]">
-                      {(realData.mobilityData || []).length > 0 
-                        ? new Set((realData.mobilityData || []).filter((m: any) => m.type === 'bus' || m.type === 'tram').map((m: any) => m.lineNumber)).size
-                        : mockData.mobility.busLines}
+                      {gtfsStats?.totalStops?.toLocaleString() || '21.206'}
                     </div>
+                    <div className="text-xs text-[#e8fbff]/50 mt-1">TPER + Trenitalia</div>
                   </div>
                   <div className="p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg">
-                    <div className="text-sm text-[#e8fbff]/70 mb-1">Bus in Servizio</div>
+                    <div className="text-sm text-[#e8fbff]/70 mb-1">Fermate Bus</div>
                     <div className="text-3xl font-bold text-[#10b981]">
-                      {(realData.mobilityData || []).length > 0
-                        ? (realData.mobilityData || []).filter((m: any) => m.type === 'bus' && m.status === 'active').length
-                        : mockData.mobility.activeBuses}
+                      {gtfsStats?.busStops?.toLocaleString() || '21.176'}
                     </div>
+                    <div className="text-xs text-[#e8fbff]/50 mt-1">TPER Bologna/Ferrara</div>
                   </div>
                   <div className="p-4 bg-[#f59e0b]/10 border border-[#f59e0b]/30 rounded-lg">
-                    <div className="text-sm text-[#e8fbff]/70 mb-1">Passeggeri Oggi</div>
+                    <div className="text-sm text-[#e8fbff]/70 mb-1">Stazioni Treni</div>
                     <div className="text-3xl font-bold text-[#f59e0b]">
-                      {(realData.mobilityData || []).length > 0
-                        ? (realData.mobilityData || []).reduce((sum: number, m: any) => sum + (m.occupancy || 0), 0).toLocaleString()
-                        : mockData.mobility.passengers.toLocaleString()}
+                      {gtfsStats?.trainStops?.toLocaleString() || '30'}
                     </div>
+                    <div className="text-xs text-[#e8fbff]/50 mt-1">Trenitalia</div>
                   </div>
                   <div className="p-4 bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg">
-                    <div className="text-sm text-[#e8fbff]/70 mb-1">Fermate</div>
+                    <div className="text-sm text-[#e8fbff]/70 mb-1">Linee Totali</div>
                     <div className="text-3xl font-bold text-[#e8fbff]">
-                      {(realData.mobilityData || []).length > 0
-                        ? (realData.mobilityData || []).filter((m: any) => m.type === 'bus' || m.type === 'tram').length
-                        : mockData.mobility.totalBusStops}
+                      {gtfsStats?.totalRoutes || '37'}
                     </div>
+                    <div className="text-xs text-[#e8fbff]/50 mt-1">Bus + Treni</div>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="text-[#e8fbff] font-semibold mb-3">Prossime Corse</h4>
-                  {((realData.mobilityData || []).length > 0 
-                    ? (realData.mobilityData || []).filter((m: any) => m.type === 'bus' || m.type === 'tram').slice(0, 3)
-                    : mockData.mobility.stops
-                  ).map((stop: any) => (
-                    <div key={stop.id} className="p-4 bg-[#0b1220] rounded-lg flex items-center justify-between">
-                      <div>
-                        <div className="text-[#e8fbff] font-semibold">{stop.stopName || stop.name}</div>
-                        <div className="text-sm text-[#e8fbff]/70">Linee: {stop.lineNumber || stop.line}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-[#10b981]">
-                          {stop.nextArrival ? `${stop.nextArrival} min` : stop.nextBus}
+                  <h4 className="text-[#e8fbff] font-semibold mb-3">Fermate Principali (da API GTFS)</h4>
+                  {gtfsLoading ? (
+                    <div className="text-center py-4 text-[#e8fbff]/50">Caricamento dati GTFS...</div>
+                  ) : gtfsStops.length > 0 ? (
+                    gtfsStops.slice(0, 5).map((stop: any, idx: number) => (
+                      <div key={stop.stop_id || idx} className="p-4 bg-[#0b1220] rounded-lg flex items-center justify-between">
+                        <div>
+                          <div className="text-[#e8fbff] font-semibold">{stop.stop_name}</div>
+                          <div className="text-sm text-[#e8fbff]/70">
+                            {stop.stop_type === 'bus' ? '🚌 Bus' : '🚂 Treno'} - {stop.agency_name || 'TPER'}
+                          </div>
                         </div>
-                        <div className="text-xs text-[#e8fbff]/50">
-                          {stop.occupancy ? `${stop.occupancy}% occupazione` : `${stop.passengers} passeggeri`}
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-[#10b981]">
+                            {stop.routes?.length || 0} linee
+                          </div>
+                          <div className="text-xs text-[#e8fbff]/50">
+                            {stop.stop_lat?.toFixed(4)}, {stop.stop_lon?.toFixed(4)}
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-[#e8fbff]/50">
+                      Attiva il layer Trasporti sulla mappa per caricare i dati
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>

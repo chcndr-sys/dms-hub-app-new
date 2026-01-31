@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { MioProvider } from "./contexts/MioContext";
 import { AnimationProvider } from "./contexts/AnimationContext";
 import { PermissionsProvider } from "./contexts/PermissionsContext";
+import { TransportProvider } from "./contexts/TransportContext";
 import ChatWidget from "./components/ChatWidget";
 import HomePage from "./pages/HomePage";
 import MapPage from "./pages/MapPage";
@@ -94,12 +95,14 @@ function App() {
         <AnimationProvider>
           <MioProvider>
             <PermissionsProvider>
-              <TooltipProvider>
-              <ImpersonationBanner />
+              <TransportProvider>
+                <TooltipProvider>
+                <ImpersonationBanner />
               <Toaster />
               <Router />
               <ChatWidget userRole="client" />
-              </TooltipProvider>
+                </TooltipProvider>
+              </TransportProvider>
             </PermissionsProvider>
           </MioProvider>
         </AnimationProvider>
