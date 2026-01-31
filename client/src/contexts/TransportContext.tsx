@@ -3,13 +3,15 @@
  * 
  * Context React per gestire i dati GTFS del trasporto pubblico.
  * Fornisce accesso centralizzato a fermate, linee e orari.
+ * 
+ * AGGIORNATO: Ora usa le API GTFS reali su api.mio-hub.me
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { TransportStop, TransportRoute, StopTime } from '@/components/TransportStopsLayer';
 
-// API base URL - usa il backend esistente
-const API_BASE = '/api';
+// API base URL - Backend MioHub con dati GTFS reali
+const API_BASE = 'https://api.mio-hub.me/api/gtfs';
 
 interface TransportContextType {
   // Dati
@@ -17,6 +19,14 @@ interface TransportContextType {
   routes: TransportRoute[];
   isLoading: boolean;
   error: string | null;
+  
+  // Statistiche
+  stats: {
+    totalStops: number;
+    totalRoutes: number;
+    busStops: number;
+    trainStops: number;
+  } | null;
   
   // Filtri attivi
   showBusStops: boolean;
@@ -33,6 +43,7 @@ interface TransportContextType {
   loadStopsNearPoint: (lat: number, lng: number, radiusKm?: number) => Promise<TransportStop[]>;
   getNextDepartures: (stopId: string, limit?: number) => Promise<StopTime[]>;
   getRoutesForStop: (stopId: string) => Promise<TransportRoute[]>;
+  loadStats: () => Promise<void>;
 }
 
 const TransportContext = createContext<TransportContextType | undefined>(undefined);
@@ -41,35 +52,92 @@ interface TransportProviderProps {
   children: ReactNode;
 }
 
+// Trasforma i dati dall'API al formato frontend
+const transformApiStop = (apiStop: any): TransportStop => ({
+  stop_id: apiStop.stop_id,
+  stop_name: apiStop.stop_name,
+  stop_lat: parseFloat(apiStop.stop_lat),
+  stop_lon: parseFloat(apiStop.stop_lon),
+  stop_type: apiStop.stop_type as 'bus' | 'train',
+  agency_name: apiStop.provider === 'tper' ? 'TPER' : 
+               apiStop.provider === 'trenitalia' ? 'Trenitalia' : 
+               apiStop.provider,
+  routes: Array.isArray(apiStop.routes) ? apiStop.routes.map((r: string) => ({
+    route_id: r,
+    route_short_name: r,
+    route_long_name: `Linea ${r}`,
+    route_type: apiStop.stop_type === 'train' ? 2 : 3,
+  })) : [],
+  // Campi aggiuntivi dall'API nearby
+  distance_m: apiStop.distance_m,
+  walk_time_min: apiStop.walk_time_min,
+});
+
 export function TransportProvider({ children }: TransportProviderProps) {
   const [stops, setStops] = useState<TransportStop[]>([]);
   const [routes, setRoutes] = useState<TransportRoute[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<TransportContextType['stats']>(null);
   
   // Filtri
   const [showBusStops, setShowBusStops] = useState(true);
   const [showTrainStops, setShowTrainStops] = useState(true);
   const [transportLayerVisible, setTransportLayerVisible] = useState(false);
 
-  // Carica fermate per regione
+  // Carica statistiche
+  const loadStats = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/stats`);
+      if (!response.ok) throw new Error(`Errore: ${response.status}`);
+      
+      const data = await response.json();
+      if (data.success) {
+        const busCount = data.stats.breakdown
+          .filter((b: any) => b.stop_type === 'bus')
+          .reduce((sum: number, b: any) => sum + parseInt(b.count), 0);
+        const trainCount = data.stats.breakdown
+          .filter((b: any) => b.stop_type === 'train')
+          .reduce((sum: number, b: any) => sum + parseInt(b.count), 0);
+        
+        setStats({
+          totalStops: data.stats.total_stops,
+          totalRoutes: data.stats.total_routes,
+          busStops: busCount,
+          trainStops: trainCount,
+        });
+        console.log('[TransportContext] Stats caricate:', data.stats);
+      }
+    } catch (err) {
+      console.error('[TransportContext] Errore caricamento stats:', err);
+    }
+  }, []);
+
+  // Carica fermate per regione/tipo
   const loadStops = useCallback(async (region?: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
       const params = new URLSearchParams();
-      if (region) params.append('region', region);
+      if (region && region !== 'all') params.append('region', region);
+      params.append('limit', '500'); // Limite ragionevole
       
-      const response = await fetch(`${API_BASE}/transport/stops?${params}`);
+      const response = await fetch(`${API_BASE}/stops?${params}`);
       
       if (!response.ok) {
         throw new Error(`Errore caricamento fermate: ${response.status}`);
       }
       
       const data = await response.json();
-      setStops(data.stops || []);
-      console.log('[TransportContext] Caricate', data.stops?.length || 0, 'fermate');
+      
+      if (data.success && Array.isArray(data.data)) {
+        const transformedStops = data.data.map(transformApiStop);
+        setStops(transformedStops);
+        console.log('[TransportContext] Caricate', transformedStops.length, 'fermate da API');
+      } else {
+        throw new Error('Formato risposta non valido');
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Errore sconosciuto';
       setError(message);
@@ -82,7 +150,7 @@ export function TransportProvider({ children }: TransportProviderProps) {
     }
   }, []);
 
-  // Carica fermate vicine a un punto
+  // Carica fermate vicine a un punto (usa API nearby)
   const loadStopsNearPoint = useCallback(async (
     lat: number, 
     lng: number, 
@@ -91,18 +159,26 @@ export function TransportProvider({ children }: TransportProviderProps) {
     try {
       const params = new URLSearchParams({
         lat: lat.toString(),
-        lng: lng.toString(),
+        lon: lng.toString(), // API usa 'lon' non 'lng'
         radius: radiusKm.toString(),
+        limit: '20',
       });
       
-      const response = await fetch(`${API_BASE}/transport/stops/nearby?${params}`);
+      const response = await fetch(`${API_BASE}/stops/nearby?${params}`);
       
       if (!response.ok) {
         throw new Error(`Errore: ${response.status}`);
       }
       
       const data = await response.json();
-      return data.stops || [];
+      
+      if (data.success && Array.isArray(data.data)) {
+        const transformedStops = data.data.map(transformApiStop);
+        console.log('[TransportContext] Trovate', transformedStops.length, 'fermate vicine');
+        return transformedStops;
+      }
+      
+      return [];
     } catch (err) {
       console.error('[TransportContext] Errore caricamento fermate vicine:', err);
       
@@ -116,42 +192,17 @@ export function TransportProvider({ children }: TransportProviderProps) {
     stopId: string, 
     limit: number = 10
   ): Promise<StopTime[]> => {
-    try {
-      const params = new URLSearchParams({
-        stop_id: stopId,
-        limit: limit.toString(),
-      });
-      
-      const response = await fetch(`${API_BASE}/transport/departures?${params}`);
-      
-      if (!response.ok) {
-        throw new Error(`Errore: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data.departures || [];
-    } catch (err) {
-      console.error('[TransportContext] Errore caricamento partenze:', err);
-      return [];
-    }
+    // TODO: Implementare quando avremo i dati degli orari
+    console.log('[TransportContext] getNextDepartures non ancora implementato');
+    return [];
   }, []);
 
   // Ottieni linee che passano per una fermata
   const getRoutesForStop = useCallback(async (stopId: string): Promise<TransportRoute[]> => {
-    try {
-      const response = await fetch(`${API_BASE}/transport/stops/${stopId}/routes`);
-      
-      if (!response.ok) {
-        throw new Error(`Errore: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data.routes || [];
-    } catch (err) {
-      console.error('[TransportContext] Errore caricamento linee:', err);
-      return [];
-    }
-  }, []);
+    // Le linee sono già incluse nei dati della fermata
+    const stop = stops.find(s => s.stop_id === stopId);
+    return stop?.routes || [];
+  }, [stops]);
 
   // Funzione helper per filtrare fermate vicine (client-side)
   const filterStopsNearPoint = (
@@ -163,11 +214,11 @@ export function TransportProvider({ children }: TransportProviderProps) {
     return allStops.filter(stop => {
       const distance = calculateDistance(lat, lng, stop.stop_lat, stop.stop_lon);
       return distance <= radiusKm;
-    }).sort((a, b) => {
-      const distA = calculateDistance(lat, lng, a.stop_lat, a.stop_lon);
-      const distB = calculateDistance(lat, lng, b.stop_lat, b.stop_lon);
-      return distA - distB;
-    });
+    }).map(stop => ({
+      ...stop,
+      distance_m: Math.round(calculateDistance(lat, lng, stop.stop_lat, stop.stop_lon) * 1000),
+      walk_time_min: Math.round(calculateDistance(lat, lng, stop.stop_lat, stop.stop_lon) * 12),
+    })).sort((a, b) => (a.distance_m || 0) - (b.distance_m || 0));
   };
 
   // Calcola distanza Haversine
@@ -185,11 +236,10 @@ export function TransportProvider({ children }: TransportProviderProps) {
 
   // Carica dati demo per sviluppo/fallback
   const loadDemoStops = () => {
-    console.log('[TransportContext] Caricamento dati demo...');
+    console.log('[TransportContext] Caricamento dati demo (fallback)...');
     
-    // Fermate demo per Emilia-Romagna e Grosseto
+    // Fermate demo minime per fallback
     const demoStops: TransportStop[] = [
-      // Bologna - Stazioni ferroviarie
       {
         stop_id: 'train_bologna_centrale',
         stop_name: 'Bologna Centrale',
@@ -199,18 +249,8 @@ export function TransportProvider({ children }: TransportProviderProps) {
         agency_name: 'Trenitalia',
         routes: [
           { route_id: 'RV', route_short_name: 'RV', route_long_name: 'Regionale Veloce', route_type: 2 },
-          { route_id: 'R', route_short_name: 'R', route_long_name: 'Regionale', route_type: 2 },
         ],
       },
-      {
-        stop_id: 'train_bologna_fiera',
-        stop_name: 'Bologna Fiera',
-        stop_lat: 44.5106,
-        stop_lon: 11.3892,
-        stop_type: 'train',
-        agency_name: 'Trenitalia',
-      },
-      // Bologna - Fermate bus TPER
       {
         stop_id: 'bus_bo_piazza_maggiore',
         stop_name: 'Piazza Maggiore',
@@ -219,53 +259,9 @@ export function TransportProvider({ children }: TransportProviderProps) {
         stop_type: 'bus',
         agency_name: 'TPER',
         routes: [
-          { route_id: '11', route_short_name: '11', route_long_name: 'Stazione - Pilastro', route_type: 3, route_color: 'FF5722' },
-          { route_id: '13', route_short_name: '13', route_long_name: 'Stazione - San Lazzaro', route_type: 3, route_color: '2196F3' },
+          { route_id: '11', route_short_name: '11', route_long_name: 'Stazione - Pilastro', route_type: 3 },
         ],
       },
-      {
-        stop_id: 'bus_bo_autostazione',
-        stop_name: 'Autostazione',
-        stop_lat: 44.5062,
-        stop_lon: 11.3462,
-        stop_type: 'bus',
-        agency_name: 'TPER',
-      },
-      // Modena
-      {
-        stop_id: 'train_modena',
-        stop_name: 'Modena',
-        stop_lat: 44.6458,
-        stop_lon: 10.9248,
-        stop_type: 'train',
-        agency_name: 'Trenitalia',
-      },
-      {
-        stop_id: 'bus_mo_piazza_grande',
-        stop_name: 'Piazza Grande',
-        stop_lat: 44.6467,
-        stop_lon: 10.9254,
-        stop_type: 'bus',
-        agency_name: 'SETA',
-      },
-      // Ferrara
-      {
-        stop_id: 'train_ferrara',
-        stop_name: 'Ferrara',
-        stop_lat: 44.8423,
-        stop_lon: 11.6034,
-        stop_type: 'train',
-        agency_name: 'Trenitalia',
-      },
-      {
-        stop_id: 'bus_fe_castello',
-        stop_name: 'Castello Estense',
-        stop_lat: 44.8378,
-        stop_lon: 11.6189,
-        stop_type: 'bus',
-        agency_name: 'TPER',
-      },
-      // Grosseto
       {
         stop_id: 'train_grosseto',
         stop_name: 'Grosseto',
@@ -273,109 +269,28 @@ export function TransportProvider({ children }: TransportProviderProps) {
         stop_lon: 11.1012,
         stop_type: 'train',
         agency_name: 'Trenitalia',
-        routes: [
-          { route_id: 'R_GR', route_short_name: 'R', route_long_name: 'Regionale Grosseto-Roma', route_type: 2 },
-        ],
-      },
-      {
-        stop_id: 'bus_gr_piazza_dante',
-        stop_name: 'Piazza Dante',
-        stop_lat: 42.7614,
-        stop_lon: 11.1128,
-        stop_type: 'bus',
-        agency_name: 'Tiemme',
-      },
-      {
-        stop_id: 'bus_gr_stazione',
-        stop_name: 'Stazione FS Grosseto',
-        stop_lat: 42.7608,
-        stop_lon: 11.1018,
-        stop_type: 'bus',
-        agency_name: 'Tiemme',
-      },
-      // Parma
-      {
-        stop_id: 'train_parma',
-        stop_name: 'Parma',
-        stop_lat: 44.8015,
-        stop_lon: 10.3289,
-        stop_type: 'train',
-        agency_name: 'Trenitalia',
-      },
-      // Reggio Emilia
-      {
-        stop_id: 'train_reggio_emilia',
-        stop_name: 'Reggio Emilia',
-        stop_lat: 44.6989,
-        stop_lon: 10.6312,
-        stop_type: 'train',
-        agency_name: 'Trenitalia',
-      },
-      // Rimini
-      {
-        stop_id: 'train_rimini',
-        stop_name: 'Rimini',
-        stop_lat: 44.0645,
-        stop_lon: 12.5683,
-        stop_type: 'train',
-        agency_name: 'Trenitalia',
-      },
-      // Ravenna
-      {
-        stop_id: 'train_ravenna',
-        stop_name: 'Ravenna',
-        stop_lat: 44.4184,
-        stop_lon: 12.2035,
-        stop_type: 'train',
-        agency_name: 'Trenitalia',
-      },
-      // Forlì
-      {
-        stop_id: 'train_forli',
-        stop_name: 'Forlì',
-        stop_lat: 44.2227,
-        stop_lon: 12.0407,
-        stop_type: 'train',
-        agency_name: 'Trenitalia',
-      },
-      // Cesena
-      {
-        stop_id: 'train_cesena',
-        stop_name: 'Cesena',
-        stop_lat: 44.1391,
-        stop_lon: 12.2428,
-        stop_type: 'train',
-        agency_name: 'Trenitalia',
-      },
-      // Piacenza
-      {
-        stop_id: 'train_piacenza',
-        stop_name: 'Piacenza',
-        stop_lat: 45.0526,
-        stop_lon: 9.6929,
-        stop_type: 'train',
-        agency_name: 'Trenitalia',
       },
     ];
     
     setStops(demoStops);
-    console.log('[TransportContext] Caricate', demoStops.length, 'fermate demo');
+    console.log('[TransportContext] Caricate', demoStops.length, 'fermate demo (fallback)');
   };
 
-  // Carica dati iniziali
+  // Carica dati iniziali dalle API reali
   useEffect(() => {
-    // Carica fermate demo all'avvio
-    loadDemoStops();
+    // Carica statistiche
+    loadStats();
     
-    // Tenta di caricare dati reali
-    // loadStops('emilia-romagna');
-  }, []);
+    // Carica tutte le fermate dalle API reali
+    loadStops();
+  }, [loadStats, loadStops]);
 
   const value: TransportContextType = {
     stops,
     routes,
     isLoading,
     error,
+    stats,
     showBusStops,
     showTrainStops,
     transportLayerVisible,
@@ -386,6 +301,7 @@ export function TransportProvider({ children }: TransportProviderProps) {
     loadStopsNearPoint,
     getNextDepartures,
     getRoutesForStop,
+    loadStats,
   };
 
   return (
