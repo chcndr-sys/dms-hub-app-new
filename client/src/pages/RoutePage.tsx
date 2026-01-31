@@ -18,6 +18,7 @@ import { useEffect } from 'react';
 // import MobilityMap from '@/components/MobilityMap'; // Rimosso - non più utilizzato
 import { trpc } from '@/lib/trpc';
 import { MarketMapComponent } from '@/components/MarketMapComponent';
+import GestioneHubMapWrapper from '@/components/GestioneHubMapWrapper';
 
 interface RouteStop {
   name: string;
@@ -805,12 +806,12 @@ export default function RoutePage() {
             </Card>
           </div>
 
-          {/* Mappa GIS */}
+          {/* Mappa Gemello Digitale del Commercio */}
           <Card className="bg-[#1a2332] border-[#14b8a6]/30">
             <CardHeader>
               <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-[#14b8a6]" />
-                Pianta Mercato Grosseto - GIS Interattiva
+                Rete Gemello Digitale del Commercio
                 {plan && userLocation && (
                   <span className="ml-2 text-sm font-normal text-[#10b981]">
                     • Percorso Attivo
@@ -819,46 +820,9 @@ export default function RoutePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {gisMapData && gisStalls.length > 0 ? (
-                <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden" style={{ height: '800px' }}>
-                  <MarketMapComponent
-                    refreshKey={gisMapRefreshKey}
-                    mapData={gisMapData}
-                    center={gisMapCenter}
-                    zoom={17}
-                    height="100%"
-                    stallsData={filteredGisStalls.map(s => ({
-                      id: s.id,
-                      number: s.number,
-                      status: s.status,
-                      type: s.type,
-                      vendor_name: s.vendor_business_name || undefined,
-                      impresa_id: s.impresa_id || undefined
-                    }))}
-                    onStallClick={(stallNumber) => console.log('Stall clicked:', stallNumber)}
-                    routeConfig={plan && userLocation ? (() => {
-                      // Parse coordinate destinazione da stringa (es. "Frutta e Verdura Rossi - Posteggio #1 (42.75892858, 11.11205399)")
-                      const coordMatch = destination.match(/\(([\-\d.]+),\s*([\-\d.]+)\)/);
-                      const destLat = coordMatch ? parseFloat(coordMatch[1]) : (gisMapCenter ? gisMapCenter[0] : 42.7634);
-                      const destLng = coordMatch ? parseFloat(coordMatch[2]) : (gisMapCenter ? gisMapCenter[1] : 11.1139);
-                      
-                      return {
-                        enabled: true,
-                        userLocation: { lat: userLocation.lat, lng: userLocation.lng },
-                        destination: { lat: destLat, lng: destLng },
-                        mode: mode === 'walk' ? 'walking' : mode === 'bike' ? 'cycling' : 'driving'
-                      };
-                    })() : undefined}
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-[600px] text-[#e8fbff]/60">
-                  <div className="text-center">
-                    <MapPin className="h-12 w-12 mx-auto mb-4 text-[#14b8a6]/40" />
-                    <p>Caricamento mappa GIS...</p>
-                  </div>
-                </div>
-              )}
+              <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden" style={{ height: '600px' }}>
+                <GestioneHubMapWrapper />
+              </div>
             </CardContent>
           </Card>
 
@@ -873,20 +837,20 @@ export default function RoutePage() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[#10b981]"></div>
-                  <span className="text-sm text-[#e8fbff]/80">Posteggio Libero</span>
+                  <div className="w-4 h-4 rounded-full bg-[#a855f7]"></div>
+                  <span className="text-sm text-[#e8fbff]/80">HUB Market</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-[#14b8a6]"></div>
+                  <span className="text-sm text-[#e8fbff]/80">Mercato Rionale</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-[#3b82f6]"></div>
+                  <span className="text-sm text-[#e8fbff]/80">Fermata Bus</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded bg-[#ef4444]"></div>
-                  <span className="text-sm text-[#e8fbff]/80">Posteggio Occupato</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[#f59e0b]"></div>
-                  <span className="text-sm text-[#e8fbff]/80">Posteggio Riservato</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[#64748b]"></div>
-                  <span className="text-sm text-[#e8fbff]/80">Non Assegnabile</span>
+                  <span className="text-sm text-[#e8fbff]/80">Stazione Treni</span>
                 </div>
               </div>
             </CardContent>
