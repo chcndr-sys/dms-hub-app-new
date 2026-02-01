@@ -689,10 +689,10 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header con logout */}
-      <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-4 shadow-lg">
-        <div className="w-full px-4 md:px-8 flex items-center justify-between">
+    <div className="min-h-screen sm:min-h-screen bg-background pb-20 sm:pb-20">
+      {/* Header con logout - Mobile: compatto, Desktop: invariato */}
+      <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-2 sm:p-4 shadow-lg">
+        <div className="w-full px-2 sm:px-4 md:px-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => window.history.back()}
@@ -702,13 +702,13 @@ export default function WalletPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-xl">
-                <Wallet className="h-7 w-7" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg sm:rounded-xl">
+                <Wallet className="h-5 w-5 sm:h-7 sm:w-7" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">Wallet Carbon Credit</h1>
-                <p className="text-xs text-white/70">
+                <h1 className="text-base sm:text-xl font-bold">Wallet TCC</h1>
+                <p className="text-[10px] sm:text-xs text-white/70 truncate max-w-[120px] sm:max-w-none">
                   {currentUser?.name || walletData?.user?.name || 'I tuoi eco-crediti'}
                 </p>
               </div>
@@ -727,75 +727,76 @@ export default function WalletPage() {
         </div>
       </header>
 
-      {/* Tab Selector */}
-      <div className="w-full px-4 md:px-8 pt-4">
+      {/* Tab Selector - Mobile: fullscreen, Desktop: invariato */}
+      <div className="w-full px-0 sm:px-4 md:px-8 pt-2 sm:pt-4">
         <Tabs value={activeTab}>
           {/* Tab Impresa rimosso - ora disponibile in HUB Operatore */}
 
           {/* ================================================================ */}
           {/* TAB CLIENTE */}
           {/* ================================================================ */}
-          <TabsContent value="cliente" className="space-y-6 mt-4">
-            {/* Saldo Principale */}
-            <Card className="bg-gradient-to-br from-primary via-primary/90 to-emerald-600 text-primary-foreground border-0 shadow-2xl">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-white/20 rounded-xl">
-                    <Wallet className="h-8 w-8" />
+          <TabsContent value="cliente" className="space-y-3 sm:space-y-6 mt-2 sm:mt-4 px-2 sm:px-0">
+            {/* Saldo Principale - Mobile: compatto fullscreen, Desktop: card */}
+            <Card className="bg-gradient-to-br from-primary via-primary/90 to-emerald-600 text-primary-foreground border-0 sm:border shadow-none sm:shadow-2xl rounded-none sm:rounded-lg">
+              <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl">
+                    <Wallet className="h-6 w-6 sm:h-8 sm:w-8" />
                   </div>
                   <div>
-                    <CardTitle className="text-primary-foreground text-xl">Saldo TCC</CardTitle>
-                    <CardDescription className="text-primary-foreground/70">Token Carbon Credit</CardDescription>
+                    <CardTitle className="text-primary-foreground text-base sm:text-xl">Saldo TCC</CardTitle>
+                    <CardDescription className="text-primary-foreground/70 text-xs sm:text-sm">Token Carbon Credit</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-7xl font-bold mb-2">{balance}</div>
-                <p className="text-primary-foreground/80">crediti disponibili (€{(balance * 0.089).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</p>
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="text-5xl sm:text-7xl font-bold mb-1 sm:mb-2">{balance}</div>
+                <p className="text-primary-foreground/80 text-sm sm:text-base">crediti disponibili (€{(balance * 0.089).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</p>
               </CardContent>
             </Card>
 
-            {/* QR Code */}
-            <Card>
-              <CardHeader>
+            {/* QR Code - Mobile: compatto fullscreen, Desktop: card */}
+            <Card className="rounded-none sm:rounded-lg border-0 sm:border shadow-none sm:shadow">
+              <CardHeader className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Il tuo QR Code</CardTitle>
-                    <CardDescription>Mostra questo codice al negoziante per ricevere i crediti</CardDescription>
+                    <CardTitle className="text-sm sm:text-base">Il tuo QR Code</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Mostra per ricevere crediti</CardDescription>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={refreshQRCode} disabled={refreshingQR}>
-                    <RefreshCw className={`h-5 w-5 ${refreshingQR ? 'animate-spin' : ''}`} />
+                  <Button variant="ghost" size="icon" onClick={refreshQRCode} disabled={refreshingQR} className="h-8 w-8 sm:h-10 sm:w-10">
+                    <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 ${refreshingQR ? 'animate-spin' : ''}`} />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="flex flex-col items-center">
-                <div className="bg-white p-4 rounded-lg shadow-inner">
-                  <QRCodeSVG value={qrData?.qr_string || `tcc://${userId}/demo`} size={200} level="H" />
+              <CardContent className="flex flex-col items-center p-3 sm:p-6 pt-0">
+                <div className="bg-white p-3 sm:p-4 rounded-lg shadow-inner">
+                  <QRCodeSVG value={qrData?.qr_string || `tcc://${userId}/demo`} size={160} level="H" className="sm:hidden" />
+                  <QRCodeSVG value={qrData?.qr_string || `tcc://${userId}/demo`} size={200} level="H" className="hidden sm:block" />
                 </div>
                 {qrData?.expires_at && (
-                  <p className="text-xs text-muted-foreground mt-3">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">
                     Valido fino: {new Date(qrData.expires_at).toLocaleString('it-IT')}
                   </p>
                 )}
               </CardContent>
             </Card>
 
-            {/* Impatto Ambientale */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Impatto Ambientale - Mobile: compatto, Desktop: invariato */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               {/* Card Verde - Ultima Operazione */}
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-500/10 to-green-600/5">
-                <CardContent className="pt-6 text-center">
-                  <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Leaf className="h-7 w-7 text-white" />
+              <Card className="border-0 shadow-none sm:shadow-lg bg-gradient-to-br from-green-500/10 to-green-600/5 rounded-none sm:rounded-lg">
+                <CardContent className="pt-3 sm:pt-6 text-center p-2 sm:p-6">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 mx-auto mb-2 sm:mb-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                    <Leaf className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
                   </div>
-                  <div className="text-4xl font-bold text-green-600">{lastOperationCO2.toLocaleString('it-IT')} kg</div>
-                  <div className="text-sm text-muted-foreground font-medium">CO₂ Evitata</div>
-                  <p className="text-xs text-muted-foreground mt-2">Equivalente a {lastOperationTrees} alberi/anno</p>
+                  <div className="text-2xl sm:text-4xl font-bold text-green-600">{lastOperationCO2.toLocaleString('it-IT')} kg</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground font-medium">CO₂ Evitata</div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-2">= {lastOperationTrees} alberi</p>
                 </CardContent>
               </Card>
 
               {/* Card Livello - Sfondo che cresce dal basso */}
-              <Card className="border-0 shadow-lg overflow-hidden relative">
+              <Card className="border-0 shadow-none sm:shadow-lg overflow-hidden relative rounded-none sm:rounded-lg">
                 {/* Sfondo arancione base */}
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-amber-600/10" />
                 {/* Sfondo verde che cresce dal basso */}
@@ -803,54 +804,54 @@ export default function WalletPage() {
                   className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-green-500 to-green-400/80 transition-all duration-1000 ease-out"
                   style={{ height: `${progressPercent}%` }}
                 />
-                <CardContent className="pt-6 text-center relative z-10">
-                  <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Award className="h-7 w-7 text-white" />
+                <CardContent className="pt-3 sm:pt-6 text-center relative z-10 p-2 sm:p-6">
+                  <div className="w-10 h-10 sm:w-14 sm:h-14 mx-auto mb-2 sm:mb-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                    <Award className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
                   </div>
-                  <div className="text-3xl font-bold text-amber-600">{level.name}</div>
-                  <div className="text-lg font-semibold text-green-600">{totalCumulativeCO2.toLocaleString('it-IT')} kg</div>
-                  <div className="text-xs text-muted-foreground">CO₂ totale</div>
-                  <p className="text-xs text-muted-foreground mt-1">{level.percentile}</p>
+                  <div className="text-xl sm:text-3xl font-bold text-amber-600">{level.name}</div>
+                  <div className="text-sm sm:text-lg font-semibold text-green-600">{totalCumulativeCO2.toLocaleString('it-IT')} kg</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground">CO₂ totale</div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{level.percentile}</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Paga con TCC */}
-            <Card className="border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-amber-600">
-                  <Euro className="h-5 w-5" />
+            {/* Paga con TCC - Mobile: compatto, Desktop: invariato */}
+            <Card className="border-0 sm:border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5 rounded-none sm:rounded-lg shadow-none sm:shadow">
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-amber-600 text-sm sm:text-base">
+                  <Euro className="h-4 w-4 sm:h-5 sm:w-5" />
                   Paga con TCC
                 </CardTitle>
-                <CardDescription>Genera un QR code per pagare con i tuoi Token Carbon Credit</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">Genera QR per pagare con Token</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6 pt-0">
                 {!spendQRData ? (
                   <>
                     <div>
-                      <Label>Importo da pagare (€)</Label>
+                      <Label className="text-xs sm:text-sm">Importo (€)</Label>
                       <Input
                         type="number"
                         step="0.01"
                         placeholder="0.00"
                         value={spendAmount}
                         onChange={(e) => setSpendAmount(e.target.value)}
-                        className="text-2xl font-bold h-14"
+                        className="text-xl sm:text-2xl font-bold h-12 sm:h-14"
                       />
                     </div>
                     {spendAmount && parseFloat(spendAmount) > 0 && (
-                      <div className="p-3 bg-amber-500/10 rounded-lg">
-                        <p className="text-sm text-muted-foreground">TCC necessari (stima)</p>
-                        <p className="text-2xl font-bold text-amber-600">
+                      <div className="p-2 sm:p-3 bg-amber-500/10 rounded-lg">
+                        <p className="text-xs sm:text-sm text-muted-foreground">TCC necessari</p>
+                        <p className="text-xl sm:text-2xl font-bold text-amber-600">
                           ~{Math.ceil(parseFloat(spendAmount) / TCC_VALUE_EUR).toLocaleString('it-IT')} TCC
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          (1 TCC = €{TCC_VALUE_EUR.toLocaleString('it-IT', {minimumFractionDigits: 3})} = 1 kg CO₂)
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                          1 TCC = €{TCC_VALUE_EUR.toLocaleString('it-IT', {minimumFractionDigits: 3})}
                         </p>
                       </div>
                     )}
                     <Button
-                      className="w-full bg-amber-500 hover:bg-amber-600"
+                      className="w-full bg-amber-500 hover:bg-amber-600 h-10 sm:h-11 text-sm sm:text-base"
                       onClick={generateSpendQR}
                       disabled={!spendAmount || parseFloat(spendAmount) <= 0 || generatingSpendQR}
                     >
@@ -859,58 +860,60 @@ export default function WalletPage() {
                       ) : (
                         <QrCode className="h-4 w-4 mr-2" />
                       )}
-                      Genera QR Pagamento
+                      Genera QR
                     </Button>
                   </>
                 ) : (
-                  <div className="text-center space-y-4">
-                    <div className="bg-white p-4 rounded-lg shadow-inner inline-block">
-                      <QRCodeSVG value={spendQRData.qr_string} size={180} level="H" />
+                  <div className="text-center space-y-3 sm:space-y-4">
+                    <div className="bg-white p-3 sm:p-4 rounded-lg shadow-inner inline-block">
+                      <QRCodeSVG value={spendQRData.qr_string} size={140} level="H" className="sm:hidden" />
+                      <QRCodeSVG value={spendQRData.qr_string} size={180} level="H" className="hidden sm:block" />
                     </div>
-                    <div className="p-3 bg-amber-500/10 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Importo</p>
-                      <p className="text-2xl font-bold">€{parseFloat(spendAmount || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                      <p className="text-lg text-amber-600 font-semibold">{spendQRData.tcc_amount} TCC</p>
+                    <div className="p-2 sm:p-3 bg-amber-500/10 rounded-lg">
+                      <p className="text-xs sm:text-sm text-muted-foreground">Importo</p>
+                      <p className="text-xl sm:text-2xl font-bold">€{parseFloat(spendAmount || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                      <p className="text-base sm:text-lg text-amber-600 font-semibold">{spendQRData.tcc_amount} TCC</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Valido fino: {new Date(spendQRData.expires_at).toLocaleTimeString('it-IT')}
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
+                      Valido: {new Date(spendQRData.expires_at).toLocaleTimeString('it-IT')}
                     </p>
                     <Button
                       variant="outline"
                       onClick={() => { setSpendQRData(null); setSpendAmount(''); }}
+                      className="h-9 sm:h-10 text-sm"
                     >
                       <RefreshCw className="h-4 w-4 mr-2" />
-                      Nuovo Pagamento
+                      Nuovo
                     </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Storico Transazioni */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Storico Transazioni
+            {/* Storico Transazioni - Mobile: compatto, Desktop: invariato */}
+            <Card className="rounded-none sm:rounded-lg border-0 sm:border shadow-none sm:shadow">
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Storico
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="space-y-2 sm:space-y-3 max-h-[200px] sm:max-h-none overflow-y-auto">
                   {transactions.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-4">Nessuna transazione ancora</p>
+                    <p className="text-center text-muted-foreground py-3 sm:py-4 text-sm">Nessuna transazione</p>
                   ) : (
                     transactions.map((tx) => (
-                      <div key={tx.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                        <div>
-                          <p className="font-medium">{tx.description}</p>
-                          <p className="text-sm text-muted-foreground">
+                      <div key={tx.id} className="flex items-center justify-between p-2 sm:p-3 bg-muted/30 rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-xs sm:text-base truncate">{tx.description}</p>
+                          <p className="text-[10px] sm:text-sm text-muted-foreground">
                             {new Date(tx.created_at).toLocaleDateString('it-IT', {
-                              day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                              day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
                             })}
                           </p>
                         </div>
-                        <div className={`text-lg font-semibold ${tx.type === 'earn' ? 'text-green-600' : 'text-red-500'}`}>
+                        <div className={`text-base sm:text-lg font-semibold ml-2 ${tx.type === 'earn' ? 'text-green-600' : 'text-red-500'}`}>
                           {tx.type === 'earn' ? '+' : '-'}{tx.amount}
                         </div>
                       </div>
