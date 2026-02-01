@@ -473,12 +473,12 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
           console.log('[GestioneHubMapWrapper] Loaded', stallsResponse.data.length, 'stalls');
         }
       }
-    // Apri mappa fullscreen su mobile - PARTE DA VISTA ITALIA
+    // Su mobile: scrolla alla mappa per mostrarla fullscreen
       if (isMobile) {
-        setMobileViewTrigger(0); // Reset trigger per evitare animazione al mount
-        setShowMobileMap(true);
-        setMobileMapZoomed(false); // Parte da vista Italia, poi clicca Apri per zoomare
-        setShowItalyView(true);
+        const mapElement = document.getElementById('map-container');
+        if (mapElement) {
+          mapElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       }
     } catch (error) {
       console.error('[GestioneHubMapWrapper] Error loading market data:', error);
@@ -504,12 +504,13 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
     
     setViewTrigger(prev => prev + 1);
     
-    // Apri mappa fullscreen su mobile - PARTE DA VISTA ITALIA
+    // Su mobile: scrolla alla mappa per mostrarla fullscreen
     if (isMobile) {
-      setMobileViewTrigger(0); // Reset trigger per evitare animazione al mount
-      setShowMobileMap(true);
-      setMobileMapZoomed(false); // Parte da vista Italia, poi clicca Apri per zoomare
-      setShowItalyView(true);
+      // Scrolla alla mappa
+      const mapElement = document.getElementById('map-container');
+      if (mapElement) {
+        mapElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
 
@@ -1188,7 +1189,7 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
       )}
 
       {/* MAPPA - visibile su desktop e mobile */}
-      <div className="h-[calc(100vh-280px)] sm:h-[calc(100vh-320px)] min-h-[300px] sm:min-h-[500px] rounded-lg overflow-hidden border border-[#14b8a6]/30">
+      <div id="map-container" className="h-[calc(100vh-180px)] sm:h-[calc(100vh-320px)] min-h-[400px] sm:min-h-[500px] rounded-lg overflow-hidden border border-[#14b8a6]/30">
         <MapWithTransportLayer
           referencePoint={(() => {
             // Determina il punto di riferimento corrente (HUB o Mercato selezionato)
