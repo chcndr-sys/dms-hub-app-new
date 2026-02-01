@@ -1116,3 +1116,6 @@ export function GestioneHubMapWrapper({ routeConfig, navigationMode }: GestioneH
     </div>
   );
 }
+
+// Export default per compatibilità con import esistenti
+export default GestioneHubMapWrapper;
