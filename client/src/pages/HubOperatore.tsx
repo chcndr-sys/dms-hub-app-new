@@ -548,7 +548,7 @@ export default function HubOperatore() {
   return (
     <div className="min-h-screen bg-[#0b1220] text-[#e8fbff]">
       {/* Torna alla Home */}
-      <div className="container mx-auto px-4 pt-4">
+      <div className="w-full px-2 pt-4">
         <Link href="/" className="inline-flex items-center gap-2 text-[#4fd1c5] hover:text-[#81e6d9] transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span>Torna alla Home</span>
@@ -557,7 +557,7 @@ export default function HubOperatore() {
       
       {/* Header */}
       <header className="bg-gradient-to-r from-[#f97316] to-[#f59e0b] p-4 shadow-lg mt-2">
-        <div className="container mx-auto flex items-center justify-between">
+        <div className="w-full px-2 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white">HUB Operatore</h1>
@@ -573,7 +573,7 @@ export default function HubOperatore() {
         </div>
       </header>
 
-      <div className="container mx-auto p-4 space-y-6">
+      <div className="w-full px-2 py-4 space-y-4">
         {/* Gestione Presenze */}
         <Card className="bg-[#1e293b] border-[#334155]">
           <CardHeader>

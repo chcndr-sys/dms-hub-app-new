@@ -279,7 +279,7 @@ export default function HomePage() {
         {/* Main Content */}
         <main className="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
           {/* Titolo */}
-          <div className="text-center space-y-3 max-w-2xl">
+          <div className="text-center space-y-3 w-full px-4">
             <h2 className="text-4xl md:text-5xl font-bold text-foreground">
               Rete Mercati <span className="text-primary">Made in Italy</span>
             </h2>
@@ -289,7 +289,7 @@ export default function HomePage() {
           </div>
 
           {/* Barra di ricerca */}
-          <div className="w-full max-w-2xl space-y-4">
+          <div className="w-full px-4 space-y-4">
             <div className="flex gap-2">
               <Input
                 type="text"
@@ -357,7 +357,7 @@ export default function HomePage() {
           </div>
 
           {/* Tab Pubblici - Riga 1 (v3.70.0) */}
-          <div className="flex flex-wrap justify-center gap-4 w-full max-w-4xl">
+          <div className="flex flex-wrap justify-center gap-4 w-full px-4">
             <Button
               variant="outline"
               size="lg"
@@ -406,7 +406,7 @@ export default function HomePage() {
           </div>
 
           {/* Tab Impresa - Riga 2 (v3.70.0) */}
-          <div className="flex flex-wrap justify-center gap-4 w-full max-w-4xl">
+          <div className="flex flex-wrap justify-center gap-4 w-full px-4">
             {/* Presenze - apre app Heroku */}
             {(permissionsLoading || canViewTab('presenze')) && (
               <Button

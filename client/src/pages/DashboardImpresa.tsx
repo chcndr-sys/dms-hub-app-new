@@ -135,7 +135,7 @@ export default function DashboardImpresa() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
       <header className="bg-slate-800/50 border-b border-slate-700 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="w-full px-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Building2 className="h-8 w-8 text-teal-500" />
             <div>
@@ -173,7 +173,7 @@ export default function DashboardImpresa() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="w-full px-4 py-6">
         {!impresa ? (
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="py-12 text-center">

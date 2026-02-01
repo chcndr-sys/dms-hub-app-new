@@ -483,7 +483,7 @@ export default function WalletImpresaPage() {
     <div className="min-h-screen bg-[#0b1220] text-[#e8fbff]">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#1a2332] to-[#0b1220] border-b border-[#14b8a6]/20 p-4">
-        <div className="container mx-auto flex items-center justify-between">
+        <div className="w-full px-2 flex items-center justify-between">
           <Button 
             variant="ghost" 
             size="sm" 
@@ -514,7 +514,7 @@ export default function WalletImpresaPage() {
         </div>
       </div>
 
-      <div className="container mx-auto p-4 space-y-6">
+      <div className="w-full px-2 py-4 space-y-4">
         {/* Cards Riepilogo */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="bg-[#1a2332] border-[#14b8a6]/20">

@@ -198,7 +198,7 @@ export default function AppImpresaNotifiche() {
     <div className="min-h-screen bg-[#0b1220] text-[#e8fbff]">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#1a2332] to-[#0b1220] border-b border-[#3b82f6]/20 p-4">
-        <div className="container mx-auto flex items-center justify-between">
+        <div className="w-full px-2 flex items-center justify-between">
           <Button 
             variant="ghost" 
             size="sm" 
@@ -237,7 +237,7 @@ export default function AppImpresaNotifiche() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto p-4">
+      <div className="w-full px-2 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Lista Notifiche */}
           <div className="lg:col-span-1">
