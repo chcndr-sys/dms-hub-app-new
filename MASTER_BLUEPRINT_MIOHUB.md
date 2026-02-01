@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.75.2  
-> **Data:** 01 Febbraio 2026  
+> **Versione:** 3.77.0  
+> **Data:** 02 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -5159,10 +5159,40 @@ const tabActiveStyle = mode === 'mercato'
 
 ---
 
-*Progetto documentato da Manus AI - 01 Febbraio 2026*
-*Versione: 3.76.0 - In attesa approvazione utente*
+*Progetto documentato da Manus AI - 02 Febbraio 2026*
+*Versione: 3.77.0 - PRODUZIONE*
 
 ---
 
-*Aggiornamento Blueprint: 01 Febbraio 2026 - v3.75.2*
-*Prossima versione pianificata: v3.76.x (Mappa Mobile)*
+## 📝 CHANGELOG v3.77.0 (02 Febbraio 2026)
+
+### Mappa Mobile - Ottimizzazioni Completate
+
+| Modifica | Descrizione |
+|----------|-------------|
+| **Zoom Italia ridotto** | Da 6 a 5 per visualizzare tutta la penisola su mobile |
+| **Tab Italia rimosso** | Ridondante con pulsante "Indietro" |
+| **Mappa fullscreen** | Altezza 100vh su mobile per riempire schermo |
+| **Scroll automatico** | Scroll alla mappa su selezione Regione/Provincia/Indietro |
+
+### Pagina Vetrina - Ottimizzazioni Mobile
+
+| Modifica | Descrizione |
+|----------|-------------|
+| **Layout fullscreen** | Rimossi container e padding su mobile |
+| **Tasto Modifica** | Visibile solo per Admin o Impresa titolare |
+| **Galleria swipe** | Foto fullscreen con scroll orizzontale su mobile |
+| **Numeri rimossi** | Rimossi badge numerici dalle foto galleria |
+| **Controllo ruoli** | Integrato sistema RBAC per permessi modifica |
+
+### File Modificati
+
+- `client/src/components/HubMarketMapComponent.tsx` - Zoom Italia 5
+- `client/src/components/GestioneHubMapWrapper.tsx` - Tab Italia rimosso, scroll handlers
+- `client/src/pages/VetrinePage.tsx` - Layout mobile, controllo ruoli, galleria swipe
+- `client/src/index.css` - Classe scrollbar-hide per gallerie
+
+---
+
+*Aggiornamento Blueprint: 02 Febbraio 2026 - v3.77.0*
+*Prossima versione pianificata: v3.78.x (Import Mercato Modena Novi Sad)*

@@ -318,3 +318,13 @@ body.modal-open, body.widget-open {
 .leaflet-popup-close-button {
   display: none !important;
 }
+
+/* ===== SCROLLBAR HIDE UTILITY ===== */
+/* Nasconde scrollbar mantenendo funzionalità scroll (per gallerie swipe) */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}

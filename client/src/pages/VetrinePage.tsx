@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/_core/hooks/useAuth';
 import NuovoNegozioForm from '@/components/NuovoNegozioForm';
 import { useRoute, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -78,6 +79,16 @@ export default function VetrinePage() {
   const [location, navigate] = useLocation();
   const [imprese, setImprese] = useState<Impresa[]>([]);
   const [selectedImpresa, setSelectedImpresa] = useState<Impresa | null>(null);
+  
+  // Auth per controllo proprietario vetrina
+  const { user, isAuthenticated } = useAuth();
+  
+  // Verifica se l'utente può modificare la vetrina:
+  // 1. Admin ha accesso totale (role === 'admin')
+  // 2. Impresa titolare può modificare solo la propria vetrina
+  const isAdmin = isAuthenticated && user?.role === 'admin';
+  const isImpresaTitolare = isAuthenticated && selectedImpresa && user?.id === selectedImpresa.id;
+  const canEdit = isAdmin || isImpresaTitolare;
   
   // Estrai query param 'q' dall'URL
   const getQueryParam = (name: string) => {
@@ -432,8 +443,8 @@ export default function VetrinePage() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="bg-primary text-primary-foreground p-3 shadow-md">
-          <div className="w-full px-4 md:px-8 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="w-full px-2 sm:px-4 md:px-8 flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Button
                 variant="ghost"
                 size="icon"
@@ -443,27 +454,29 @@ export default function VetrinePage() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="flex items-center gap-2">
-                <Store className="h-6 w-6" />
-                <h1 className="text-lg font-bold">Vetrina Negozio</h1>
+                <Store className="h-5 w-5 sm:h-6 sm:w-6" />
+                <h1 className="text-base sm:text-lg font-bold">Vetrina Negozio</h1>
               </div>
             </div>
-            {/* Pulsante Modifica (visibile solo al proprietario - per ora sempre visibile) */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-primary-foreground hover:bg-primary-foreground/20"
-              onClick={handleOpenEditModal}
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              Modifica
-            </Button>
+            {/* Pulsante Modifica - visibile solo per admin o impresa titolare */}
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={handleOpenEditModal}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Modifica
+              </Button>
+            )}
           </div>
         </header>
 
-        <div className="w-full px-4 md:px-8 py-6 space-y-6">
+        <div className="w-full px-0 sm:px-4 md:px-8 py-2 sm:py-6 space-y-4 sm:space-y-6">
           {/* Hero Section con Immagine Principale */}
           {selectedImpresa.vetrina_immagine_principale ? (
-            <div className="relative w-full h-72 md:h-96 rounded-2xl overflow-hidden shadow-2xl group">
+            <div className="relative w-full h-72 md:h-96 rounded-none sm:rounded-2xl overflow-hidden shadow-none sm:shadow-2xl group">
               <img
                 src={selectedImpresa.vetrina_immagine_principale}
                 alt={selectedImpresa.denominazione}
@@ -498,8 +511,8 @@ export default function VetrinePage() {
           )}
 
           {/* Info Negozio - Card principale */}
-          <Card className="border-0 shadow-lg bg-card/80 backdrop-blur-sm">
-            <CardContent className="p-6 space-y-6">
+          <Card className="border-0 shadow-none sm:shadow-lg bg-card/80 backdrop-blur-sm rounded-none sm:rounded-xl mx-0 sm:mx-0">
+            <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Descrizione con stile quote */}
               {selectedImpresa.vetrina_descrizione && (
                 <div className="relative">
@@ -649,22 +662,46 @@ export default function VetrinePage() {
             </CardContent>
           </Card>
 
-          {/* Gallery Immagini - Design migliorato */}
+          {/* Gallery Immagini - Swipe orizzontale su mobile, griglia su desktop */}
           {selectedImpresa.vetrina_gallery && selectedImpresa.vetrina_gallery.length > 0 && (
-            <Card className="border-0 shadow-lg bg-card/80 backdrop-blur-sm overflow-hidden">
-              <CardHeader className="pb-2">
+            <Card className="border-0 shadow-none sm:shadow-lg bg-card/80 backdrop-blur-sm overflow-hidden rounded-none sm:rounded-xl">
+              <CardHeader className="pb-2 px-4 sm:px-6">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <Store className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl">Galleria Prodotti</CardTitle>
-                    <CardDescription>Le nostre specialità</CardDescription>
+                    <CardTitle className="text-lg sm:text-xl">Galleria Prodotti</CardTitle>
+                    <CardDescription className="text-sm">Le nostre specialità</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="pt-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <CardContent className="pt-4 px-0 sm:px-6">
+                {/* Mobile: Swipe orizzontale fullscreen */}
+                <div className="sm:hidden overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-0 snap-x snap-mandatory">
+                    {selectedImpresa.vetrina_gallery.map((imageUrl, index) => (
+                      <div
+                        key={index}
+                        className="flex-shrink-0 w-full snap-center"
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={`Prodotto ${index + 1}`}
+                          className="w-full h-72 object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  {/* Indicatore pagine */}
+                  <div className="flex justify-center gap-1.5 mt-3 pb-2">
+                    {selectedImpresa.vetrina_gallery.map((_, index) => (
+                      <div key={index} className="w-2 h-2 rounded-full bg-primary/30" />
+                    ))}
+                  </div>
+                </div>
+                {/* Desktop: Griglia classica */}
+                <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-4">
                   {selectedImpresa.vetrina_gallery.map((imageUrl, index) => (
                     <div
                       key={index}
@@ -677,10 +714,6 @@ export default function VetrinePage() {
                       />
                       {/* Overlay on hover */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      {/* Number badge */}
-                      <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-sm font-bold text-primary shadow-lg">
-                        {index + 1}
-                      </div>
                     </div>
                   ))}
                 </div>

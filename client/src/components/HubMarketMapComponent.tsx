@@ -262,13 +262,13 @@ export function HubMarketMapComponent({
   );
   
   // Calcola zoom in base alla vista
-  // Vista Italia: zoom 6 per vedere tutta Italia
+  // Vista Italia: zoom 5 per vedere tutta Italia (ridotto per mobile)
   // Vista HUB: zoom 16 per vedere i negozi
   // Vista Mercato: zoom 17 per vedere i posteggi
   const effectiveZoom = customZoom 
     ? customZoom  // Zoom personalizzato per navigazione regione/provincia
     : showItalyView 
-      ? 6 
+      ? 5  // Ridotto da 6 a 5 per vedere tutta Italia su mobile
       : mode === 'hub' && hubCenterFixed 
         ? 16 
         : mode === 'mercato' && marketCenterFixed
