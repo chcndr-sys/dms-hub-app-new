@@ -307,6 +307,20 @@ export default function RoutePage() {
       // setDirections(route); // Rimosso - non più utilizzato
       
       // Configura routing per visualizzazione su mappa GIS
+      // Estrai coordinate destinazione dal payload o dalla risposta API
+      let destLat: number | undefined;
+      let destLng: number | undefined;
+      
+      if (destinationPayload.lat && destinationPayload.lng) {
+        destLat = destinationPayload.lat;
+        destLng = destinationPayload.lng;
+      } else if (route.geometry?.coordinates?.length > 0) {
+        // Prendi l'ultimo punto della geometria come destinazione
+        const lastCoord = route.geometry.coordinates[route.geometry.coordinates.length - 1];
+        destLat = lastCoord[1]; // GeoJSON è [lng, lat]
+        destLng = lastCoord[0];
+      }
+      
       if (currentUserLocation && destLat && destLng) {
         const modeMap: Record<string, 'walking' | 'cycling' | 'driving'> = {
           'walk': 'walking',
@@ -320,7 +334,6 @@ export default function RoutePage() {
           destination: { lat: destLat, lng: destLng },
           mode: modeMap[mode] || 'walking'
         });
-        toast.success('🗺️ Percorso visualizzato sulla mappa');
       }
       
       // Calcola anche altre modalità per confronto
