@@ -87,10 +87,13 @@ function MapWithTransportLayerInner({
       {/* Mappa originale (children) - passa routeConfig per il routing */}
       {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
+          const childProps = child.props as any;
+          // Usa routeConfig del trasporto se attivo, altrimenti mantieni quello del parent
+          const finalRouteConfig = routeConfig || childProps.routeConfig;
           return React.cloneElement(child as React.ReactElement<any>, {
             selectedStopCenter: selectedStop ? [selectedStop.stop_lat, selectedStop.stop_lon] as [number, number] : undefined,
             selectedStopName: selectedStop?.stop_name,
-            routeConfig: routeConfig,
+            routeConfig: finalRouteConfig,
           });
         }
         return child;
