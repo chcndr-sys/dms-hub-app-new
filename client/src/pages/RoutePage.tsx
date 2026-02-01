@@ -205,9 +205,20 @@ export default function RoutePage() {
       return;
     }
 
-    if (!userLocation) {
-      toast.error('Rileva prima la tua posizione GPS');
-      return;
+    // Se userLocation non è impostato, prova a parsare le coordinate dall'input origin
+    let currentUserLocation = userLocation;
+    if (!currentUserLocation) {
+      const originCoordMatch = origin.match(/^\s*([-\d.]+)\s*,\s*([-\d.]+)\s*$/);
+      if (originCoordMatch) {
+        currentUserLocation = {
+          lat: parseFloat(originCoordMatch[1]),
+          lng: parseFloat(originCoordMatch[2])
+        };
+        setUserLocation(currentUserLocation);
+      } else {
+        toast.error('Rileva prima la tua posizione GPS o inserisci coordinate (lat, lng)');
+        return;
+      }
     }
 
     setLoading(true);
@@ -247,8 +258,8 @@ export default function RoutePage() {
       const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
       const requestPayload = {
         start: {
-          lat: userLocation.lat,
-          lng: userLocation.lng
+          lat: currentUserLocation.lat,
+          lng: currentUserLocation.lng
         },
         destination: destinationPayload,
         mode: apiMode,
@@ -296,7 +307,7 @@ export default function RoutePage() {
       // setDirections(route); // Rimosso - non più utilizzato
       
       // Configura routing per visualizzazione su mappa GIS
-      if (userLocation && destLat && destLng) {
+      if (currentUserLocation && destLat && destLng) {
         const modeMap: Record<string, 'walking' | 'cycling' | 'driving'> = {
           'walk': 'walking',
           'bike': 'cycling',
@@ -305,7 +316,7 @@ export default function RoutePage() {
         };
         setRouteConfig({
           enabled: true,
-          userLocation: userLocation,
+          userLocation: currentUserLocation,
           destination: { lat: destLat, lng: destLng },
           mode: modeMap[mode] || 'walking'
         });
@@ -321,7 +332,7 @@ export default function RoutePage() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                start: { lat: userLocation.lat, lng: userLocation.lng },
+                start: { lat: currentUserLocation.lat, lng: currentUserLocation.lng },
                 destination: destinationPayload,
                 mode: m
               })
