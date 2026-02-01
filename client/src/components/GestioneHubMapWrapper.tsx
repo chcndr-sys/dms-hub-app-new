@@ -188,9 +188,6 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
 
   // Rileva se smartphone (per layout mobile)
   const [isMobile, setIsMobile] = useState(false);
-  
-  // Stato per mostrare mappa fullscreen su mobile
-  const [showMobileMap, setShowMobileMap] = useState(false);
 
   // Statistiche aggregate (Italia/Regione/Provincia)
   const [marketStats, setMarketStats] = useState<{
@@ -467,10 +464,6 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
           console.log('[GestioneHubMapWrapper] Loaded', stallsResponse.data.length, 'stalls');
         }
       }
-    // Apri mappa fullscreen su mobile
-      if (isMobile) {
-        setShowMobileMap(true);
-      }
     } catch (error) {
       console.error('[GestioneHubMapWrapper] Error loading market data:', error);
     }
@@ -494,11 +487,6 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
     }
     
     setViewTrigger(prev => prev + 1);
-    
-    // Apri mappa fullscreen su mobile
-    if (isMobile) {
-      setShowMobileMap(true);
-    }
   };
 
   // Gestione click su shop
@@ -729,88 +717,9 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
 
   return (
     <div className="space-y-2 sm:space-y-3 p-0 sm:p-4">
-      {/* Overlay Mappa Fullscreen Mobile */}
-      {showMobileMap && isMobile && (
-        <div className="fixed inset-0 z-50 bg-[#0b1220] flex flex-col">
-          {/* Header overlay */}
-          <div className="flex items-center justify-between px-3 py-2 bg-[#1a2332] border-b border-[#14b8a6]/30">
-            <button 
-              onClick={() => setShowMobileMap(false)}
-              className="flex items-center gap-2 text-[#e8fbff] hover:text-[#14b8a6] transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="text-sm font-medium">Indietro</span>
-            </button>
-            <span className="text-sm font-semibold text-[#e8fbff] truncate max-w-[150px]">
-              {selectedHub?.name || selectedMarket?.name || 'Mappa'}
-            </span>
-            <button 
-              onClick={() => { handleBackToItaly(); setShowMobileMap(false); }}
-              className="px-3 py-1 bg-[#14b8a6]/20 text-[#14b8a6] text-xs font-medium rounded border border-[#14b8a6]/30"
-            >
-              Italia
-            </button>
-          </div>
-          {/* Mappa fullscreen */}
-          <div className="flex-1 relative">
-            <MapWithTransportLayer
-              selectedLocation={(() => {
-                if (mode === 'hub' && selectedHub) {
-                  const lat = parseFloat(String(selectedHub.center_lat || selectedHub.lat)) || 0;
-                  const lng = parseFloat(String(selectedHub.center_lng || selectedHub.lng)) || 0;
-                  if (lat && lng) {
-                    return { lat, lng, name: selectedHub.name, type: 'hub' as const };
-                  }
-                }
-                if (mode === 'mercato' && selectedMarket) {
-                  const lat = parseFloat(String(selectedMarket.latitude)) || 0;
-                  const lng = parseFloat(String(selectedMarket.longitude)) || 0;
-                  if (lat && lng) {
-                    return { lat, lng, name: selectedMarket.name, type: 'mercato' as const };
-                  }
-                }
-                return undefined;
-              })()}
-              searchRadiusKm={2}
-              togglePosition="bottom-left"
-              className="h-full"
-            >
-              <HubMarketMapComponent
-                mode={mode}
-                mapData={mapData || undefined}
-                stallsData={stallsData}
-                allMarkets={mode === 'mercato' ? filteredMarkets : []}
-                allHubs={mode === 'hub' ? filteredHubs : []}
-                selectedHub={mode === 'hub' ? selectedHub || undefined : undefined}
-                onMarketClick={handleMarketClick}
-                onHubClick={handleHubClick}
-                onShopClick={handleShopClick}
-                showItalyView={false}
-                viewTrigger={viewTrigger}
-                height="100%"
-                marketCenterFixed={selectedMarket && selectedMarket.latitude && selectedMarket.longitude ? [
-                  parseFloat(String(selectedMarket.latitude)) || 42.5,
-                  parseFloat(String(selectedMarket.longitude)) || 12.5
-                ] : customCenter || undefined}
-                hubCenterFixed={selectedHub ? (
-                  selectedHub.center_lat && selectedHub.center_lng ? [
-                    parseFloat(String(selectedHub.center_lat)) || 42.5,
-                    parseFloat(String(selectedHub.center_lng)) || 12.5
-                  ] : selectedHub.lat && selectedHub.lng ? [
-                    parseFloat(String(selectedHub.lat)) || 42.5,
-                    parseFloat(String(selectedHub.lng)) || 12.5
-                  ] : customCenter || undefined
-                ) : customCenter || undefined}
-                customZoom={customZoom || 15}
-                routeConfig={routeConfig}
-                navigationMode={navigationMode}
-              />
-            </MapWithTransportLayer>
-          </div>
-        </div>
-      )}
+      
       {/* Header unico con Titolo + Indicatori nella stessa barra */}
-      <div className="flex flex-nowrap items-center gap-1 sm:gap-4 bg-[#0b1220] sm:rounded-lg px-1 py-2 sm:p-4 sm:border border-[#14b8a6]/30">
+      <div className="flex flex-nowrap items-center gap-1.5 sm:gap-4 bg-[#0b1220] sm:rounded-lg px-2 py-2 sm:p-4 sm:border border-[#14b8a6]/30">
         {/* Titolo e Vista - come primo indicatore */}
         <div className="hidden sm:block px-5 py-2 bg-[#1a2332] rounded border border-[#14b8a6]/40 min-w-[280px] flex-shrink-0">
           <div className="text-xs text-white uppercase tracking-wider font-bold">GEMELLO DIGITALE DEL COMMERCIO</div>
@@ -856,20 +765,20 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
         </div>
       </div>
 
-      {/* Barra controlli */}
-      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
-        {/* Selettore Mercato/HUB */}
+      {/* Barra controlli - Layout mobile ottimizzato */}
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 px-2 sm:px-0">
+        {/* Riga 1: Selettore Mercato/HUB - full width */}
         <div className="flex w-full sm:w-auto bg-[#0b1220] rounded-lg p-1 border border-[#14b8a6]/30">
           <Button
             variant={mode === 'mercato' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => { setMode('mercato'); handleBackToItaly(); }}
             className={mode === 'mercato' 
-              ? 'bg-[#ef4444] hover:bg-[#dc2626] text-white h-12 sm:h-8 text-base sm:text-sm flex-1' 
-              : 'text-[#e8fbff]/70 hover:text-[#e8fbff] h-12 sm:h-8 text-base sm:text-sm flex-1'
+              ? 'bg-[#ef4444] hover:bg-[#dc2626] text-white h-11 sm:h-8 text-sm flex-1' 
+              : 'text-[#e8fbff]/70 hover:text-[#e8fbff] h-11 sm:h-8 text-sm flex-1'
             }
           >
-            <Store className="h-3 w-3 mr-1" />
+            <Store className="h-4 w-4 mr-1" />
             Mercati ({markets.length})
           </Button>
           <Button
@@ -877,26 +786,104 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
             size="sm"
             onClick={() => { setMode('hub'); handleBackToItaly(); }}
             className={mode === 'hub' 
-              ? 'bg-[#9C27B0] hover:bg-[#7B1FA2] text-white h-12 sm:h-8 text-base sm:text-sm flex-1' 
-              : 'text-[#e8fbff]/70 hover:text-[#e8fbff] h-12 sm:h-8 text-base sm:text-sm flex-1'
+              ? 'bg-[#9C27B0] hover:bg-[#7B1FA2] text-white h-11 sm:h-8 text-sm flex-1' 
+              : 'text-[#e8fbff]/70 hover:text-[#e8fbff] h-11 sm:h-8 text-sm flex-1'
             }
           >
-            <Building2 className="h-3 w-3 mr-1" />
+            <Building2 className="h-4 w-4 mr-1" />
             HUB ({hubs.length})
           </Button>
         </div>
 
-        {/* Ricerca */}
+        {/* Riga 2: Ricerca - full width */}
         <div className="w-full sm:flex-1 sm:min-w-[180px] sm:max-w-[300px]">
           <Input
             placeholder={`Cerca ${mode === 'mercato' ? 'mercato' : 'hub'}...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-[#0b1220] border-[#14b8a6]/30 text-[#e8fbff] h-12 sm:h-8 text-base sm:text-sm"
+            className="bg-[#0b1220] border-[#14b8a6]/30 text-[#e8fbff] h-11 sm:h-8 text-sm"
           />
         </div>
 
-        {/* Pulsante Vista Italia - prima di Regione */}
+        {/* Riga 3 Mobile: Regione e Provincia affiancati - stessa altezza dei tab */}
+        <div className="flex sm:hidden w-full gap-2">
+          {/* Dropdown Regione Mobile */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={`border-[#14b8a6]/30 h-11 text-sm flex-1 ${selectedRegione ? 'bg-[#14b8a6]/20 text-[#14b8a6]' : 'text-[#e8fbff]'}`}
+              >
+                <Map className="h-4 w-4 mr-1" />
+                {selectedRegione ? selectedRegione.nome : 'Regione'}
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-[#1a2332] border-[#14b8a6]/30 max-h-[300px] overflow-y-auto z-[9999]" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              <DropdownMenuLabel className="text-[#e8fbff]/60 text-xs">Seleziona Regione</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-[#14b8a6]/20" />
+              {loadingRegioni ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#14b8a6]" />
+                </div>
+              ) : (
+                regioni.map((regione) => (
+                  <DropdownMenuItem
+                    key={regione.id}
+                    onClick={() => handleRegioneSelect(regione)}
+                    className={`text-[#e8fbff] hover:bg-[#14b8a6]/20 cursor-pointer text-xs ${selectedRegione?.id === regione.id ? 'bg-[#14b8a6]/30' : ''}`}
+                  >
+                    <div className="flex justify-between w-full">
+                      <span>{regione.nome}</span>
+                      <span className="text-[#e8fbff]/50 text-[10px] ml-2">{regione.province_count} prov.</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {/* Dropdown Provincia Mobile */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!selectedRegione}
+                className={`border-[#14b8a6]/30 h-11 text-sm flex-1 ${selectedProvincia ? 'bg-[#f59e0b]/20 text-[#f59e0b]' : 'text-[#e8fbff]'} ${!selectedRegione ? 'opacity-50' : ''}`}
+              >
+                <Navigation className="h-4 w-4 mr-1" />
+                {selectedProvincia ? selectedProvincia.sigla : 'Prov.'}
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-[#1a2332] border-[#14b8a6]/30 max-h-[300px] overflow-y-auto z-[9999]" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              <DropdownMenuLabel className="text-[#e8fbff]/60 text-xs">Province di {selectedRegione?.nome || '...'}</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-[#14b8a6]/20" />
+              {loadingProvince ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#14b8a6]" />
+                </div>
+              ) : (
+                province.map((provincia) => (
+                  <DropdownMenuItem
+                    key={provincia.id}
+                    onClick={() => handleProvinciaSelect(provincia)}
+                    className={`text-[#e8fbff] hover:bg-[#f59e0b]/20 cursor-pointer text-xs ${selectedProvincia?.id === provincia.id ? 'bg-[#f59e0b]/30' : ''}`}
+                  >
+                    <div className="flex justify-between w-full">
+                      <span>{provincia.nome}</span>
+                      <span className="text-[#e8fbff]/50 text-[10px] ml-2">{provincia.sigla}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Pulsante Vista Italia - solo desktop */}
         <Button
           variant="outline"
           size="sm"
@@ -907,13 +894,13 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
           Vista Italia
         </Button>
 
-        {/* Dropdown Regione */}
+        {/* Dropdown Regione - solo desktop */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className={`border-[#14b8a6]/30 h-12 sm:h-8 text-base sm:text-sm flex-1 sm:flex-none ${selectedRegione ? 'bg-[#14b8a6]/20 text-[#14b8a6]' : 'text-[#e8fbff]'}`}
+              className={`hidden sm:flex border-[#14b8a6]/30 h-8 text-sm ${selectedRegione ? 'bg-[#14b8a6]/20 text-[#14b8a6]' : 'text-[#e8fbff]'}`}
             >
               <Map className="h-3 w-3 mr-1" />
               {selectedRegione ? selectedRegione.nome : 'Regione'}
@@ -948,14 +935,14 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Dropdown Provincia */}
+        {/* Dropdown Provincia - solo desktop */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
               size="sm"
               disabled={!selectedRegione}
-              className={`border-[#14b8a6]/30 h-12 sm:h-8 text-base sm:text-sm flex-1 sm:flex-none ${selectedProvincia ? 'bg-[#f59e0b]/20 text-[#f59e0b]' : 'text-[#e8fbff]'} ${!selectedRegione ? 'opacity-50' : ''}`}
+              className={`hidden sm:flex border-[#14b8a6]/30 h-8 text-sm ${selectedProvincia ? 'bg-[#f59e0b]/20 text-[#f59e0b]' : 'text-[#e8fbff]'} ${!selectedRegione ? 'opacity-50' : ''}`}
             >
               <Navigation className="h-3 w-3 mr-1" />
               {selectedProvincia ? `${selectedProvincia.sigla}` : 'Prov.'}
@@ -1015,7 +1002,7 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
       </div>
 
       {/* Lista elementi - Card più grandi con colori per livello HUB */}
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="flex gap-3 overflow-x-auto pb-2 px-2 sm:px-0">
         {currentList.map((item) => {
           // Determina colore in base al livello HUB
           const getHubCardColor = (hub: HubLocation) => {
@@ -1069,8 +1056,8 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
         })}
       </div>
 
-      {/* Mappa - nascosta su mobile (visibile in overlay fullscreen) */}
-      <div className="hidden sm:block h-[calc(100vh-320px)] min-h-[500px] rounded-lg overflow-hidden border border-[#14b8a6]/30">
+      {/* Mappa - visibile su tutti i dispositivi */}
+      <div className="h-[300px] sm:h-[calc(100vh-320px)] sm:min-h-[500px] rounded-lg overflow-hidden border border-[#14b8a6]/30 mx-2 sm:mx-0">
         <MapWithTransportLayer
           referencePoint={(() => {
             // Determina il punto di riferimento corrente (HUB o Mercato selezionato)
