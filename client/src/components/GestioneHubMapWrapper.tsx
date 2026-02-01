@@ -470,10 +470,11 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
           console.log('[GestioneHubMapWrapper] Loaded', stallsResponse.data.length, 'stalls');
         }
       }
-    // Apri mappa fullscreen su mobile
+    // Apri mappa fullscreen su mobile - PARTE DA VISTA ITALIA
       if (isMobile) {
         setShowMobileMap(true);
-        setMobileMapZoomed(true);
+        setMobileMapZoomed(false); // Parte da vista Italia, poi clicca Apri per zoomare
+        setShowItalyView(true);
       }
     } catch (error) {
       console.error('[GestioneHubMapWrapper] Error loading market data:', error);
@@ -499,10 +500,11 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
     
     setViewTrigger(prev => prev + 1);
     
-    // Apri mappa fullscreen su mobile
+    // Apri mappa fullscreen su mobile - PARTE DA VISTA ITALIA
     if (isMobile) {
       setShowMobileMap(true);
-      setMobileMapZoomed(true);
+      setMobileMapZoomed(false); // Parte da vista Italia, poi clicca Apri per zoomare
+      setShowItalyView(true);
     }
   };
 
@@ -1113,7 +1115,7 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
               onMarketClick={(id) => { handleMarketClick(id); }}
               onHubClick={(id) => { handleHubClick(id); }}
               onShopClick={handleShopClick}
-              showItalyView={!mobileMapZoomed}
+              showItalyView={showItalyView}
               viewTrigger={viewTrigger}
               height="100%"
               marketCenterFixed={selectedMarket && selectedMarket.latitude && selectedMarket.longitude ? [
@@ -1139,6 +1141,7 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
               <button
                 onClick={() => {
                   setMobileMapZoomed(true);
+                  setShowItalyView(false); // Zoom sull'hub/mercato
                   setViewTrigger(prev => prev + 1);
                 }}
                 className={`px-6 py-3 rounded-full font-bold text-sm shadow-lg transition-all ${
