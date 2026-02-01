@@ -726,8 +726,19 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
           <Home className="h-5 w-5" />
         </button>
         
+        {/* Barra ricerca + Selettore */}
+        <div className="absolute top-4 left-16 right-4 z-[60] flex gap-2">
+          {/* Ricerca */}
+          <Input
+            placeholder={`Cerca ${mode === 'mercato' ? 'mercato' : 'hub'}...`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 bg-[#0b1220]/90 border-[#14b8a6]/30 text-[#e8fbff] h-10 text-sm"
+          />
+        </div>
+
         {/* Selettore Mercato/HUB compatto */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] flex bg-[#0b1220]/90 rounded-lg p-1 border border-[#14b8a6]/30">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[60] flex bg-[#0b1220]/90 rounded-lg p-1 border border-[#14b8a6]/30">
           <Button
             variant={mode === 'mercato' ? 'default' : 'ghost'}
             size="sm"
