@@ -690,21 +690,39 @@ export default function WalletPage() {
 
   return (
     <div className="h-screen sm:min-h-screen bg-background pb-0 sm:pb-20 overflow-hidden sm:overflow-auto">
-      {/* Header con logout - Mobile: compatto, Desktop: invariato - v3.75.0: rimossa freccia indietro */}
+      {/* Header - Mobile: senza freccia, PC/Tablet: con freccia - v3.75.1 */}
       <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-3 sm:p-4 shadow-lg">
         <div className="w-full px-3 sm:px-4 md:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-2 bg-white/20 rounded-xl">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Freccia indietro - SOLO PC/Tablet (hidden su mobile) */}
+            <a
+              href="/"
+              className="hidden sm:flex p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </a>
+            <div className="p-2 bg-white/20 rounded-xl">
               <Wallet className="h-6 w-6 sm:h-7 sm:w-7" />
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold">Wallet TCC</h1>
-              <p className="text-xs sm:text-xs text-white/70">
+              <p className="text-xs text-white/70">
                 {currentUser?.name || walletData?.user?.name || 'I tuoi eco-crediti'}
               </p>
             </div>
           </div>
-          {/* Pulsante Logout - rimosso, si esce dalla Home */}
+          {/* Pulsante Logout - SOLO PC/Tablet */}
+          <button
+            onClick={handleLogout}
+            className="hidden sm:flex p-2 rounded-full bg-white/10 hover:bg-red-500/50 transition-all text-white/80 hover:text-white"
+            title="Esci"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
         </div>
       </header>
 
