@@ -307,19 +307,35 @@ export default function RoutePage() {
       // setDirections(route); // Rimosso - non più utilizzato
       
       // Configura routing per visualizzazione su mappa GIS
-      // Estrai coordinate destinazione dal payload o dalla risposta API
+      // Estrai coordinate destinazione dal payload, dalla risposta API, o dalla stringa destination
       let destLat: number | undefined;
       let destLng: number | undefined;
       
+      // 1. Prima prova dal payload
       if (destinationPayload.lat && destinationPayload.lng) {
         destLat = destinationPayload.lat;
         destLng = destinationPayload.lng;
-      } else if (route.geometry?.coordinates?.length > 0) {
-        // Prendi l'ultimo punto della geometria come destinazione
+        console.log('[DEBUG] destLat/destLng from payload:', destLat, destLng);
+      } 
+      // 2. Poi prova dalla geometria della risposta API
+      else if (route.geometry?.coordinates?.length > 0) {
         const lastCoord = route.geometry.coordinates[route.geometry.coordinates.length - 1];
         destLat = lastCoord[1]; // GeoJSON è [lng, lat]
         destLng = lastCoord[0];
+        console.log('[DEBUG] destLat/destLng from geometry:', destLat, destLng);
       }
+      // 3. Fallback: estrai dalla stringa destination "Nome (lat, lng)"
+      else {
+        const destMatch = destination.match(/\(([\d.]+),\s*([\d.]+)\)/);
+        if (destMatch) {
+          destLat = parseFloat(destMatch[1]);
+          destLng = parseFloat(destMatch[2]);
+          console.log('[DEBUG] destLat/destLng from destination string:', destLat, destLng);
+        }
+      }
+      
+      console.log('[DEBUG] Final destLat/destLng:', destLat, destLng);
+      console.log('[DEBUG] currentUserLocation:', currentUserLocation);
       
       if (currentUserLocation && destLat && destLng) {
         const modeMap: Record<string, 'walking' | 'cycling' | 'driving'> = {
@@ -328,12 +344,21 @@ export default function RoutePage() {
           'transit': 'walking', // Transit usa walking per ultimo miglio
           'car': 'driving'
         };
-        setRouteConfig({
+        const newRouteConfig = {
           enabled: true,
           userLocation: currentUserLocation,
           destination: { lat: destLat, lng: destLng },
           mode: modeMap[mode] || 'walking'
+        };
+        console.log('[DEBUG] Setting routeConfig:', newRouteConfig);
+        setRouteConfig(newRouteConfig);
+      } else {
+        console.error('[DEBUG] Cannot set routeConfig - missing data:', {
+          currentUserLocation,
+          destLat,
+          destLng
         });
+        toast.error('Impossibile visualizzare percorso sulla mappa');
       }
       
       // Calcola anche altre modalità per confronto
@@ -378,8 +403,13 @@ export default function RoutePage() {
   };
 
   const handleStartNavigation = () => {
+    console.log('[DEBUG] handleStartNavigation called');
+    console.log('[DEBUG] plan:', plan);
+    console.log('[DEBUG] routeConfig:', routeConfig);
+    
     if (!plan || !routeConfig) {
       toast.error('Calcola prima il percorso');
+      console.error('[DEBUG] Missing plan or routeConfig');
       return;
     }
     
