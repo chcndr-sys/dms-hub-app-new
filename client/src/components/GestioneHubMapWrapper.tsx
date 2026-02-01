@@ -356,6 +356,13 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
     // Carica province
     await loadProvince(regione.id);
     
+    // Scroll alla mappa su mobile
+    if (window.innerWidth < 640) {
+      setTimeout(() => {
+        document.getElementById('map-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+    
     toast.success(`Vista: ${regione.nome}`);
   };
 
@@ -372,6 +379,13 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
     setCustomZoom(provincia.zoom);
     setShowItalyView(false);
     setViewTrigger(prev => prev + 1);
+    
+    // Scroll alla mappa su mobile
+    if (window.innerWidth < 640) {
+      setTimeout(() => {
+        document.getElementById('map-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
     
     toast.success(`Vista: ${provincia.nome} (${provincia.sigla})`);
   };
@@ -400,6 +414,12 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
         setCustomZoom(null);
       }
       setViewTrigger(prev => prev + 1);
+      // Scroll alla mappa su mobile
+      if (window.innerWidth < 640) {
+        setTimeout(() => {
+          document.getElementById('map-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
       toast.success('Vista precedente');
     } else if (selectedProvincia) {
       // Da provincia → torna a regione
@@ -410,6 +430,12 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
         setCustomCenter([lat, lng]);
         setCustomZoom(selectedRegione.zoom);
         setViewTrigger(prev => prev + 1);
+        // Scroll alla mappa su mobile
+        if (window.innerWidth < 640) {
+          setTimeout(() => {
+            document.getElementById('map-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 100);
+        }
         toast.success(`Vista: ${selectedRegione.nome}`);
       }
     } else if (selectedRegione) {
@@ -420,6 +446,12 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
       setCustomZoom(null);
       setShowItalyView(true);
       setViewTrigger(prev => prev + 1);
+      // Scroll alla mappa su mobile
+      if (window.innerWidth < 640) {
+        setTimeout(() => {
+          document.getElementById('map-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
       toast.success('Vista Italia');
     }
   };
@@ -916,15 +948,15 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
           </DropdownMenu>
         </div>
 
-        {/* Pulsante Vista Italia - mobile piccolo */}
-        <Button
+        {/* Pulsante Vista Italia - mobile NASCOSTO (c'è già Indietro che fa la stessa cosa) */}
+        {/* <Button
           variant="outline"
           size="sm"
           onClick={handleResetGeo}
           className="sm:hidden flex-1 text-[#14b8a6] border-[#14b8a6]/50 hover:bg-[#14b8a6]/20 h-9 text-xs px-2"
         >
           🇮🇹 Italia
-        </Button>
+        </Button> */}
 
         {/* Pulsante Vista Italia - desktop */}
         <Button
@@ -1189,7 +1221,7 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
       )}
 
       {/* MAPPA - visibile su desktop e mobile */}
-      <div id="map-container" className="h-[calc(100vh-180px)] sm:h-[calc(100vh-320px)] min-h-[400px] sm:min-h-[500px] rounded-lg overflow-hidden border border-[#14b8a6]/30">
+      <div id="map-container" className="h-[calc(100vh-100px)] sm:h-[calc(100vh-320px)] min-h-[500px] sm:min-h-[500px] rounded-lg sm:rounded-lg rounded-none overflow-hidden border-0 sm:border border-[#14b8a6]/30">
         <MapWithTransportLayer
           referencePoint={(() => {
             // Determina il punto di riferimento corrente (HUB o Mercato selezionato)
