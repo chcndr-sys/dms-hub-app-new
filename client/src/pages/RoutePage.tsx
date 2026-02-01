@@ -636,25 +636,25 @@ export default function RoutePage() {
               </Card>
             </div>
 
-            {/* Punteggio Sostenibilità - Nascosto su smartphone */}
-            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 hidden sm:block">
-              <CardHeader>
-                <CardTitle className="text-green-900 flex items-center gap-2">
-                  <Leaf className="h-5 w-5" />
+            {/* Punteggio Sostenibilità - Compatto su smartphone */}
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+              <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-4">
+                <CardTitle className="text-green-900 flex items-center gap-2 text-sm sm:text-base">
+                  <Leaf className="h-4 w-4 sm:h-5 sm:w-5" />
                   Punteggio Sostenibilità
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="space-y-2 sm:space-y-4">
                   {/* Barra progresso sostenibilità */}
                   <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium text-green-900">Impatto Ambientale</span>
-                      <span className="text-sm font-bold text-green-600">
+                    <div className="flex justify-between mb-1 sm:mb-2">
+                      <span className="text-xs sm:text-sm font-medium text-green-900">Impatto Ambientale</span>
+                      <span className="text-xs sm:text-sm font-bold text-green-600">
                         {routeOptions.find(o => o.mode === mode)?.sustainability || 0}%
                       </span>
                     </div>
-                    <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 sm:h-3 bg-gray-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-500"
                         style={{ width: `${routeOptions.find(o => o.mode === mode)?.sustainability || 0}%` }}
@@ -663,39 +663,39 @@ export default function RoutePage() {
                   </div>
 
                   {/* Badge Carbon Credits */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-                      <div className="text-2xl mb-1">🌱</div>
-                      <div className="text-xs font-semibold text-green-900">Eco-Friendly</div>
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+                    <div className="text-center p-1.5 sm:p-3 bg-white rounded-lg border border-green-200">
+                      <div className="text-base sm:text-2xl mb-0.5 sm:mb-1">🌱</div>
+                      <div className="text-[9px] sm:text-xs font-semibold text-green-900">Eco</div>
                     </div>
-                    <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-                      <div className="text-2xl mb-1">♻️</div>
-                      <div className="text-xs font-semibold text-green-900">Low Carbon</div>
+                    <div className="text-center p-1.5 sm:p-3 bg-white rounded-lg border border-green-200">
+                      <div className="text-base sm:text-2xl mb-0.5 sm:mb-1">♻️</div>
+                      <div className="text-[9px] sm:text-xs font-semibold text-green-900">Low CO₂</div>
                     </div>
-                    <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-                      <div className="text-2xl mb-1">🌍</div>
-                      <div className="text-xs font-semibold text-green-900">Sustainable</div>
+                    <div className="text-center p-1.5 sm:p-3 bg-white rounded-lg border border-green-200">
+                      <div className="text-base sm:text-2xl mb-0.5 sm:mb-1">🌍</div>
+                      <div className="text-[9px] sm:text-xs font-semibold text-green-900">Green</div>
                     </div>
                   </div>
 
                   {/* Confronto CO₂ */}
-                  <div className="text-sm text-green-900 bg-white p-3 rounded-lg border border-green-200">
-                    <p className="font-semibold mb-2">Risparmio CO₂ vs Auto:</p>
+                  <div className="text-xs sm:text-sm text-green-900 bg-white p-2 sm:p-3 rounded-lg border border-green-200">
+                    <p className="font-semibold mb-1 sm:mb-2">Risparmio CO₂ vs Auto:</p>
                     <div className="flex items-center justify-between">
-                      <span>Auto (benzina)</span>
+                      <span>Auto</span>
                       <span className="font-bold text-red-600">
-                        {Math.round(plan.totalDistance * 193)}g CO₂
+                        {Math.round(plan.totalDistance * 193)}g
                       </span>
                     </div>
-                    <div className="flex items-center justify-between mt-1">
+                    <div className="flex items-center justify-between mt-0.5 sm:mt-1">
                       <span>A piedi</span>
-                      <span className="font-bold text-green-600">0g CO₂</span>
+                      <span className="font-bold text-green-600">0g</span>
                     </div>
-                    <div className="mt-2 pt-2 border-t border-green-200">
+                    <div className="mt-1.5 sm:mt-2 pt-1.5 sm:pt-2 border-t border-green-200">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold">Risparmiato:</span>
-                        <span className="font-bold text-green-600">
-                          {plan.co2Saved}g CO₂ (≈ {(plan.co2Saved / 22).toFixed(1)} alberi/anno)
+                        <span className="font-bold text-green-600 text-[10px] sm:text-sm">
+                          {plan.co2Saved}g (≈ {(plan.co2Saved / 22).toFixed(1)} alberi)
                         </span>
                       </div>
                     </div>
@@ -706,27 +706,27 @@ export default function RoutePage() {
 
             {/* Mappa Percorso rimossa - Navigazione gestita da Google/Apple Maps nativa */}
 
-            {/* Tappe del percorso - Nascosto su smartphone */}
-            <Card className="hidden sm:block">
-              <CardHeader>
-                <CardTitle>Tappe del Percorso</CardTitle>
-                <CardDescription>Percorso ottimizzato con algoritmo TSP</CardDescription>
+            {/* Tappe del percorso - Compatto su smartphone */}
+            <Card>
+              <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-4">
+                <CardTitle className="text-sm sm:text-base">Tappe del Percorso</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Percorso ottimizzato TSP</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="space-y-2 sm:space-y-3">
                   {plan.stops.map((stop, idx) => (
                     <div
                       key={idx}
-                      className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                      className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                     >
-                      <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold">
+                      <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-xs sm:text-sm">
                         {idx + 1}
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold">{stop.name}</p>
-                        <p className="text-sm text-muted-foreground">{stop.address}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Tempo stimato: {stop.duration} min
+                        <p className="font-semibold text-sm sm:text-base">{stop.name}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{stop.address}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
+                          {stop.duration} min
                         </p>
                       </div>
                     </div>
@@ -737,52 +737,52 @@ export default function RoutePage() {
 
             {/* Turn-by-turn navigation gestita da Google/Apple Maps */}
 
-            {/* Azioni - Compatto su smartphone */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+            {/* Azioni - Pulsanti grandi su smartphone */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <Button 
                 variant="outline" 
                 onClick={() => setPlan(null)}
-                className="h-10 sm:h-14 text-sm sm:text-lg font-semibold border-2 hover:bg-muted/50 transition-all duration-300"
+                className="h-14 sm:h-14 text-base sm:text-lg font-semibold border-2 hover:bg-muted/50 transition-all duration-300"
               >
-                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                <ArrowLeft className="h-5 w-5 mr-2" />
                 Modifica
               </Button>
               <Button 
                 onClick={handleStartNavigation} 
-                className="h-10 sm:h-14 text-sm sm:text-lg font-semibold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                className="h-14 sm:h-14 text-base sm:text-lg font-semibold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
               >
-                <Navigation className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Avvia </span>Navigazione
+                <Navigation className="h-5 w-5 mr-2" />
+                Navigazione
               </Button>
             </div>
           </>
         )}
 
-        {/* Info Box - Nascosto su smartphone */}
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-emerald-500/10 via-green-500/5 to-teal-500/10 overflow-hidden hidden sm:block">
-          <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg flex-shrink-0">
-                <Leaf className="h-6 w-6 text-white" />
+        {/* Info Box - Compatto su smartphone */}
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-emerald-500/10 via-green-500/5 to-teal-500/10 overflow-hidden">
+          <CardContent className="p-3 sm:pt-6 sm:p-6">
+            <div className="flex gap-2 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
+                <Leaf className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
-                <p className="font-bold text-lg text-emerald-700 mb-3">Perché usare Shopping Route?</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2 p-2 bg-white/50 rounded-lg">
-                    <Clock className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm text-emerald-800">Percorso ottimizzato per risparmiare tempo</span>
+              <div className="flex-1">
+                <p className="font-bold text-sm sm:text-lg text-emerald-700 mb-2 sm:mb-3">Perché usare Route Etico?</p>
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
+                  <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-white/50 rounded-lg">
+                    <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600 flex-shrink-0" />
+                    <span className="text-[10px] sm:text-sm text-emerald-800">Risparmia tempo</span>
                   </div>
-                  <div className="flex items-center gap-2 p-2 bg-white/50 rounded-lg">
-                    <Leaf className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm text-emerald-800">Riduci le emissioni di CO₂</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-white/50 rounded-lg">
+                    <Leaf className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600 flex-shrink-0" />
+                    <span className="text-[10px] sm:text-sm text-emerald-800">Riduci CO₂</span>
                   </div>
-                  <div className="flex items-center gap-2 p-2 bg-white/50 rounded-lg">
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm text-emerald-800">Guadagna +15 eco-crediti al completamento</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-white/50 rounded-lg">
+                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600 flex-shrink-0" />
+                    <span className="text-[10px] sm:text-sm text-emerald-800">+15 eco-crediti</span>
                   </div>
-                  <div className="flex items-center gap-2 p-2 bg-white/50 rounded-lg">
-                    <Store className="h-4 w-4 text-emerald-600" />
-                    <span className="text-sm text-emerald-800">Supporta il commercio locale e sostenibile</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-white/50 rounded-lg">
+                    <Store className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600 flex-shrink-0" />
+                    <span className="text-[10px] sm:text-sm text-emerald-800">Commercio locale</span>
                   </div>
                 </div>
               </div>
@@ -791,32 +791,32 @@ export default function RoutePage() {
         </Card>
 
         {/* Mappa GIS Mercato - Sempre Visibile */}
-          {/* Barra Ricerca e Filtri - Nascosto su smartphone */}
-          <Card className="bg-[#1a2332] border-[#14b8a6]/30 hidden sm:block">
-            <CardContent className="pt-6">
-              <div className="flex flex-col md:flex-row gap-4">
+          {/* Barra Ricerca e Filtri - Compatto su smartphone */}
+          <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+            <CardContent className="p-3 sm:pt-6 sm:p-6">
+              <div className="flex flex-col gap-2 sm:gap-4">
                 {/* Input Ricerca */}
                 <div className="flex-1">
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="Cerca mercato, posteggio, impresa..."
+                      placeholder="Cerca mercato, impresa..."
                       value={gisSearchQuery}
                       onChange={(e) => setGisSearchQuery(e.target.value)}
-                      className="w-full px-4 py-3 pl-10 pr-12 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-[#e8fbff] placeholder-[#e8fbff]/40 focus:outline-none focus:border-[#14b8a6] transition-colors"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 pl-8 sm:pl-10 pr-10 sm:pr-12 bg-[#0b1220] border border-[#14b8a6]/30 rounded-lg text-sm sm:text-base text-[#e8fbff] placeholder-[#e8fbff]/40 focus:outline-none focus:border-[#14b8a6] transition-colors"
                     />
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#14b8a6]/60" />
-                    <button className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-[#14b8a6] hover:bg-[#14b8a6]/80 rounded-md transition-colors">
-                      <Send className="h-4 w-4 text-white" />
+                    <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-[#14b8a6]/60" />
+                    <button className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 px-2 sm:px-3 py-1 sm:py-1.5 bg-[#14b8a6] hover:bg-[#14b8a6]/80 rounded-md transition-colors">
+                      <Send className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                     </button>
                   </div>
                 </div>
 
-                {/* Filtri Posteggi */}
-                <div className="flex gap-2 flex-wrap">
+                {/* Filtri Posteggi - Grid su mobile */}
+                <div className="grid grid-cols-4 sm:flex gap-1.5 sm:gap-2">
                   <button 
                     onClick={() => setGisStatusFilter('all')}
-                    className={`px-4 py-2 rounded-lg border font-medium text-sm transition-colors ${
+                    className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg border font-medium text-xs sm:text-sm transition-colors ${
                       gisStatusFilter === 'all' 
                         ? 'border-[#14b8a6] bg-[#14b8a6] text-white' 
                         : 'border-[#14b8a6]/30 bg-[#14b8a6]/10 text-[#14b8a6] hover:bg-[#14b8a6]/20'
@@ -826,7 +826,7 @@ export default function RoutePage() {
                   </button>
                   <button 
                     onClick={() => setGisStatusFilter('libero')}
-                    className={`px-4 py-2 rounded-lg border font-medium text-sm transition-colors ${
+                    className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg border font-medium text-xs sm:text-sm transition-colors ${
                       gisStatusFilter === 'libero'
                         ? 'border-[#10b981] bg-[#10b981] text-white'
                         : 'border-[#10b981]/30 bg-[#10b981]/10 text-[#10b981] hover:bg-[#10b981]/20'
@@ -836,79 +836,79 @@ export default function RoutePage() {
                   </button>
                   <button 
                     onClick={() => setGisStatusFilter('occupato')}
-                    className={`px-4 py-2 rounded-lg border font-medium text-sm transition-colors ${
+                    className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg border font-medium text-xs sm:text-sm transition-colors ${
                       gisStatusFilter === 'occupato'
                         ? 'border-[#ef4444] bg-[#ef4444] text-white'
                         : 'border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/20'
                     }`}
                   >
-                    Occupati
+                    Occ.
                   </button>
                   <button 
                     onClick={() => setGisStatusFilter('riservato')}
-                    className={`px-4 py-2 rounded-lg border font-medium text-sm transition-colors ${
+                    className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg border font-medium text-xs sm:text-sm transition-colors ${
                       gisStatusFilter === 'riservato'
                         ? 'border-[#f59e0b] bg-[#f59e0b] text-white'
                         : 'border-[#f59e0b]/30 bg-[#f59e0b]/10 text-[#f59e0b] hover:bg-[#f59e0b]/20'
                     }`}
                   >
-                    Riservati
+                    Ris.
                   </button>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Statistiche Mercato - Nascosto su smartphone */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 hidden sm:grid">
+          {/* Statistiche Mercato - Grid compatto su smartphone */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
             <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-              <CardContent className="pt-6">
+              <CardContent className="p-3 sm:pt-6 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-[#e8fbff]/60">Posteggi Totali</p>
-                    <p className="text-2xl font-bold text-[#e8fbff]">{gisStalls.length}</p>
+                    <p className="text-xs sm:text-sm text-[#e8fbff]/60">Totali</p>
+                    <p className="text-lg sm:text-2xl font-bold text-[#e8fbff]">{gisStalls.length}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-full bg-[#14b8a6]/20 flex items-center justify-center">
-                    <Store className="h-6 w-6 text-[#14b8a6]" />
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-[#14b8a6]/20 flex items-center justify-center">
+                    <Store className="h-4 w-4 sm:h-6 sm:w-6 text-[#14b8a6]" />
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-[#1a2332] border-[#10b981]/30">
-              <CardContent className="pt-6">
+              <CardContent className="p-3 sm:pt-6 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-[#e8fbff]/60">Liberi</p>
-                    <p className="text-2xl font-bold text-[#10b981]">{gisStalls.filter(s => s.status === 'libero').length}</p>
+                    <p className="text-xs sm:text-sm text-[#e8fbff]/60">Liberi</p>
+                    <p className="text-lg sm:text-2xl font-bold text-[#10b981]">{gisStalls.filter(s => s.status === 'libero').length}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-full bg-[#10b981]/20 flex items-center justify-center">
-                    <CheckCircle className="h-6 w-6 text-[#10b981]" />
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-[#10b981]/20 flex items-center justify-center">
+                    <CheckCircle className="h-4 w-4 sm:h-6 sm:w-6 text-[#10b981]" />
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-[#1a2332] border-[#ef4444]/30">
-              <CardContent className="pt-6">
+              <CardContent className="p-3 sm:pt-6 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-[#e8fbff]/60">Occupati</p>
-                    <p className="text-2xl font-bold text-[#ef4444]">{gisStalls.filter(s => s.status === 'occupato').length}</p>
+                    <p className="text-xs sm:text-sm text-[#e8fbff]/60">Occupati</p>
+                    <p className="text-lg sm:text-2xl font-bold text-[#ef4444]">{gisStalls.filter(s => s.status === 'occupato').length}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-full bg-[#ef4444]/20 flex items-center justify-center">
-                    <XCircle className="h-6 w-6 text-[#ef4444]" />
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-[#ef4444]/20 flex items-center justify-center">
+                    <XCircle className="h-4 w-4 sm:h-6 sm:w-6 text-[#ef4444]" />
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-[#1a2332] border-[#f59e0b]/30">
-              <CardContent className="pt-6">
+              <CardContent className="p-3 sm:pt-6 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-[#e8fbff]/60">Riservati</p>
-                    <p className="text-2xl font-bold text-[#f59e0b]">{gisStalls.filter(s => s.status === 'riservato').length}</p>
+                    <p className="text-xs sm:text-sm text-[#e8fbff]/60">Riservati</p>
+                    <p className="text-lg sm:text-2xl font-bold text-[#f59e0b]">{gisStalls.filter(s => s.status === 'riservato').length}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-full bg-[#f59e0b]/20 flex items-center justify-center">
-                    <AlertCircle className="h-6 w-6 text-[#f59e0b]" />
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-[#f59e0b]/20 flex items-center justify-center">
+                    <AlertCircle className="h-4 w-4 sm:h-6 sm:w-6 text-[#f59e0b]" />
                   </div>
                 </div>
               </CardContent>
@@ -942,31 +942,31 @@ export default function RoutePage() {
             </CardContent>
           </Card>
 
-          {/* Legenda - Nascosto su smartphone */}
-          <Card className="bg-[#1a2332] border-[#14b8a6]/30 hidden sm:block">
-            <CardHeader>
-              <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-base">
-                <Filter className="h-4 w-4 text-[#14b8a6]" />
-                Legenda Mappa
+          {/* Legenda - Compatto su smartphone */}
+          <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+            <CardHeader className="p-3 sm:p-6 pb-0 sm:pb-0">
+              <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-sm sm:text-base">
+                <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-[#14b8a6]" />
+                Legenda
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-[#a855f7]"></div>
-                  <span className="text-sm text-[#e8fbff]/80">HUB Market</span>
+            <CardContent className="p-3 sm:p-6 pt-2 sm:pt-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-[#a855f7]"></div>
+                  <span className="text-xs sm:text-sm text-[#e8fbff]/80">HUB</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-[#14b8a6]"></div>
-                  <span className="text-sm text-[#e8fbff]/80">Mercato Rionale</span>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-[#14b8a6]"></div>
+                  <span className="text-xs sm:text-sm text-[#e8fbff]/80">Mercato</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[#3b82f6]"></div>
-                  <span className="text-sm text-[#e8fbff]/80">Fermata Bus</span>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-[#3b82f6]"></div>
+                  <span className="text-xs sm:text-sm text-[#e8fbff]/80">Bus</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-[#ef4444]"></div>
-                  <span className="text-sm text-[#e8fbff]/80">Stazione Treni</span>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-[#ef4444]"></div>
+                  <span className="text-xs sm:text-sm text-[#e8fbff]/80">Treno</span>
                 </div>
               </div>
             </CardContent>
