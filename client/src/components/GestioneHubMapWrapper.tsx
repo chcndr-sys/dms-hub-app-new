@@ -735,93 +735,7 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
   return (
     <div className="space-y-2 sm:space-y-3 p-0 sm:p-4">
       
-      {/* OVERLAY MAPPA FULLSCREEN MOBILE - tipo YouTube */}
-      {showMobileMap && isMobile && (
-        <div className="fixed inset-0 z-[9999] bg-[#0b1220] flex flex-col">
-          {/* Header overlay con freccia indietro e nome */}
-          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488]">
-            <button 
-              onClick={() => {
-                setShowMobileMap(false);
-                setMobileMapZoomed(true);
-              }}
-              className="flex items-center gap-2 text-white"
-            >
-              <ArrowLeft className="h-6 w-6" />
-              <span className="text-base font-medium">Indietro</span>
-            </button>
-            <span className="text-base font-bold text-white truncate max-w-[180px]">
-              {selectedHub?.name || selectedMarket?.name || 'Mappa'}
-            </span>
-            <div className="w-20"></div>
-          </div>
-          
-          {/* Mappa fullscreen - USA LA STESSA MAPPA GIA' ESISTENTE tramite CSS */}
-          <div className="flex-1 relative">
-            <HubMarketMapComponent
-              mode={mode}
-              mapData={mapData || undefined}
-              stallsData={stallsData}
-              allMarkets={mode === 'mercato' ? filteredMarkets : []}
-              allHubs={mode === 'hub' ? filteredHubs : []}
-              selectedHub={mode === 'hub' ? selectedHub || undefined : undefined}
-              onMarketClick={handleMarketClick}
-              onHubClick={handleHubClick}
-              onShopClick={handleShopClick}
-              showItalyView={!mobileMapZoomed}
-              viewTrigger={viewTrigger}
-              height="100%"
-              marketCenterFixed={mobileMapZoomed && selectedMarket && selectedMarket.latitude && selectedMarket.longitude ? [
-                parseFloat(String(selectedMarket.latitude)) || 42.5,
-                parseFloat(String(selectedMarket.longitude)) || 12.5
-              ] : undefined}
-              hubCenterFixed={mobileMapZoomed && selectedHub ? (
-                selectedHub.center_lat && selectedHub.center_lng ? [
-                  parseFloat(String(selectedHub.center_lat)) || 42.5,
-                  parseFloat(String(selectedHub.center_lng)) || 12.5
-                ] : selectedHub.lat && selectedHub.lng ? [
-                  parseFloat(String(selectedHub.lat)) || 42.5,
-                  parseFloat(String(selectedHub.lng)) || 12.5
-                ] : undefined
-              ) : undefined}
-              customZoom={mobileMapZoomed ? 15 : 6}
-              routeConfig={routeConfig}
-              navigationMode={navigationMode}
-            />
-            
-            {/* Tab galleggianti Apri/Chiudi */}
-            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-3 z-[10000]">
-              <button
-                onClick={() => {
-                  setMobileMapZoomed(true);
-                  setViewTrigger(prev => prev + 1);
-                }}
-                className={`px-6 py-3 rounded-full font-bold text-sm shadow-lg transition-all ${
-                  mobileMapZoomed 
-                    ? 'bg-[#14b8a6] text-white' 
-                    : 'bg-white/90 text-[#0b1220] hover:bg-white'
-                }`}
-              >
-                🔍 Apri
-              </button>
-              <button
-                onClick={() => {
-                  setMobileMapZoomed(false);
-                  setShowItalyView(true);
-                  setViewTrigger(prev => prev + 1);
-                }}
-                className={`px-6 py-3 rounded-full font-bold text-sm shadow-lg transition-all ${
-                  !mobileMapZoomed 
-                    ? 'bg-[#14b8a6] text-white' 
-                    : 'bg-white/90 text-[#0b1220] hover:bg-white'
-                }`}
-              >
-                🇮🇹 Chiudi
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
       
       {/* Header unico con Titolo + Indicatori nella stessa barra */}
       <div className="flex flex-nowrap items-center gap-1.5 sm:gap-4 bg-[#0b1220] sm:rounded-lg px-2 py-2 sm:p-4 sm:border border-[#14b8a6]/30">
@@ -1166,7 +1080,95 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
         })}
       </div>
 
-      {/* Mappa - nascosta su mobile, visibile solo desktop */}
+      {/* MAPPA MOBILE FULLSCREEN - montata SOLO quando showMobileMap=true */}
+      {showMobileMap && isMobile && (
+        <div className="fixed inset-0 z-[9999] bg-[#0b1220] flex flex-col">
+          {/* Header overlay mobile */}
+          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] flex-shrink-0">
+            <button 
+              onClick={() => {
+                setShowMobileMap(false);
+                setMobileMapZoomed(true);
+              }}
+              className="flex items-center gap-2 text-white"
+            >
+              <ArrowLeft className="h-6 w-6" />
+              <span className="text-base font-medium">Indietro</span>
+            </button>
+            <span className="text-base font-bold text-white truncate max-w-[180px]">
+              {selectedHub?.name || selectedMarket?.name || 'Mappa'}
+            </span>
+            <div className="w-20"></div>
+          </div>
+          
+          {/* Container mappa fullscreen */}
+          <div className="flex-1 relative">
+            <HubMarketMapComponent
+              mode={mode}
+              mapData={mapData || undefined}
+              stallsData={stallsData}
+              allMarkets={mode === 'mercato' ? filteredMarkets : []}
+              allHubs={mode === 'hub' ? filteredHubs : []}
+              selectedHub={mode === 'hub' ? selectedHub || undefined : undefined}
+              onMarketClick={(id) => { handleMarketClick(id); }}
+              onHubClick={(id) => { handleHubClick(id); }}
+              onShopClick={handleShopClick}
+              showItalyView={!mobileMapZoomed}
+              viewTrigger={viewTrigger}
+              height="100%"
+              marketCenterFixed={selectedMarket && selectedMarket.latitude && selectedMarket.longitude ? [
+                parseFloat(String(selectedMarket.latitude)) || 42.5,
+                parseFloat(String(selectedMarket.longitude)) || 12.5
+              ] : undefined}
+              hubCenterFixed={selectedHub ? (
+                selectedHub.center_lat && selectedHub.center_lng ? [
+                  parseFloat(String(selectedHub.center_lat)) || 42.5,
+                  parseFloat(String(selectedHub.center_lng)) || 12.5
+                ] : selectedHub.lat && selectedHub.lng ? [
+                  parseFloat(String(selectedHub.lat)) || 42.5,
+                  parseFloat(String(selectedHub.lng)) || 12.5
+                ] : undefined
+              ) : undefined}
+              customZoom={mobileMapZoomed ? 15 : 6}
+              routeConfig={routeConfig}
+              navigationMode={navigationMode}
+            />
+            
+            {/* Tab galleggianti Apri/Italia */}
+            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-3 z-[10001]">
+              <button
+                onClick={() => {
+                  setMobileMapZoomed(true);
+                  setViewTrigger(prev => prev + 1);
+                }}
+                className={`px-6 py-3 rounded-full font-bold text-sm shadow-lg transition-all ${
+                  mobileMapZoomed 
+                    ? 'bg-[#14b8a6] text-white' 
+                    : 'bg-white/90 text-[#0b1220] hover:bg-white'
+                }`}
+              >
+                🔍 Apri
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMapZoomed(false);
+                  setShowItalyView(true);
+                  setViewTrigger(prev => prev + 1);
+                }}
+                className={`px-6 py-3 rounded-full font-bold text-sm shadow-lg transition-all ${
+                  !mobileMapZoomed 
+                    ? 'bg-[#14b8a6] text-white' 
+                    : 'bg-white/90 text-[#0b1220] hover:bg-white'
+                }`}
+              >
+                🇮🇹 Italia
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MAPPA DESKTOP - sempre visibile su desktop, nascosta su mobile */}
       <div className="hidden sm:block h-[calc(100vh-320px)] min-h-[500px] rounded-lg overflow-hidden border border-[#14b8a6]/30">
         <MapWithTransportLayer
           referencePoint={(() => {
