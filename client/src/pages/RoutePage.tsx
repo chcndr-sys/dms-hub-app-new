@@ -19,6 +19,7 @@ import { useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { MarketMapComponent } from '@/components/MarketMapComponent';
 import GestioneHubMapWrapper from '@/components/GestioneHubMapWrapper';
+import { NavigationMode } from '@/components/NavigationMode';
 
 interface RouteStop {
   name: string;
@@ -62,10 +63,9 @@ export default function RoutePage() {
     mode: 'walking' | 'cycling' | 'driving';
   } | undefined>(undefined);
   
-  // State rimossi - navigazione gestita da app native
-  // const [navigationActive, setNavigationActive] = useState(false);
-  // const [directions, setDirections] = useState<any>(null);
-  // const [currentStep, setCurrentStep] = useState(0);
+  // State per navigazione turn-by-turn sulla mappa GIS
+  const [navigationActive, setNavigationActive] = useState(false);
+  const [destinationName, setDestinationName] = useState('');
   
   // const mobilityData = trpc.mobility.list.useQuery(); // Rimosso - non più utilizzato
 
@@ -370,36 +370,23 @@ export default function RoutePage() {
       return;
     }
     
-    const { destination, userLocation: startLocation } = routeConfig;
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    // Estrai nome destinazione dall'input
+    const destName = destination.split('(')[0].trim() || 'Destinazione';
+    setDestinationName(destName);
     
-    // Mappa modalità per navigazione
-    const modeMap: Record<string, string> = {
-      walk: 'walking',
-      bike: 'bicycling',
-      transit: 'transit',
-      car: 'driving'
-    };
-    const navMode = modeMap[mode] || 'walking';
-    
-    let url: string;
-    
-    if (isIOS) {
-      // Apple Maps deep link
-      const dirflg = navMode === 'walking' ? 'w' : navMode === 'driving' ? 'd' : 'r';
-      url = `maps://maps.apple.com/?saddr=${startLocation.lat},${startLocation.lng}&daddr=${destination.lat},${destination.lng}&dirflg=${dirflg}`;
-    } else {
-      // Google Maps deep link (funziona su Android e web)
-      url = `https://www.google.com/maps/dir/?api=1&origin=${startLocation.lat},${startLocation.lng}&destination=${destination.lat},${destination.lng}&travelmode=${navMode}`;
-    }
-    
-    // Apri navigazione esterna
-    window.open(url, '_blank');
+    // Attiva navigazione turn-by-turn sulla mappa GIS
+    setNavigationActive(true);
     
     // Toast con crediti guadagnati
-    toast.success(`🧭 Navigazione avviata! +${plan.creditsEarned} crediti al completamento`, {
+    toast.success(`🧭 Navigazione avviata sulla mappa! +${plan.creditsEarned} crediti al completamento`, {
       duration: 5000
     });
+  };
+  
+  // Chiudi navigazione
+  const handleCloseNavigation = () => {
+    setNavigationActive(false);
+    toast.info('Navigazione terminata');
   };
 
   return (
@@ -900,7 +887,14 @@ export default function RoutePage() {
             </CardHeader>
             <CardContent>
               <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20">
-                <GestioneHubMapWrapper routeConfig={routeConfig} />
+                <GestioneHubMapWrapper 
+                  routeConfig={routeConfig} 
+                  navigationMode={{
+                    active: navigationActive,
+                    destinationName: destinationName,
+                    onClose: handleCloseNavigation
+                  }}
+                />
               </div>
             </CardContent>
           </Card>

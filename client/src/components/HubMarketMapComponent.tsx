@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polygon, LayersControl, Tooltip
 import { Link } from 'wouter';
 import { ZoomFontUpdater } from './ZoomFontUpdater';
 import { RouteLayer } from './RouteLayer';
+import { NavigationMode } from './NavigationMode';
 import { getStallMapFillColor, getStallStatusLabel } from '@/lib/stallStatus';
 import { calculatePolygonDimensions } from '@/lib/geodesic';
 import { useMapAnimation } from '@/hooks/useMapAnimation';
@@ -140,6 +141,13 @@ interface HubMarketMapComponentProps {
   // ============ PROPS PER TRASPORTI ============
   selectedStopCenter?: [number, number]; // Centro fermata trasporto selezionata
   selectedStopName?: string; // Nome fermata selezionata
+  
+  // ============ PROPS PER NAVIGAZIONE TURN-BY-TURN ============
+  navigationMode?: {
+    active: boolean;
+    destinationName: string;
+    onClose: () => void;
+  };
 }
 
 // Controller per centrare la mappa programmaticamente
@@ -227,7 +235,8 @@ export function HubMarketMapComponent({
   onHubClick,
   onShopClick,
   hubCenterFixed,
-  customZoom
+  customZoom,
+  navigationMode
 }: HubMarketMapComponentProps) {
   
   // Ottieni lo stato di animazione dal context per nascondere poligoni durante zoom
@@ -454,11 +463,21 @@ export function HubMarketMapComponent({
           <StallCenterController stallCenter={selectedStallCenter} />
           
           {/* Routing layer (opzionale) */}
-          {routeConfig?.enabled && (
+          {routeConfig?.enabled && !navigationMode?.active && (
             <RouteLayer
               userLocation={routeConfig.userLocation}
               destination={routeConfig.destination}
               mode={routeConfig.mode}
+            />
+          )}
+          
+          {/* Navigazione turn-by-turn */}
+          {navigationMode?.active && routeConfig && (
+            <NavigationMode
+              destination={routeConfig.destination}
+              destinationName={navigationMode.destinationName}
+              mode={routeConfig.mode}
+              onClose={navigationMode.onClose}
             />
           )}
 

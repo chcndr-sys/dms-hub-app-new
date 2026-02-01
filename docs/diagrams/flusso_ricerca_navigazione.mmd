@@ -1,0 +1,47 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#3b82f6', 'primaryTextColor': '#fff', 'primaryBorderColor': '#1e40af', 'lineColor': '#64748b', 'secondaryColor': '#10b981', 'tertiaryColor': '#f59e0b'}}}%%
+
+flowchart TD
+    subgraph APP_PUBBLICA["📱 App Pubblica MioHub"]
+        A[🏠 HomePage<br/>Barra Ricerca] -->|"Digita 'calzature'"| B[🔍 API Search<br/>api.mio-hub.me/api/public/search]
+        B -->|Risultati| C{Tipo Risultato?}
+        
+        C -->|impresa/negozio| D[📋 VetrinePage<br/>/vetrine/:id]
+        C -->|mercato| E[🗺️ MapPage<br/>/mappa]
+        C -->|hub| D
+        
+        D -->|"Tab 'Come Arrivare'"| F[🧭 RoutePage<br/>/route]
+        
+        F -->|Auto-GPS| G[📍 Geolocalizzazione<br/>Automatica]
+        G -->|Permesso OK| H[✅ Coordinate<br/>Auto-compilate]
+        G -->|Permesso NO| I[⚠️ Richiesta<br/>Manuale]
+        
+        H --> J[🔢 Calcola Percorso<br/>API Routing]
+        I --> J
+        
+        J -->|Risposta| K[🗺️ Mappa GIS<br/>con Route]
+        
+        K -->|"Avvia Navigazione"| L{📱 Piattaforma?}
+        
+        L -->|iOS| M[🍎 Apple Maps]
+        L -->|Android| N[🤖 Google Maps]
+        L -->|Desktop| O[🌐 Google Maps Web]
+    end
+    
+    subgraph BACKEND["⚙️ Backend API"]
+        B2[GET /api/public/search]
+        B3[POST /api/routing/calculate]
+        B4[GET /api/hub/shops]
+        B5[GET /api/markets/:id/stalls]
+    end
+    
+    B -.-> B2
+    J -.-> B3
+    D -.->|"Recupera coordinate"| B4
+    D -.->|"Fallback posteggio"| B5
+    
+    style A fill:#3b82f6,stroke:#1e40af,color:#fff
+    style D fill:#10b981,stroke:#059669,color:#fff
+    style F fill:#f59e0b,stroke:#d97706,color:#fff
+    style K fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style M fill:#000,stroke:#333,color:#fff
+    style N fill:#34a853,stroke:#1e8e3e,color:#fff

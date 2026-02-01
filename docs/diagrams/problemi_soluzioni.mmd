@@ -1,0 +1,36 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#ef4444', 'primaryTextColor': '#fff', 'secondaryColor': '#22c55e'}}}%%
+
+flowchart LR
+    subgraph PROBLEMI["❌ PROBLEMI ATTUALI"]
+        P1[🔴 P1: Click ricerca<br/>porta a Dashboard PA]
+        P2[🔴 P2: Coordinate<br/>imprese = 0,0]
+        P3[🔴 P3: GPS richiede<br/>click manuale]
+        P4[🔴 P4: Navigazione<br/>non apre app GPS]
+        P5[🔴 P5: Freccia indietro<br/>non torna a ricerca]
+    end
+    
+    subgraph SOLUZIONI["✅ SOLUZIONI PROPOSTE"]
+        S1[🟢 S1: Modificare<br/>handleResultClick<br/>→ /vetrine/:id]
+        S2[🟢 S2: Recuperare coord<br/>da negozio HUB<br/>o posteggio]
+        S3[🟢 S3: useEffect<br/>auto-geolocation<br/>all'apertura]
+        S4[🟢 S4: Deep link<br/>Google/Apple Maps]
+        S5[🟢 S5: Parametro URL<br/>from=search&q=...]
+    end
+    
+    P1 --> S1
+    P2 --> S2
+    P3 --> S3
+    P4 --> S4
+    P5 --> S5
+    
+    style P1 fill:#ef4444,stroke:#dc2626,color:#fff
+    style P2 fill:#ef4444,stroke:#dc2626,color:#fff
+    style P3 fill:#ef4444,stroke:#dc2626,color:#fff
+    style P4 fill:#ef4444,stroke:#dc2626,color:#fff
+    style P5 fill:#ef4444,stroke:#dc2626,color:#fff
+    
+    style S1 fill:#22c55e,stroke:#16a34a,color:#fff
+    style S2 fill:#22c55e,stroke:#16a34a,color:#fff
+    style S3 fill:#22c55e,stroke:#16a34a,color:#fff
+    style S4 fill:#22c55e,stroke:#16a34a,color:#fff
+    style S5 fill:#22c55e,stroke:#16a34a,color:#fff

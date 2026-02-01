@@ -1,0 +1,74 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#6366f1'}}}%%
+
+flowchart TB
+    subgraph FRONTEND["Frontend React"]
+        subgraph PAGES["Pagine"]
+            HP[HomePage.tsx - Ricerca]
+            VP[VetrinePage.tsx - Vetrina Impresa]
+            RP[RoutePage.tsx - Calcolo Percorso]
+            MP[MapPage.tsx - Mappa]
+        end
+        
+        subgraph COMPONENTS["Componenti"]
+            GHM[GestioneHubMapWrapper - NON MODIFICARE]
+            HMM[HubMarketMapComponent - Mappa Leaflet]
+            RL[RouteLayer - Percorso OSRM]
+            NSP[NearbyStopsPanel - Fermate TPL]
+        end
+        
+        subgraph UTILS["Utilities"]
+            API[api.ts - geoAPI.search]
+            NAV[navigation.ts - NUOVO launchNavigation]
+        end
+    end
+    
+    subgraph BACKEND["Backend Hetzner"]
+        subgraph ENDPOINTS["API Endpoints"]
+            E1[GET /api/public/search]
+            E2[POST /api/routing/calculate]
+            E3[GET /api/hub/shops]
+            E4[GET /api/markets/:id/stalls]
+            E5[GET /api/imprese/:id]
+        end
+    end
+    
+    subgraph DATABASE["Neon PostgreSQL"]
+        T1[(imprese)]
+        T2[(hub_shops)]
+        T3[(stalls)]
+        T4[(markets)]
+    end
+    
+    subgraph EXTERNAL["Servizi Esterni"]
+        OSRM[OSRM Routing]
+        GM[Google Maps Navigazione]
+        AM[Apple Maps Navigazione]
+    end
+    
+    HP --> API
+    API --> E1
+    VP --> E5
+    VP --> E3
+    VP --> E4
+    RP --> E2
+    
+    E1 --> T1
+    E3 --> T2
+    E4 --> T3
+    E5 --> T1
+    
+    E2 --> OSRM
+    
+    RP --> NAV
+    NAV --> GM
+    NAV --> AM
+    
+    RP --> GHM
+    GHM --> HMM
+    HMM --> RL
+    
+    style HP fill:#3b82f6,stroke:#1e40af,color:#fff
+    style VP fill:#10b981,stroke:#059669,color:#fff
+    style RP fill:#f59e0b,stroke:#d97706,color:#fff
+    style GHM fill:#ef4444,stroke:#dc2626,color:#fff
+    style NAV fill:#8b5cf6,stroke:#7c3aed,color:#fff

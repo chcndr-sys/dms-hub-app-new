@@ -1,0 +1,53 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#3b82f6', 'primaryTextColor': '#fff', 'secondaryColor': '#10b981', 'tertiaryColor': '#f59e0b'}}}%%
+
+flowchart TD
+    subgraph RICERCA["1. RICERCA"]
+        A[HomePage - Barra Ricerca] -->|query| B[API /api/public/search]
+        B -->|risultati| C{Tipo?}
+    end
+    
+    subgraph NAVIGAZIONE_VETRINA["2. NAVIGAZIONE A VETRINA"]
+        C -->|impresa/negozio| D["/vetrine/:id<br/>MODIFICA: non /mappa"]
+        C -->|mercato/hub| E[Dashboard PA - Mappa GIS]
+    end
+    
+    subgraph VETRINA["3. VETRINA"]
+        D --> F[VetrinePage]
+        F -->|"Come Arrivare<br/>GIA FUNZIONANTE"| G[handleNavigate]
+        G -->|cerca HUB shop| H[API /api/hub/shops]
+        G -->|cerca posteggio| I[API /api/markets/1/stalls]
+        H --> J{Coordinate?}
+        I --> J
+        J -->|SI| K["/route?destLat=...&destLng=..."]
+    end
+    
+    subgraph ROUTE["4. ROUTE ETICO"]
+        K --> L[RoutePage]
+        L -->|"MODIFICA:<br/>Auto-GPS"| M[Geolocalizzazione]
+        M --> N[Calcola Percorso]
+        N -->|"MODIFICA:<br/>setRouteConfig"| O[routeConfig state]
+    end
+    
+    subgraph MAPPA["5. MAPPA GIS"]
+        O -->|"MODIFICA:<br/>passa props"| P[GestioneHubMapWrapper]
+        P -->|routeConfig| Q[MapWithTransportLayer]
+        Q -->|routeConfig| R[HubMarketMapComponent]
+        R -->|routeConfig.enabled| S[RouteLayer - OSRM]
+        S --> T[Percorso su Mappa]
+    end
+    
+    subgraph NAVIGAZIONE_GPS["6. NAVIGAZIONE GPS"]
+        T -->|"Avvia Navigazione<br/>MODIFICA: deep link"| U{Piattaforma?}
+        U -->|iOS| V[Apple Maps]
+        U -->|Android| W[Google Maps]
+    end
+    
+    style D fill:#ef4444,stroke:#dc2626,color:#fff
+    style M fill:#ef4444,stroke:#dc2626,color:#fff
+    style O fill:#ef4444,stroke:#dc2626,color:#fff
+    style P fill:#ef4444,stroke:#dc2626,color:#fff
+    style U fill:#ef4444,stroke:#dc2626,color:#fff
+    
+    style G fill:#10b981,stroke:#059669,color:#fff
+    style S fill:#10b981,stroke:#059669,color:#fff
+    style T fill:#10b981,stroke:#059669,color:#fff
