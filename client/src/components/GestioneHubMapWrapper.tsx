@@ -152,6 +152,8 @@ const StatIndicator = ({
 };
 
 export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: GestioneHubMapWrapperProps = {}) {
+  console.log('[DEBUG GestioneHubMapWrapper] routeConfig ricevuto:', routeConfig);
+  console.log('[DEBUG GestioneHubMapWrapper] navigationMode ricevuto:', navigationMode);
   // Stati
   const [mode, setMode] = useState<'mercato' | 'hub'>('hub');
   const [loading, setLoading] = useState(true);
