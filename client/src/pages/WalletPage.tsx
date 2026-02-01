@@ -690,14 +690,14 @@ export default function WalletPage() {
 
   return (
     <div className="h-screen sm:min-h-screen bg-background pb-0 sm:pb-20 overflow-hidden sm:overflow-auto">
-      {/* Header - Mobile: senza freccia, PC/Tablet: con freccia - v3.75.1 */}
+      {/* Header - v3.75.2: freccia visibile sempre, logout solo PC/Tablet */}
       <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-3 sm:p-4 shadow-lg">
         <div className="w-full px-3 sm:px-4 md:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Freccia indietro - SOLO PC/Tablet (hidden su mobile) */}
+            {/* Freccia indietro - visibile SEMPRE (mobile + PC/Tablet) */}
             <a
               href="/"
-              className="hidden sm:flex p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -806,13 +806,13 @@ export default function WalletPage() {
               </CardContent>
             </Card>
 
-            {/* 2 Tab in basso per mobile: Paga e Storico - stile Home elegante trasparente v3.75.0 */}
+            {/* 2 Tab in basso per mobile: Paga e Storico - v3.75.2: completamente trasparenti, solo bordo */}
             <div className="grid grid-cols-2 gap-4 p-4 mt-auto sm:hidden">
-              <a href="/wallet/paga" className="flex flex-col items-center justify-center gap-3 py-6 rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm hover:bg-card/70 transition-all">
+              <a href="/wallet/paga" className="flex flex-col items-center justify-center gap-3 py-6 rounded-xl border border-border/50 bg-transparent hover:bg-white/5 transition-all">
                 <Euro className="h-7 w-7 text-foreground/80" />
                 <span className="text-base font-semibold text-foreground">Paga</span>
               </a>
-              <a href="/wallet/storico" className="flex flex-col items-center justify-center gap-3 py-6 rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm hover:bg-card/70 transition-all">
+              <a href="/wallet/storico" className="flex flex-col items-center justify-center gap-3 py-6 rounded-xl border border-border/50 bg-transparent hover:bg-white/5 transition-all">
                 <History className="h-7 w-7 text-foreground/80" />
                 <span className="text-base font-semibold text-foreground">Storico</span>
               </a>
