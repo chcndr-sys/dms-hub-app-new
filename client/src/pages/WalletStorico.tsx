@@ -169,79 +169,64 @@ export default function WalletStorico() {
 
       {/* Statistiche - Due colonne affiancate */}
       <div className="shrink-0 p-3 sm:p-4 grid grid-cols-2 gap-2 sm:gap-3">
-        {/* Colonna 1: Ultima Transazione (verde sfumato bello) */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-600/30 via-green-500/25 to-teal-600/20">
-          <CardContent className="p-3 sm:p-4">
+        {/* Colonna 1: Ultima Transazione - VERDE VIVIDO */}
+        <Card className="border-0 shadow-xl overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)' }}>
+          <CardContent className="p-3 sm:p-4 relative z-10">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 via-green-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center shadow-lg">
                 <Leaf className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xs text-muted-foreground">Ultima Transazione</span>
+              <span className="text-xs text-white/80 font-medium">Impatto</span>
             </div>
             <div className="space-y-1">
               <div>
-                <p className="text-2xl sm:text-3xl font-bold text-emerald-400">{lastTCC}</p>
-                <p className="text-sm font-medium text-emerald-500">kg CO₂</p>
+                <p className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg">{(totalTCC * 0.022).toFixed(3)}</p>
+                <p className="text-sm font-semibold text-white/90">kg CO₂ totale</p>
               </div>
-              <div className="pt-2 border-t border-emerald-400/30">
-                <p className="text-sm text-emerald-400 font-medium flex items-center gap-1">🌳 ≈ {lastTrees} alberi</p>
-                {lastTx && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {lastTx.type === 'earn' ? '↑ Accredito' : '↓ Pagamento'} • {formatDateTime(lastTx.created_at).date}
-                  </p>
-                )}
+              <div className="pt-2 border-t border-white/20">
+                <p className="text-base text-white font-bold flex items-center gap-1">🌳 {totalTrees} alberi equiv.</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Colonna 2: Score / Livello (barra che si riempie come bicchiere) */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-700/50 via-slate-600/40 to-slate-700/50">
-          <CardContent className="p-3 sm:p-4">
+        {/* Colonna 2: Score - INDICATORE CHE SI RIEMPIE */}
+        <Card 
+          className="border-0 shadow-xl overflow-hidden relative"
+          style={{ 
+            background: progressPercent >= 100
+              ? 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)'
+              : `linear-gradient(to top, 
+                  #dc2626 0%, 
+                  #ea580c ${Math.max(0, progressPercent * 0.3)}%, 
+                  #f59e0b ${Math.max(0, progressPercent * 0.6)}%, 
+                  #84cc16 ${Math.max(0, progressPercent * 0.85)}%, 
+                  #22c55e ${progressPercent}%, 
+                  #1e293b ${progressPercent}%, 
+                  #1e293b 100%)`
+          }}
+        >
+          <CardContent className="p-3 sm:p-4 relative z-10">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center shadow-lg">
                 <Trophy className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xs text-muted-foreground">Il Tuo Score</span>
+              <span className="text-xs text-white/80 font-medium">Trend</span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div>
-                <p className="text-lg sm:text-xl font-bold bg-gradient-to-r from-amber-400 via-yellow-400 to-green-400 bg-clip-text text-transparent">{currentLevel.name}</p>
-                <p className="text-xs text-slate-400">{totalTCC.toLocaleString('it-IT')} TCC totali</p>
+                <p className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg">
+                  {lastTx ? Math.abs(lastTx.amount) : 0} kg
+                </p>
+                <p className="text-sm font-semibold text-white/90">ultima op.</p>
               </div>
-              
-              {/* Barra di progresso - effetto bicchiere che si riempie */}
-              <div className="pt-2 border-t border-slate-500/30">
-                <div className="h-4 bg-slate-800/60 rounded-full overflow-hidden relative">
-                  {/* Sfondo sfumato da rosso a verde */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-orange-400 via-yellow-400 to-emerald-500 opacity-30" />
-                  {/* Barra di riempimento */}
-                  <div 
-                    className="h-full relative transition-all duration-700 ease-out"
-                    style={{ 
-                      width: `${progressPercent}%`,
-                      background: progressPercent >= 100 
-                        ? 'linear-gradient(90deg, #10b981, #34d399, #6ee7b7)' 
-                        : `linear-gradient(90deg, #ef4444 0%, #f97316 ${Math.min(30, progressPercent)}%, #eab308 ${Math.min(60, progressPercent)}%, #22c55e ${progressPercent}%)`
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-xs text-slate-500">{currentLevel.min}</span>
-                  <span className="text-xs font-medium" style={{ color: progressPercent >= 100 ? '#10b981' : '#f59e0b' }}>
-                    {currentLevel.max === Infinity ? '🏆 MAX' : `${currentLevel.max} TCC`}
-                  </span>
-                </div>
-                {currentLevel.max !== Infinity && (
-                  <p className="text-xs text-center text-slate-400 mt-1">
-                    Prossimo: <span className="text-emerald-400 font-medium">{nextLevel.name}</span>
-                  </p>
-                )}
-                {progressPercent >= 100 && (
-                  <p className="text-xs text-center text-emerald-400 font-bold mt-1 animate-pulse">
-                    🎉 Livello Completato!
-                  </p>
-                )}
+              <div className="pt-2 border-t border-white/20">
+                <p className={`text-sm font-bold ${lastTx?.type === 'earn' ? 'text-emerald-300' : 'text-orange-300'}`}>
+                  {lastTx?.type === 'earn' ? '↑ Accredito' : '↓ Pagamento'}
+                </p>
+                <p className="text-xs text-white/70">
+                  {lastTx ? formatDateTime(lastTx.created_at).date : '-'}
+                </p>
               </div>
             </div>
           </CardContent>
