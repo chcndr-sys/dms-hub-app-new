@@ -193,21 +193,31 @@ export default function WalletStorico() {
               >
                 <Leaf className="h-5 w-5 text-white drop-shadow-md" />
               </div>
-              <span className="text-xs text-emerald-200 font-semibold">Impatto</span>
+              <span className="text-xs text-emerald-200 font-semibold">Ultima Transazione</span>
             </div>
             <div className="space-y-1">
-              <div>
-                <p className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg">{(totalTCC * 0.022).toFixed(3)} kg</p>
-                <p className="text-sm font-semibold text-emerald-100">CO₂ totale</p>
-              </div>
-              <div className="pt-2 border-t border-emerald-400/30">
-                <p className="text-lg text-white font-bold flex items-center gap-1">🌳 {totalTrees} alberi equiv.</p>
-                {lastTx && (
-                  <p className="text-xs text-emerald-200 mt-1">
-                    Ultima: <span className="font-bold text-white">{lastTx.type === 'earn' ? '+' : '-'}{Math.abs(lastTx.amount)} TCC</span>
-                  </p>
-                )}
-              </div>
+              {lastTx ? (
+                <>
+                  <div>
+                    <p className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg">
+                      €{lastTx.euro_value ? (lastTx.euro_value / 100).toFixed(2) : '0.00'}
+                    </p>
+                    <p className="text-lg font-bold" style={{ color: lastTx.type === 'earn' ? '#6ee7b7' : '#fca5a5' }}>
+                      {lastTx.type === 'earn' ? '+' : '-'}{Math.abs(lastTx.amount)} TCC
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-emerald-400/30">
+                    <p className="text-sm text-emerald-100">
+                      <span className="font-bold text-white">{(Math.abs(lastTx.amount) * 0.022).toFixed(1)}</span> kg CO₂
+                    </p>
+                    <p className="text-sm text-emerald-200 flex items-center gap-1">
+                      🌳 <span className="font-bold text-white">{(Math.abs(lastTx.amount) / 22).toFixed(1)}</span> alberi
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-emerald-200">Nessuna transazione</p>
+              )}
             </div>
           </CardContent>
         </Card>
