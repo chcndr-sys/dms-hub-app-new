@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useMap, Marker, Polyline } from 'react-leaflet';
+import { createPortal } from 'react-dom';
 import L from 'leaflet';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -27,6 +28,8 @@ interface NavigationInstruction {
  * - Istruzioni di navigazione
  * - Percorso tracciato
  * - Ricalcolo automatico se fuori percorso
+ * 
+ * v2.0 - Overlay renderizzato FUORI dalla mappa tramite Portal
  */
 export function NavigationMode({ 
   destination, 
@@ -48,6 +51,35 @@ export function NavigationMode({
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [arrived, setArrived] = useState(false);
   const watchIdRef = useRef<number | null>(null);
+  
+  // Ref per il container dell'overlay (fuori dalla mappa)
+  const [overlayContainer, setOverlayContainer] = useState<HTMLElement | null>(null);
+
+  // Trova il container per l'overlay (sopra i controlli mappa)
+  useEffect(() => {
+    // Cerca il container della mappa nel DOM
+    const mapContainer = document.getElementById('map-container');
+    if (mapContainer) {
+      // Cerca o crea il container per l'overlay navigazione
+      let overlay = document.getElementById('navigation-overlay-container');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'navigation-overlay-container';
+        overlay.className = 'relative z-[9999]';
+        // Inserisci PRIMA del map-container (sopra i controlli)
+        mapContainer.parentNode?.insertBefore(overlay, mapContainer);
+      }
+      setOverlayContainer(overlay);
+    }
+    
+    return () => {
+      // Cleanup: rimuovi il container quando il componente smonta
+      const overlay = document.getElementById('navigation-overlay-container');
+      if (overlay) {
+        overlay.remove();
+      }
+    };
+  }, []);
 
   // Icona utente con direzione
   const userIcon = L.divIcon({
@@ -321,6 +353,115 @@ export function NavigationMode({
     return `${hours}h ${remainMins}min`;
   };
 
+  // Componente UI Overlay (renderizzato tramite Portal)
+  const NavigationOverlayUI = () => (
+    <div className="mb-2 px-1 sm:px-0">
+      <Card className="bg-slate-900/95 backdrop-blur-md border-slate-700 p-3 sm:p-4">
+        {/* Header con destinazione e controlli */}
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <div className="flex items-center gap-2">
+            <Navigation className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" />
+            <span className="text-white font-medium truncate max-w-[150px] sm:max-w-[200px] text-sm sm:text-base">
+              {destinationName}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 sm:h-8 sm:w-8 text-slate-400 hover:text-white"
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+            >
+              {voiceEnabled ? <Volume2 className="h-3 w-3 sm:h-4 sm:w-4" /> : <VolumeX className="h-3 w-3 sm:h-4 sm:w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 sm:h-8 sm:w-8 text-slate-400 hover:text-white"
+              onClick={onClose}
+            >
+              <X className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Istruzione corrente */}
+        {arrived ? (
+          <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-lg p-3 sm:p-4 text-center">
+            <span className="text-xl sm:text-2xl">🎉</span>
+            <p className="text-emerald-400 font-bold text-base sm:text-lg mt-2">Sei arrivato!</p>
+            <p className="text-slate-400 text-xs sm:text-sm">{destinationName}</p>
+          </div>
+        ) : gpsError ? (
+          <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-2 sm:p-3">
+            <p className="text-red-400 text-sm">❌ {gpsError}</p>
+            <p className="text-slate-400 text-xs mt-1">Verifica le impostazioni GPS del dispositivo</p>
+          </div>
+        ) : gpsLoading ? (
+          <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-2 sm:p-3">
+            <div className="flex items-center gap-2">
+              <div className="animate-spin h-4 w-4 sm:h-5 sm:w-5 border-2 border-blue-400 border-t-transparent rounded-full"></div>
+              <p className="text-blue-400 text-sm">Acquisizione posizione GPS...</p>
+            </div>
+            <p className="text-slate-400 text-xs mt-1">Assicurati che il GPS sia attivo</p>
+          </div>
+        ) : instructions[currentStep] ? (
+          <div className="bg-slate-800/50 rounded-lg p-2 sm:p-3">
+            <p className="text-white text-lg sm:text-xl font-bold">
+              🚀 {instructions[currentStep].text.includes('depart') || instructions[currentStep].type === 'depart' ? 'Parti' : instructions[currentStep].text}
+            </p>
+            {instructions[currentStep + 1] && (
+              <p className="text-slate-400 text-xs sm:text-sm mt-1">
+                Poi: {instructions[currentStep + 1].text}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="bg-slate-800/50 rounded-lg p-2 sm:p-3">
+            <p className="text-slate-400 text-sm">Calcolo percorso in corso...</p>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="flex items-center justify-between mt-2 sm:mt-3 text-xs sm:text-sm">
+          <div className="text-slate-400">
+            <span className="text-white font-bold">{formatDistance(distanceRemaining)}</span>
+            {' '}rimanenti
+          </div>
+          <div className="text-slate-400">
+            <span className="text-white font-bold">{formatTime(timeRemaining)}</span>
+            {' '}stimati
+          </div>
+        </div>
+
+        {/* Avviso fuori percorso */}
+        {isOffRoute && (
+          <div className="mt-2 sm:mt-3 bg-amber-500/20 border border-amber-500/30 rounded-lg p-2 sm:p-3 flex items-center justify-between">
+            <span className="text-amber-400 text-xs sm:text-sm">⚠️ Sei fuori percorso</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-amber-500 text-amber-400 hover:bg-amber-500/20 h-7 text-xs"
+              onClick={handleRecalculate}
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              Ricalcola
+            </Button>
+          </div>
+        )}
+      </Card>
+      
+      {/* Pulsante Termina Navigazione */}
+      <Button
+        className="w-full mt-2 bg-red-600 hover:bg-red-700 text-white h-10 sm:h-11"
+        onClick={onClose}
+      >
+        <X className="h-4 w-4 mr-2" />
+        Termina Navigazione
+      </Button>
+    </div>
+  );
+
   return (
     <>
       {/* Percorso sulla mappa */}
@@ -366,114 +507,8 @@ export function NavigationMode({
         })}
       />
 
-      {/* UI Navigazione overlay */}
-      <div className="absolute top-4 left-4 right-4 z-[1000] pointer-events-none">
-        <Card className="bg-slate-900/95 backdrop-blur-md border-slate-700 p-4 pointer-events-auto">
-          {/* Header con destinazione e controlli */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Navigation className="h-5 w-5 text-emerald-400" />
-              <span className="text-white font-medium truncate max-w-[200px]">
-                {destinationName}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-slate-400 hover:text-white"
-                onClick={() => setVoiceEnabled(!voiceEnabled)}
-              >
-                {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-slate-400 hover:text-white"
-                onClick={onClose}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Istruzione corrente */}
-          {arrived ? (
-            <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-lg p-4 text-center">
-              <span className="text-2xl">🎉</span>
-              <p className="text-emerald-400 font-bold text-lg mt-2">Sei arrivato!</p>
-              <p className="text-slate-400 text-sm">{destinationName}</p>
-            </div>
-          ) : gpsError ? (
-            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3">
-              <p className="text-red-400">❌ {gpsError}</p>
-              <p className="text-slate-400 text-sm mt-1">Verifica le impostazioni GPS del dispositivo</p>
-            </div>
-          ) : gpsLoading ? (
-            <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3">
-              <div className="flex items-center gap-2">
-                <div className="animate-spin h-5 w-5 border-2 border-blue-400 border-t-transparent rounded-full"></div>
-                <p className="text-blue-400">Acquisizione posizione GPS...</p>
-              </div>
-              <p className="text-slate-400 text-sm mt-1">Assicurati che il GPS sia attivo</p>
-            </div>
-          ) : instructions[currentStep] ? (
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <p className="text-white text-xl font-bold">
-                {instructions[currentStep].text}
-              </p>
-              {instructions[currentStep + 1] && (
-                <p className="text-slate-400 text-sm mt-1">
-                  Poi: {instructions[currentStep + 1].text}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="bg-slate-800/50 rounded-lg p-3">
-              <p className="text-slate-400">Calcolo percorso in corso...</p>
-            </div>
-          )}
-
-          {/* Stats */}
-          <div className="flex items-center justify-between mt-3 text-sm">
-            <div className="text-slate-400">
-              <span className="text-white font-bold">{formatDistance(distanceRemaining)}</span>
-              {' '}rimanenti
-            </div>
-            <div className="text-slate-400">
-              <span className="text-white font-bold">{formatTime(timeRemaining)}</span>
-              {' '}stimati
-            </div>
-          </div>
-
-          {/* Avviso fuori percorso */}
-          {isOffRoute && (
-            <div className="mt-3 bg-amber-500/20 border border-amber-500/30 rounded-lg p-3 flex items-center justify-between">
-              <span className="text-amber-400 text-sm">⚠️ Sei fuori percorso</span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-amber-500 text-amber-400 hover:bg-amber-500/20"
-                onClick={handleRecalculate}
-              >
-                <RotateCcw className="h-4 w-4 mr-1" />
-                Ricalcola
-              </Button>
-            </div>
-          )}
-        </Card>
-      </div>
-
-      {/* Pulsante chiudi navigazione in basso */}
-      <div className="absolute bottom-4 left-4 right-4 z-[1000] pointer-events-none">
-        <Button
-          className="w-full bg-red-600 hover:bg-red-700 text-white pointer-events-auto"
-          onClick={onClose}
-        >
-          <X className="h-4 w-4 mr-2" />
-          Termina Navigazione
-        </Button>
-      </div>
+      {/* UI Navigazione overlay - renderizzato FUORI dalla mappa tramite Portal */}
+      {overlayContainer && createPortal(<NavigationOverlayUI />, overlayContainer)}
     </>
   );
 }

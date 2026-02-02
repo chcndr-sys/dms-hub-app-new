@@ -13,6 +13,7 @@ interface RouteLayerProps {
 /**
  * Componente per aggiungere routing alla mappa
  * Usa Leaflet Routing Machine per calcolare e visualizzare il percorso
+ * NOTA: Pannello istruzioni nascosto - usiamo NavigationMode per UI custom
  */
 export function RouteLayer({ userLocation, destination, mode }: RouteLayerProps) {
   const map = useMap();
@@ -20,7 +21,7 @@ export function RouteLayer({ userLocation, destination, mode }: RouteLayerProps)
   useEffect(() => {
     if (!map || !userLocation || !destination) return;
 
-    // Crea routing control
+    // Crea routing control con pannello COMPLETAMENTE nascosto
     const routingControl = L.Routing.control({
       waypoints: [
         L.latLng(userLocation.lat, userLocation.lng),
@@ -43,9 +44,13 @@ export function RouteLayer({ userLocation, destination, mode }: RouteLayerProps)
       },
       showAlternatives: false,
       fitSelectedRoutes: true,
-      show: false, // Nascondi pannello istruzioni (usiamo UI custom)
+      show: false, // Nascondi pannello istruzioni
       addWaypoints: false,
       draggableWaypoints: false,
+      routeWhileDragging: false, // Disabilita routing durante drag
+      collapsible: false, // Non collassabile
+      // @ts-ignore - containerClassName non è tipizzato ma funziona
+      containerClassName: 'leaflet-routing-container-hidden', // Classe CSS per nascondere
       createMarker: (i: number, waypoint: any) => {
         // Marker personalizzati
         if (i === 0) {
@@ -97,6 +102,14 @@ export function RouteLayer({ userLocation, destination, mode }: RouteLayerProps)
         }
       }
     }).addTo(map);
+
+    // Nascondi completamente il container delle istruzioni dopo l'aggiunta
+    setTimeout(() => {
+      const containers = document.querySelectorAll('.leaflet-routing-container');
+      containers.forEach(container => {
+        (container as HTMLElement).style.display = 'none';
+      });
+    }, 100);
 
     // Cleanup quando component unmounts
     return () => {

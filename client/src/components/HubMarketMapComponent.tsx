@@ -275,7 +275,7 @@ export function HubMarketMapComponent({
       : mode === 'hub' && hubCenterFixed 
         ? 16 
         : mode === 'mercato' && marketCenterFixed
-          ? 19  // Zoom mercato (aumentato a 19)
+          ? 20  // Zoom mercato (aumentato a 20 per vedere numeri posteggi)
           : zoom;
   
   // Rimosso stato locale ridondante che causava loop
@@ -500,19 +500,19 @@ export function HubMarketMapComponent({
                   html: `<div style="
                     background: #ef4444;
                     color: white;
-                    width: 32px;
-                    height: 32px;
+                    width: 26px;
+                    height: 26px;
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 18px;
+                    font-size: 14px;
                     font-weight: bold;
                     box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                    border: 3px solid white;
+                    border: 2px solid white;
                   ">M</div>`,
-                  iconSize: [32, 32],
-                  iconAnchor: [16, 16],
+                  iconSize: [26, 26],
+                  iconAnchor: [13, 13],
                 })}
               >
                 <Popup>
@@ -547,20 +547,20 @@ export function HubMarketMapComponent({
                 html: `<div style="
                   background: #ef4444;
                   color: white;
-                  width: 32px;
-                  height: 32px;
+                  width: 26px;
+                  height: 26px;
                   border-radius: 50%;
                   display: flex;
                   align-items: center;
                   justify-content: center;
-                  font-size: 18px;
+                  font-size: 14px;
                   font-weight: bold;
                   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                  border: 3px solid white;
+                  border: 2px solid white;
                   cursor: pointer;
                 ">M</div>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16],
+                iconSize: [26, 26],
+                iconAnchor: [13, 13],
               })}
               eventHandlers={{
                 click: (e) => {
@@ -646,16 +646,16 @@ export function HubMarketMapComponent({
             // Determina dimensione in base al livello
             const getHubSize = (livello?: string) => {
               switch (livello) {
-                case 'capoluogo': return 32;
-                case 'provincia': return 28;
-                case 'comune': return 24;
-                default: return 32;
+                case 'capoluogo': return 26;
+                case 'provincia': return 22;
+                case 'comune': return 20;
+                default: return 26;
               }
             };
             
             const hubColor = getHubColor(hub.livello);
             const hubSize = getHubSize(hub.livello);
-            const fontSize = hub.livello === 'capoluogo' ? 18 : hub.livello === 'provincia' ? 16 : 14;
+            const fontSize = hub.livello === 'capoluogo' ? 14 : hub.livello === 'provincia' ? 12 : 11;
             
             // Contorno diverso per tipo: urbano = bianco, prossimità = viola scuro
             const isProssimita = hub.tipo === 'prossimita';
