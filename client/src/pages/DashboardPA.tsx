@@ -4384,7 +4384,7 @@ export default function DashboardPA() {
             {/* Pannello Segnalazioni Civiche con dati reali e config TCC */}
             <CivicReportsPanel />
             {/* Mappa Termica Segnalazioni */}
-            <CivicReportsHeatmap reports={realData.civicReports || []} />
+            <CivicReportsHeatmap />
 
             {/* Mappa Rete HUB Italia - Segnalazioni Civiche */}
             <GestioneHubMapWrapper />
