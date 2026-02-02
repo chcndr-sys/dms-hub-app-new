@@ -125,12 +125,13 @@ const getMarkerIcon = (type: string, status: string) => {
  */
 export function CivicReportsHeatmap({
   reports,
-  center = [44.4949, 11.3426], // Default: Bologna
-  zoom = 13,
+  center = [44.4898, 11.0123], // Default: Bologna
+  zoom = 16,
   height = '400px',
   showMarkers = true,
   onReportClick
 }: CivicReportsHeatmapProps) {
+  console.log("CivicReportsHeatmap received reports:", reports);
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
 
   // Calcola centro automatico basato sui reports
