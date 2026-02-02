@@ -208,7 +208,7 @@ export default function WalletStorico() {
                   </div>
                   <div className="pt-2 border-t border-emerald-400/30">
                     <p className="text-sm text-emerald-100">
-                      <span className="font-bold text-white">{(Math.abs(lastTx.amount) * 0.022).toFixed(1)}</span> kg CO₂
+                      <span className="font-bold text-white">{Math.abs(lastTx.amount)}</span> kg CO₂
                     </p>
                     <p className="text-sm text-emerald-200 flex items-center gap-1">
                       🌳 <span className="font-bold text-white">{(Math.abs(lastTx.amount) / 22).toFixed(1)}</span> alberi
@@ -248,9 +248,9 @@ export default function WalletStorico() {
             <div className="space-y-1">
               <div>
                 <p className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg">
-                  {transactions.length}
+                  {totalTCC.toLocaleString('it-IT')}
                 </p>
-                <p className="text-sm font-semibold text-white/90">transazioni totali</p>
+                <p className="text-sm font-semibold text-white/90">TCC totali</p>
               </div>
               <div className="pt-2 border-t border-white/20">
                 <p className="text-lg text-white font-bold">{currentLevel.name}</p>
