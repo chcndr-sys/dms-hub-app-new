@@ -237,17 +237,15 @@ export default function WalletStorico() {
             </div>
             <div className="space-y-1">
               <div>
-                <p className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg">
-                  {currentLevel.name}
+                <p className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg">
+                  {transactions.length}
                 </p>
-                <p className="text-sm font-semibold text-white/90">{totalTCC.toLocaleString('it-IT')} TCC</p>
+                <p className="text-sm font-semibold text-white/90">transazioni totali</p>
               </div>
               <div className="pt-2 border-t border-white/20">
-                <p className="text-sm font-bold text-white/90">
-                  {Math.round(progressPercent)}% completato
-                </p>
+                <p className="text-lg text-white font-bold">{currentLevel.name}</p>
                 <p className="text-xs text-white/70">
-                  {currentLevel.max === Infinity ? '🏆 Livello MAX!' : `Prossimo: ${nextLevel.name}`}
+                  {Math.round(progressPercent)}% • {currentLevel.max === Infinity ? '🏆 MAX!' : `Prossimo: ${nextLevel.name}`}
                 </p>
               </div>
             </div>
