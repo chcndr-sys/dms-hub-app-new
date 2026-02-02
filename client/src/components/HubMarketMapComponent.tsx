@@ -500,19 +500,19 @@ export function HubMarketMapComponent({
                   html: `<div style="
                     background: #ef4444;
                     color: white;
-                    width: 26px;
-                    height: 26px;
+                    width: 20px;
+                    height: 20px;
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 14px;
+                    font-size: 11px;
                     font-weight: bold;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                    border: 2px solid white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                    border: 1px solid white;
                   ">M</div>`,
-                  iconSize: [26, 26],
-                  iconAnchor: [13, 13],
+                  iconSize: [20, 20],
+                  iconAnchor: [10, 10],
                 })}
               >
                 <Popup>
@@ -547,20 +547,20 @@ export function HubMarketMapComponent({
                 html: `<div style="
                   background: #ef4444;
                   color: white;
-                  width: 26px;
-                  height: 26px;
+                  width: 20px;
+                  height: 20px;
                   border-radius: 50%;
                   display: flex;
                   align-items: center;
                   justify-content: center;
-                  font-size: 14px;
+                  font-size: 11px;
                   font-weight: bold;
-                  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                  border: 2px solid white;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                  border: 1px solid white;
                   cursor: pointer;
                 ">M</div>`,
-                iconSize: [26, 26],
-                iconAnchor: [13, 13],
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
               })}
               eventHandlers={{
                 click: (e) => {
@@ -646,21 +646,21 @@ export function HubMarketMapComponent({
             // Determina dimensione in base al livello
             const getHubSize = (livello?: string) => {
               switch (livello) {
-                case 'capoluogo': return 26;
-                case 'provincia': return 22;
-                case 'comune': return 20;
-                default: return 26;
+                case 'capoluogo': return 20;
+                case 'provincia': return 18;
+                case 'comune': return 16;
+                default: return 20;
               }
             };
             
             const hubColor = getHubColor(hub.livello);
             const hubSize = getHubSize(hub.livello);
-            const fontSize = hub.livello === 'capoluogo' ? 14 : hub.livello === 'provincia' ? 12 : 11;
+            const fontSize = hub.livello === 'capoluogo' ? 11 : hub.livello === 'provincia' ? 10 : 9;
             
             // Contorno diverso per tipo: urbano = bianco, prossimità = viola scuro
             const isProssimita = hub.tipo === 'prossimita';
             const borderColor = isProssimita ? '#6A1B9A' : 'white'; // Viola scuro per prossimità
-            const borderWidth = isProssimita ? 3 : (hub.livello === 'capoluogo' ? 3 : 2);
+            const borderWidth = isProssimita ? 2 : (hub.livello === 'capoluogo' ? 2 : 1);
             
             return (
             <Marker
@@ -770,20 +770,20 @@ export function HubMarketMapComponent({
                   html: `<div style="
                     background: ${shopColor};
                     color: white;
-                    width: 28px;
-                    height: 28px;
+                    width: 20px;
+                    height: 20px;
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 14px;
+                    font-size: 11px;
                     font-weight: bold;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                    border: 2px solid white;
+                    border: 1px solid white;
                     cursor: pointer;
                   ">${shop.letter || 'N'}</div>`,
-                  iconSize: [28, 28],
-                  iconAnchor: [14, 14],
+                  iconSize: [20, 20],
+                  iconAnchor: [10, 10],
                 })}
                 eventHandlers={{
                   click: () => onShopClick?.(shop)

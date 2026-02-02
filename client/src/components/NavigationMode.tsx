@@ -139,7 +139,8 @@ export function NavigationMode({
         // Estrai istruzioni
         const steps = route.legs[0]?.steps || [];
         const navInstructions: NavigationInstruction[] = steps.map((step: any) => ({
-          text: step.maneuver?.instruction || getManeuverText(step.maneuver?.type, step.maneuver?.modifier),
+          // Usa sempre getManeuverText per avere istruzioni in italiano (ignora instruction inglese da OSRM)
+          text: getManeuverText(step.maneuver?.type, step.maneuver?.modifier, step.name),
           distance: step.distance,
           duration: step.duration,
           type: step.maneuver?.type || 'continue',
@@ -160,11 +161,67 @@ export function NavigationMode({
     }
   }, [destination, mode]);
 
-  // Genera testo istruzione da tipo manovra
-  const getManeuverText = (type: string, modifier?: string): string => {
+  // Genera testo istruzione da tipo manovra (tutto in italiano)
+  const getManeuverText = (type: string, modifier?: string, streetName?: string): string => {
     const maneuvers: Record<string, string> = {
+      // Svolte
       'turn-right': '↱ Gira a destra',
       'turn-left': '↰ Gira a sinistra',
+      'turn-straight': '↑ Prosegui dritto',
+      'turn-slight right': '↗ Leggermente a destra',
+      'turn-slight left': '↖ Leggermente a sinistra',
+      'turn-sharp right': '⤵ Svolta decisa a destra',
+      'turn-sharp left': '⤴ Svolta decisa a sinistra',
+      'turn-uturn': '↩ Inversione a U',
+      // Continua
+      'continue-straight': '↑ Continua dritto',
+      'continue-slight right': '↗ Continua leggermente a destra',
+      'continue-slight left': '↖ Continua leggermente a sinistra',
+      'continue-right': '↱ Continua a destra',
+      'continue-left': '↰ Continua a sinistra',
+      'continue-uturn': '↩ Inversione a U',
+      // Fork (bivio)
+      'fork-right': '↱ Tieni la destra al bivio',
+      'fork-left': '↰ Tieni la sinistra al bivio',
+      'fork-slight right': '↗ Tieni leggermente a destra al bivio',
+      'fork-slight left': '↖ Tieni leggermente a sinistra al bivio',
+      'fork-straight': '↑ Prosegui dritto al bivio',
+      // End of road
+      'end of road-right': '↱ Fine strada, gira a destra',
+      'end of road-left': '↰ Fine strada, gira a sinistra',
+      // Merge
+      'merge-right': '↱ Immettiti a destra',
+      'merge-left': '↰ Immettiti a sinistra',
+      'merge-slight right': '↗ Immettiti leggermente a destra',
+      'merge-slight left': '↖ Immettiti leggermente a sinistra',
+      'merge-straight': '↑ Immettiti',
+      // New name (cambio nome strada)
+      'new name-straight': '↑ Continua',
+      'new name-slight right': '↗ Continua leggermente a destra',
+      'new name-slight left': '↖ Continua leggermente a sinistra',
+      // On ramp / Off ramp
+      'on ramp-right': '↱ Prendi la rampa a destra',
+      'on ramp-left': '↰ Prendi la rampa a sinistra',
+      'on ramp-slight right': '↗ Prendi la rampa leggermente a destra',
+      'on ramp-slight left': '↖ Prendi la rampa leggermente a sinistra',
+      'off ramp-right': '↱ Esci a destra',
+      'off ramp-left': '↰ Esci a sinistra',
+      'off ramp-slight right': '↗ Esci leggermente a destra',
+      'off ramp-slight left': '↖ Esci leggermente a sinistra',
+      // Rotonda
+      'roundabout-right': '🔄 Alla rotonda, esci a destra',
+      'roundabout-left': '🔄 Alla rotonda, esci a sinistra',
+      'roundabout-straight': '🔄 Alla rotonda, prosegui dritto',
+      'roundabout-slight right': '🔄 Alla rotonda, esci leggermente a destra',
+      'roundabout-slight left': '🔄 Alla rotonda, esci leggermente a sinistra',
+      'roundabout turn-right': '🔄 Alla rotonda, gira a destra',
+      'roundabout turn-left': '🔄 Alla rotonda, gira a sinistra',
+      'roundabout turn-straight': '🔄 Alla rotonda, prosegui dritto',
+      // Rotonda piccola
+      'exit roundabout-right': '🔄 Esci dalla rotonda a destra',
+      'exit roundabout-left': '🔄 Esci dalla rotonda a sinistra',
+      'exit roundabout-straight': '🔄 Esci dalla rotonda dritto',
+      // Tipi base
       'straight': '↑ Prosegui dritto',
       'slight-right': '↗ Leggermente a destra',
       'slight-left': '↖ Leggermente a sinistra',
@@ -174,11 +231,36 @@ export function NavigationMode({
       'arrive': '🎯 Sei arrivato!',
       'depart': '🚀 Parti',
       'roundabout': '🔄 Rotonda',
-      'continue': '↑ Continua'
+      'continue': '↑ Continua',
+      'turn': '↱ Gira',
+      'fork': '↗ Bivio',
+      'merge': '↱ Immettiti',
+      'notification': '📍 Nota',
+      'exit rotary': '🔄 Esci dalla rotonda'
     };
     
     const key = modifier ? `${type}-${modifier}` : type;
-    return maneuvers[key] || maneuvers[type] || `${type} ${modifier || ''}`;
+    let text = maneuvers[key] || maneuvers[type];
+    
+    // Fallback per tipi non mappati
+    if (!text) {
+      // Traduci tipi comuni non mappati
+      if (type === 'fork' && modifier === 'slight right') text = '↗ Tieni leggermente a destra al bivio';
+      else if (type === 'fork' && modifier === 'slight left') text = '↖ Tieni leggermente a sinistra al bivio';
+      else if (modifier === 'right') text = '↱ Gira a destra';
+      else if (modifier === 'left') text = '↰ Gira a sinistra';
+      else if (modifier === 'straight') text = '↑ Prosegui dritto';
+      else if (modifier === 'slight right') text = '↗ Leggermente a destra';
+      else if (modifier === 'slight left') text = '↖ Leggermente a sinistra';
+      else text = '↑ Continua';
+    }
+    
+    // Aggiungi nome strada se disponibile
+    if (streetName && streetName !== '' && !streetName.includes('unnamed')) {
+      text += ` su ${streetName}`;
+    }
+    
+    return text;
   };
 
   // Sintesi vocale per istruzioni
