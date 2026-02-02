@@ -79,35 +79,19 @@ export default function VetrinePage() {
   const [imprese, setImprese] = useState<Impresa[]>([]);
   const [selectedImpresa, setSelectedImpresa] = useState<Impresa | null>(null);
   
-  // Stato per controllo permessi modifica (senza useAuth per evitare errori OAuth)
-  const [canEdit, setCanEdit] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Stato per controllo permessi modifica
+  // NOTA: Per ora sempre true - in futuro integrare con sistema auth DMS
+  const [canEdit, setCanEdit] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(true);
   
-  // Verifica permessi da localStorage (salvato da useAuth quando disponibile)
+  // TODO: Integrare con sistema autenticazione DMS quando disponibile
+  // Per ora tutti possono vedere tab Nuovo Negozio e tasto Modifica
+  // In futuro: verificare ruolo utente da API backend DMS
   useEffect(() => {
-    try {
-      const userInfoStr = localStorage.getItem('manus-runtime-user-info');
-      if (userInfoStr) {
-        const userInfo = JSON.parse(userInfoStr);
-        // Admin ha accesso totale
-        const adminCheck = userInfo?.role === 'admin';
-        setIsAdmin(adminCheck);
-        
-        // Per modifica vetrina: admin o proprietario
-        if (selectedImpresa) {
-          const isOwner = userInfo?.id === selectedImpresa.id;
-          setCanEdit(adminCheck || isOwner);
-        } else {
-          setCanEdit(false);
-        }
-      } else {
-        setIsAdmin(false);
-        setCanEdit(false);
-      }
-    } catch {
-      setIsAdmin(false);
-      setCanEdit(false);
-    }
+    // Placeholder per futura integrazione auth
+    // Per ora sempre abilitato
+    setCanEdit(true);
+    setIsAdmin(true);
   }, [selectedImpresa]);
   
   // Estrai query param 'q' dall'URL
@@ -702,14 +686,17 @@ export default function VetrinePage() {
                 </div>
               </CardHeader>
               <CardContent className="pt-4 px-0 sm:px-6">
-                {/* Mobile: Swipe orizzontale fullscreen con snap */}
-                <div className="sm:hidden overflow-x-auto scrollbar-hide scroll-smooth">
-                  <div className="flex gap-0 snap-x snap-mandatory">
+                {/* Mobile: Swipe orizzontale fullscreen con snap obbligatorio */}
+                <div 
+                  className="sm:hidden overflow-x-scroll scrollbar-hide snap-x snap-mandatory"
+                  style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+                >
+                  <div className="flex">
                     {selectedImpresa.vetrina_gallery.map((imageUrl, index) => (
                       <div
                         key={index}
-                        className="flex-shrink-0 w-full snap-center snap-always"
-                        style={{ scrollSnapStop: 'always' }}
+                        className="flex-shrink-0 w-full"
+                        style={{ scrollSnapAlign: 'center', scrollSnapStop: 'always' }}
                       >
                         <img
                           src={imageUrl}
