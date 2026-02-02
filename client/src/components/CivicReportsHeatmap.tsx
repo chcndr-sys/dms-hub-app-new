@@ -92,7 +92,7 @@ function HeatmapLayer({ reports }: { reports: CivicReport[] }) {
   return null;
 }
 
-// Icone personalizzate per tipo segnalazione
+// Icone personalizzate per tipo segnalazione - 15px
 const getMarkerIcon = (type: string, status: string) => {
   const emoji: Record<string, string> = {
     'Degrado': '🏚️',
@@ -113,20 +113,70 @@ const getMarkerIcon = (type: string, status: string) => {
     html: `<div style="
       background: ${bgColor};
       color: white;
-      width: 36px;
-      height: 36px;
+      width: 15px;
+      height: 15px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.5);
-      border: 3px solid white;
+      font-size: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+      border: 1px solid white;
     ">${emoji[type] || '📍'}</div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18]
+    iconSize: [15, 15],
+    iconAnchor: [7, 7]
   });
 };
+
+// Funzione per calcolare offset a spirale per marker con stesse coordinate
+// Forma un "gomitolo" con tutti i punti visibili attaccati
+function calculateSpiralOffsets(reports: CivicReport[]): Map<number, { latOffset: number; lngOffset: number }> {
+  const offsets = new Map<number, { latOffset: number; lngOffset: number }>();
+  const coordGroups = new Map<string, CivicReport[]>();
+  
+  // Raggruppa per coordinate (arrotondate a 4 decimali - circa 10m)
+  reports.forEach(r => {
+    const lat = typeof r.lat === 'string' ? parseFloat(r.lat) : r.lat;
+    const lng = typeof r.lng === 'string' ? parseFloat(r.lng) : r.lng;
+    const key = `${lat.toFixed(4)}_${lng.toFixed(4)}`;
+    
+    if (!coordGroups.has(key)) {
+      coordGroups.set(key, []);
+    }
+    coordGroups.get(key)!.push(r);
+  });
+  
+  // Calcola offset a spirale per ogni gruppo
+  coordGroups.forEach((group) => {
+    if (group.length === 1) {
+      offsets.set(group[0].id, { latOffset: 0, lngOffset: 0 });
+    } else {
+      // Disponi a spirale/cerchio attorno al centro
+      const baseRadius = 0.00006; // ~6 metri raggio base
+      const angleStep = (2 * Math.PI) / Math.min(group.length, 8); // Max 8 per cerchio
+      
+      group.forEach((r, index) => {
+        if (index === 0) {
+          // Primo marker al centro
+          offsets.set(r.id, { latOffset: 0, lngOffset: 0 });
+        } else {
+          // Altri marker in cerchi concentrici
+          const ring = Math.floor((index - 1) / 8); // Quale anello
+          const posInRing = (index - 1) % 8; // Posizione nell'anello
+          const radius = baseRadius * (ring + 1);
+          const angle = posInRing * angleStep + (ring * 0.4); // Ruota leggermente ogni anello
+          
+          offsets.set(r.id, { 
+            latOffset: radius * Math.cos(angle),
+            lngOffset: radius * Math.sin(angle)
+          });
+        }
+      });
+    }
+  });
+  
+  return offsets;
+}
 
 /**
  * Componente mappa termica per segnalazioni civiche
@@ -180,6 +230,7 @@ export function CivicReportsHeatmap() {
   }
 
   const validReports = reports.filter(r => r.lat && r.lng);
+  const offsets = calculateSpiralOffsets(validReports);
   
   return (
     <div className="space-y-2">
@@ -211,8 +262,11 @@ export function CivicReportsHeatmap() {
           )}
           
           {validReports.map(report => {
-            const lat = typeof report.lat === 'string' ? parseFloat(report.lat) : report.lat;
-            const lng = typeof report.lng === 'string' ? parseFloat(report.lng) : report.lng;
+            const baseLat = typeof report.lat === 'string' ? parseFloat(report.lat) : report.lat;
+            const baseLng = typeof report.lng === 'string' ? parseFloat(report.lng) : report.lng;
+            const offset = offsets.get(report.id) || { latOffset: 0, lngOffset: 0 };
+            const lat = baseLat + offset.latOffset;
+            const lng = baseLng + offset.lngOffset;
             
             return (
               <Marker
