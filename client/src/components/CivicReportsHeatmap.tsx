@@ -247,7 +247,7 @@ export function CivicReportsHeatmap() {
           center={[44.4898, 11.0123]}
           zoom={14}
           style={{ height: '100%', width: '100%' }}
-          scrollWheelZoom={true}
+          scrollWheelZoom={false} dragging={false} doubleClickZoom={false} touchZoom={false}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
