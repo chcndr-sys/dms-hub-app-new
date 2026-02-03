@@ -37,6 +37,22 @@ export const guardianRouter = router({
     const inventory = getAPIInventory();
     const stats = getAPIStats();
     
+    // Ottieni il conteggio dinamico dal backend Hetzner
+    try {
+      const response = await fetch('https://api.mio-hub.me/api/dashboard/integrations/endpoint-count');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.total) {
+          stats.total = data.total;
+          stats.backendEndpoints = data.byFile || {};
+          stats.lastUpdated = data.lastUpdated;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching dynamic endpoint count:', error);
+      // Fallback: usa il conteggio dell'inventario locale
+    }
+    
     return {
       endpoints: inventory,
       stats,

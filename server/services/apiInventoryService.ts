@@ -2536,9 +2536,8 @@ export function getAPIById(id: string): APIEndpoint | undefined {
 /**
  * Statistiche sull'inventario API
  * 
- * NOTA: Il totale (859) include:
- * - 843 endpoint REST nel backend Hetzner (mihub-backend-rest/routes/)
- * - 16 endpoint Gaming & Rewards aggiunti il 3 Feb 2026
+ * Il totale viene letto dinamicamente dal backend Hetzner tramite
+ * GET /api/dashboard/integrations/endpoint-count
  * 
  * L'inventario documentato contiene solo gli endpoint principali monitorati da Guardian.
  */
@@ -2554,16 +2553,27 @@ export function getAPIStats() {
     return acc;
   }, {} as Record<string, number>);
 
-  // Totale reale: 843 endpoint backend + 16 nuovi Gaming & Rewards = 859
-  // (il conteggio backend viene da: grep -rE "router\.(get|post|put|delete|patch)" routes/ | wc -l)
-  const BACKEND_TOTAL_ENDPOINTS = 859;
-
   return {
-    total: BACKEND_TOTAL_ENDPOINTS,
+    total: inventory.length, // Questo verrà sovrascritto dal valore dinamico del backend
     documented: inventory.length,
     byCategory,
     byStatus,
     requiresAuth: inventory.filter(api => api.requiresAuth).length,
     public: inventory.filter(api => !api.requiresAuth).length,
   };
+}
+
+/**
+ * Ottiene il conteggio dinamico degli endpoint dal backend Hetzner
+ */
+export async function getDynamicEndpointCount(): Promise<number> {
+  try {
+    const response = await fetch('https://api.mio-hub.me/api/dashboard/integrations/endpoint-count');
+    if (!response.ok) throw new Error('Failed to fetch endpoint count');
+    const data = await response.json();
+    return data.total || 0;
+  } catch (error) {
+    console.error('Error fetching dynamic endpoint count:', error);
+    return 0;
+  }
 }
