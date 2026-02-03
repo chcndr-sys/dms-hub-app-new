@@ -320,7 +320,7 @@ export default function GamingRewardsPanel() {
   const [savingConfig, setSavingConfig] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(true);
   
-  const { selectedComune, comuneId, comuneNome, isImpersonating } = useImpersonation();
+  const { comuneId, comuneNome, isImpersonating } = useImpersonation();
   const currentComuneId = comuneId ? parseInt(comuneId) : 1;
 
   // Funzione per filtrare per periodo temporale
@@ -404,54 +404,6 @@ export default function GamingRewardsPanel() {
       }
     } catch (error) {
       console.error('Errore caricamento stats:', error);
-    }
-  }, [currentComuneId]);
-
-  // Carica Top 5 negozi
-  const loadTopShops = useCallback(async () => {
-    try {
-      const response = await fetch(\`https://api.mio-hub.me/api/gaming-rewards/top-shops?comune_id=\${currentComuneId}\`);
-      const result = await response.json();
-      if (result.success && result.data) {
-        setTopShops(result.data);
-      }
-    } catch (error) {
-      console.error('Errore caricamento top shops:', error);
-      // Dati mock se API non disponibile
-      setTopShops([
-        { name: 'Mercato Centrale', tcc_total: 450, transactions: 89 },
-        { name: 'Bottega Bio', tcc_total: 320, transactions: 67 },
-        { name: 'Panificio Rossi', tcc_total: 280, transactions: 54 },
-        { name: 'Fruttivendolo Verde', tcc_total: 210, transactions: 43 },
-        { name: 'Macelleria Bianchi', tcc_total: 180, transactions: 38 }
-      ]);
-    }
-  }, [currentComuneId]);
-
-  // Carica dati trend
-  const loadTrendData = useCallback(async () => {
-    try {
-      const response = await fetch(\`https://api.mio-hub.me/api/gaming-rewards/trend?comune_id=\${currentComuneId}\`);
-      const result = await response.json();
-      if (result.success && result.data) {
-        setTrendData(result.data);
-      }
-    } catch (error) {
-      console.error('Errore caricamento trend:', error);
-      // Dati mock se API non disponibile
-      const mockTrend = [];
-      const today = new Date();
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        mockTrend.push({
-          date: date.toISOString().split('T')[0],
-          tcc_earned: Math.floor(Math.random() * 50) + 10,
-          tcc_spent: Math.floor(Math.random() * 30) + 5,
-          reports: Math.floor(Math.random() * 5) + 1
-        });
-      }
-      setTrendData(mockTrend);
     }
   }, [currentComuneId]);
 
@@ -828,101 +780,6 @@ export default function GamingRewardsPanel() {
             </div>
             <div className="text-2xl font-bold text-[#22c55e]">
               {(stats?.co2_saved_kg || 0).toFixed(1)}t
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Top 5 Negozi e Trend */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top 5 Negozi */}
-        <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-lg">
-              <Trophy className="h-5 w-5 text-yellow-500" />
-              Top 5 Negozi per TCC
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {topShops.slice(0, 5).map((shop, index) => (
-                <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-[#0b1220]/50">
-                  <div className="flex items-center gap-3">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      index === 0 ? 'bg-yellow-500 text-black' :
-                      index === 1 ? 'bg-gray-400 text-black' :
-                      index === 2 ? 'bg-amber-700 text-white' :
-                      'bg-[#1a2332] text-[#e8fbff]/70'
-                    }`}>
-                      {index + 1}
-                    </span>
-                    <span className="text-[#e8fbff] text-sm">{shop.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[#22c55e] font-bold">{shop.tcc_total} TCC</div>
-                    <div className="text-[#e8fbff]/50 text-xs">{shop.transactions} transazioni</div>
-                  </div>
-                </div>
-              ))}
-              {topShops.length === 0 && (
-                <div className="text-center text-[#e8fbff]/50 py-4">
-                  Nessun dato disponibile
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Grafico Trend */}
-        <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-lg">
-              <BarChart3 className="h-5 w-5 text-blue-500" />
-              Trend Ultimi 7 Giorni
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {trendData.map((day, index) => {
-                const maxValue = Math.max(...trendData.map(d => d.tcc_earned + d.tcc_spent));
-                const earnedWidth = maxValue > 0 ? (day.tcc_earned / maxValue) * 100 : 0;
-                const spentWidth = maxValue > 0 ? (day.tcc_spent / maxValue) * 100 : 0;
-                return (
-                  <div key={index} className="space-y-1">
-                    <div className="flex justify-between text-xs text-[#e8fbff]/70">
-                      <span>{new Date(day.date).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric' })}</span>
-                      <span>{day.tcc_earned + day.tcc_spent} TCC</span>
-                    </div>
-                    <div className="flex gap-1 h-4">
-                      <div 
-                        className="bg-[#22c55e] rounded-l"
-                        style={{ width: `${earnedWidth}%` }}
-                        title={`Guadagnati: ${day.tcc_earned}`}
-                      ></div>
-                      <div 
-                        className="bg-[#3b82f6] rounded-r"
-                        style={{ width: `${spentWidth}%` }}
-                        title={`Spesi: ${day.tcc_spent}`}
-                      ></div>
-                    </div>
-                  </div>
-                );
-              })}
-              {trendData.length === 0 && (
-                <div className="text-center text-[#e8fbff]/50 py-4">
-                  Nessun dato disponibile
-                </div>
-              )}
-            </div>
-            <div className="flex justify-center gap-4 mt-4 text-xs">
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded bg-[#22c55e]"></span>
-                <span className="text-[#e8fbff]/70">TCC Guadagnati</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded bg-[#3b82f6]"></span>
-                <span className="text-[#e8fbff]/70">TCC Spesi</span>
-              </span>
             </div>
           </CardContent>
         </Card>
