@@ -2535,6 +2535,12 @@ export function getAPIById(id: string): APIEndpoint | undefined {
 
 /**
  * Statistiche sull'inventario API
+ * 
+ * NOTA: Il totale (859) include:
+ * - 843 endpoint REST nel backend Hetzner (mihub-backend-rest/routes/)
+ * - 16 endpoint Gaming & Rewards aggiunti il 3 Feb 2026
+ * 
+ * L'inventario documentato contiene solo gli endpoint principali monitorati da Guardian.
  */
 export function getAPIStats() {
   const inventory = getAPIInventory();
@@ -2548,8 +2554,13 @@ export function getAPIStats() {
     return acc;
   }, {} as Record<string, number>);
 
+  // Totale reale: 843 endpoint backend + 16 nuovi Gaming & Rewards = 859
+  // (il conteggio backend viene da: grep -rE "router\.(get|post|put|delete|patch)" routes/ | wc -l)
+  const BACKEND_TOTAL_ENDPOINTS = 859;
+
   return {
-    total: inventory.length,
+    total: BACKEND_TOTAL_ENDPOINTS,
+    documented: inventory.length,
     byCategory,
     byStatus,
     requiresAuth: inventory.filter(api => api.requiresAuth).length,
