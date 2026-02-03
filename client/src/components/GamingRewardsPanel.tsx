@@ -14,6 +14,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +24,7 @@ import {
   Gamepad2, Settings, Save, RefreshCw, Loader2, 
   Radio, Bus, Landmark, ShoppingCart, Gift, Trophy,
   TrendingUp, Users, Leaf, Coins, MapPin, ChevronDown, ChevronUp,
-  BarChart3, Store
+  BarChart3, Store, AlertCircle, Clock, Camera, X, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImpersonation } from '@/hooks/useImpersonation';
@@ -425,6 +426,8 @@ export default function GamingRewardsPanel() {
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all');
   const [topShops, setTopShops] = useState<TopShop[]>([]);
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([]);
+  const [selectedReport, setSelectedReport] = useState<HeatmapPoint | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(true);
@@ -1240,6 +1243,136 @@ export default function GamingRewardsPanel() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Sezione Lista Segnalazioni Civiche */}
+      <Card className="bg-[#1a2332] border-[#f97316]/30">
+        <CardHeader>
+          <CardTitle className="text-[#e8fbff] flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-[#f97316]" />
+              Segnalazioni Civiche
+            </span>
+            <Badge variant="outline" className="text-[#f97316] border-[#f97316]/50">
+              {filterByTime(civicReports, 'created_at').length} totali
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filterByTime(civicReports, 'created_at').length > 0 ? (
+            <div className="max-h-80 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-[#f97316]/30 scrollbar-track-transparent">
+              {filterByTime(civicReports, 'created_at').map((report, index) => (
+                <div 
+                  key={`list-${report.id}`}
+                  onClick={() => {
+                    setSelectedReport(report);
+                    setShowReportModal(true);
+                  }}
+                  className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg cursor-pointer hover:bg-[#0b1220]/80 hover:border-[#f97316]/50 border border-transparent transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-[#f97316]/20 flex items-center justify-center text-[#f97316]">
+                      <AlertCircle className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <div className="text-[#e8fbff] font-medium group-hover:text-[#f97316] transition-colors">
+                        {report.name}
+                      </div>
+                      <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2">
+                        <MapPin className="h-3 w-3" />
+                        {report.lat.toFixed(4)}, {report.lng.toFixed(4)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="text-[#22c55e] font-bold">+{report.tcc_earned}</div>
+                      <div className="text-xs text-[#e8fbff]/50">TCC</div>
+                    </div>
+                    <Eye className="h-4 w-4 text-[#e8fbff]/30 group-hover:text-[#f97316] transition-colors" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-[#e8fbff]/50 py-8">
+              <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-30" />
+              <p>Nessuna segnalazione nel periodo selezionato</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal Dettagli Segnalazione */}
+      <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
+        <DialogContent className="bg-[#1a2332] border-[#f97316]/30 text-[#e8fbff] max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#f97316]">
+              <AlertCircle className="h-5 w-5" />
+              Dettagli Segnalazione
+            </DialogTitle>
+            <DialogDescription className="text-[#e8fbff]/70">
+              Informazioni complete sulla segnalazione civica
+            </DialogDescription>
+          </DialogHeader>
+          {selectedReport && (
+            <div className="space-y-4 pt-4">
+              {/* Tipo segnalazione */}
+              <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
+                <span className="text-[#e8fbff]/70">Tipo</span>
+                <Badge className="bg-[#f97316]/20 text-[#f97316] border-[#f97316]/50">
+                  {selectedReport.name}
+                </Badge>
+              </div>
+              
+              {/* Coordinate */}
+              <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
+                <span className="text-[#e8fbff]/70 flex items-center gap-2">
+                  <MapPin className="h-4 w-4" /> Posizione
+                </span>
+                <span className="text-[#e8fbff] font-mono text-sm">
+                  {selectedReport.lat.toFixed(6)}, {selectedReport.lng.toFixed(6)}
+                </span>
+              </div>
+              
+              {/* TCC Reward */}
+              <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
+                <span className="text-[#e8fbff]/70 flex items-center gap-2">
+                  <Coins className="h-4 w-4" /> TCC Guadagnati
+                </span>
+                <span className="text-[#22c55e] font-bold text-lg">
+                  +{selectedReport.tcc_earned}
+                </span>
+              </div>
+              
+              {/* ID Segnalazione */}
+              <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
+                <span className="text-[#e8fbff]/70">ID</span>
+                <span className="text-[#e8fbff]/50 font-mono text-sm">
+                  #{selectedReport.id}
+                </span>
+              </div>
+              
+              {/* Azioni */}
+              <div className="flex gap-2 pt-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 border-[#f97316]/50 text-[#f97316] hover:bg-[#f97316]/10"
+                  onClick={() => {
+                    // Centra la mappa sulla segnalazione
+                    setShowReportModal(false);
+                    setSelectedLayer('civic');
+                    setLayerTrigger(prev => prev + 1);
+                    toast.success(`Mappa centrata su segnalazione #${selectedReport.id}`);
+                  }}
+                >
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Mostra su Mappa
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
