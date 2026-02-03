@@ -525,69 +525,6 @@ export default function GamingRewardsPanel() {
     }
   }, [currentComuneId]);
 
-  // Carica tutti i dati all'avvio e quando cambia il comune
-  useEffect(() => {
-    const loadAllData = async () => {
-      setLoading(true);
-      await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports(), loadChallenges()]);
-      setLoading(false);
-    };
-    loadAllData();
-  }, [loadConfig, loadStats, loadHeatmapPoints, loadCivicReports, loadChallenges]);
-
-  // Salva configurazione via REST API
-  const saveConfig = async () => {
-    setSavingConfig(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/config`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          comune_id: currentComuneId,
-          civic_enabled: config.civic_enabled,
-          civic_tcc_default: config.civic_tcc_default,
-          civic_tcc_urgent: config.civic_tcc_urgent,
-          civic_tcc_photo_bonus: config.civic_tcc_photo_bonus,
-          mobility_enabled: config.mobility_enabled,
-          mobility_tcc_bus: config.mobility_tcc_bus,
-          mobility_tcc_bike_km: config.mobility_tcc_bike_km,
-          mobility_tcc_walk_km: config.mobility_tcc_walk_km,
-          culture_enabled: config.culture_enabled,
-          culture_tcc_museum: config.culture_tcc_museum,
-          culture_tcc_monument: config.culture_tcc_monument,
-          culture_tcc_route: config.culture_tcc_route,
-          shopping_enabled: config.shopping_enabled,
-          shopping_cashback_percent: config.shopping_cashback_percent,
-          shopping_km0_bonus: config.shopping_km0_bonus,
-          shopping_market_bonus: config.shopping_market_bonus,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Configurazione Gaming & Rewards salvata!');
-        // Ricarica i dati
-        await loadConfig();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Errore sconosciuto');
-      }
-    } catch (error) {
-      console.error('Errore salvataggio config:', error);
-      toast.error(`Errore nel salvataggio: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
-    } finally {
-      setSavingConfig(false);
-    }
-  };
-
-  // Funzione refresh dati
-  const refreshData = async () => {
-    setLoading(true);
-    await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports(), loadChallenges()]);
-    setLoading(false);
-    toast.success('Dati aggiornati');
-  };
   // ============ CHALLENGES FUNCTIONS ============
   const loadChallenges = useCallback(async () => {
     try {
@@ -652,6 +589,70 @@ export default function GamingRewardsPanel() {
     }
   };
   // ============ END CHALLENGES FUNCTIONS ============
+
+  // Carica tutti i dati all'avvio e quando cambia il comune
+  useEffect(() => {
+    const loadAllData = async () => {
+      setLoading(true);
+      await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports(), loadChallenges()]);
+      setLoading(false);
+    };
+    loadAllData();
+  }, [loadConfig, loadStats, loadHeatmapPoints, loadCivicReports, loadChallenges]);
+
+  // Salva configurazione via REST API
+  const saveConfig = async () => {
+    setSavingConfig(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          comune_id: currentComuneId,
+          civic_enabled: config.civic_enabled,
+          civic_tcc_default: config.civic_tcc_default,
+          civic_tcc_urgent: config.civic_tcc_urgent,
+          civic_tcc_photo_bonus: config.civic_tcc_photo_bonus,
+          mobility_enabled: config.mobility_enabled,
+          mobility_tcc_bus: config.mobility_tcc_bus,
+          mobility_tcc_bike_km: config.mobility_tcc_bike_km,
+          mobility_tcc_walk_km: config.mobility_tcc_walk_km,
+          culture_enabled: config.culture_enabled,
+          culture_tcc_museum: config.culture_tcc_museum,
+          culture_tcc_monument: config.culture_tcc_monument,
+          culture_tcc_route: config.culture_tcc_route,
+          shopping_enabled: config.shopping_enabled,
+          shopping_cashback_percent: config.shopping_cashback_percent,
+          shopping_km0_bonus: config.shopping_km0_bonus,
+          shopping_market_bonus: config.shopping_market_bonus,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Configurazione Gaming & Rewards salvata!');
+        // Ricarica i dati
+        await loadConfig();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Errore sconosciuto');
+      }
+    } catch (error) {
+      console.error('Errore salvataggio config:', error);
+      toast.error(`Errore nel salvataggio: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  // Funzione refresh dati
+  const refreshData = async () => {
+    setLoading(true);
+    await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports(), loadChallenges()]);
+    setLoading(false);
+    toast.success('Dati aggiornati');
+  };
 
 
   // Determina centro iniziale mappa
