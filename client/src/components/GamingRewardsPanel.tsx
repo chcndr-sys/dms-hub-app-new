@@ -22,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Gamepad2, Settings, Save, RefreshCw, Loader2, 
   Radio, Bus, Landmark, ShoppingCart, Gift, Trophy,
-  TrendingUp, Users, Leaf, Coins, MapPin, ChevronDown, ChevronUp, Target, Plus, Shield, Trash2
+  TrendingUp, Users, Leaf, Coins, MapPin, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useImpersonation } from '@/hooks/useImpersonation';
@@ -319,17 +319,6 @@ export default function GamingRewardsPanel() {
   const [loading, setLoading] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(true);
-  // Challenges state
-  const [challenges, setChallenges] = useState<any[]>([]);
-  const [showChallengeForm, setShowChallengeForm] = useState(false);
-  const [newChallenge, setNewChallenge] = useState({
-    title: "",
-    description: "",
-    category: "civic",
-    target_value: 10,
-    tcc_reward: 50,
-    color: "#22c55e"
-  });
   
   const { selectedComune, comuneId, comuneNome, isImpersonating } = useImpersonation();
   const currentComuneId = comuneId ? parseInt(comuneId) : 1;
@@ -421,7 +410,7 @@ export default function GamingRewardsPanel() {
   // Carica Top 5 negozi
   const loadTopShops = useCallback(async () => {
     try {
-      const response = await fetch(`https://api.mio-hub.me/api/gaming-rewards/top-shops?comune_id=${currentComuneId}`);
+      const response = await fetch(\`https://api.mio-hub.me/api/gaming-rewards/top-shops?comune_id=\${currentComuneId}\`);
       const result = await response.json();
       if (result.success && result.data) {
         setTopShops(result.data);
@@ -442,7 +431,7 @@ export default function GamingRewardsPanel() {
   // Carica dati trend
   const loadTrendData = useCallback(async () => {
     try {
-      const response = await fetch(`https://api.mio-hub.me/api/gaming-rewards/trend?comune_id=${currentComuneId}`);
+      const response = await fetch(\`https://api.mio-hub.me/api/gaming-rewards/trend?comune_id=\${currentComuneId}\`);
       const result = await response.json();
       if (result.success && result.data) {
         setTrendData(result.data);
@@ -525,80 +514,15 @@ export default function GamingRewardsPanel() {
     }
   }, [currentComuneId]);
 
-  // ============ CHALLENGES FUNCTIONS ============
-  const loadChallenges = useCallback(async () => {
-    try {
-      const response = await fetch(`https://api.mio-hub.me/api/gaming-rewards/challenges?comune_id=${currentComuneId}`);
-      if (response.ok) {
-        const result = await response.json();
-        setChallenges(result.data || []);
-      }
-    } catch (error) {
-      console.error('Errore caricamento challenges:', error);
-    }
-  }, [currentComuneId]);
-
-  const createChallenge = async () => {
-    try {
-      const response = await fetch('https://api.mio-hub.me/api/gaming-rewards/challenges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newChallenge,
-          comune_id: currentComuneId,
-          start_date: new Date().toISOString(),
-          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        }),
-      });
-      if (response.ok) {
-        toast.success('Challenge creata con successo!');
-        setShowChallengeForm(false);
-        setNewChallenge({
-          title: '',
-          description: '',
-          category: 'civic',
-          target_value: 10,
-          tcc_reward: 50,
-          color: '#22c55e'
-        });
-        await loadChallenges();
-      } else {
-        throw new Error('Errore creazione challenge');
-      }
-    } catch (error) {
-      console.error('Errore creazione challenge:', error);
-      toast.error('Errore nella creazione della challenge');
-    }
-  };
-
-  const deleteChallenge = async (id: number) => {
-    if (!confirm('Sei sicuro di voler eliminare questa challenge?')) return;
-    try {
-      const response = await fetch(`https://api.mio-hub.me/api/gaming-rewards/challenges/${id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        toast.success('Challenge eliminata');
-        await loadChallenges();
-      } else {
-        throw new Error('Errore eliminazione');
-      }
-    } catch (error) {
-      console.error('Errore eliminazione challenge:', error);
-      toast.error("Errore nell'eliminazione della challenge");
-    }
-  };
-  // ============ END CHALLENGES FUNCTIONS ============
-
   // Carica tutti i dati all'avvio e quando cambia il comune
   useEffect(() => {
     const loadAllData = async () => {
       setLoading(true);
-      await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports(), loadChallenges()]);
+      await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports()]);
       setLoading(false);
     };
     loadAllData();
-  }, [loadConfig, loadStats, loadHeatmapPoints, loadCivicReports, loadChallenges]);
+  }, [loadConfig, loadStats, loadHeatmapPoints, loadCivicReports]);
 
   // Salva configurazione via REST API
   const saveConfig = async () => {
@@ -649,11 +573,10 @@ export default function GamingRewardsPanel() {
   // Funzione refresh dati
   const refreshData = async () => {
     setLoading(true);
-    await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports(), loadChallenges()]);
+    await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports()]);
     setLoading(false);
     toast.success('Dati aggiornati');
   };
-
 
   // Determina centro iniziale mappa
   const getInitialCenter = (): [number, number] => {
@@ -1004,152 +927,6 @@ export default function GamingRewardsPanel() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Challenges Attive */}
-      <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-[#e8fbff] flex items-center gap-2 text-lg">
-              <Target className="h-5 w-5 text-orange-500" />
-              Challenge Attive
-            </CardTitle>
-            <button
-              onClick={() => setShowChallengeForm(!showChallengeForm)}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-[#8b5cf6] text-white rounded-lg hover:bg-[#7c3aed] transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Nuova
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Form nuova challenge */}
-          {showChallengeForm && (
-            <div className="mb-4 p-4 bg-[#0b1220] rounded-lg space-y-3">
-              <input
-                type="text"
-                placeholder="Titolo challenge"
-                value={newChallenge.title}
-                onChange={(e) => setNewChallenge({...newChallenge, title: e.target.value})}
-                className="w-full px-3 py-2 bg-[#1a2332] border border-[#8b5cf6]/30 rounded-lg text-[#e8fbff] text-sm"
-              />
-              <textarea
-                placeholder="Descrizione"
-                value={newChallenge.description}
-                onChange={(e) => setNewChallenge({...newChallenge, description: e.target.value})}
-                className="w-full px-3 py-2 bg-[#1a2332] border border-[#8b5cf6]/30 rounded-lg text-[#e8fbff] text-sm resize-none"
-                rows={2}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <select
-                  value={newChallenge.category}
-                  onChange={(e) => setNewChallenge({...newChallenge, category: e.target.value})}
-                  className="px-3 py-2 bg-[#1a2332] border border-[#8b5cf6]/30 rounded-lg text-[#e8fbff] text-sm"
-                >
-                  <option value="civic">Segnalazioni</option>
-                  <option value="mobility">Mobilità</option>
-                  <option value="culture">Cultura</option>
-                  <option value="shopping">Acquisti</option>
-                </select>
-                <input
-                  type="number"
-                  placeholder="Obiettivo"
-                  value={newChallenge.target_value}
-                  onChange={(e) => setNewChallenge({...newChallenge, target_value: parseInt(e.target.value)})}
-                  className="px-3 py-2 bg-[#1a2332] border border-[#8b5cf6]/30 rounded-lg text-[#e8fbff] text-sm"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="number"
-                  placeholder="TCC Reward"
-                  value={newChallenge.tcc_reward}
-                  onChange={(e) => setNewChallenge({...newChallenge, tcc_reward: parseInt(e.target.value)})}
-                  className="px-3 py-2 bg-[#1a2332] border border-[#8b5cf6]/30 rounded-lg text-[#e8fbff] text-sm"
-                />
-                <input
-                  type="color"
-                  value={newChallenge.color}
-                  onChange={(e) => setNewChallenge({...newChallenge, color: e.target.value})}
-                  className="w-full h-10 bg-[#1a2332] border border-[#8b5cf6]/30 rounded-lg cursor-pointer"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={createChallenge}
-                  className="flex-1 px-4 py-2 bg-[#22c55e] text-white rounded-lg hover:bg-[#16a34a] transition-colors text-sm"
-                >
-                  Crea Challenge
-                </button>
-                <button
-                  onClick={() => setShowChallengeForm(false)}
-                  className="px-4 py-2 bg-[#374151] text-white rounded-lg hover:bg-[#4b5563] transition-colors text-sm"
-                >
-                  Annulla
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* Lista challenges */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {challenges.map((challenge) => {
-              const IconComponent = challenge.icon === 'shield' ? Shield :
-                                   challenge.icon === 'leaf' ? Leaf :
-                                   challenge.icon === 'landmark' ? Landmark :
-                                   challenge.icon === 'shopping-cart' ? ShoppingCart : Trophy;
-              return (
-                <div 
-                  key={challenge.id} 
-                  className="p-4 rounded-lg bg-[#0b1220]/50 border-l-4"
-                  style={{ borderColor: challenge.color }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-10 h-10 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: challenge.color + '20' }}
-                      >
-                        <IconComponent className="h-5 w-5" style={{ color: challenge.color }} />
-                      </div>
-                      <div>
-                        <h4 className="text-[#e8fbff] font-medium text-sm">{challenge.title}</h4>
-                        <p className="text-[#e8fbff]/50 text-xs">{challenge.description}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => deleteChallenge(challenge.id)}
-                      className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[#e8fbff]/70">
-                        <span className="text-[#22c55e] font-bold">{challenge.tcc_reward}</span> TCC
-                      </span>
-                      <span className="text-[#e8fbff]/50">
-                        Obiettivo: {challenge.target_value}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[#e8fbff]/50">
-                      <Users className="h-3 w-3" />
-                      {challenge.participants_count || 0}
-                      <span className="text-[#22c55e]">✓ {challenge.completions_count || 0}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            {challenges.length === 0 && (
-              <div className="col-span-2 text-center text-[#e8fbff]/50 py-8">
-                Nessuna challenge attiva. Crea la prima!
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Heatmap */}
       <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
