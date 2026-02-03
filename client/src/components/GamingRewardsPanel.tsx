@@ -1202,8 +1202,10 @@ export default function GamingRewardsPanel() {
                 <div className="flex items-end justify-between h-40 gap-2">
                   {trendData.map((day, index) => {
                     const maxValue = Math.max(...trendData.map(d => Math.max(d.tcc_earned, d.tcc_spent)));
+                    const maxReports = Math.max(...trendData.map(d => d.reports || 0));
                     const earnedHeight = maxValue > 0 ? (day.tcc_earned / maxValue) * 100 : 0;
                     const spentHeight = maxValue > 0 ? (day.tcc_spent / maxValue) * 100 : 0;
+                    const reportsHeight = maxReports > 0 ? ((day.reports || 0) / maxReports) * 100 : 0;
                     const dayName = new Date(day.date).toLocaleDateString('it-IT', { weekday: 'short' });
                     
                     return (
@@ -1219,6 +1221,11 @@ export default function GamingRewardsPanel() {
                             style={{ height: `${spentHeight}%`, minHeight: day.tcc_spent > 0 ? '4px' : '0' }}
                             title={`Spesi: ${day.tcc_spent}`}
                           />
+                          <div 
+                            className="w-3 bg-[#f97316] rounded-t transition-all" 
+                            style={{ height: `${reportsHeight}%`, minHeight: (day.reports || 0) > 0 ? '4px' : '0' }}
+                            title={`Segnalazioni: ${day.reports || 0}`}
+                          />
                         </div>
                         <span className="text-xs text-[#e8fbff]/50 mt-2 capitalize">{dayName}</span>
                       </div>
@@ -1226,7 +1233,7 @@ export default function GamingRewardsPanel() {
                   })}
                 </div>
                 {/* Legenda */}
-                <div className="flex justify-center gap-6 text-sm">
+                <div className="flex justify-center gap-4 text-sm flex-wrap">
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded bg-[#22c55e]"></span>
                     <span className="text-[#e8fbff]/70">TCC Guadagnati</span>
@@ -1234,6 +1241,10 @@ export default function GamingRewardsPanel() {
                   <span className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded bg-[#3b82f6]"></span>
                     <span className="text-[#e8fbff]/70">TCC Spesi</span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded bg-[#f97316]"></span>
+                    <span className="text-[#e8fbff]/70">Segnalazioni</span>
                   </span>
                 </div>
                 {/* Totali periodo */}
