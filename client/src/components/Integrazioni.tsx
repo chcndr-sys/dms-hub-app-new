@@ -128,9 +128,30 @@ function APIDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiEndpoints, setApiEndpoints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [backendStats, setBackendStats] = useState<{
+    active: number;
+    backup: number;
+    total: number;
+  }>({ active: 0, backup: 0, total: 0 });
   
   const utils = trpc.useUtils();
   const { data: apiStats } = trpc.integrations.apiStats.today.useQuery();
+  
+  // Fetch dynamic endpoint count from backend Hetzner
+  useEffect(() => {
+    fetch('https://api.mio-hub.me/api/dashboard/integrations/endpoint-count')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setBackendStats({
+            active: data.active || 0,
+            backup: data.backup || 0,
+            total: data.total || 0
+          });
+        }
+      })
+      .catch(err => console.error('Error fetching backend stats:', err));
+  }, []);
 
   // Fetch ALL endpoints from MIO-hub api/index.json (single source of truth)
   useEffect(() => {
@@ -894,7 +915,68 @@ function APIDashboard() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="space-y-6">
+      {/* Statistiche Endpoint */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        {/* Inventario - da MIO-hub index.json */}
+        <Card className="bg-[#1a2332] border-[#3b82f6]/30">
+          <CardContent className="p-3">
+            <p className="text-[#e8fbff]/60 text-xs">Inventario</p>
+            <p className="text-xl font-bold text-[#3b82f6]">{totalEndpointsCount}</p>
+          </CardContent>
+        </Card>
+        
+        {/* Attivi Backend - dal backend Hetzner */}
+        <Card className="bg-[#1a2332] border-[#10b981]/30">
+          <CardContent className="p-3">
+            <p className="text-[#e8fbff]/60 text-xs">Attivi Backend</p>
+            <p className="text-xl font-bold text-[#10b981]">{backendStats.active}</p>
+          </CardContent>
+        </Card>
+        
+        {/* Totale Backend */}
+        <Card className="bg-[#1a2332] border-[#14b8a6]/30">
+          <CardContent className="p-3">
+            <p className="text-[#e8fbff]/60 text-xs">Totale Backend</p>
+            <p className="text-xl font-bold text-[#14b8a6]">{backendStats.total}</p>
+          </CardContent>
+        </Card>
+        
+        {/* Backup */}
+        <Card className="bg-[#1a2332] border-[#f59e0b]/30">
+          <CardContent className="p-3">
+            <p className="text-[#e8fbff]/60 text-xs">Backup</p>
+            <p className="text-xl font-bold text-[#f59e0b]">{backendStats.backup}</p>
+          </CardContent>
+        </Card>
+        
+        {/* Richieste Oggi */}
+        <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+          <CardContent className="p-3">
+            <p className="text-[#e8fbff]/60 text-xs">Richieste Oggi</p>
+            <p className="text-xl font-bold text-[#8b5cf6]">{apiStats?.totalRequests || 0}</p>
+          </CardContent>
+        </Card>
+        
+        {/* Success Rate */}
+        <Card className="bg-[#1a2332] border-[#06b6d4]/30">
+          <CardContent className="p-3">
+            <p className="text-[#e8fbff]/60 text-xs">Success Rate</p>
+            <p className="text-xl font-bold text-[#06b6d4]">{apiStats?.successRate || '0%'}</p>
+          </CardContent>
+        </Card>
+        
+        {/* TOTALE GENERALE */}
+        <Card className="bg-gradient-to-r from-[#1a2332] to-[#0f1419] border-[#ec4899]/50">
+          <CardContent className="p-3">
+            <p className="text-[#e8fbff]/60 text-xs">TOTALE</p>
+            <p className="text-xl font-bold text-[#ec4899]">{totalEndpointsCount + backendStats.active}</p>
+            <p className="text-[#e8fbff]/40 text-[10px]">Inv + Attivi</p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Lista Endpoint */}
       <div className="space-y-4">
         <Card className="bg-[#1a2332] border-[#14b8a6]/30">
@@ -1074,6 +1156,7 @@ function APIDashboard() {
           </CardContent>
         </Card>
       </div>
+    </div>
     </div>
   );
 }
