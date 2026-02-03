@@ -942,7 +942,10 @@ export default function GamingRewardsPanel() {
               CO₂ Risparmiata
             </div>
             <div className="text-2xl font-bold text-[#22c55e]">
-              {(stats?.co2_saved_kg || 0).toFixed(1)}t
+              {(stats?.co2_saved_kg || 0).toFixed(1)} kg
+            </div>
+            <div className="text-xs text-slate-400">
+              ({((stats?.co2_saved_kg || 0) / 1000).toFixed(2)}t)
             </div>
           </CardContent>
         </Card>

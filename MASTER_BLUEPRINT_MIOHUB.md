@@ -4444,15 +4444,61 @@ const creditFactors = {
 ## 🎮 GAMING & REWARDS PANEL - STATO ATTUALE (3 Febbraio 2026)
 
 ### Commit Stabile Attuale
-- **Commit:** `b4a6050`
+- **Commit:** `b2d6552` (frontend) + aggiornamento backend
 - **Branch:** master
-- **Stato:** Funzionante ma con funzionalità mancanti
+- **Stato:** Funzionante con dati reali da operator_transactions
+
+### ⚠️ IMPORTANTE: Tabelle Dati TCC
+
+#### Tabelle REALI (da usare)
+| Tabella | Descrizione | Campi Chiave |
+|---------|-------------|---------------|
+| `operator_transactions` | Transazioni TCC reali | operator_id, user_id, type (issue/redeem), tcc_amount, euro_amount |
+| `operator_daily_wallet` | Wallet giornaliero operatore | operator_id, impresa_id, tcc_issued, tcc_redeemed |
+| `imprese` | Anagrafica imprese | id, denominazione, partita_iva |
+| `wallets` | Wallet utenti | user_id, balance |
+
+#### Tabelle LEGACY (NON eliminare - usate da API v1/v2)
+| Tabella | Usata da | Note |
+|---------|----------|------|
+| `transactions` | `tcc.js`, `tcc-v2.js` | API TCC v1/v2 per INSERT transazioni |
+| `shops` | `tcc.js` | API TCC v1 per negozi |
+
+**⚠️ NON ELIMINARE** queste tabelle finché le API v1/v2 sono in uso.
+
+#### Quale tabella usare?
+| Caso d'uso | Tabella da usare |
+|------------|------------------|
+| Dashboard PA (Gaming & Rewards) | `operator_transactions` |
+| Hub Operatore (rilascio/riscatto TCC) | `operator_transactions` |
+| Top 5 Imprese | `imprese` + `operator_transactions` |
+| Trend TCC | `operator_transactions` |
+| API TCC v1 (legacy) | `transactions`, `shops` |
+| API TCC v2 (legacy) | `transactions` |
+
+### Formula CO2 Risparmiata
+```
+CO2 (kg) = TCC_spesi × 10g / 1000
+```
+- **1 TCC = 10g CO2 evitata**
+- I TCC spesi (riscattati) rappresentano acquisti locali
+- Acquisto locale vs e-commerce evita spedizioni = risparmio CO2
+
+### Mapping Endpoint → Tabelle
+| Endpoint | Tabella Precedente | Tabella Corretta |
+|----------|-------------------|------------------|
+| `/api/gaming-rewards/stats` | transactions | operator_transactions |
+| `/api/gaming-rewards/top-shops` | shops + transactions | imprese + operator_transactions |
+| `/api/gaming-rewards/trend` | transactions | operator_transactions |
 
 ### Funzionalità OPERATIVE ✅
 | Funzionalità | Stato | Note |
 |--------------|-------|------|
-| Dashboard statistiche TCC | ✅ | Emessi, Spesi, Utenti, CO2 |
+| Dashboard statistiche TCC | ✅ | Legge da operator_transactions (dati reali) |
 | Configurazione parametri TCC | ✅ | Per categoria (Civic, Mobility, Culture, Shopping) |
+| Salvataggio configurazione | ✅ | POST/PUT su gaming_rewards_config |
+| Top 5 Imprese | ✅ | Legge da imprese + operator_transactions |
+| Trend TCC 7 giorni | ✅ | Legge da operator_transactions |
 | Filtri layer mappa | ✅ | Tutti, Segnalazioni, Acquisti |
 | Filtri temporali | ✅ | Tutto, Oggi, 7gg, 30gg, 1 anno |
 | API civic-reports | ✅ | 19 segnalazioni nel DB |
@@ -4466,8 +4512,7 @@ const creditFactors = {
 | Marker segnalazioni visibili | ❌ | Layer marker non renderizzato |
 | Heatmap visibile | ❌ | Dati non passati correttamente al layer |
 | Lista segnalazioni cliccabile | ❌ | Non implementata |
-| Top 5 Negozi | ❌ | Rimosso con rollback |
-| Grafici Trend TCC | ❌ | Rimosso con rollback |
+| CO2 Risparmiata | ❌ | Nessun dato in route_completions |
 | Sezione Challenges | ❌ | Rimosso con rollback |
 
 ### Commit Cancellati con Rollback (da 09b0bac a e7aa61b)
