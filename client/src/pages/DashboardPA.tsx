@@ -13,7 +13,7 @@ import {
   Radio, CloudRain, Wind, UserCog, ClipboardCheck, Scale, Bell, BellRing,
   Navigation, Train, ParkingCircle, TrafficCone, FileBarChart, Plug, SettingsIcon, Euro, Newspaper, Rocket,
   XCircle, Lightbulb, MessageSquare, Brain, Calculator, ExternalLink, StopCircle,
-  Search, Filter, Plus, Landmark, BookOpen, Star, FileCheck, HandCoins, Mail, MailOpen, Home
+  Search, Filter, Plus, Landmark, BookOpen, Star, FileCheck, HandCoins, Mail, MailOpen, Home, Gamepad2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,6 +47,7 @@ import GestioneHubMapWrapper from '@/components/GestioneHubMapWrapper';
 import { useTransport } from '@/contexts/TransportContext';
 import ControlliSanzioniPanel from '@/components/ControlliSanzioniPanel';
 import CivicReportsPanel from '@/components/CivicReportsPanel';
+import GamingRewardsPanel from '@/components/GamingRewardsPanel';
 import { BusHubEditor } from '@/components/bus-hub';
 import { ProtectedTab, ProtectedQuickAccess } from '@/components/ProtectedTab';
 import { MessageContent } from '@/components/MessageContent';
@@ -2125,12 +2126,12 @@ export default function DashboardPA() {
               onClick={() => setActiveTab('products')}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 activeTab === 'products'
-                  ? 'bg-[#14b8a6] border-[#14b8a6] text-white shadow-lg'
-                  : 'bg-[#14b8a6]/10 border-[#14b8a6]/30 hover:bg-[#14b8a6]/20 text-[#14b8a6]'
+                  ? 'bg-[#8b5cf6] border-[#8b5cf6] text-white shadow-lg'
+                  : 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/20 text-[#8b5cf6]'
               }`}
             >
-              <ShoppingCart className="h-6 w-6" />
-              <span className="text-xs font-medium">Prodotti</span>
+              <Gamepad2 className="h-6 w-6" />
+              <span className="text-xs font-medium">Gaming & Rewards</span>
             </button>
             </ProtectedTab>
             <ProtectedTab tabId="sustainability">
@@ -2593,58 +2594,10 @@ export default function DashboardPA() {
             <WalletPanel />
           </TabsContent>
 
-          {/* TAB 4: PRODOTTI */}
+          {/* TAB 4: GAMING & REWARDS */}
           <TabsContent value="products" className="space-y-6">
-            {/* Avviso dati non disponibili */}
-            <Card className="bg-[#1a2332] border-[#f59e0b]/30">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-[#f59e0b]/10 rounded-lg">
-                    <Clock className="h-8 w-8 text-[#f59e0b]" />
-                  </div>
-                  <div>
-                    <h3 className="text-[#e8fbff] font-semibold text-lg">Modulo Prodotti in Sviluppo</h3>
-                    <p className="text-[#e8fbff]/70">I dati sui prodotti saranno disponibili con l'integrazione TPAS (Q1 2027)</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Preview Categorie - Struttura Futura */}
-            <Card className="bg-[#1a2332] border-[#14b8a6]/30 opacity-60">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5 text-[#14b8a6]" />
-                  Categorie Più Acquistate
-                  <span className="text-xs text-[#f59e0b] ml-2">Preview</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <ShoppingCart className="h-12 w-12 text-[#14b8a6]/30 mx-auto mb-3" />
-                  <p className="text-[#e8fbff]/50">Dati categorie non ancora disponibili</p>
-                  <p className="text-[#e8fbff]/30 text-sm mt-1">Richiede integrazione con sistema vendite</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Preview Certificazioni - Struttura Futura */}
-            <Card className="bg-[#1a2332] border-[#14b8a6]/30 opacity-60">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <Award className="h-5 w-5 text-[#14b8a6]" />
-                  Certificazioni Prodotti
-                  <span className="text-xs text-[#f59e0b] ml-2">Preview</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Award className="h-12 w-12 text-[#14b8a6]/30 mx-auto mb-3" />
-                  <p className="text-[#e8fbff]/50">Dati certificazioni non ancora disponibili</p>
-                  <p className="text-[#e8fbff]/30 text-sm mt-1">Richiede integrazione con database prodotti</p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Gaming & Rewards Panel */}
+            <GamingRewardsPanel />
           </TabsContent>
 
           {/* TAB 5: SOSTENIBILITÀ */}
