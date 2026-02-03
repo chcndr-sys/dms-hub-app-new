@@ -410,7 +410,7 @@ export default function GamingRewardsPanel() {
   // Carica Top 5 negozi
   const loadTopShops = useCallback(async () => {
     try {
-      const response = await fetch(\`https://api.mio-hub.me/api/gaming-rewards/top-shops?comune_id=\${currentComuneId}\`);
+      const response = await fetch(`https://api.mio-hub.me/api/gaming-rewards/top-shops?comune_id=${currentComuneId}`);
       const result = await response.json();
       if (result.success && result.data) {
         setTopShops(result.data);
@@ -431,7 +431,7 @@ export default function GamingRewardsPanel() {
   // Carica dati trend
   const loadTrendData = useCallback(async () => {
     try {
-      const response = await fetch(\`https://api.mio-hub.me/api/gaming-rewards/trend?comune_id=\${currentComuneId}\`);
+      const response = await fetch(`https://api.mio-hub.me/api/gaming-rewards/trend?comune_id=${currentComuneId}`);
       const result = await response.json();
       if (result.success && result.data) {
         setTrendData(result.data);
