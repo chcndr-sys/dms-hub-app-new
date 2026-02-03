@@ -319,17 +319,6 @@ export default function GamingRewardsPanel() {
   const [loading, setLoading] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(true);
-  // Challenges state
-  const [challenges, setChallenges] = useState<any[]>([]);
-  const [showChallengeForm, setShowChallengeForm] = useState(false);
-  const [newChallenge, setNewChallenge] = useState({
-    title: "",
-    description: "",
-    category: "civic",
-    target_value: 10,
-    tcc_reward: 50,
-    color: "#22c55e"
-  });
   
   const { selectedComune, comuneId, comuneNome, isImpersonating } = useImpersonation();
   const currentComuneId = comuneId ? parseInt(comuneId) : 1;
@@ -529,11 +518,11 @@ export default function GamingRewardsPanel() {
   useEffect(() => {
     const loadAllData = async () => {
       setLoading(true);
-      await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports(), loadChallenges()]);
+      await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports()]);
       setLoading(false);
     };
     loadAllData();
-  }, [loadConfig, loadStats, loadHeatmapPoints, loadCivicReports, loadChallenges]);
+  }, [loadConfig, loadStats, loadHeatmapPoints, loadCivicReports]);
 
   // Salva configurazione via REST API
   const saveConfig = async () => {
@@ -584,75 +573,10 @@ export default function GamingRewardsPanel() {
   // Funzione refresh dati
   const refreshData = async () => {
     setLoading(true);
-    await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports(), loadChallenges()]);
+    await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports()]);
     setLoading(false);
     toast.success('Dati aggiornati');
   };
-  // ============ CHALLENGES FUNCTIONS ============
-  const loadChallenges = useCallback(async () => {
-    try {
-      const response = await fetch(`https://api.mio-hub.me/api/gaming-rewards/challenges?comune_id=${currentComuneId}`);
-      if (response.ok) {
-        const result = await response.json();
-        setChallenges(result.data || []);
-      }
-    } catch (error) {
-      console.error('Errore caricamento challenges:', error);
-    }
-  }, [currentComuneId]);
-
-  const createChallenge = async () => {
-    try {
-      const response = await fetch('https://api.mio-hub.me/api/gaming-rewards/challenges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newChallenge,
-          comune_id: currentComuneId,
-          start_date: new Date().toISOString(),
-          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        }),
-      });
-      if (response.ok) {
-        toast.success('Challenge creata con successo!');
-        setShowChallengeForm(false);
-        setNewChallenge({
-          title: '',
-          description: '',
-          category: 'civic',
-          target_value: 10,
-          tcc_reward: 50,
-          color: '#22c55e'
-        });
-        await loadChallenges();
-      } else {
-        throw new Error('Errore creazione challenge');
-      }
-    } catch (error) {
-      console.error('Errore creazione challenge:', error);
-      toast.error('Errore nella creazione della challenge');
-    }
-  };
-
-  const deleteChallenge = async (id: number) => {
-    if (!confirm('Sei sicuro di voler eliminare questa challenge?')) return;
-    try {
-      const response = await fetch(`https://api.mio-hub.me/api/gaming-rewards/challenges/${id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        toast.success('Challenge eliminata');
-        await loadChallenges();
-      } else {
-        throw new Error('Errore eliminazione');
-      }
-    } catch (error) {
-      console.error('Errore eliminazione challenge:', error);
-      toast.error("Errore nell'eliminazione della challenge");
-    }
-  };
-  // ============ END CHALLENGES FUNCTIONS ============
-
 
   // Determina centro iniziale mappa
   const getInitialCenter = (): [number, number] => {
