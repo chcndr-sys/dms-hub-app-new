@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.53.0  
-> **Data:** 3 Febbraio 2026  
+> **Versione:** 3.54.0  
+> **Data:** 3 Febbraio 2026 (Aggiornamento Serale)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -4444,9 +4444,76 @@ const creditFactors = {
 ## 🎮 GAMING & REWARDS PANEL - STATO ATTUALE (3 Febbraio 2026)
 
 ### Commit Stabile Attuale
-- **Commit:** `b2d6552` (frontend) + aggiornamento backend
+- **Commit:** `6e36393` (frontend) + `aa4c085` (backend)
 - **Branch:** master
-- **Stato:** Funzionante con dati reali da operator_transactions
+- **Stato:** Funzionante con dati reali + Mobilità Sostenibile + Cultura & Turismo
+
+### 🚀 AGGIORNAMENTO 3 FEBBRAIO 2026 - SESSIONE SERALE
+
+#### Nuove Funzionalità Implementate
+
+**1. Mobilità Sostenibile (GTFS Integration)** ✅
+- Importate **385 fermate TPER** (Bologna) da GTFS
+- Tabella `gtfs_stops` per validare posizione cittadino
+- Tabella `route_completions` per tracciare percorsi completati
+- Endpoint per start-tracking, complete, history, stats, heatmap
+
+**2. Cultura & Turismo (OpenStreetMap Integration)** ✅
+- Importati **1.083 POI culturali** Emilia-Romagna da OpenStreetMap
+- Tipi: musei, castelli, monumenti, teatri, siti archeologici
+- Tabella `cultural_pois` per validare posizione cittadino
+- Tabella `cultural_visits` per tracciare visite effettuate
+- Endpoint per checkin, history, stats, heatmap
+
+**3. Logica Heatmap Corretta** ✅
+- La heatmap mostra **SOLO azioni cittadini** (non POI disponibili)
+- Mobilità: mostra `route_completions` (dove hanno preso bus/bici)
+- Cultura: mostra `cultural_visits` (dove hanno visitato musei)
+- I POI restano nel DB solo per **validare** la posizione
+
+#### Nuovi Endpoint API (16 totali)
+
+| Endpoint | Metodo | Descrizione |
+|----------|--------|-------------|
+| `/api/gaming-rewards/config` | GET | Legge configurazione gaming per comune |
+| `/api/gaming-rewards/config` | POST | Crea nuova configurazione |
+| `/api/gaming-rewards/config` | PUT | Aggiorna configurazione esistente |
+| `/api/gaming-rewards/mobility/start-tracking` | POST | Avvia tracciamento percorso |
+| `/api/gaming-rewards/mobility/complete` | POST | Completa percorso e assegna TCC |
+| `/api/gaming-rewards/mobility/history` | GET | Storico percorsi utente |
+| `/api/gaming-rewards/mobility/stats` | GET | Statistiche mobilità (CO2, km) |
+| `/api/gaming-rewards/mobility/heatmap` | GET | Heatmap percorsi completati |
+| `/api/gaming-rewards/culture/checkin` | POST | Check-in luogo culturale |
+| `/api/gaming-rewards/culture/history` | GET | Storico visite culturali |
+| `/api/gaming-rewards/culture/stats` | GET | Statistiche cultura |
+| `/api/gaming-rewards/culture/heatmap` | GET | Heatmap visite effettuate |
+| `/api/gaming-rewards/top-shops` | GET | Top 5 negozi per TCC |
+| `/api/gaming-rewards/trend` | GET | Trend TCC ultimi 7 giorni |
+| `/api/gaming-rewards/stats` | GET | Statistiche generali gaming |
+| `/api/gaming-rewards/heatmap` | GET | Heatmap transazioni TCC |
+
+#### Nuove Tabelle Database
+
+| Tabella | Descrizione | Campi Chiave |
+|---------|-------------|---------------|
+| `gtfs_stops` | Fermate trasporto pubblico GTFS | stop_id, name, lat, lng, type, provider |
+| `route_completions` | Percorsi completati dai cittadini | user_id, mode, start_lat/lng, end_lat/lng, credits_earned, co2_saved_g |
+| `cultural_pois` | POI culturali da OpenStreetMap | osm_id, name, type, lat, lng, region |
+| `cultural_visits` | Visite culturali effettuate | user_id, poi_id, lat, lng, tcc_earned |
+| `gaming_rewards_config` | Configurazione gaming per comune | comune_id, mobility_enabled, culture_enabled, tcc_rates |
+
+#### Frontend Aggiornato
+
+- **Layer Mobilità** (cyan): mostra percorsi completati
+- **Layer Cultura** (viola): mostra visite effettuate
+- **Filtri**: Mobilità (X), Cultura (X) con conteggio azioni
+- **Legenda**: "Percorsi Sostenibili", "Visite Culturali"
+
+#### TODO Pendenti
+
+- [ ] Scaricare POI culturali Toscana (server Overpass sovraccarico)
+- [ ] Integrare GTFS Tiemme (Toscana)
+- [ ] Implementare validazione posizione cittadino vs POI
 
 ### ⚠️ IMPORTANTE: Tabelle Dati TCC
 
