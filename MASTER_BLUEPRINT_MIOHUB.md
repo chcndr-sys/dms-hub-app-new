@@ -4437,3 +4437,87 @@ const creditFactors = {
 *Progetto creato il 31 Gennaio 2026 - Manus AI*
 *In attesa di autorizzazione per implementazione*
 
+
+
+---
+
+## 🎮 GAMING & REWARDS PANEL - STATO ATTUALE (3 Febbraio 2026)
+
+### Commit Stabile Attuale
+- **Commit:** `b4a6050`
+- **Branch:** master
+- **Stato:** Funzionante ma con funzionalità mancanti
+
+### Funzionalità OPERATIVE ✅
+| Funzionalità | Stato | Note |
+|--------------|-------|------|
+| Dashboard statistiche TCC | ✅ | Emessi, Spesi, Utenti, CO2 |
+| Configurazione parametri TCC | ✅ | Per categoria (Civic, Mobility, Culture, Shopping) |
+| Filtri layer mappa | ✅ | Tutti, Segnalazioni, Acquisti |
+| Filtri temporali | ✅ | Tutto, Oggi, 7gg, 30gg, 1 anno |
+| API civic-reports | ✅ | 19 segnalazioni nel DB |
+| API gaming-rewards/config | ✅ | Configurazione per comune |
+| Legenda mappa | ✅ | Segnalazioni, Negozi, Mercati, Hub |
+
+### Funzionalità NON OPERATIVE ❌
+| Funzionalità | Stato | Causa |
+|--------------|-------|-------|
+| Mappa centra su segnalazioni | ❌ | Click su filtro non triggera flyTo |
+| Marker segnalazioni visibili | ❌ | Layer marker non renderizzato |
+| Heatmap visibile | ❌ | Dati non passati correttamente al layer |
+| Lista segnalazioni cliccabile | ❌ | Non implementata |
+| Top 5 Negozi | ❌ | Rimosso con rollback |
+| Grafici Trend TCC | ❌ | Rimosso con rollback |
+| Sezione Challenges | ❌ | Rimosso con rollback |
+
+### Commit Cancellati con Rollback (da 09b0bac a e7aa61b)
+| Commit | Descrizione | Errore |
+|--------|-------------|--------|
+| `929ed64` | Top 5 Negozi e Grafici Trend | useState non definiti |
+| `60356e2` | Fix sintassi backtick | Backtick corrotti |
+| `e188dc9` | Sezione Challenges CRUD | useState non definiti |
+| `0da69ab` | Fix useState mancanti | Ordine funzioni errato |
+| `ac5db31` | Fix ordine loadChallenges | Import mancanti |
+| `e7aa61b` | Fix import icone | File già corrotto |
+
+### TODO Prossima Sessione
+
+#### FASE 1: Fix Mappa Gaming (Priorità ALTA - 2 ore)
+- [ ] Aggiungere Marker individuali per segnalazioni civiche
+- [ ] Implementare click su marker per popup dettagli
+- [ ] Implementare flyTo quando si clicca filtro "Segnalazioni"
+- [ ] Verificare che heatmap sia visibile
+- [ ] Testare su Vercel prima di procedere
+
+#### FASE 2: Reimplementare Top 5 Negozi (Priorità MEDIA - 1 ora)
+- [ ] Aggiungere useState per `topShops` e `trendData`
+- [ ] Aggiungere useEffect per caricare dati
+- [ ] Aggiungere import `BarChart3` da lucide-react
+- [ ] Aggiungere sezione UI Top 5 Negozi
+- [ ] Aggiungere sezione UI Trend 7 giorni
+- [ ] Testare compilazione PRIMA del commit
+
+#### FASE 3: Reimplementare Challenges (Priorità BASSA - 2 ore)
+- [ ] Verificare che API `/api/gaming-rewards/challenges` esista
+- [ ] Creare tabella `gaming_challenges` se non esiste
+- [ ] Aggiungere tutti gli useState necessari PRIMA del JSX
+- [ ] Aggiungere tutte le funzioni useCallback PRIMA del useEffect
+- [ ] Aggiungere tutti gli import icone necessari
+- [ ] Testare compilazione PRIMA del commit
+
+#### FASE 4: Lista Segnalazioni Scrollabile (Priorità MEDIA - 1 ora)
+- [ ] Aggiungere pannello laterale con lista segnalazioni
+- [ ] Implementare scroll con max-height
+- [ ] Implementare click su item per flyTo sulla mappa
+- [ ] Mostrare badge stato (pending/in_progress/resolved)
+
+### Regole da Seguire per Modifiche Future
+1. **SEMPRE testare compilazione** prima di ogni commit
+2. **SEMPRE aggiungere useState** prima di usare le variabili nel JSX
+3. **SEMPRE aggiungere import** prima di usare componenti/icone
+4. **SEMPRE definire useCallback** prima di usarli in useEffect
+5. **MAI fare commit incrementali** senza verificare che il codice compili
+6. **MAI modificare codice funzionante** senza backup
+
+---
+
