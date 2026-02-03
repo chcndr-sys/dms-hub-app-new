@@ -252,9 +252,9 @@ function applySpiralOffset(points: HeatmapPoint[]): (HeatmapPoint & { offsetLat:
       result.push({ ...groupPoints[0], offsetLat: 0, offsetLng: 0 });
     } else {
       // Multipli punti - disponi in spirale
-      const baseRadius = 0.0003; // Raggio base in gradi (~30m)
-      const radiusIncrement = 0.00015; // Incremento raggio per ogni giro
-      const pointsPerRing = 8; // Punti per ogni anello della spirale
+      const baseRadius = 0.00004; // Raggio base in gradi (~4m) - marker appoggiati
+      const radiusIncrement = 0.00003; // Incremento raggio per ogni giro
+      const pointsPerRing = 6; // Punti per ogni anello della spirale
       
       groupPoints.forEach((point, index) => {
         if (index === 0) {
