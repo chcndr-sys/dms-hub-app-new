@@ -116,15 +116,18 @@ const DEFAULT_CONFIG: GamingConfig = {
 };
 
 // Componente per centrare la mappa
-function MapCenterUpdater({ points, comuneId }: { points: HeatmapPoint[]; comuneId: number | null }) {
+function MapCenterUpdater({ points, civicReports, comuneId }: { points: HeatmapPoint[]; civicReports: HeatmapPoint[]; comuneId: number | null }) {
   const map = useMap();
   
   useEffect(() => {
     if (!map) return;
     
-    if (points.length > 0) {
-      const avgLat = points.reduce((sum, p) => sum + p.lat, 0) / points.length;
-      const avgLng = points.reduce((sum, p) => sum + p.lng, 0) / points.length;
+    // Combina tutti i punti (heatmap + segnalazioni civiche)
+    const allPoints = [...points, ...civicReports];
+    
+    if (allPoints.length > 0) {
+      const avgLat = allPoints.reduce((sum, p) => sum + p.lat, 0) / allPoints.length;
+      const avgLng = allPoints.reduce((sum, p) => sum + p.lng, 0) / allPoints.length;
       map.flyTo([avgLat, avgLng], 14, { duration: 1.5 });
       return;
     }
@@ -136,7 +139,7 @@ function MapCenterUpdater({ points, comuneId }: { points: HeatmapPoint[]; comune
     }
     
     map.flyTo([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], DEFAULT_ZOOM, { duration: 1 });
-  }, [map, points, comuneId]);
+  }, [map, points, civicReports, comuneId]);
   
   return null;
 }
@@ -827,7 +830,7 @@ export default function GamingRewardsPanel() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapCenterUpdater points={heatmapPoints} comuneId={currentComuneId} />
+              <MapCenterUpdater points={heatmapPoints} civicReports={civicReports} comuneId={currentComuneId} />
               <HeatmapLayer points={heatmapPoints} />
               {/* Marker negozi/hub/mercati */}
               {(selectedLayer === 'all' || selectedLayer === 'shopping') && heatmapPoints.map((point) => {
