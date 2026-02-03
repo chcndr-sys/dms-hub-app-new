@@ -1172,7 +1172,7 @@ export default function GamingRewardsPanel() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-[#22c55e] font-bold">+{shop.tcc_earned}</div>
+                      <div className="text-[#22c55e] font-bold">+{shop.tcc_earned.toLocaleString('it-IT')}</div>
                       <div className="text-xs text-[#e8fbff]/50">TCC guadagnati</div>
                     </div>
                   </div>
