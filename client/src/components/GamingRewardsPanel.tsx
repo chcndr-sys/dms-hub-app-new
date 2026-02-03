@@ -623,7 +623,7 @@ export default function GamingRewardsPanel() {
     setSavingConfig(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/config`, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
