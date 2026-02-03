@@ -185,27 +185,41 @@ const getMarkerIcon = (type: string, intensity: number) => {
     'shop': '🏪',
     'hub': '🏢',
     'market': '🛒',
+    'civic': '📢',
   };
   
   const iconEmoji = emoji[type] || '📍';
-  const bgColor = intensity > 0.7 ? '#8b5cf6' : intensity > 0.4 ? '#f97316' : '#22c55e';
+  
+  // Colore specifico per tipo
+  let bgColor = '#22c55e'; // Default verde
+  if (type === 'civic') {
+    bgColor = '#f97316'; // Arancione per segnalazioni
+  } else if (intensity > 0.7) {
+    bgColor = '#8b5cf6'; // Viola per alta intensità
+  } else if (intensity > 0.4) {
+    bgColor = '#eab308'; // Giallo per media intensità
+  }
+  
+  // Dimensione marker più grande per civic
+  const size = type === 'civic' ? 28 : 20;
+  const fontSize = type === 'civic' ? 16 : 12;
   
   return L.divIcon({
     html: `<div style="
       background: ${bgColor};
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
+      width: ${size}px;
+      height: ${size}px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: ${fontSize}px;
       border: 2px solid white;
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
     ">${iconEmoji}</div>`,
     className: 'custom-marker',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2],
   });
 };
 
@@ -853,11 +867,11 @@ export default function GamingRewardsPanel() {
               ))}
             </MapContainer>
           </div>
-          <div className="flex items-center justify-center gap-4 mt-4 text-sm text-[#e8fbff]/70">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#22c55e]"></span> Bassa</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#eab308]"></span> Media</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#f97316]"></span> Buona</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#8b5cf6]"></span> Hotspot</span>
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-4 text-sm text-[#e8fbff]/70">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#f97316]"></span> 📢 Segnalazioni</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#22c55e]"></span> 🏪 Negozi</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#eab308]"></span> 🛒 Mercati</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#8b5cf6]"></span> 🏢 Hub</span>
           </div>
         </CardContent>
       </Card>
