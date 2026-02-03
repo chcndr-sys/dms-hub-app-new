@@ -983,7 +983,7 @@ function APIDashboard() {
           <CardHeader>
             <CardTitle className="text-[#e8fbff] flex items-center gap-2">
               <Code className="h-5 w-5 text-[#14b8a6]" />
-              Endpoint Disponibili ({totalEndpointsCount})
+              Endpoint Disponibili
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
