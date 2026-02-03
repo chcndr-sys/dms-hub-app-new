@@ -315,12 +315,41 @@ export default function GamingRewardsPanel() {
   const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
   const [civicReports, setCivicReports] = useState<HeatmapPoint[]>([]);
   const [selectedLayer, setSelectedLayer] = useState<string>('all');
+  const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all');
   const [loading, setLoading] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(true);
   
   const { selectedComune, comuneId, comuneNome, isImpersonating } = useImpersonation();
   const currentComuneId = comuneId ? parseInt(comuneId) : 1;
+
+  // Funzione per filtrare per periodo temporale
+  const filterByTime = useCallback((items: any[], dateField: string = 'created_at') => {
+    if (timeFilter === 'all') return items;
+    
+    const now = new Date();
+    const startDate = new Date();
+    
+    switch (timeFilter) {
+      case 'today':
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'week':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case 'year':
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+    }
+    
+    return items.filter(item => {
+      const itemDate = new Date(item[dateField]);
+      return itemDate >= startDate;
+    });
+  }, [timeFilter]);
 
   // Funzione per caricare la configurazione via REST API
   const loadConfig = useCallback(async () => {
@@ -786,7 +815,7 @@ export default function GamingRewardsPanel() {
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                📢 Segnalazioni ({civicReports.length})
+                📢 Segnalazioni ({filterByTime(civicReports, 'created_at').length})
               </button>
             )}
             {config.shopping_enabled && (
@@ -825,6 +854,62 @@ export default function GamingRewardsPanel() {
                 🏛️ Cultura
               </button>
             )}
+            
+            {/* Separatore */}
+            <div className="w-px h-6 bg-[#e8fbff]/20 mx-2"></div>
+            
+            {/* Filtri Temporali */}
+            <span className="text-[#e8fbff]/50 text-xs">📅</span>
+            <button
+              onClick={() => setTimeFilter('all')}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                timeFilter === 'all' 
+                  ? 'bg-[#3b82f6] text-white' 
+                  : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
+              }`}
+            >
+              Tutto
+            </button>
+            <button
+              onClick={() => setTimeFilter('today')}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                timeFilter === 'today' 
+                  ? 'bg-[#3b82f6] text-white' 
+                  : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
+              }`}
+            >
+              Oggi
+            </button>
+            <button
+              onClick={() => setTimeFilter('week')}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                timeFilter === 'week' 
+                  ? 'bg-[#3b82f6] text-white' 
+                  : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
+              }`}
+            >
+              7gg
+            </button>
+            <button
+              onClick={() => setTimeFilter('month')}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                timeFilter === 'month' 
+                  ? 'bg-[#3b82f6] text-white' 
+                  : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
+              }`}
+            >
+              30gg
+            </button>
+            <button
+              onClick={() => setTimeFilter('year')}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                timeFilter === 'year' 
+                  ? 'bg-[#3b82f6] text-white' 
+                  : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
+              }`}
+            >
+              1 anno
+            </button>
           </div>
           <div className="h-[600px] rounded-lg overflow-hidden">
             <MapContainer
@@ -843,7 +928,7 @@ export default function GamingRewardsPanel() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <MapCenterUpdater points={heatmapPoints} civicReports={civicReports} comuneId={currentComuneId} />
-              <HeatmapLayer points={[...heatmapPoints, ...civicReports]} />
+              <HeatmapLayer points={[...heatmapPoints, ...filterByTime(civicReports, 'created_at')]} />
               {/* Marker negozi/hub/mercati */}
               {(selectedLayer === 'all' || selectedLayer === 'shopping') && heatmapPoints.map((point) => {
                 const intensity = Math.min((point.tcc_earned + point.tcc_spent) / 5000, 1.0);
@@ -865,7 +950,7 @@ export default function GamingRewardsPanel() {
                 );
               })}
               {/* Marker segnalazioni civiche */}
-              {(selectedLayer === 'all' || selectedLayer === 'civic') && civicReports.map((report) => (
+              {(selectedLayer === 'all' || selectedLayer === 'civic') && filterByTime(civicReports, 'created_at').map((report) => (
                 <Marker
                   key={`civic-${report.id}`}
                   position={[report.lat, report.lng]}
