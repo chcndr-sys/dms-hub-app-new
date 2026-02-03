@@ -227,7 +227,56 @@ function HeatmapLayer({ points }: { points: HeatmapPoint[] }) {
     };
   }, [map, points]);
   
-  return null;
+   return null;
+}
+
+// Funzione per calcolare offset spirale per punti sovrapposti
+// Raggruppa i punti per posizione e li dispone in cerchi concentrici
+function applySpiralOffset(points: HeatmapPoint[]): (HeatmapPoint & { offsetLat: number; offsetLng: number })[] {
+  // Raggruppa per posizione (arrotondando a 5 decimali per raggruppare punti molto vicini)
+  const groups: Map<string, HeatmapPoint[]> = new Map();
+  
+  points.forEach(point => {
+    const key = `${point.lat.toFixed(5)}_${point.lng.toFixed(5)}`;
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key)!.push(point);
+  });
+  
+  const result: (HeatmapPoint & { offsetLat: number; offsetLng: number })[] = [];
+  
+  groups.forEach((groupPoints) => {
+    if (groupPoints.length === 1) {
+      // Singolo punto, nessun offset
+      result.push({ ...groupPoints[0], offsetLat: 0, offsetLng: 0 });
+    } else {
+      // Multipli punti - disponi in spirale
+      const baseRadius = 0.0003; // Raggio base in gradi (~30m)
+      const radiusIncrement = 0.00015; // Incremento raggio per ogni giro
+      const pointsPerRing = 8; // Punti per ogni anello della spirale
+      
+      groupPoints.forEach((point, index) => {
+        if (index === 0) {
+          // Primo punto al centro
+          result.push({ ...point, offsetLat: 0, offsetLng: 0 });
+        } else {
+          // Calcola posizione spirale
+          const ring = Math.floor((index - 1) / pointsPerRing); // Quale anello
+          const posInRing = (index - 1) % pointsPerRing; // Posizione nell'anello
+          const radius = baseRadius + (ring * radiusIncrement);
+          const angle = (posInRing / pointsPerRing) * 2 * Math.PI + (ring * 0.5); // Angolo con rotazione per ogni anello
+          
+          const offsetLat = radius * Math.cos(angle);
+          const offsetLng = radius * Math.sin(angle);
+          
+          result.push({ ...point, offsetLat, offsetLng });
+        }
+      });
+    }
+  });
+  
+  return result;
 }
 
 // Icone marker per tipo
@@ -251,9 +300,9 @@ const getMarkerIcon = (type: string, intensity: number) => {
     bgColor = '#eab308'; // Giallo per media intensità
   }
   
-  // Dimensione marker più grande per civic
-  const size = type === 'civic' ? 28 : 20;
-  const fontSize = type === 'civic' ? 16 : 12;
+  // Dimensione marker - civic più piccoli (15px)
+  const size = type === 'civic' ? 15 : 20;
+  const fontSize = type === 'civic' ? 9 : 12;
   
   return L.divIcon({
     html: `<div style="
@@ -990,11 +1039,11 @@ export default function GamingRewardsPanel() {
                   </Marker>
                 );
               })}
-              {/* Marker segnalazioni civiche */}
-              {(selectedLayer === 'all' || selectedLayer === 'civic') && filterByTime(civicReports, 'created_at').map((report) => (
+              {/* Marker segnalazioni civiche - con offset spirale per punti sovrapposti */}
+              {(selectedLayer === 'all' || selectedLayer === 'civic') && applySpiralOffset(filterByTime(civicReports, 'created_at')).map((report) => (
                 <Marker
                   key={`civic-${report.id}`}
-                  position={[report.lat, report.lng]}
+                  position={[report.lat + report.offsetLat, report.lng + report.offsetLng]}
                   icon={getMarkerIcon('civic', 0.8)}
                 >
                   <Popup>
