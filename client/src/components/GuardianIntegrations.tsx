@@ -178,7 +178,7 @@ export default function GuardianIntegrations() {
     <div className="space-y-6">
       {/* Header con statistiche */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
           {/* Inventario Guardian - Endpoint documentati */}
           <Card className="bg-[#1a2332] border-[#3b82f6]/30">
             <CardContent className="p-4">
@@ -253,6 +253,20 @@ export default function GuardianIntegrations() {
                   <p className="text-2xl font-bold text-[#06b6d4]">{Object.keys(stats.byCategory).length}</p>
                 </div>
                 <Code className="h-8 w-8 text-[#06b6d4]/50" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* TOTALE GENERALE - Inventario + Attivi Backend */}
+          <Card className="bg-gradient-to-r from-[#1a2332] to-[#0f1419] border-[#ec4899]/50 col-span-full md:col-span-1">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[#e8fbff]/60 text-sm">TOTALE GENERALE</p>
+                  <p className="text-3xl font-bold text-[#ec4899]">{endpoints.length + (stats.active || 0)}</p>
+                  <p className="text-[#e8fbff]/40 text-xs mt-1">Inventario + Attivi</p>
+                </div>
+                <Zap className="h-10 w-10 text-[#ec4899]/50" />
               </div>
             </CardContent>
           </Card>
