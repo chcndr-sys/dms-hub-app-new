@@ -409,9 +409,9 @@ export default function GamingRewardsPanel() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/heatmap?comune_id=${currentComuneId}`);
       if (response.ok) {
-        const data = await response.json();
-        if (data.points && Array.isArray(data.points)) {
-          const points: HeatmapPoint[] = data.points.map((p: any) => ({
+        const result = await response.json();
+        if (result.success && result.data && Array.isArray(result.data)) {
+          const points: HeatmapPoint[] = result.data.map((p: any) => ({
             id: p.id,
             lat: parseFloat(p.lat) || 0,
             lng: parseFloat(p.lng) || 0,
@@ -419,7 +419,7 @@ export default function GamingRewardsPanel() {
             type: p.type || 'shop',
             tcc_earned: p.tcc_earned || 0,
             tcc_spent: p.tcc_spent || 0,
-            transactions: p.transactions || 0,
+            transactions: p.transaction_count || 0,
           }));
           setHeatmapPoints(points);
         }
