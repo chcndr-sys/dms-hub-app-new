@@ -96,6 +96,35 @@ interface GamingStats {
   top_shops: Array<{ name: string; tcc: number }>;
 }
 
+// Interfaccia per Mobilità Sostenibile (fermate trasporto pubblico)
+interface MobilityPoint {
+  id: number;
+  stop_id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  type: string; // bus, tram, train
+  provider: string;
+  tcc_reward: number;
+}
+
+// Interfaccia per POI Culturali (OpenStreetMap)
+interface CulturePOI {
+  id: number;
+  osm_id: string;
+  name: string;
+  type: string; // museum, castle, monument, archaeological, theatre
+  lat: number;
+  lng: number;
+  region: string;
+  wikidata?: string;
+  wikipedia?: string;
+  opening_hours?: string;
+  fee: boolean;
+  wheelchair?: string;
+  tcc_reward: number;
+}
+
 // Interfaccia per Top 5 Negozi
 interface TopShop {
   name: string;
@@ -298,12 +327,25 @@ function applySpiralOffset(points: HeatmapPoint[]): (HeatmapPoint & { offsetLat:
 }
 
 // Icone marker per tipo
-const getMarkerIcon = (type: string, intensity: number) => {
+const getMarkerIcon = (type: string, intensity: number = 0.5) => {
   const emoji: Record<string, string> = {
+    // Shopping
     'shop': '🏪',
     'hub': '🏢',
     'market': '🛒',
+    // Civic
     'civic': '📢',
+    // Mobility
+    'bus': '🚌',
+    'tram': '🚊',
+    'train': '🚆',
+    'stop': '🚏',
+    // Culture
+    'museum': '🏛️',
+    'castle': '🏰',
+    'monument': '🗿',
+    'archaeological': '⛏️',
+    'theatre': '🎭',
   };
   
   const iconEmoji = emoji[type] || '📍';
@@ -312,15 +354,20 @@ const getMarkerIcon = (type: string, intensity: number) => {
   let bgColor = '#22c55e'; // Default verde
   if (type === 'civic') {
     bgColor = '#f97316'; // Arancione per segnalazioni
+  } else if (['bus', 'tram', 'train', 'stop'].includes(type)) {
+    bgColor = '#06b6d4'; // Cyan per mobilità
+  } else if (['museum', 'castle', 'monument', 'archaeological', 'theatre'].includes(type)) {
+    bgColor = '#a855f7'; // Viola per cultura
   } else if (intensity > 0.7) {
     bgColor = '#8b5cf6'; // Viola per alta intensità
   } else if (intensity > 0.4) {
     bgColor = '#eab308'; // Giallo per media intensità
   }
   
-  // Dimensione marker - civic più piccoli (15px)
-  const size = type === 'civic' ? 15 : 20;
-  const fontSize = type === 'civic' ? 9 : 12;
+  // Dimensione marker - civic e mobility più piccoli
+  const smallTypes = ['civic', 'bus', 'tram', 'train', 'stop'];
+  const size = smallTypes.includes(type) ? 18 : 22;
+  const fontSize = smallTypes.includes(type) ? 10 : 13;
   
   return L.divIcon({
     html: `<div style="
@@ -421,6 +468,8 @@ export default function GamingRewardsPanel() {
   const [stats, setStats] = useState<GamingStats | null>(null);
   const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
   const [civicReports, setCivicReports] = useState<HeatmapPoint[]>([]);
+  const [mobilityPoints, setMobilityPoints] = useState<MobilityPoint[]>([]);
+  const [culturePOIs, setCulturePOIs] = useState<CulturePOI[]>([]);
   const [selectedLayer, setSelectedLayer] = useState<string>('all');
   const [layerTrigger, setLayerTrigger] = useState<number>(0); // Trigger per forzare flyTo su cambio layer
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all');
@@ -629,15 +678,95 @@ export default function GamingRewardsPanel() {
     }
   }, [currentComuneId]);
 
+  // Funzione per caricare i punti Mobilità Sostenibile (fermate trasporto pubblico)
+  const loadMobilityPoints = useCallback(async () => {
+    if (!config.mobility_enabled) {
+      setMobilityPoints([]);
+      return;
+    }
+    try {
+      // Usa le coordinate del comune per centrare la ricerca
+      const coords = COMUNI_COORDS[currentComuneId];
+      const lat = coords?.lat || 44.49;
+      const lng = coords?.lng || 11.34;
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/mobility/heatmap?lat=${lat}&lng=${lng}&radius=15`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.stops && Array.isArray(result.stops)) {
+          const points: MobilityPoint[] = result.stops.map((s: any) => ({
+            id: s.id,
+            stop_id: s.stop_id || '',
+            name: s.name || 'Fermata',
+            lat: parseFloat(s.lat) || 0,
+            lng: parseFloat(s.lng) || 0,
+            type: s.type || 'bus',
+            provider: s.provider || 'TPER',
+            tcc_reward: s.tcc_reward || 10,
+          }));
+          setMobilityPoints(points);
+        }
+      }
+    } catch (error) {
+      console.error('Errore caricamento mobility points:', error);
+    }
+  }, [currentComuneId, config.mobility_enabled]);
+
+  // Funzione per caricare i POI Culturali (OpenStreetMap)
+  const loadCulturePOIs = useCallback(async () => {
+    if (!config.culture_enabled) {
+      setCulturePOIs([]);
+      return;
+    }
+    try {
+      // Usa le coordinate del comune per centrare la ricerca
+      const coords = COMUNI_COORDS[currentComuneId];
+      const lat = coords?.lat || 44.49;
+      const lng = coords?.lng || 11.34;
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/culture/heatmap?lat=${lat}&lng=${lng}&radius=20`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.pois && Array.isArray(result.pois)) {
+          const pois: CulturePOI[] = result.pois.map((p: any) => ({
+            id: p.id,
+            osm_id: p.osm_id || '',
+            name: p.name || 'Luogo culturale',
+            type: p.type || 'museum',
+            lat: parseFloat(p.lat) || 0,
+            lng: parseFloat(p.lng) || 0,
+            region: p.region || '',
+            wikidata: p.wikidata,
+            wikipedia: p.wikipedia,
+            opening_hours: p.opening_hours,
+            fee: p.fee || false,
+            wheelchair: p.wheelchair,
+            tcc_reward: p.tcc_reward || 15,
+          }));
+          setCulturePOIs(pois);
+        }
+      }
+    } catch (error) {
+      console.error('Errore caricamento culture POIs:', error);
+    }
+  }, [currentComuneId, config.culture_enabled]);
+
   // Carica tutti i dati all'avvio e quando cambia il comune
   useEffect(() => {
     const loadAllData = async () => {
       setLoading(true);
-      await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports(), loadTopShops(), loadTrendData()]);
+      await Promise.all([
+        loadConfig(), 
+        loadStats(), 
+        loadHeatmapPoints(), 
+        loadCivicReports(), 
+        loadTopShops(), 
+        loadTrendData(),
+        loadMobilityPoints(),
+        loadCulturePOIs()
+      ]);
       setLoading(false);
     };
     loadAllData();
-  }, [loadConfig, loadStats, loadHeatmapPoints, loadCivicReports, loadTopShops, loadTrendData]);
+  }, [loadConfig, loadStats, loadHeatmapPoints, loadCivicReports, loadTopShops, loadTrendData, loadMobilityPoints, loadCulturePOIs]);
 
   // Salva configurazione via REST API
   const saveConfig = async () => {
@@ -688,7 +817,16 @@ export default function GamingRewardsPanel() {
   // Funzione refresh dati
   const refreshData = async () => {
     setLoading(true);
-    await Promise.all([loadConfig(), loadStats(), loadHeatmapPoints(), loadCivicReports(), loadTopShops(), loadTrendData()]);
+    await Promise.all([
+      loadConfig(), 
+      loadStats(), 
+      loadHeatmapPoints(), 
+      loadCivicReports(), 
+      loadTopShops(), 
+      loadTrendData(),
+      loadMobilityPoints(),
+      loadCulturePOIs()
+    ]);
     setLoading(false);
     toast.success('Dati aggiornati');
   };
@@ -1005,7 +1143,7 @@ export default function GamingRewardsPanel() {
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                🚲 Mobilità
+                🚌 Mobilità ({mobilityPoints.length})
               </button>
             )}
             {config.culture_enabled && (
@@ -1017,7 +1155,7 @@ export default function GamingRewardsPanel() {
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                🏛️ Cultura
+                🏛️ Cultura ({culturePOIs.length})
               </button>
             )}
             
@@ -1131,6 +1269,65 @@ export default function GamingRewardsPanel() {
                   </Popup>
                 </Marker>
               ))}
+              {/* Marker Mobilità Sostenibile - fermate trasporto pubblico */}
+              {(selectedLayer === 'all' || selectedLayer === 'mobility') && config.mobility_enabled && mobilityPoints.map((stop) => (
+                <Marker
+                  key={`mobility-${stop.id}`}
+                  position={[stop.lat, stop.lng]}
+                  icon={getMarkerIcon(stop.type || 'bus')}
+                >
+                  <Popup>
+                    <div className="text-sm">
+                      <div className="font-bold text-cyan-600">🚌 {stop.name}</div>
+                      <div className="text-xs text-gray-600">{stop.provider}</div>
+                      <div>TCC Reward: <span className="text-green-600 font-semibold">+{stop.tcc_reward}</span></div>
+                      <div className="text-xs text-gray-500">Fermata {stop.type}</div>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+              {/* Marker Cultura - POI OpenStreetMap */}
+              {(selectedLayer === 'all' || selectedLayer === 'culture') && config.culture_enabled && culturePOIs.map((poi) => (
+                <Marker
+                  key={`culture-${poi.id}`}
+                  position={[poi.lat, poi.lng]}
+                  icon={getMarkerIcon(poi.type || 'museum')}
+                >
+                  <Popup>
+                    <div className="text-sm max-w-xs">
+                      <div className="font-bold text-purple-600">
+                        {poi.type === 'museum' && '🏛️ '}
+                        {poi.type === 'castle' && '🏰 '}
+                        {poi.type === 'monument' && '🗿 '}
+                        {poi.type === 'archaeological' && '⛏️ '}
+                        {poi.type === 'theatre' && '🎭 '}
+                        {poi.name}
+                      </div>
+                      <div className="text-xs text-gray-600 capitalize">{poi.type}</div>
+                      {poi.opening_hours && (
+                        <div className="text-xs text-gray-500">🕒 {poi.opening_hours}</div>
+                      )}
+                      {poi.fee && (
+                        <div className="text-xs text-amber-600">🎫 Ingresso a pagamento</div>
+                      )}
+                      {poi.wheelchair && (
+                        <div className="text-xs text-blue-600">♿ {poi.wheelchair === 'yes' ? 'Accessibile' : poi.wheelchair}</div>
+                      )}
+                      <div>TCC Reward: <span className="text-green-600 font-semibold">+{poi.tcc_reward}</span></div>
+                      {poi.wikidata && (
+                        <a 
+                          href={`https://www.wikidata.org/wiki/${poi.wikidata}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-500 hover:underline"
+                        >
+                          📚 Wikidata
+                        </a>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
             </MapContainer>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 mt-4 text-sm text-[#e8fbff]/70">
@@ -1138,6 +1335,12 @@ export default function GamingRewardsPanel() {
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#22c55e]"></span> 🏪 Negozi</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#eab308]"></span> 🛒 Mercati</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#8b5cf6]"></span> 🏢 Hub</span>
+            {config.mobility_enabled && (
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#06b6d4]"></span> 🚌 Fermate</span>
+            )}
+            {config.culture_enabled && (
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#a855f7]"></span> 🏛️ Cultura</span>
+            )}
           </div>
         </CardContent>
       </Card>
