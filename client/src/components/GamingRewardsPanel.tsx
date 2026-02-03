@@ -116,19 +116,59 @@ const DEFAULT_CONFIG: GamingConfig = {
 };
 
 // Componente per centrare la mappa
-function MapCenterUpdater({ points, civicReports, comuneId }: { points: HeatmapPoint[]; civicReports: HeatmapPoint[]; comuneId: number | null }) {
+// Aggiornato: ora reagisce anche al cambio di selectedLayer per flyTo sui punti filtrati
+function MapCenterUpdater({ 
+  points, 
+  civicReports, 
+  comuneId, 
+  selectedLayer,
+  layerTrigger 
+}: { 
+  points: HeatmapPoint[]; 
+  civicReports: HeatmapPoint[]; 
+  comuneId: number | null;
+  selectedLayer: string;
+  layerTrigger: number;
+}) {
   const map = useMap();
   
   useEffect(() => {
     if (!map) return;
     
-    // Combina tutti i punti (heatmap + segnalazioni civiche)
-    const allPoints = [...points, ...civicReports];
+    // Determina quali punti mostrare in base al layer selezionato
+    let targetPoints: HeatmapPoint[] = [];
     
-    if (allPoints.length > 0) {
-      const avgLat = allPoints.reduce((sum, p) => sum + p.lat, 0) / allPoints.length;
-      const avgLng = allPoints.reduce((sum, p) => sum + p.lng, 0) / allPoints.length;
-      map.flyTo([avgLat, avgLng], 14, { duration: 1.5 });
+    if (selectedLayer === 'civic') {
+      targetPoints = civicReports;
+    } else if (selectedLayer === 'shopping') {
+      targetPoints = points.filter(p => p.type === 'shop' || p.type === 'market');
+    } else if (selectedLayer === 'all') {
+      targetPoints = [...points, ...civicReports];
+    } else {
+      targetPoints = [...points, ...civicReports];
+    }
+    
+    if (targetPoints.length > 0) {
+      // Calcola bounding box per mostrare tutti i punti
+      const lats = targetPoints.map(p => p.lat);
+      const lngs = targetPoints.map(p => p.lng);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+      
+      // Se c'è un solo punto o punti molto vicini, usa flyTo
+      if (maxLat - minLat < 0.01 && maxLng - minLng < 0.01) {
+        const avgLat = (minLat + maxLat) / 2;
+        const avgLng = (minLng + maxLng) / 2;
+        map.flyTo([avgLat, avgLng], 15, { duration: 1.5 });
+      } else {
+        // Usa fitBounds per mostrare tutti i punti
+        map.flyToBounds(
+          [[minLat, minLng], [maxLat, maxLng]],
+          { padding: [50, 50], duration: 1.5, maxZoom: 16 }
+        );
+      }
       return;
     }
     
@@ -139,7 +179,7 @@ function MapCenterUpdater({ points, civicReports, comuneId }: { points: HeatmapP
     }
     
     map.flyTo([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], DEFAULT_ZOOM, { duration: 1 });
-  }, [map, points, civicReports, comuneId]);
+  }, [map, points, civicReports, comuneId, selectedLayer, layerTrigger]);
   
   return null;
 }
@@ -315,6 +355,7 @@ export default function GamingRewardsPanel() {
   const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
   const [civicReports, setCivicReports] = useState<HeatmapPoint[]>([]);
   const [selectedLayer, setSelectedLayer] = useState<string>('all');
+  const [layerTrigger, setLayerTrigger] = useState<number>(0); // Trigger per forzare flyTo su cambio layer
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all');
   const [loading, setLoading] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
@@ -797,7 +838,7 @@ export default function GamingRewardsPanel() {
           {/* Filtri Layer */}
           <div className="flex flex-wrap gap-2 mb-4">
             <button
-              onClick={() => setSelectedLayer('all')}
+              onClick={() => { setSelectedLayer('all'); setLayerTrigger(t => t + 1); }}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 selectedLayer === 'all' 
                   ? 'bg-[#8b5cf6] text-white' 
@@ -808,7 +849,7 @@ export default function GamingRewardsPanel() {
             </button>
             {config.civic_enabled && (
               <button
-                onClick={() => setSelectedLayer('civic')}
+                onClick={() => { setSelectedLayer('civic'); setLayerTrigger(t => t + 1); }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   selectedLayer === 'civic' 
                     ? 'bg-[#f97316] text-white' 
@@ -820,7 +861,7 @@ export default function GamingRewardsPanel() {
             )}
             {config.shopping_enabled && (
               <button
-                onClick={() => setSelectedLayer('shopping')}
+                onClick={() => { setSelectedLayer('shopping'); setLayerTrigger(t => t + 1); }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   selectedLayer === 'shopping' 
                     ? 'bg-[#22c55e] text-white' 
@@ -832,7 +873,7 @@ export default function GamingRewardsPanel() {
             )}
             {config.mobility_enabled && (
               <button
-                onClick={() => setSelectedLayer('mobility')}
+                onClick={() => { setSelectedLayer('mobility'); setLayerTrigger(t => t + 1); }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   selectedLayer === 'mobility' 
                     ? 'bg-[#06b6d4] text-white' 
@@ -844,7 +885,7 @@ export default function GamingRewardsPanel() {
             )}
             {config.culture_enabled && (
               <button
-                onClick={() => setSelectedLayer('culture')}
+                onClick={() => { setSelectedLayer('culture'); setLayerTrigger(t => t + 1); }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   selectedLayer === 'culture' 
                     ? 'bg-[#a855f7] text-white' 
@@ -927,7 +968,7 @@ export default function GamingRewardsPanel() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapCenterUpdater points={heatmapPoints} civicReports={civicReports} comuneId={currentComuneId} />
+              <MapCenterUpdater points={heatmapPoints} civicReports={civicReports} comuneId={currentComuneId} selectedLayer={selectedLayer} layerTrigger={layerTrigger} />
               <HeatmapLayer points={[...heatmapPoints, ...filterByTime(civicReports, 'created_at')]} />
               {/* Marker negozi/hub/mercati */}
               {(selectedLayer === 'all' || selectedLayer === 'shopping') && heatmapPoints.map((point) => {
