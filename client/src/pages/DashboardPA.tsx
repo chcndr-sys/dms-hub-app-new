@@ -2122,11 +2122,11 @@ export default function DashboardPA() {
               <span className="text-xs font-medium">Wallet/PagoPA</span>
             </button>
             </ProtectedTab>
-            <ProtectedTab tabId="products">
+            <ProtectedTab tabId="gaming">
             <button
-              onClick={() => setActiveTab('products')}
+              onClick={() => setActiveTab('gaming')}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                activeTab === 'products'
+                activeTab === 'gaming'
                   ? 'bg-[#8b5cf6] border-[#8b5cf6] text-white shadow-lg'
                   : 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/20 text-[#8b5cf6]'
               }`}
@@ -2596,7 +2596,7 @@ export default function DashboardPA() {
           </TabsContent>
 
           {/* TAB 4: GAMING & REWARDS */}
-          <TabsContent value="products" className="space-y-6">
+          <TabsContent value="gaming" className="space-y-6">
             {/* Gaming & Rewards Panel */}
             <GamingRewardsPanel />
           </TabsContent>
