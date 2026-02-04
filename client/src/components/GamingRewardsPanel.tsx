@@ -509,7 +509,10 @@ export default function GamingRewardsPanel() {
   const [configExpanded, setConfigExpanded] = useState(true);
   
   const { comuneId, comuneNome, isImpersonating } = useImpersonation();
-  const currentComuneId = comuneId ? parseInt(comuneId) : 1;
+  // Se admin non sta impersonando, non filtrare per comune (vede tutto)
+  // Se sta impersonando, usa il comune selezionato
+  const currentComuneId = isImpersonating && comuneId ? parseInt(comuneId) : null;
+  const comuneQueryParam = currentComuneId ? `comune_id=${currentComuneId}` : '';
 
   // Funzione per filtrare per periodo temporale
   const filterByTime = useCallback((items: any[], dateField: string = 'created_at') => {
@@ -542,7 +545,7 @@ export default function GamingRewardsPanel() {
   // Funzione per caricare la configurazione via REST API
   const loadConfig = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/config?comune_id=${currentComuneId}`);
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/config${comuneQueryParam ? '?' + comuneQueryParam : ''}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
@@ -577,12 +580,12 @@ export default function GamingRewardsPanel() {
     } catch (error) {
       console.error('Errore caricamento config:', error);
     }
-  }, [currentComuneId]);
+  }, [comuneQueryParam]);
 
   // Funzione per caricare le statistiche via REST API
   const loadStats = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/stats?comune_id=${currentComuneId}`);
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/stats${comuneQueryParam ? '?' + comuneQueryParam : ''}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
@@ -600,7 +603,7 @@ export default function GamingRewardsPanel() {
     } catch (error) {
       console.error('Errore caricamento stats:', error);
     }
-  }, [currentComuneId]);
+  }, [comuneQueryParam]);
 
   // Funzione per caricare le segnalazioni civiche
   const loadCivicReports = useCallback(async () => {
@@ -639,7 +642,7 @@ export default function GamingRewardsPanel() {
   // Funzione per caricare i punti heatmap via REST API
   const loadHeatmapPoints = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/heatmap?comune_id=${currentComuneId}`);
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/heatmap${comuneQueryParam ? '?' + comuneQueryParam : ''}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && Array.isArray(result.data)) {
@@ -660,12 +663,12 @@ export default function GamingRewardsPanel() {
     } catch (error) {
       console.error('Errore caricamento heatmap:', error);
     }
-  }, [currentComuneId]);
+  }, [comuneQueryParam]);
 
   // Funzione per caricare Top 5 Negozi via REST API
   const loadTopShops = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/top-shops?comune_id=${currentComuneId}`);
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/top-shops${comuneQueryParam ? '?' + comuneQueryParam : ''}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && Array.isArray(result.data)) {
@@ -682,12 +685,12 @@ export default function GamingRewardsPanel() {
     } catch (error) {
       console.error('Errore caricamento top shops:', error);
     }
-  }, [currentComuneId]);
+  }, [comuneQueryParam]);
 
   // Funzione per caricare Trend TCC (ultimi 7 giorni) via REST API
   const loadTrendData = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/trend?comune_id=${currentComuneId}`);
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/trend${comuneQueryParam ? '?' + comuneQueryParam : ''}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && Array.isArray(result.data)) {
@@ -704,7 +707,7 @@ export default function GamingRewardsPanel() {
     } catch (error) {
       console.error('Errore caricamento trend data:', error);
     }
-  }, [currentComuneId]);
+  }, [comuneQueryParam]);
 
   // Funzione per caricare le Azioni Mobilità (percorsi completati dai cittadini)
   const loadMobilityActions = useCallback(async () => {
@@ -829,7 +832,7 @@ export default function GamingRewardsPanel() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          comune_id: currentComuneId,
+          comune_id: currentComuneId || 1, // Default a Grosseto se admin non impersona
           civic_enabled: config.civic_enabled,
           civic_tcc_default: config.civic_tcc_default,
           civic_tcc_urgent: config.civic_tcc_urgent,
