@@ -33,7 +33,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, getImpersonationParams } from '@/hooks/useImpersonation';
 import NotificationManager from '@/components/suap/NotificationManager';
 
 // --- TIPI ---
@@ -2236,6 +2236,7 @@ export default function WalletPanel() {
             mittenteId={1}
             mittenteNome="Ufficio Tributi Comune di Grosseto"
             onNotificheUpdate={loadNotificheCount}
+            comuneId={getImpersonationParams().comuneId ? parseInt(getImpersonationParams().comuneId!) : undefined}
           />
         </div>
       )}
