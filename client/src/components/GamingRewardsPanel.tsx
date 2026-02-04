@@ -196,7 +196,7 @@ function MapCenterUpdater({
       targetPoints = points.filter(p => p.type === 'shop' || p.type === 'market');
     } else if (selectedLayer === 'mobility') {
       // Converti mobilityActions in punti con lat/lng
-      targetPoints = mobilityActions.map(m => ({ lat: parseFloat(String(m.start_lat)), lng: parseFloat(String(m.start_lng)) }));
+      targetPoints = mobilityActions.map(m => ({ lat: parseFloat(String(m.lat)), lng: parseFloat(String(m.lng)) }));
     } else if (selectedLayer === 'culture') {
       // Converti cultureActions in punti con lat/lng
       targetPoints = cultureActions.map(c => ({ lat: parseFloat(String(c.lat)), lng: parseFloat(String(c.lng)) }));
@@ -251,10 +251,15 @@ function HeatmapLayer({ points }: { points: HeatmapPoint[] }) {
     
     const heatData: [number, number, number][] = points.map(p => {
       // Per le segnalazioni civiche (type='civic') usa un'intensità fissa alta
+      // Per mobility e culture usa intensità media-alta
       // Per gli altri punti usa tcc_earned + tcc_spent
       let intensity: number;
       if (p.type === 'civic') {
         intensity = 0.8; // Intensità alta per segnalazioni
+      } else if (p.type === 'mobility') {
+        intensity = 0.7; // Intensità media-alta per mobilità
+      } else if (p.type === 'culture') {
+        intensity = 0.75; // Intensità media-alta per cultura
       } else {
         intensity = Math.min((p.tcc_earned + p.tcc_spent) / 5000, 1.0);
         if (intensity === 0) intensity = 0.3; // Minimo visibile per mercati
@@ -1267,7 +1272,32 @@ export default function GamingRewardsPanel() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <MapCenterUpdater points={heatmapPoints} civicReports={filterByTime(civicReports, 'created_at')} mobilityActions={mobilityActions} cultureActions={cultureActions} comuneId={currentComuneId} selectedLayer={selectedLayer} layerTrigger={layerTrigger} />
-              <HeatmapLayer points={[...heatmapPoints, ...filterByTime(civicReports, 'created_at')]} />
+              <HeatmapLayer points={[
+                ...heatmapPoints, 
+                ...filterByTime(civicReports, 'created_at'),
+                // Aggiungi punti mobilità come HeatmapPoint
+                ...mobilityActions.map(m => ({
+                  id: m.id,
+                  lat: parseFloat(String(m.lat)),
+                  lng: parseFloat(String(m.lng)),
+                  name: m.name,
+                  type: 'mobility' as const,
+                  tcc_earned: m.tcc_reward,
+                  tcc_spent: 0,
+                  transactions: 1
+                })),
+                // Aggiungi punti cultura come HeatmapPoint
+                ...cultureActions.map(c => ({
+                  id: c.id,
+                  lat: parseFloat(String(c.lat)),
+                  lng: parseFloat(String(c.lng)),
+                  name: c.name,
+                  type: 'culture' as const,
+                  tcc_earned: c.tcc_reward,
+                  tcc_spent: 0,
+                  transactions: 1
+                }))
+              ]} />
               {/* Marker negozi/hub/mercati - con offset spirale per punti sovrapposti */}
               {(selectedLayer === 'all' || selectedLayer === 'shopping') && applySpiralOffset(heatmapPoints).map((point) => {
                 const intensity = Math.min((point.tcc_earned + point.tcc_spent) / 5000, 1.0);
