@@ -2138,8 +2138,8 @@ export default function ControlliSanzioniPanel() {
                         setShowSessionModal(true);
                         setDetailsLoading(true);
                         try {
-                          const dataStr = session.data_mercato.split('T')[0];
-                          const res = await fetch(`${MIHUB_API}/presenze/storico/dettaglio/${session.market_id}/${dataStr}`);
+                          // Usa l'ID della sessione per ottenere i dettagli corretti
+                          const res = await fetch(`${MIHUB_API}/presenze/sessioni/${session.id}/dettaglio`);
                           const data = await res.json();
                           if (data.success) {
                             // Rimuovi duplicati basandosi su stall_id
