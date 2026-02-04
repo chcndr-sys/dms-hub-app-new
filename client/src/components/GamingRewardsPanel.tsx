@@ -512,7 +512,10 @@ export default function GamingRewardsPanel() {
   // Se admin non sta impersonando, non filtrare per comune (vede tutto)
   // Se sta impersonando, usa il comune selezionato
   const currentComuneId = isImpersonating && comuneId ? parseInt(comuneId) : null;
+  // Per i dati: non passare comune_id se admin non impersona (vede tutto)
   const comuneQueryParam = currentComuneId ? `comune_id=${currentComuneId}` : '';
+  // Per la configurazione: usare sempre un comune_id valido (default Grosseto=1)
+  const configComuneId = currentComuneId || 1;
 
   // Funzione per filtrare per periodo temporale
   const filterByTime = useCallback((items: any[], dateField: string = 'created_at') => {
@@ -545,7 +548,7 @@ export default function GamingRewardsPanel() {
   // Funzione per caricare la configurazione via REST API
   const loadConfig = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/config${comuneQueryParam ? '?' + comuneQueryParam : ''}`);
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/config?comune_id=${configComuneId}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
@@ -580,7 +583,7 @@ export default function GamingRewardsPanel() {
     } catch (error) {
       console.error('Errore caricamento config:', error);
     }
-  }, [comuneQueryParam]);
+  }, [configComuneId]);
 
   // Funzione per caricare le statistiche via REST API
   const loadStats = useCallback(async () => {
