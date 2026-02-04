@@ -505,40 +505,23 @@ export default function ComuniPanel() {
       const res = await fetch(`${API_BASE_URL}/api/comuni/${comune.id}/utenti`);
       const data = await res.json();
       
-      if (data.success && data.data.length > 0) {
-        // Trova l'admin o il primo utente attivo
-        const adminUser = data.data.find((u: UtenteComune) => u.ruolo === 'admin' && u.attivo) || data.data.find((u: UtenteComune) => u.attivo);
-        
-        if (adminUser && adminUser.user_id) {
-          // Chiama l'API di impersonificazione
-          const impRes = await fetch(`${API_BASE_URL}/api/security/users/${adminUser.user_id}/impersonate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ comune_id: comune.id })
-          });
-          const impData = await impRes.json();
-          
-          if (impData.success) {
-            // Passa i dati nell'URL per il banner (sessionStorage non funziona tra finestre)
-            const comuneNomeEncoded = encodeURIComponent(comune.nome);
-            const userEmail = encodeURIComponent(adminUser.email || impData.data?.target_user?.email || '');
-            
-            // Costruisci URL impersonificazione
-            const impersonateUrl = `/dashboard-pa?comune_id=${comune.id}&comune_nome=${comuneNomeEncoded}&user_email=${userEmail}&impersonate=true`;
-            
-            // Usa sempre redirect nella stessa pagina (evita problemi popup su Safari/iPad)
-            // I dati di impersonificazione vengono salvati in sessionStorage dal hook useImpersonation
-            if (confirm(`Vuoi accedere come Admin del Comune di ${comune.nome}?\n\nVerrai reindirizzato alla dashboard del comune.`)) {
-              window.location.href = impersonateUrl;
-            }
-          } else {
-            alert(`❌ Errore: ${impData.error || 'Impossibile avviare impersonificazione'}`);
-          }
-        } else {
-          alert(`⚠️ Nessun utente admin trovato per il Comune di ${comune.nome}.\n\nAssegna prima un utente con ruolo Admin nella sezione Permessi.`);
-        }
-      } else {
-        alert(`⚠️ Nessun utente assegnato al Comune di ${comune.nome}.\n\nAssegna prima un utente nella sezione Permessi.`);
+      // Trova l'admin o il primo utente attivo (se esiste)
+      const adminUser = data.success && data.data.length > 0 
+        ? (data.data.find((u: UtenteComune) => u.ruolo === 'admin' && u.attivo) || data.data.find((u: UtenteComune) => u.attivo))
+        : null;
+      
+      // ADMIN BYPASS: Se non c'è un utente assegnato, permetti comunque l'impersonificazione diretta
+      // L'admin di sistema può visualizzare qualsiasi comune senza bisogno di un utente locale
+      const comuneNomeEncoded = encodeURIComponent(comune.nome);
+      const userEmail = adminUser ? encodeURIComponent(adminUser.email || '') : encodeURIComponent(`admin@c_${comune.codice_catastale?.toLowerCase() || comune.id}.miohub.it`);
+      
+      // Costruisci URL impersonificazione
+      const impersonateUrl = `/dashboard-pa?comune_id=${comune.id}&comune_nome=${comuneNomeEncoded}&user_email=${userEmail}&impersonate=true`;
+      
+      // Usa sempre redirect nella stessa pagina (evita problemi popup su Safari/iPad)
+      // I dati di impersonificazione vengono salvati in sessionStorage dal hook useImpersonation
+      if (confirm(`Vuoi accedere come Admin del Comune di ${comune.nome}?\n\nVerrai reindirizzato alla dashboard del comune.`)) {
+        window.location.href = impersonateUrl;
       }
     } catch (error) {
       console.error('Error impersonating comune:', error);
