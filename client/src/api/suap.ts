@@ -3,6 +3,8 @@
  * Gestione pratiche amministrative e integrazione PDND
  */
 
+import { addComuneIdToUrl, getImpersonationParams } from '@/hooks/useImpersonation';
+
 const baseUrl = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
 
 export interface SuapPratica {
@@ -52,13 +54,18 @@ export interface SuapFilters {
   stato?: string;
   search?: string;
   comune_nome?: string;
+  comune_id?: string;
 }
 
 /**
  * Recupera le statistiche generali per la dashboard SUAP
+ * Filtrate per comune_id se in modalità impersonazione
  */
 export async function getSuapStats(enteId: string): Promise<SuapStats> {
-  const res = await fetch(`${baseUrl}/api/suap/stats?ente_id=${enteId}`, {
+  // Aggiungi comune_id se in modalità impersonazione
+  const url = addComuneIdToUrl(`${baseUrl}/api/suap/stats?ente_id=${enteId}`);
+  
+  const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json'
     }
@@ -71,6 +78,7 @@ export async function getSuapStats(enteId: string): Promise<SuapStats> {
 
 /**
  * Recupera la lista delle pratiche con filtri opzionali
+ * Filtrate per comune_id se in modalità impersonazione
  */
 export async function getSuapPratiche(enteId: string, filters: SuapFilters = {}): Promise<SuapPratica[]> {
   const params = new URLSearchParams();
@@ -78,8 +86,11 @@ export async function getSuapPratiche(enteId: string, filters: SuapFilters = {})
   if (filters.stato) params.append('stato', filters.stato);
   if (filters.search) params.append('search', filters.search);
   if (filters.comune_nome) params.append('comune_nome', filters.comune_nome);
+  
+  // Aggiungi comune_id se in modalità impersonazione
+  const url = addComuneIdToUrl(`${baseUrl}/api/suap/pratiche?${params.toString()}`);
 
-  const res = await fetch(`${baseUrl}/api/suap/pratiche?${params.toString()}`, {
+  const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json'
     }

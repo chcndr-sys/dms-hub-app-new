@@ -37,6 +37,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { addComuneIdToUrl } from '@/hooks/useImpersonation';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
 
@@ -78,7 +79,7 @@ export default function ListaAutorizzazioniSuap({
   const fetchAutorizzazioni = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/autorizzazioni`);
+      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/autorizzazioni`));
       const json = await response.json();
       
       if (json.success && json.data) {
