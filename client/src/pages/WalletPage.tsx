@@ -123,14 +123,47 @@ export default function WalletPage() {
   // Tab disponibili: cliente (wallet) e eco_credit (programma ECO CREDIT)
   const [activeTab, setActiveTab] = useState<'cliente' | 'eco_credit'>('cliente');
   
-  // Stato ECO CREDIT - salvato in localStorage
+  // Stato ECO CREDIT - salvato in localStorage E nel database
   const [ecoCreditsEnabled, setEcoCreditsEnabled] = useState(() => {
     return localStorage.getItem('eco_credit_enabled') === 'true';
   });
+  const [ecoToggleLoading, setEcoToggleLoading] = useState(false);
   
-  const toggleEcoCredit = (enabled: boolean) => {
+  const toggleEcoCredit = async (enabled: boolean) => {
+    // Aggiorna subito lo stato locale per UX reattiva
     setEcoCreditsEnabled(enabled);
     localStorage.setItem('eco_credit_enabled', enabled ? 'true' : 'false');
+    
+    // Sincronizza con il database se l'utente è autenticato
+    if (currentUser?.id) {
+      setEcoToggleLoading(true);
+      try {
+        const response = await fetch(`${API_BASE}/api/citizens/${currentUser.id}/eco-credit`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ active: enabled })
+        });
+        
+        if (!response.ok) {
+          console.error('Errore sincronizzazione ECO CREDIT:', await response.text());
+          // Rollback in caso di errore
+          setEcoCreditsEnabled(!enabled);
+          localStorage.setItem('eco_credit_enabled', !enabled ? 'true' : 'false');
+        } else {
+          console.log(`ECO CREDIT ${enabled ? 'attivato' : 'disattivato'} nel database`);
+        }
+      } catch (error) {
+        console.error('Errore chiamata API ECO CREDIT:', error);
+        // Rollback in caso di errore
+        setEcoCreditsEnabled(!enabled);
+        localStorage.setItem('eco_credit_enabled', !enabled ? 'true' : 'false');
+      } finally {
+        setEcoToggleLoading(false);
+      }
+    }
   };
   
   // Stato per POI vicini e popup check-in
