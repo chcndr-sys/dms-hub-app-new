@@ -51,9 +51,9 @@ export default function CivicReportsPanel() {
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
-  const { selectedComune } = useImpersonation();
+  const { comuneId: impersonatedComuneId } = useImpersonation();
   const { setSelectedReport } = useCivicReports();
-  const comuneId = selectedComune?.id || 1;
+  const comuneId = impersonatedComuneId ? parseInt(impersonatedComuneId) : 1;
 
   // Carica statistiche
   const loadStats = async () => {
