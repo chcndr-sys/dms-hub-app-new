@@ -118,8 +118,18 @@ export default function WalletPage() {
     setQrData(null);
   };
   
-  // Rimosso tab Impresa - ora solo Cliente con funzione Paga con TCC
-  const [activeTab] = useState<'cliente'>('cliente');
+  // Tab disponibili: cliente (wallet) e eco_credit (programma ECO CREDIT)
+  const [activeTab, setActiveTab] = useState<'cliente' | 'eco_credit'>('cliente');
+  
+  // Stato ECO CREDIT - salvato in localStorage
+  const [ecoCreditsEnabled, setEcoCreditsEnabled] = useState(() => {
+    return localStorage.getItem('eco_credit_enabled') === 'true';
+  });
+  
+  const toggleEcoCredit = (enabled: boolean) => {
+    setEcoCreditsEnabled(enabled);
+    localStorage.setItem('eco_credit_enabled', enabled ? 'true' : 'false');
+  };
   
   // Stato per Paga con TCC
   const [spendAmount, setSpendAmount] = useState('');
@@ -728,8 +738,8 @@ export default function WalletPage() {
 
       {/* Tab Selector - Mobile: fullscreen, Desktop: invariato */}
       <div className="w-full px-0 sm:px-4 md:px-8 pt-2 sm:pt-4">
-        <Tabs value={activeTab}>
-          {/* Tab Impresa rimosso - ora disponibile in HUB Operatore */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'cliente' | 'eco_credit')}>
+          {/* Tab Selector nascosto - navigazione tramite bottoni in basso */}
 
           {/* ================================================================ */}
           {/* TAB CLIENTE */}
@@ -806,16 +816,23 @@ export default function WalletPage() {
               </CardContent>
             </Card>
 
-            {/* 2 Tab in basso per mobile: Paga e Storico - v3.75.2: completamente trasparenti, solo bordo */}
-            <div className="grid grid-cols-2 gap-4 p-4 mt-auto sm:hidden">
-              <a href="/wallet/paga" className="flex flex-col items-center justify-center gap-3 py-6 rounded-xl border border-border/50 bg-transparent hover:bg-white/5 transition-all">
-                <Euro className="h-7 w-7 text-foreground/80" />
-                <span className="text-base font-semibold text-foreground">Paga</span>
+            {/* 3 Tab in basso per mobile: Paga, Storico, ECO CREDIT - v3.76.0 */}
+            <div className="grid grid-cols-3 gap-3 p-4 mt-auto sm:hidden">
+              <a href="/wallet/paga" className="flex flex-col items-center justify-center gap-2 py-5 rounded-xl border border-border/50 bg-transparent hover:bg-white/5 transition-all">
+                <Euro className="h-6 w-6 text-foreground/80" />
+                <span className="text-sm font-semibold text-foreground">Paga</span>
               </a>
-              <a href="/wallet/storico" className="flex flex-col items-center justify-center gap-3 py-6 rounded-xl border border-border/50 bg-transparent hover:bg-white/5 transition-all">
-                <History className="h-7 w-7 text-foreground/80" />
-                <span className="text-base font-semibold text-foreground">Storico</span>
+              <a href="/wallet/storico" className="flex flex-col items-center justify-center gap-2 py-5 rounded-xl border border-border/50 bg-transparent hover:bg-white/5 transition-all">
+                <History className="h-6 w-6 text-foreground/80" />
+                <span className="text-sm font-semibold text-foreground">Storico</span>
               </a>
+              <button 
+                onClick={() => setActiveTab('eco_credit')}
+                className="flex flex-col items-center justify-center gap-2 py-5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"
+              >
+                <Leaf className="h-6 w-6 text-emerald-500" />
+                <span className="text-sm font-semibold text-emerald-500">ECO</span>
+              </button>
             </div>
 
             {/* Impatto Ambientale - SOLO Desktop */}
@@ -927,6 +944,28 @@ export default function WalletPage() {
               </CardContent>
             </Card>
 
+            {/* ECO CREDIT - SOLO Desktop */}
+            <Card className="hidden sm:block border-2 border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-green-500/5 rounded-lg shadow cursor-pointer hover:border-emerald-500/50 transition-all" onClick={() => setActiveTab('eco_credit')}>
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-emerald-600 text-sm sm:text-base">
+                  <Leaf className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Programma ECO CREDIT
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Guadagna TCC con azioni sostenibili</CardDescription>
+              </CardHeader>
+              <CardContent className="p-3 sm:p-6 pt-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${ecoCreditsEnabled ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                    <span className="text-sm">{ecoCreditsEnabled ? 'Attivo' : 'Non attivo'}</span>
+                  </div>
+                  <Button variant="outline" size="sm" className="text-emerald-600 border-emerald-500/50 hover:bg-emerald-500/10">
+                    Configura
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Storico Transazioni - SOLO Desktop */}
             <Card className="hidden sm:block rounded-lg border shadow">
               <CardHeader className="p-3 sm:p-6">
@@ -959,6 +998,162 @@ export default function WalletPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* ================================================================ */}
+          {/* TAB ECO CREDIT */}
+          {/* ================================================================ */}
+          <TabsContent value="eco_credit" className="space-y-4 px-2 sm:px-0">
+            {/* Header ECO CREDIT */}
+            <Card className="bg-gradient-to-br from-emerald-600 via-emerald-500 to-green-500 text-white border-0 shadow-xl">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white/20 rounded-xl">
+                    <Leaf className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl text-white">Programma ECO CREDIT</CardTitle>
+                    <CardDescription className="text-white/80">Guadagna Token con azioni sostenibili</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            {/* Toggle Attivazione */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${ecoCreditsEnabled ? 'bg-emerald-100' : 'bg-gray-100'}`}>
+                      {ecoCreditsEnabled ? (
+                        <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                      ) : (
+                        <XCircle className="h-6 w-6 text-gray-400" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-semibold">Partecipazione al Programma</p>
+                      <p className="text-sm text-muted-foreground">
+                        {ecoCreditsEnabled ? 'Attivo - Stai guadagnando TCC!' : 'Non attivo'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant={ecoCreditsEnabled ? 'destructive' : 'default'}
+                    onClick={() => toggleEcoCredit(!ecoCreditsEnabled)}
+                    className={ecoCreditsEnabled ? '' : 'bg-emerald-600 hover:bg-emerald-700'}
+                  >
+                    {ecoCreditsEnabled ? 'Disattiva' : 'Attiva'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Informativa */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-emerald-600" />
+                  Come Funziona
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground">
+                  Il programma ECO CREDIT ti premia per le tue azioni sostenibili con <strong>Token Commercio Circolare (TCC)</strong>, 
+                  che puoi spendere nei negozi aderenti del territorio.
+                </p>
+                
+                <div className="grid gap-3">
+                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                    <Bus className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-blue-900">Mobilità Sostenibile</p>
+                      <p className="text-sm text-blue-700">Guadagna TCC usando bus, bici o camminando. Il sistema rileva automaticamente quando sei vicino a una fermata.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
+                    <Award className="h-5 w-5 text-purple-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-purple-900">Cultura & Turismo</p>
+                      <p className="text-sm text-purple-700">Visita musei, monumenti e luoghi culturali del territorio per ricevere TCC.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
+                    <Store className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-amber-900">Acquisti Locali</p>
+                      <p className="text-sm text-amber-700">Compra nei negozi aderenti e ricevi TCC come cashback sostenibile.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-orange-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-orange-900">Segnalazioni Civiche</p>
+                      <p className="text-sm text-orange-700">Segnala problemi alla PA (buche, rifiuti, illuminazione) e ricevi TCC quando vengono risolti.</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Privacy e GPS */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  📍 Informativa GPS e Privacy
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Attivando il programma ECO CREDIT, autorizzi l'app a utilizzare la tua posizione GPS per:
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground list-disc list-inside">
+                  <li>Rilevare quando sei vicino a fermate bus/tram</li>
+                  <li>Rilevare quando visiti musei e luoghi culturali</li>
+                  <li>Calcolare i percorsi sostenibili completati</li>
+                </ul>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  <strong>La posizione viene rilevata solo quando apri l'app</strong>, non in background. 
+                  I tuoi dati sono trattati in conformità al GDPR e non vengono condivisi con terze parti.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Statistiche personali (se attivo) */}
+            {ecoCreditsEnabled && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-emerald-600" />
+                    Le Tue Statistiche
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                      <p className="text-2xl font-bold text-emerald-600">{walletData?.balance || 0}</p>
+                      <p className="text-xs text-emerald-700">TCC Totali</p>
+                    </div>
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <p className="text-2xl font-bold text-blue-600">{((walletData?.balance || 0) * 0.089).toFixed(2)}€</p>
+                      <p className="text-xs text-blue-700">Valore in Euro</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Pulsante Torna al Wallet */}
+            <Button
+              variant="outline"
+              className="w-full mt-4 mb-20"
+              onClick={() => setActiveTab('cliente')}
+            >
+              ← Torna al Wallet
+            </Button>
           </TabsContent>
 
         </Tabs>
