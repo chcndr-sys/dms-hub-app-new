@@ -86,6 +86,7 @@ interface HeatmapPoint {
   tcc_earned: number;
   tcc_spent: number;
   transactions: number;
+  created_at?: string;
 }
 
 interface GamingStats {
@@ -623,7 +624,8 @@ export default function GamingRewardsPanel() {
             type: p.type || 'shop',
             tcc_earned: p.tcc_earned || 0,
             tcc_spent: p.tcc_spent || 0,
-            transactions: p.transaction_count || 0,
+            transactions: p.transaction_count || 1,
+            created_at: p.created_at || new Date().toISOString(),
           }));
           setHeatmapPoints(points);
         }
@@ -1255,21 +1257,20 @@ export default function GamingRewardsPanel() {
               />
               <MapCenterUpdater points={heatmapPoints} civicReports={civicReports} comuneId={currentComuneId} selectedLayer={selectedLayer} layerTrigger={layerTrigger} />
               <HeatmapLayer points={[...heatmapPoints, ...filterByTime(civicReports, 'created_at')]} />
-              {/* Marker negozi/hub/mercati */}
-              {(selectedLayer === 'all' || selectedLayer === 'shopping') && heatmapPoints.map((point) => {
+              {/* Marker negozi/hub/mercati - con offset spirale per punti sovrapposti */}
+              {(selectedLayer === 'all' || selectedLayer === 'shopping') && applySpiralOffset(heatmapPoints).map((point) => {
                 const intensity = Math.min((point.tcc_earned + point.tcc_spent) / 5000, 1.0);
                 return (
                   <Marker
                     key={`shop-${point.id}`}
-                    position={[point.lat, point.lng]}
+                    position={[point.lat + point.offsetLat, point.lng + point.offsetLng]}
                     icon={getMarkerIcon(point.type, intensity)}
                   >
                     <Popup>
                       <div className="text-sm">
                         <div className="font-bold">{point.name}</div>
-                        <div>TCC Guadagnati: {point.tcc_earned}</div>
-                        <div>TCC Spesi: {point.tcc_spent}</div>
-                        <div>Transazioni: {point.transactions}</div>
+                        <div>TCC: {point.tcc_earned > 0 ? `+${point.tcc_earned}` : `-${point.tcc_spent}`}</div>
+                        <div className="text-xs text-gray-500">{new Date(point.created_at).toLocaleString('it-IT')}</div>
                       </div>
                     </Popup>
                   </Marker>

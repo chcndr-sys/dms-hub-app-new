@@ -4642,3 +4642,317 @@ CO2 (kg) = TCC_spesi × 10g / 1000
 
 ---
 
+
+## 🗺️ SISTEMA VISUALIZZAZIONE INTELLIGENTE - GAMING & REWARDS
+
+> **Versione:** 1.0.0  
+> **Data:** 4 Febbraio 2026  
+> **Stato:** PROGETTAZIONE
+
+### Problema di Scalabilità
+
+Con l'aumento delle segnalazioni civiche, transazioni, percorsi mobilità e visite culturali, la mappa diventerà **ingestibile** con migliaia di punti sovrapposti. Un politico che deve valutare le zone critiche non può analizzare 5.000+ pallini singoli.
+
+**Scenario attuale:**
+- 20 segnalazioni civiche (11 pending, 1 in progress, 8 resolved)
+- ~700 transazioni TCC
+- 385 fermate GTFS disponibili
+- 1.083 POI culturali disponibili
+- Percorsi mobilità e visite culturali in crescita
+
+**Scenario futuro (6-12 mesi):**
+- 5.000+ segnalazioni civiche
+- 50.000+ transazioni TCC
+- 10.000+ percorsi mobilità completati
+- 5.000+ visite culturali
+
+---
+
+### Architettura Sistema Visualizzazione
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    SISTEMA VISUALIZZAZIONE INTELLIGENTE                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │ SEGNALAZIONI │  │   ACQUISTI   │  │  MOBILITÀ    │  │   CULTURA    │    │
+│  │   CIVICHE    │  │    LOCALI    │  │ SOSTENIBILE  │  │  & TURISMO   │    │
+│  │              │  │              │  │              │  │              │    │
+│  │ civic_reports│  │ operator_    │  │ route_       │  │ cultural_    │    │
+│  │              │  │ transactions │  │ completions  │  │ visits       │    │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘    │
+│         │                 │                 │                 │            │
+│         └─────────────────┴─────────────────┴─────────────────┘            │
+│                                   │                                        │
+│                                   ▼                                        │
+│  ┌────────────────────────────────────────────────────────────────────┐   │
+│  │                     LAYER MANAGER                                   │   │
+│  │                                                                     │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                │   │
+│  │  │   FILTRO    │  │   FILTRO    │  │ AGGREGAZIONE│                │   │
+│  │  │   STATO     │  │  TEMPORALE  │  │   DENSITÀ   │                │   │
+│  │  │             │  │             │  │             │                │   │
+│  │  │ • Pending   │  │ • Oggi      │  │ • Zoom < 10 │                │   │
+│  │  │ • In Progr. │  │ • 7 giorni  │  │   → Heatmap │                │   │
+│  │  │ • Resolved  │  │ • 30 giorni │  │ • Zoom > 14 │                │   │
+│  │  │ • Tutti     │  │ • 1 anno    │  │   → Markers │                │   │
+│  │  └─────────────┘  │ • Tutto     │  │ • Cluster   │                │   │
+│  │                   └─────────────┘  └─────────────┘                │   │
+│  └────────────────────────────────────────────────────────────────────┘   │
+│                                   │                                        │
+│                                   ▼                                        │
+│  ┌────────────────────────────────────────────────────────────────────┐   │
+│  │                     OUTPUT VISUALIZZAZIONE                          │   │
+│  │                                                                     │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                │   │
+│  │  │   MAPPA     │  │  INDICATORE │  │   REPORT    │                │   │
+│  │  │ INTERATTIVA │  │  NOTIFICHE  │  │  ANALYTICS  │                │   │
+│  │  │             │  │             │  │             │                │   │
+│  │  │ Markers/    │  │ Badge con   │  │ Heatmap     │                │   │
+│  │  │ Heatmap/    │  │ conteggio   │  │ settimanale │                │   │
+│  │  │ Clusters    │  │ filtrato    │  │ e mensile   │                │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘                │   │
+│  └────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 1. Filtro per Stato
+
+Ogni tipo di dato ha stati diversi che determinano la visualizzazione sulla mappa:
+
+| Layer | Stati | Default Mappa | Logica |
+|-------|-------|---------------|--------|
+| **Segnalazioni** | pending, in_progress, resolved | pending + in_progress | Resolved sparisce dalla mappa (toggle per storico) |
+| **Acquisti** | completed | completed | Tutte le transazioni completate |
+| **Mobilità** | in_progress, completed | completed | Solo percorsi completati (in_progress = tracking attivo) |
+| **Cultura** | visited | visited | Tutte le visite effettuate |
+
+**Comportamento Segnalazioni:**
+1. Cittadino invia segnalazione → **pallino arancione** appare sulla mappa
+2. PM prende in carico → pallino diventa **giallo** (in_progress)
+3. PM risolve → pallino **sparisce** dalla mappa (a meno che filtro "Storico" attivo)
+
+---
+
+### 2. Filtro Temporale
+
+I filtri temporali si applicano a **tutti i layer** contemporaneamente:
+
+| Filtro | Query SQL | Uso |
+|--------|-----------|-----|
+| **Oggi** | `created_at >= CURRENT_DATE` | Monitoraggio giornaliero |
+| **7gg** | `created_at >= NOW() - INTERVAL '7 days'` | Report settimanale |
+| **30gg** | `created_at >= NOW() - INTERVAL '30 days'` | Report mensile |
+| **1 anno** | `created_at >= NOW() - INTERVAL '1 year'` | Analisi annuale |
+| **Tutto** | Nessun filtro | Storico completo |
+
+**Impatto su Indicatore Notifiche:**
+- L'indicatore badge mostra il conteggio **filtrato** per periodo selezionato
+- Es: Filtro "7gg" → Badge mostra solo segnalazioni ultima settimana
+
+---
+
+### 3. Aggregazione per Densità (Scalabilità)
+
+Per gestire migliaia di punti, il sistema usa **3 modalità di visualizzazione** basate sul livello di zoom:
+
+| Zoom Level | Modalità | Descrizione |
+|------------|----------|-------------|
+| **< 10** (Vista Italia/Regione) | **Heatmap Densità** | Colore intenso = più eventi. Ideale per analisi macro |
+| **10-14** (Vista Provincia) | **Cluster Markers** | Gruppi numerati che si espandono al click |
+| **> 14** (Vista Città/Quartiere) | **Markers Singoli** | Pallini individuali cliccabili |
+
+**Implementazione Tecnica:**
+```javascript
+// Leaflet.markercluster per clustering
+// Leaflet.heat per heatmap
+const getVisualizationMode = (zoom) => {
+  if (zoom < 10) return 'heatmap';
+  if (zoom < 14) return 'cluster';
+  return 'markers';
+};
+```
+
+---
+
+### 4. Report Analytics per Decisori Politici
+
+Dashboard dedicata per analisi territoriale con:
+
+#### 4.1 Mappa di Calore Comparativa
+
+| Report | Descrizione | Query |
+|--------|-------------|-------|
+| **Segnalazioni Settimanali** | Zone con più segnalazioni negli ultimi 7 giorni | GROUP BY zona, COUNT(*) |
+| **Segnalazioni Mensili** | Trend mensile per quartiere | GROUP BY zona, mese |
+| **Criminalità/Degrado** | Segnalazioni tipo "Sicurezza", "Degrado", "Vandalismo" | WHERE type IN (...) |
+| **Efficienza Risoluzione** | Tempo medio risoluzione per zona | AVG(resolved_at - created_at) |
+
+#### 4.2 Confronto Zone
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CONFRONTO ZONE - Ultimo Mese                                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Quartiere A          ████████████████████  45 segnalazioni    │
+│  Quartiere B          ████████████          23 segnalazioni    │
+│  Quartiere C          ██████                12 segnalazioni    │
+│  Quartiere D          ████                   8 segnalazioni    │
+│                                                                 │
+│  Tempo Medio Risoluzione:                                       │
+│  • Quartiere A: 2.3 giorni                                      │
+│  • Quartiere B: 1.8 giorni                                      │
+│  • Quartiere C: 3.1 giorni                                      │
+│  • Quartiere D: 1.2 giorni                                      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 4.3 Trend Temporali
+
+- **Grafico linea**: Segnalazioni per settimana (ultimi 3 mesi)
+- **Grafico barre**: Distribuzione per tipo (Rifiuti, Illuminazione, Buche, Sicurezza)
+- **Grafico torta**: Stato risoluzione (Pending vs Resolved)
+
+---
+
+### 5. Nuovi Endpoint API Necessari
+
+| Endpoint | Metodo | Descrizione | Parametri |
+|----------|--------|-------------|-----------|
+| `/api/gaming-rewards/segnalazioni/heatmap` | GET | Heatmap segnalazioni con filtri | status, period, comune_id |
+| `/api/gaming-rewards/segnalazioni/clusters` | GET | Dati per clustering | bounds, zoom, status, period |
+| `/api/gaming-rewards/analytics/zones` | GET | Statistiche per zona | comune_id, period |
+| `/api/gaming-rewards/analytics/comparison` | GET | Confronto zone | zone_ids[], period |
+| `/api/gaming-rewards/analytics/trends` | GET | Trend temporali | comune_id, period, group_by |
+
+---
+
+### 6. Modifiche Frontend Necessarie
+
+#### 6.1 GamingRewardsPanel.tsx
+
+| Modifica | Descrizione | Priorità |
+|----------|-------------|----------|
+| Filtro Stato Segnalazioni | Toggle "Mostra Risolte" (default: OFF) | ALTA |
+| Clustering Markers | Integrare Leaflet.markercluster | ALTA |
+| Heatmap Layer | Integrare Leaflet.heat per zoom < 10 | MEDIA |
+| Indicatore Filtrato | Badge notifiche rispetta filtri temporali | ALTA |
+| Click Marker → Popup | Dettagli segnalazione con azioni | MEDIA |
+
+#### 6.2 Nuova Sezione Report (per Politici)
+
+| Componente | Descrizione |
+|------------|-------------|
+| `ZoneComparisonChart.tsx` | Grafico confronto zone |
+| `TrendAnalysisChart.tsx` | Trend temporali |
+| `HeatmapReport.tsx` | Mappa calore esportabile |
+| `ResolutionMetrics.tsx` | Metriche efficienza |
+
+---
+
+### 7. Modifiche Backend Necessarie
+
+#### 7.1 gaming-rewards.js (Hetzner)
+
+| Modifica | Descrizione |
+|----------|-------------|
+| Filtro status su `/heatmap` | Aggiungere `WHERE status IN (...)` |
+| Filtro period su tutti endpoint | Aggiungere `WHERE created_at >= ...` |
+| Nuovo endpoint `/clusters` | Aggregazione per bounds geografici |
+| Nuovo endpoint `/analytics/*` | Suite analytics per decisori |
+
+#### 7.2 Query Ottimizzate
+
+```sql
+-- Heatmap con filtri
+SELECT lat, lng, COUNT(*) as intensity
+FROM civic_reports
+WHERE comune_id = $1
+  AND status IN ('pending', 'in_progress')  -- Filtro stato
+  AND created_at >= NOW() - INTERVAL '7 days'  -- Filtro temporale
+GROUP BY lat, lng;
+
+-- Clustering per bounds
+SELECT 
+  ROUND(lat::numeric, 2) as cluster_lat,
+  ROUND(lng::numeric, 2) as cluster_lng,
+  COUNT(*) as count,
+  array_agg(id) as ids
+FROM civic_reports
+WHERE lat BETWEEN $1 AND $2
+  AND lng BETWEEN $3 AND $4
+  AND status IN ('pending', 'in_progress')
+GROUP BY cluster_lat, cluster_lng;
+```
+
+---
+
+### 8. Integrazione con Sistema Impersonalizzazione
+
+Il sistema rispetta il filtro per comune già esistente:
+
+```javascript
+// Tutti gli endpoint filtrano per comune_id
+const comuneId = req.query.comune_id || req.user?.comune_id;
+
+// Query sempre filtrate
+WHERE comune_id = ${comuneId}
+```
+
+**Comportamento per ruolo:**
+| Ruolo | Visibilità |
+|-------|------------|
+| **Admin Sistema** | Tutti i comuni (può impersonare) |
+| **Admin Comune** | Solo proprio comune |
+| **Operatore** | Solo proprio comune |
+| **Cittadino** | Solo proprio comune |
+
+---
+
+### 9. Piano Implementazione
+
+#### FASE 1: Fix Bug Attuali (Priorità CRITICA - 1 giorno)
+- [ ] Fix conteggio segnalazioni (mostra 10 invece di 11)
+- [ ] Fix marker segnalazioni non visibili sulla mappa
+- [ ] Fix indicatore notifiche non aggiornato
+- [ ] Aggiungere orario alle segnalazioni nella lista
+
+#### FASE 2: Filtro Stato (Priorità ALTA - 2 giorni)
+- [ ] Backend: Aggiungere parametro `status` a endpoint heatmap
+- [ ] Frontend: Toggle "Mostra Risolte" (default OFF)
+- [ ] Frontend: Segnalazioni resolved spariscono dalla mappa
+- [ ] Frontend: Indicatore badge conta solo pending + in_progress
+
+#### FASE 3: Aggregazione Densità (Priorità MEDIA - 3 giorni)
+- [ ] Installare Leaflet.markercluster
+- [ ] Installare Leaflet.heat
+- [ ] Implementare logica switch basata su zoom
+- [ ] Testare con dataset simulato (1000+ punti)
+
+#### FASE 4: Report Analytics (Priorità BASSA - 5 giorni)
+- [ ] Nuovi endpoint analytics
+- [ ] Componenti grafici React
+- [ ] Sezione Report in Dashboard PA
+- [ ] Export PDF/Excel per politici
+
+---
+
+### 10. Stato Attuale vs Obiettivo
+
+| Funzionalità | Stato Attuale | Obiettivo |
+|--------------|---------------|-----------|
+| Marker Segnalazioni | ❌ Non visibili | ✅ Visibili con popup |
+| Filtro Stato | ❌ Non implementato | ✅ Toggle Risolte |
+| Filtro Temporale | ✅ Funzionante | ✅ Applicato a badge |
+| Clustering | ❌ Non implementato | ✅ Zoom 10-14 |
+| Heatmap Densità | ❌ Non implementato | ✅ Zoom < 10 |
+| Report Analytics | ❌ Non implementato | ✅ Dashboard dedicata |
+| Impersonalizzazione | ✅ Funzionante | ✅ Mantenuto |
+
+---
+
