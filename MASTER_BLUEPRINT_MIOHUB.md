@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.93.2  
-> **Data:** 5 Febbraio 2026 (Fix Badge Concessioni CESSATA + Chiusura Automatica Subingresso)  
+> **Versione:** 3.93.4  
+> **Data:** 5 Febbraio 2026 (Fix Badge Concessioni CESSATA + Esclusione CESSATE da Canone)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1144,6 +1144,38 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 ---
 
 #### 📝 CHANGELOG
+
+### v3.93.4 (05/02/2026) - Esclusione Concessioni CESSATE dalla Sezione Canone
+
+**Fix Backend:**
+- Aggiunto filtro `AND (c.status IS NULL OR c.status != 'CESSATA')` all'endpoint `/api/canone-unico/imprese-concessioni`
+- Le concessioni CESSATE non appaiono più nella sezione Wallet/Canone
+
+**Comportamento:**
+- La sezione Canone mostra solo concessioni attive (per gestire i pagamenti)
+- Le altre sezioni (Imprese, Gestione Mercati) continuano a mostrare tutte le concessioni con badge appropriato
+
+**Commit:** `fb9d8e7`
+
+---
+
+### v3.93.3 (05/02/2026) - Fix Frontend Badge CESSATA
+
+**Fix Frontend:**
+- Aggiunto controllo `status === 'CESSATA'` in tutti i componenti che visualizzano lo stato concessioni:
+  - `MappaItaliaComponent.tsx`
+  - `GestioneMercati.tsx`
+  - `MarketCompaniesTab.tsx`
+  - `ControlliSanzioniPanel.tsx`
+  - `SuapPanel.tsx`
+
+**Comportamento:**
+- Il frontend ora controlla sia `status` che `stato` per determinare se una concessione è CESSATA
+- Badge grigio "Cessata" visualizzato correttamente
+
+**Commit:** `873d4a7`
+
+---
 
 ### v3.93.2 (05/02/2026) - Fix Badge Concessioni CESSATA
 
