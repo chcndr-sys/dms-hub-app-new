@@ -109,6 +109,14 @@ export default function WalletStorico() {
   // Estrai nome negozio dalla description o usa shop_name
   const getShopName = (tx: Transaction) => {
     if (tx.shop_name) return tx.shop_name;
+    // Per tipi speciali, usa la description direttamente
+    if (tx.type === 'civic') {
+      // Estrai tipo segnalazione dalla description (es: "Segnalazione Illuminazione risolta")
+      const match = tx.description.match(/Segnalazione (.+?) risolta/i);
+      return match ? `Segnalazione ${match[1]}` : 'Segnalazione Civica';
+    }
+    if (tx.type === 'mobility') return 'Mobilità Sostenibile';
+    if (tx.type === 'culture') return 'Cultura & Turismo';
     // Fallback: cerca nel description
     const match = tx.description.match(/presso (.+?)(?:\s*-|$)/i);
     return match ? match[1] : (tx.type === 'earn' ? 'Acquisto' : 'Pagamento');
@@ -201,8 +209,8 @@ export default function WalletStorico() {
                     <p className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg">
                       €{lastTx.euro_value ? (lastTx.euro_value / 100).toFixed(2) : '0.00'}
                     </p>
-                    <p className="text-lg font-bold" style={{ color: lastTx.type === 'earn' ? '#6ee7b7' : '#fca5a5' }}>
-                      {lastTx.type === 'earn' ? '+' : '-'}{Math.abs(lastTx.amount)} TCC
+                    <p className="text-lg font-bold" style={{ color: ['earn', 'civic', 'mobility', 'culture'].includes(lastTx.type) ? '#6ee7b7' : '#fca5a5' }}>
+                      {['earn', 'civic', 'mobility', 'culture'].includes(lastTx.type) ? '+' : '-'}{Math.abs(lastTx.amount)} TCC
                     </p>
                   </div>
                   <div className="pt-2 border-t border-emerald-400/30">
@@ -288,13 +296,19 @@ export default function WalletStorico() {
                         <p className="text-xs text-muted-foreground">
                           {date} • {time}
                         </p>
-                        {/* Badge tipo */}
+                        {/* Badge tipo - supporta earn, spend, civic, mobility, culture */}
                         <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
-                          tx.type === 'earn' 
-                            ? 'bg-green-500/20 text-green-600' 
-                            : 'bg-red-500/20 text-red-500'
+                          tx.type === 'earn' ? 'bg-green-500/20 text-green-600' :
+                          tx.type === 'civic' ? 'bg-orange-500/20 text-orange-600' :
+                          tx.type === 'mobility' ? 'bg-blue-500/20 text-blue-600' :
+                          tx.type === 'culture' ? 'bg-purple-500/20 text-purple-600' :
+                          'bg-red-500/20 text-red-500'
                         }`}>
-                          {tx.type === 'earn' ? 'Acquisto' : 'Pagamento TCC'}
+                          {tx.type === 'earn' ? 'Acquisto' : 
+                           tx.type === 'civic' ? 'Segnalazione Civica' :
+                           tx.type === 'mobility' ? 'Mobilità Sostenibile' :
+                           tx.type === 'culture' ? 'Cultura & Turismo' :
+                           'Pagamento TCC'}
                         </span>
                       </div>
                       <div className="text-right ml-3">
@@ -304,9 +318,13 @@ export default function WalletStorico() {
                             €{(tx.euro_value / 100).toFixed(2)}
                           </p>
                         )}
-                        {/* TCC */}
-                        <p className={`text-lg font-bold ${tx.type === 'earn' ? 'text-green-600' : 'text-red-500'}`}>
-                          {tx.type === 'earn' ? '+' : '-'}{Math.abs(tx.amount)} TCC
+                        {/* TCC - verde per accrediti (earn, civic, mobility, culture), rosso per spese */}
+                        <p className={`text-lg font-bold ${
+                          ['earn', 'civic', 'mobility', 'culture'].includes(tx.type) 
+                            ? 'text-green-600' 
+                            : 'text-red-500'
+                        }`}>
+                          {['earn', 'civic', 'mobility', 'culture'].includes(tx.type) ? '+' : '-'}{Math.abs(tx.amount)} TCC
                         </p>
                       </div>
                     </div>
