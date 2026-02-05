@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.78.0  
-> **Data:** 4 Febbraio 2026 (Sistema GPS POI + Heatmap Layer)  
+> **Versione:** 3.93.2  
+> **Data:** 5 Febbraio 2026 (Fix Badge Concessioni CESSATA + Chiusura Automatica Subingresso)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1143,7 +1143,74 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 
 ---
 
-### 📝 CHANGELOG
+#### 📝 CHANGELOG
+
+### v3.93.2 (05/02/2026) - Fix Badge Concessioni CESSATA
+
+**Fix Backend:**
+- Aggiunto campo `c.status` alla query GET /api/concessions
+- Modificato calcolo `stato_calcolato` per controllare prima `status = 'CESSATA'`
+- Aggiunto controllo per badge `CESSATA` in canone-unico.js (badge grigio)
+- Fix query in markets.js per considerare status oltre a stato
+
+**Comportamento:**
+- Le concessioni con `status = 'CESSATA'` ora mostrano badge "CESSATA" (grigio) invece di "SCADUTA" (rosso)
+- La sezione Imprese > Concessioni mostra correttamente lo stato CESSATA
+- La sezione Wallet/PagoPA > Canone mostra badge CESSATA per concessioni chiuse
+
+**Commit:** `f025535`
+
+---
+
+### v3.93.1 (05/02/2026) - Fix Chiusura Automatica Concessione Cedente
+
+**Fix Backend:**
+- Aggiunto `status = 'CESSATA'` alla query UPDATE che chiude la concessione del cedente nel subingresso
+- Fix applicato in 3 punti del codice concessions.js (righe 544, 631, 1450)
+
+**Comportamento:**
+- Quando viene approvata una SCIA di subingresso, la concessione del cedente viene automaticamente chiusa con:
+  - `stato = 'CESSATA'`
+  - `status = 'CESSATA'`
+  - `valid_to = data_subingresso`
+
+**Commit:** `197f87f`
+
+---
+
+### v3.92.9 (04/02/2026) - Fix Filtro Notifiche per Impersonificazione Comune
+
+**Fix Backend:**
+- Endpoint GET /api/notifiche ora filtra per comune_id tramite JOIN con concessioni e mercati
+- Le notifiche sono filtrate per imprese che hanno concessioni in mercati del comune impersonificato
+
+**Query Aggiornata:**
+```sql
+SELECT DISTINCT n.* FROM notifiche n
+INNER JOIN imprese i ON n.target_id = i.id
+INNER JOIN concessions c ON c.impresa_id = i.id
+INNER JOIN stalls s ON c.stall_id = s.id
+INNER JOIN markets m ON s.market_id = m.id
+WHERE m.comune_id = $comune_id
+```
+
+---
+
+### v3.92.8 (04/02/2026) - Fix Filtro SUAP per Comune
+
+**Fix Backend:**
+- Endpoint GET /api/suap/pratiche ora filtra per `markets.comune_id` invece di `comune_presentazione`
+- Corretto il filtro per impersonificazione comune nella sezione SSO SUAP
+
+---
+
+### v3.92.2 (04/02/2026) - Fix Filtro Inspections/Stats per Comune
+
+**Fix Backend:**
+- Aggiunto filtro `comune_id` all'endpoint GET /api/inspections/stats
+- Le statistiche Da Controllare, Verbali, Sanzioni ora filtrano per mercati del comune impersonificato
+
+---
 
 ### v3.35.0 (14/01/2026) - Progettazione Gestione Canone Unico e More
 
