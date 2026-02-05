@@ -552,6 +552,7 @@ export default function GamingRewardsPanel() {
   const [selectedLayer, setSelectedLayer] = useState<string>('all');
   const [layerTrigger, setLayerTrigger] = useState<number>(0); // Trigger per forzare flyTo su cambio layer
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all');
+  const [geoFilter, setGeoFilter] = useState<'italia' | 'comune'>('italia'); // Filtro geografico: tutta Italia o solo comune
   const [topShops, setTopShops] = useState<TopShop[]>([]);
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([]);
   const [selectedReport, setSelectedReport] = useState<HeatmapPoint | null>(null);
@@ -568,6 +569,29 @@ export default function GamingRewardsPanel() {
   const comuneQueryParam = currentComuneId ? `comune_id=${currentComuneId}` : '';
   // Per la configurazione: usare sempre un comune_id valido (default Grosseto=1)
   const configComuneId = currentComuneId || 1;
+
+  // Funzione per filtrare per area geografica (Italia vs Comune)
+  const filterByGeo = useCallback((items: any[]) => {
+    if (geoFilter === 'italia' || !currentComuneId) return items;
+    
+    // Filtra per comune usando le coordinate del comune selezionato
+    const comuneCoords = COMUNI_COORDS[currentComuneId];
+    if (!comuneCoords) return items;
+    
+    // Raggio di 30km dal centro del comune
+    const radiusKm = 30;
+    return items.filter(item => {
+      const lat = parseFloat(item.lat) || 0;
+      const lng = parseFloat(item.lng) || 0;
+      if (!lat || !lng) return false;
+      
+      // Calcolo distanza approssimativa in km
+      const dLat = (lat - comuneCoords.lat) * 111;
+      const dLng = (lng - comuneCoords.lng) * 111 * Math.cos(comuneCoords.lat * Math.PI / 180);
+      const distance = Math.sqrt(dLat * dLat + dLng * dLng);
+      return distance <= radiusKm;
+    });
+  }, [geoFilter, currentComuneId]);
 
   // Funzione per filtrare per periodo temporale
   const filterByTime = useCallback((items: any[], dateField: string = 'created_at') => {
@@ -596,6 +620,11 @@ export default function GamingRewardsPanel() {
       return itemDate >= startDate;
     });
   }, [timeFilter]);
+
+  // Funzione combinata per filtrare per geo + tempo
+  const filterData = useCallback((items: any[], dateField: string = 'created_at') => {
+    return filterByTime(filterByGeo(items), dateField);
+  }, [filterByGeo, filterByTime]);
 
   // Funzione per caricare la configurazione via REST API
   const loadConfig = useCallback(async () => {
@@ -1218,11 +1247,39 @@ export default function GamingRewardsPanel() {
         <CardContent>
           {/* Filtri Layer */}
           <div className="flex flex-wrap gap-2 mb-4">
+            {/* Tab Geografici - prima i filtri per area */}
+            <button
+              onClick={() => { setGeoFilter('italia'); setSelectedLayer('all'); setLayerTrigger(t => t + 1); }}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                geoFilter === 'italia' 
+                  ? 'bg-[#eab308] text-black' 
+                  : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
+              }`}
+            >
+              🇮🇹 Tutta Italia
+            </button>
+            {isImpersonating && comuneNome && (
+              <button
+                onClick={() => { setGeoFilter('comune'); setSelectedLayer('all'); setLayerTrigger(t => t + 1); }}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  geoFilter === 'comune' 
+                    ? 'bg-[#8b5cf6] text-white' 
+                    : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
+                }`}
+              >
+                📍 {comuneNome}
+              </button>
+            )}
+            
+            {/* Separatore */}
+            <div className="w-px h-6 bg-[#e8fbff]/20 mx-1"></div>
+            
+            {/* Filtri per tipo di layer */}
             <button
               onClick={() => { setSelectedLayer('all'); setLayerTrigger(t => t + 1); }}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 selectedLayer === 'all' 
-                  ? 'bg-[#8b5cf6] text-white' 
+                  ? 'bg-[#3b82f6] text-white' 
                   : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
               }`}
             >
@@ -1237,7 +1294,7 @@ export default function GamingRewardsPanel() {
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                📢 Segnalazioni ({filterByTime(civicReports, 'created_at').length})
+                📢 Segnalazioni ({filterData(civicReports, 'created_at').length})
               </button>
             )}
             {config.shopping_enabled && (
@@ -1349,10 +1406,10 @@ export default function GamingRewardsPanel() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapCenterUpdater points={heatmapPoints} civicReports={filterByTime(civicReports, 'created_at')} mobilityActions={mobilityActions} cultureActions={cultureActions} comuneId={currentComuneId} selectedLayer={selectedLayer} layerTrigger={layerTrigger} />
+              <MapCenterUpdater points={heatmapPoints} civicReports={filterData(civicReports, 'created_at')} mobilityActions={mobilityActions} cultureActions={cultureActions} comuneId={currentComuneId} selectedLayer={selectedLayer} layerTrigger={layerTrigger} />
               <HeatmapLayer points={[
                 ...heatmapPoints, 
-                ...filterByTime(civicReports, 'created_at'),
+                ...filterData(civicReports, 'created_at'),
                 // Aggiungi punti mobilità come HeatmapPoint
                 ...mobilityActions.map(m => ({
                   id: m.id,
@@ -1396,7 +1453,7 @@ export default function GamingRewardsPanel() {
                 );
               })}
               {/* Marker segnalazioni civiche - con offset spirale per punti sovrapposti */}
-              {(selectedLayer === 'all' || selectedLayer === 'civic') && applySpiralOffset(filterByTime(civicReports, 'created_at')).map((report) => (
+              {(selectedLayer === 'all' || selectedLayer === 'civic') && applySpiralOffset(filterData(civicReports, 'created_at')).map((report) => (
                 <Marker
                   key={`civic-${report.id}`}
                   position={[report.lat + report.offsetLat, report.lng + report.offsetLng]}
@@ -1693,14 +1750,14 @@ export default function GamingRewardsPanel() {
               Segnalazioni Civiche
             </span>
             <Badge variant="outline" className="text-[#f97316] border-[#f97316]/50">
-              {filterByTime(civicReports, 'created_at').length} totali
+              {filterData(civicReports, 'created_at').length} totali
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {filterByTime(civicReports, 'created_at').length > 0 ? (
+          {filterData(civicReports, 'created_at').length > 0 ? (
             <div className="max-h-80 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-[#f97316]/30 scrollbar-track-transparent">
-              {filterByTime(civicReports, 'created_at').map((report, index) => (
+              {filterData(civicReports, 'created_at').map((report, index) => (
                 <div 
                   key={`list-${report.id}`}
                   onClick={() => {
@@ -1752,14 +1809,14 @@ export default function GamingRewardsPanel() {
                 Mobilità Sostenibile
               </span>
               <Badge variant="outline" className="text-[#06b6d4] border-[#06b6d4]/50">
-                {filterByTime(mobilityActions, 'completed_at').length} totali
+                {filterData(mobilityActions, 'completed_at').length} totali
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {filterByTime(mobilityActions, 'completed_at').length > 0 ? (
+            {filterData(mobilityActions, 'completed_at').length > 0 ? (
               <div className="max-h-80 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-[#06b6d4]/30 scrollbar-track-transparent">
-                {filterByTime(mobilityActions, 'completed_at').map((action) => (
+                {filterData(mobilityActions, 'completed_at').map((action) => (
                   <div 
                     key={`mobility-list-${action.id}`}
                     className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg hover:bg-[#0b1220]/80 hover:border-[#06b6d4]/50 border border-transparent transition-all"
@@ -1812,14 +1869,14 @@ export default function GamingRewardsPanel() {
                 Cultura & Turismo
               </span>
               <Badge variant="outline" className="text-[#a855f7] border-[#a855f7]/50">
-                {filterByTime(cultureActions, 'visit_date').length} totali
+                {filterData(cultureActions, 'visit_date').length} totali
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {filterByTime(cultureActions, 'visit_date').length > 0 ? (
+            {filterData(cultureActions, 'visit_date').length > 0 ? (
               <div className="max-h-80 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-[#a855f7]/30 scrollbar-track-transparent">
-                {filterByTime(cultureActions, 'visit_date').map((visit) => (
+                {filterData(cultureActions, 'visit_date').map((visit) => (
                   <div 
                     key={`culture-list-${visit.id}`}
                     className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg hover:bg-[#0b1220]/80 hover:border-[#a855f7]/50 border border-transparent transition-all"
@@ -1872,14 +1929,14 @@ export default function GamingRewardsPanel() {
                 Acquisti & Cashback
               </span>
               <Badge variant="outline" className="text-[#22c55e] border-[#22c55e]/50">
-                {filterByTime(heatmapPoints, 'created_at').length} totali
+                {filterData(heatmapPoints, 'created_at').length} totali
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {filterByTime(heatmapPoints, 'created_at').length > 0 ? (
+            {filterData(heatmapPoints, 'created_at').length > 0 ? (
               <div className="max-h-80 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-[#22c55e]/30 scrollbar-track-transparent">
-                {filterByTime(heatmapPoints, 'created_at').map((point) => (
+                {filterData(heatmapPoints, 'created_at').map((point) => (
                   <div 
                     key={`shopping-list-${point.id}`}
                     className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg hover:bg-[#0b1220]/80 hover:border-[#22c55e]/50 border border-transparent transition-all"
