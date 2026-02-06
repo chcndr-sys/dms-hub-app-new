@@ -6783,9 +6783,37 @@ export default function DashboardPA() {
               <div className="fixed inset-0 z-[100] bg-[#0b1220]">
                 <BusHubEditor
                   onClose={() => setShowBusHubEditor(false)}
-                  onSaveComplete={(marketId) => {
-                    console.log('Mercato salvato con ID:', marketId);
-                    setShowBusHubEditor(false);
+                  onSave={async (data) => {
+                    console.log('Dati ricevuti da editor:', data);
+                    try {
+                      // Estrai i dati nel formato corretto per il backend
+                      const areaGeojson = data.hub_geojson?.area?.geometry || null;
+                      const cornerGeojson = data.hub_geojson?.corner || null;
+                      const centerCoords = data.hub_geojson?.center?.geometry?.coordinates || [data.center?.lng, data.center?.lat];
+                      
+                      // Se abbiamo un hubId, aggiorna l'hub esistente
+                      if (data.hubId) {
+                        const API_BASE_URL = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io';
+                        const response = await fetch(`${API_BASE_URL}/api/hub/locations/${data.hubId}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            areaGeojson: areaGeojson ? JSON.stringify(areaGeojson) : null,
+                            cornerGeojson: cornerGeojson ? JSON.stringify(cornerGeojson) : null,
+                            centerLat: centerCoords[1],
+                            centerLng: centerCoords[0],
+                          }),
+                        });
+                        if (response.ok) {
+                          console.log('Hub aggiornato con successo!');
+                        } else {
+                          console.error('Errore aggiornamento hub:', await response.text());
+                        }
+                      }
+                      setShowBusHubEditor(false);
+                    } catch (err) {
+                      console.error('Errore salvataggio:', err);
+                    }
                   }}
                 />
               </div>
@@ -7038,9 +7066,37 @@ function LogsSection() {
               <div className="fixed inset-0 z-[100] bg-[#0b1220]">
                 <BusHubEditor
                   onClose={() => setShowBusHubEditor(false)}
-                  onSaveComplete={(marketId) => {
-                    console.log('Mercato salvato con ID:', marketId);
-                    setShowBusHubEditor(false);
+                  onSave={async (data) => {
+                    console.log('Dati ricevuti da editor:', data);
+                    try {
+                      // Estrai i dati nel formato corretto per il backend
+                      const areaGeojson = data.hub_geojson?.area?.geometry || null;
+                      const cornerGeojson = data.hub_geojson?.corner || null;
+                      const centerCoords = data.hub_geojson?.center?.geometry?.coordinates || [data.center?.lng, data.center?.lat];
+                      
+                      // Se abbiamo un hubId, aggiorna l'hub esistente
+                      if (data.hubId) {
+                        const API_BASE_URL = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io';
+                        const response = await fetch(`${API_BASE_URL}/api/hub/locations/${data.hubId}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            areaGeojson: areaGeojson ? JSON.stringify(areaGeojson) : null,
+                            cornerGeojson: cornerGeojson ? JSON.stringify(cornerGeojson) : null,
+                            centerLat: centerCoords[1],
+                            centerLng: centerCoords[0],
+                          }),
+                        });
+                        if (response.ok) {
+                          console.log('Hub aggiornato con successo!');
+                        } else {
+                          console.error('Errore aggiornamento hub:', await response.text());
+                        }
+                      }
+                      setShowBusHubEditor(false);
+                    } catch (err) {
+                      console.error('Errore salvataggio:', err);
+                    }
                   }}
                 />
               </div>
