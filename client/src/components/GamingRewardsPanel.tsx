@@ -125,6 +125,48 @@ interface CultureAction {
   point_type: 'culture_action';
 }
 
+// Interfaccia per Referral
+interface ReferralItem {
+  id: number;
+  referrer_user_id: number;
+  referred_user_id: number | null;
+  referral_code: string;
+  status: string; // pending, registered, first_purchase, expired
+  tcc_earned_referrer: number;
+  tcc_earned_referred: number;
+  comune_id: number;
+  created_at: string;
+  registered_at: string | null;
+  first_purchase_at: string | null;
+  lat: number | null;
+  lng: number | null;
+}
+
+// Interfaccia per Challenge
+interface ChallengeItem {
+  id: number;
+  comune_id: number;
+  title: string;
+  description: string;
+  category: string; // civic, mobility, culture, shopping
+  challenge_type: string; // count, co2, visits, purchases
+  target_value: number;
+  tcc_reward: number;
+  bonus_multiplier: number;
+  start_date: string | null;
+  end_date: string | null;
+  is_active: boolean;
+  icon: string;
+  color: string;
+  participants_count: number;
+  completions_count: number;
+  // Progresso utente (se user_id passato)
+  user_progress?: number;
+  user_completed?: boolean;
+  user_rewarded?: boolean;
+  user_joined_at?: string;
+}
+
 // Interfaccia per Top 5 Negozi
 interface TopShop {
   name: string;
@@ -175,6 +217,7 @@ function MapCenterUpdater({
   civicReports, 
   mobilityActions,
   cultureActions,
+  referralList = [],
   comuneId, 
   selectedLayer,
   layerTrigger 
@@ -183,6 +226,7 @@ function MapCenterUpdater({
   civicReports: HeatmapPoint[]; 
   mobilityActions: MobilityAction[];
   cultureActions: CultureAction[];
+  referralList?: ReferralItem[];
   comuneId: number | null;
   selectedLayer: string;
   layerTrigger: number;
@@ -208,8 +252,8 @@ function MapCenterUpdater({
       // Converti cultureActions in punti con lat/lng
       targetPoints = cultureActions.map(c => ({ lat: parseFloat(String(c.lat)), lng: parseFloat(String(c.lng)) }));
     } else if (selectedLayer === 'referral') {
-      // Per ora nessun punto referral
-      targetPoints = [];
+      // Punti referral dal backend
+      targetPoints = referralList.filter(r => r.lat && r.lng).map(r => ({ lat: r.lat!, lng: r.lng! }));
     } else if (selectedLayer === 'all') {
       targetPoints = [...points, ...civicReports];
     } else {
@@ -571,6 +615,10 @@ export default function GamingRewardsPanel() {
   const [loading, setLoading] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(true);
+  const [referralList, setReferralList] = useState<ReferralItem[]>([]);
+  const [referralTotal, setReferralTotal] = useState(0);
+  const [challengesList, setChallengesList] = useState<ChallengeItem[]>([]);
+  const [challengesExpanded, setChallengesExpanded] = useState(true);
   
   const { comuneId, comuneNome, isImpersonating } = useImpersonation();
   // Se admin non sta impersonando, non filtrare per comune (vede tutto)
@@ -903,6 +951,58 @@ export default function GamingRewardsPanel() {
     }
   }, [configComuneId, config.culture_enabled, timeFilter]);
 
+  // Funzione per caricare la lista Referral dal backend
+  const loadReferralList = useCallback(async () => {
+    if (!config.shopping_enabled) {
+      setReferralList([]);
+      setReferralTotal(0);
+      return;
+    }
+    try {
+      const periodMap: Record<string, number> = {
+        'all': 3650,
+        'today': 1,
+        'week': 7,
+        'month': 30,
+        'year': 365
+      };
+      const days = periodMap[timeFilter] || 3650;
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/referral/list?comune_id=${configComuneId}&days=${days}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setReferralList(result.data || []);
+          setReferralTotal(result.total || 0);
+        } else {
+          setReferralList([]);
+          setReferralTotal(0);
+        }
+      }
+    } catch (error) {
+      console.error('Errore caricamento referral list:', error);
+      setReferralList([]);
+      setReferralTotal(0);
+    }
+  }, [configComuneId, config.shopping_enabled, timeFilter]);
+
+  // Funzione per caricare le Challenges dal backend
+  const loadChallenges = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/challenges?comune_id=${configComuneId}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          setChallengesList(result.data);
+        } else {
+          setChallengesList([]);
+        }
+      }
+    } catch (error) {
+      console.error('Errore caricamento challenges:', error);
+      setChallengesList([]);
+    }
+  }, [configComuneId]);
+
   // Carica la configurazione SOLO all'avvio o quando cambia il comune
   // NON ricaricare quando cambiano i toggle (altrimenti sovrascrive le modifiche utente)
   useEffect(() => {
@@ -921,12 +1021,14 @@ export default function GamingRewardsPanel() {
         loadTopShops(), 
         loadTrendData(),
         loadMobilityActions(),
-        loadCultureActions()
+        loadCultureActions(),
+        loadReferralList(),
+        loadChallenges()
       ]);
       setLoading(false);
     };
     loadAllData();
-  }, [loadStats, loadHeatmapPoints, loadCivicReports, loadTopShops, loadTrendData, loadMobilityActions, loadCultureActions]);
+  }, [loadStats, loadHeatmapPoints, loadCivicReports, loadTopShops, loadTrendData, loadMobilityActions, loadCultureActions, loadReferralList, loadChallenges]);
 
   // Salva configurazione via REST API
   const saveConfig = async () => {
@@ -1367,7 +1469,7 @@ export default function GamingRewardsPanel() {
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                🎁 Referral (0)
+                🎁 Referral ({referralTotal})
               </button>
             )}
             
@@ -1443,7 +1545,7 @@ export default function GamingRewardsPanel() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapCenterUpdater points={heatmapPoints} civicReports={filterData(civicReports, 'created_at')} mobilityActions={mobilityActions} cultureActions={cultureActions} comuneId={currentComuneId} selectedLayer={selectedLayer} layerTrigger={layerTrigger} />
+              <MapCenterUpdater points={heatmapPoints} civicReports={filterData(civicReports, 'created_at')} mobilityActions={mobilityActions} cultureActions={cultureActions} referralList={referralList} comuneId={currentComuneId} selectedLayer={selectedLayer} layerTrigger={layerTrigger} />
               <HeatmapLayer points={[
                 ...heatmapPoints, 
                 ...filterData(civicReports, 'created_at'),
@@ -1800,7 +1902,7 @@ export default function GamingRewardsPanel() {
                   {config.shopping_enabled && (
                     <div className="text-center">
                       <div className="text-sm font-bold text-[#EC4899]">
-                        0
+                        {referralTotal}
                       </div>
                       <div className="text-xs text-[#e8fbff]/50">Referral</div>
                     </div>
@@ -2121,18 +2223,146 @@ export default function GamingRewardsPanel() {
                 Presenta un Amico
               </span>
               <Badge variant="outline" className="text-[#EC4899] border-[#EC4899]/50">
-                0 totali
+                {referralTotal} totali
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center text-[#e8fbff]/50 py-8">
-              <Gift className="h-12 w-12 mx-auto mb-2 opacity-30" />
-              <p>Nessun referral nel periodo selezionato</p>
-            </div>
+            {referralList.length === 0 ? (
+              <div className="text-center text-[#e8fbff]/50 py-8">
+                <Gift className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                <p>Nessun referral nel periodo selezionato</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {referralList.map((ref, idx) => (
+                  <div key={ref.id} className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        ref.status === 'first_purchase' ? 'bg-[#EC4899]/20 text-[#EC4899]' :
+                        ref.status === 'registered' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-gray-500/20 text-gray-400'
+                      }`}>
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <p className="text-[#e8fbff] text-sm font-medium">
+                          Codice: {ref.referral_code}
+                        </p>
+                        <p className="text-[#e8fbff]/50 text-xs">
+                          {ref.status === 'pending' ? '⏳ In attesa' :
+                           ref.status === 'registered' ? '✅ Registrato' :
+                           ref.status === 'first_purchase' ? '🎉 Primo acquisto' :
+                           ref.status}
+                          {ref.created_at && ` · ${new Date(ref.created_at).toLocaleDateString('it-IT')}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[#EC4899] font-bold text-sm">
+                        +{ref.tcc_earned_referrer}
+                      </span>
+                      <p className="text-[#e8fbff]/50 text-xs">TCC</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
+
+      {/* Sezione Sfide & Challenges */}
+      <Card className="bg-[#1a2332] border-amber-500/30">
+        <CardHeader>
+          <CardTitle 
+            className="text-[#e8fbff] flex items-center justify-between cursor-pointer"
+            onClick={() => setChallengesExpanded(!challengesExpanded)}
+          >
+            <span className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-amber-400" />
+              Sfide Attive
+            </span>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-amber-400 border-amber-500/50">
+                {challengesList.length} sfide
+              </Badge>
+              {challengesExpanded ? <ChevronUp className="h-4 w-4 text-[#e8fbff]/50" /> : <ChevronDown className="h-4 w-4 text-[#e8fbff]/50" />}
+            </div>
+          </CardTitle>
+        </CardHeader>
+        {challengesExpanded && (
+          <CardContent>
+            {challengesList.length === 0 ? (
+              <div className="text-center text-[#e8fbff]/50 py-8">
+                <Trophy className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                <p>Nessuna sfida attiva per questo comune</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {challengesList.map((challenge) => {
+                  const categoryColors: Record<string, string> = {
+                    civic: '#f97316',
+                    mobility: '#3b82f6',
+                    culture: '#a855f7',
+                    shopping: '#84cc16',
+                  };
+                  const categoryIcons: Record<string, string> = {
+                    civic: '🏛️',
+                    mobility: '🚌',
+                    culture: '🏛️',
+                    shopping: '🛒',
+                  };
+                  const color = categoryColors[challenge.category] || '#6b7280';
+                  const icon = categoryIcons[challenge.category] || '🏆';
+                  const progressPercent = challenge.user_progress 
+                    ? Math.min((challenge.user_progress / challenge.target_value) * 100, 100) 
+                    : 0;
+                  
+                  return (
+                    <div key={challenge.id} className="p-4 bg-[#0b1220] rounded-lg border border-[#1e3a5f]/30">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{icon}</span>
+                          <div>
+                            <p className="text-[#e8fbff] font-medium text-sm">{challenge.title}</p>
+                            <p className="text-[#e8fbff]/50 text-xs">{challenge.description}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-sm" style={{ color }}>+{challenge.tcc_reward}</span>
+                          <p className="text-[#e8fbff]/50 text-xs">TCC</p>
+                        </div>
+                      </div>
+                      {/* Barra progresso */}
+                      <div className="mt-3">
+                        <div className="flex justify-between text-xs text-[#e8fbff]/50 mb-1">
+                          <span>Obiettivo: {challenge.target_value} {challenge.challenge_type}</span>
+                          <span>{challenge.participants_count} partecipanti · {challenge.completions_count} completate</span>
+                        </div>
+                        <div className="w-full h-2 bg-[#1e3a5f]/30 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${progressPercent}%`, backgroundColor: color }}
+                          />
+                        </div>
+                      </div>
+                      {/* Date */}
+                      {(challenge.start_date || challenge.end_date) && (
+                        <div className="flex items-center gap-2 mt-2 text-xs text-[#e8fbff]/40">
+                          <Clock className="h-3 w-3" />
+                          {challenge.start_date && <span>Dal {new Date(challenge.start_date).toLocaleDateString('it-IT')}</span>}
+                          {challenge.end_date && <span>al {new Date(challenge.end_date).toLocaleDateString('it-IT')}</span>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
 
       {/* Modal Dettagli Segnalazione */}
       <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
