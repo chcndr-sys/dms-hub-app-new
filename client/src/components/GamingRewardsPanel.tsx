@@ -1564,7 +1564,6 @@ export default function GamingRewardsPanel() {
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#f97316]"></span> 📢 Segnalazioni</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#84cc16]"></span> 🏪 Negozi</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#eab308]"></span> 🛒 Mercati</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#8b5cf6]"></span> 🏢 Hub</span>
             {config.mobility_enabled && (
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#06b6d4]"></span> 🚌 Percorsi Sostenibili</span>
             )}
