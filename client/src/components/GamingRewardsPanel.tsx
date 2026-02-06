@@ -639,6 +639,9 @@ export default function GamingRewardsPanel() {
   // Il filtro per comune è SOLO client-side via filterByGeo con comune_id diretto
   // Così "Tutta Italia" mostra tutto e "[Comune]" filtra localmente per comune_id
   const comuneQueryParam = ''; // Non filtrare mai lato server
+  // v1.3.4: Il trend è un'aggregazione giornaliera (SUM per date), NON può essere filtrato client-side.
+  // Quindi passiamo comune_id all'API trend SOLO quando geoFilter='comune'
+  const trendComuneQueryParam = (geoFilter === 'comune' && currentComuneId) ? `comune_id=${currentComuneId}` : '';
   // Per la configurazione: usare sempre un comune_id valido (default Grosseto=1)
   const configComuneId = currentComuneId || 1;
 
@@ -853,7 +856,8 @@ export default function GamingRewardsPanel() {
   // Funzione per caricare Trend TCC (ultimi 7 giorni) via REST API
   const loadTrendData = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/trend${comuneQueryParam ? '?' + comuneQueryParam : ''}`);
+      // v1.3.4: Il trend usa trendComuneQueryParam (dipende da geoFilter)
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/trend${trendComuneQueryParam ? '?' + trendComuneQueryParam : ''}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && Array.isArray(result.data)) {
@@ -875,7 +879,7 @@ export default function GamingRewardsPanel() {
     } catch (error) {
       console.error('Errore caricamento trend data:', error);
     }
-  }, [comuneQueryParam]);
+  }, [trendComuneQueryParam]);
 
   // Funzione per caricare le Azioni Mobilità (percorsi completati dai cittadini)
   // v1.3.1: Carica SEMPRE i dati del comune impersonalizzato (NON dipende da geoFilter)

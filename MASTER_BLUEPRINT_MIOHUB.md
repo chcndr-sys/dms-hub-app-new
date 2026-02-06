@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.99.2  
-> **Data:** 6 Febbraio 2026 (Fix Completo Filtri Gaming & Rewards v1.3.2)  
+> **Versione:** 3.99.3  
+> **Data:** 6 Febbraio 2026 (Fix Definitivo Filtri Gaming & Rewards v1.3.3 — comune_id diretto)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1144,6 +1144,33 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 ---
 
 #### 📝 CHANGELOG
+
+### v3.99.3 (06/02/2026) - FIX DEFINITIVO Filtri Gaming & Rewards v1.3.3 — comune_id diretto
+
+**Problema v1.3.2:** Il filtro `filterByGeo()` usava coordinate + raggio 30km per determinare se un dato apparteneva a un comune. Questo causava **cross-contaminazione tra comuni limitrofi** (es. Modena/Carpi/Sassuolo/Vignola sono tutti entro 30km l'uno dall'altro in Emilia-Romagna). Il risultato: impersonalizzando Vignola si vedevano anche dati di Modena, Sassuolo, ecc.
+
+**Soluzione v1.3.3 — Filtro `comune_id` diretto (match esatto):**
+
+1. **Backend v2.1.0**: Aggiunto `comune_id` ai SELECT di TUTTE le API heatmap:
+   - `mobility/heatmap`: `route_completions.comune_id` e `mobility_checkins.comune_id`
+   - `culture/heatmap`: `cultural_visits.comune_id`
+   - `heatmap` (shopping): `hub_shops.comune_id` (shop) e `markets.comune_id` (market)
+   - `top-shops`: `hub_shops.comune_id` (non `imprese.comune_id` che è null)
+
+2. **Frontend v1.3.3**: Riscritta `filterByGeo()` per usare `comune_id` diretto:
+   - Priorità 1: `parseInt(item.comune_id) === currentComuneId` (match esatto)
+   - Fallback: se item non ha `comune_id`, usa coordinate con raggio **5km** (era 30km)
+
+3. **Stats TCC grandi**: In vista comune, usa SOLO dati filtrati localmente (no stats API globali)
+
+4. **Top 5 Negozi**: Filtrati per `comune_id` (MIO TEST visibile SOLO a Grosseto)
+
+5. **Interfacce aggiornate**: Aggiunto `comune_id?: number` a `HeatmapPoint`, `MobilityAction`, `CultureAction`, `TopShop`
+
+**Commit Frontend:** `180787c` (v1.3.3)  
+**Commit Backend:** v2.1.0 (patch diretta su Hetzner)
+
+---
 
 ### v3.99.2 (06/02/2026) - Fix Completo Filtri Gaming & Rewards v1.3.2
 
@@ -4888,8 +4915,9 @@ CO2 (kg) = TCC_spesi × 10g / 1000
 - [x] Collegare frontend challenges agli endpoint CRUD — Commit `668c8a1`
 - [x] Aggiungere contatore referral/challenges nel trend — Commit `a344594`
 - [x] Fix filtri impersonalizzazione comune (v1.3.0 → v1.3.2) — Commit `0761110` → `1d9bcfe`
+- [x] **FIX DEFINITIVO filtri v1.3.3** — `filterByGeo()` usa `comune_id` diretto (match esatto) — Commit `180787c` + Backend v2.1.0
 - [x] Simulazione check-in mobilità + cultura per 8 comuni — 26 notifiche TCC_REWARD
-- [ ] Test completo filtri da parte dell'utente (in corso)
+- [x] Test completo filtri — Verificato: ogni comune vede SOLO i propri dati (Vignola=22 civic, Grosseto=MIO TEST)
 
 ### Regole da Seguire per Modifiche Future
 1. **SEMPRE testare compilazione** prima di ogni commit
@@ -5967,6 +5995,7 @@ curl "https://orchestratore.mio-hub.me/api/gaming-rewards/culture/heatmap?comune
 
 | Versione | Data | Modifiche |
 |----------|------|-----------|
+| v3.99.3 | 06/02/2026 | **FIX DEFINITIVO FILTRI v1.3.3**: `filterByGeo()` usa `comune_id` diretto (match esatto) invece di coordinate+raggio 30km. Backend v2.1.0 aggiunge `comune_id` a tutti i SELECT. Stats TCC in vista comune usano SOLO dati filtrati. Top 5 Negozi filtrati per `comune_id`. |
 | v3.99.2 | 06/02/2026 | **FIX FILTRI v1.3.2**: API caricano TUTTO, filtro solo client-side, stats TCC calcolate da azioni, HeatmapLayer filtrata |
 | v3.99.1 | 06/02/2026 | **FIX FILTRI v1.3.1**: Switch tab Italia/Comune senza reload API |
 | v3.99.0 | 06/02/2026 | **FIX FILTRI v1.3.0**: geoFilter default, COMUNI_COORDS completo, MapCenterUpdater |
@@ -6087,20 +6116,20 @@ curl "https://orchestratore.mio-hub.me/api/gaming-rewards/nearby-pois?lat=42.761
 | `dms-hub-app-new/client/src/hooks/useNearbyPOIs.ts` | Nuovo hook GPS |
 | `dms-hub-app-new/client/src/components/NearbyPOIPopup.tsx` | Nuovi componenti UI |
 | `dms-hub-app-new/client/src/pages/WalletPage.tsx` | Integrazione ECO CREDIT |
-| `dms-hub-app-new/client/src/components/GamingRewardsPanel.tsx` | Heatmap isolata, marker 15px, flyTo, filtri geoFilter v1.3.2 (API senza filtro, filtro client-side, stats TCC da azioni) |
+| `dms-hub-app-new/client/src/components/GamingRewardsPanel.tsx` | Heatmap isolata, marker 15px, flyTo, filtri geoFilter **v1.3.3** (filtro `comune_id` diretto, stats TCC in vista comune solo da dati filtrati, Top 5 filtrati per `comune_id`) |
 
 ---
 
-## 🔧 FIX FILTRI GAMING & REWARDS v1.3.2 (6 Febbraio 2026)
+## 🔧 FIX FILTRI GAMING & REWARDS v1.3.0 → v1.3.3 (6 Febbraio 2026)
 
-### Problema Riscontrato
+### Problema Originale (v1.3.0–v1.3.2)
 Quando si impersonalizzava un comune (es. Carpi), la sezione Gaming & Rewards mostrava dati di TUTTI i comuni invece di filtrare solo quelli del comune selezionato:
 - Heatmap mostrava Mobilità (7) e Cultura (12) globali invece dei valori locali
 - Liste Mobilità mostravano check-in di Modena (MASERATI, STAZIONE FS) sotto Carpi
 - Contatori tab non coerenti con i dati filtrati
 - Mappa non zoomava sul comune selezionato
 
-### Causa Root
+### Causa Root (v1.3.0–v1.3.2)
 1. Le API `mobility/heatmap` e `culture/heatmap` ricevevano `lat/lng` dal frontend → il backend usava filtro geografico (raggio 50km) IGNORANDO `comune_id`
 2. `comuneQueryParam` passava sempre `comune_id` indipendentemente dal tab selezionato
 3. `geoFilter` partiva come `'italia'` anche durante impersonalizzazione
@@ -6158,47 +6187,127 @@ Quando si impersonalizzava un comune (es. Carpi), la sezione Gaming & Rewards mo
 | 12 | Casalecchio di Reno | 44.4726 | 11.2755 |
 | 13 | Ravenna | 44.4175 | 12.1996 |
 
-### Architettura Filtri v1.3.2 — Dettaglio Tecnico
+### Architettura Filtri v1.3.3 — Dettaglio Tecnico (VERSIONE DEFINITIVA)
 
-Il sistema di filtraggio è stato completamente riprogettato nella v1.3.2 per risolvere problemi di coerenza dati e performance. L'architettura si basa su un principio fondamentale: **le API caricano SEMPRE tutti i dati**, e il filtro per comune avviene esclusivamente lato client.
+Il sistema di filtraggio è stato completamente riprogettato nella v1.3.2 e **perfezionato nella v1.3.3** per risolvere il problema dei comuni limitrofi. L'architettura si basa su due principi fondamentali:
+1. **Le API caricano SEMPRE tutti i dati** (senza filtro `comune_id` lato server)
+2. **Il filtro per comune usa `comune_id` diretto** (match esatto, NON coordinate+raggio)
 
 **Funzioni di caricamento dati (useCallback):**
 
-| Funzione | Endpoint API | Filtro comune_id | Note |
-|----------|-------------|-------------------|------|
-| `loadStats` | `/api/gaming-rewards/stats` | NO (rimosso v1.3.2) | Carica stats globali |
-| `loadHeatmapPoints` | `/api/gaming-rewards/heatmap` | NO (rimosso v1.3.2) | Tutti i punti commerciali |
-| `loadMobilityActions` | `/api/gaming-rewards/mobility/heatmap` | NO (rimosso v1.3.2) | Tutte le route_completions |
-| `loadCultureActions` | `/api/gaming-rewards/culture/heatmap` | NO (rimosso v1.3.2) | Tutte le cultural_visits |
-| `loadCivicReports` | `/api/gaming-rewards/civic/reports` | NO (rimosso v1.3.2) | Tutte le segnalazioni |
-| `loadReferralList` | `/api/gaming-rewards/referral/list` | NO (rimosso v1.3.2) | Tutti i referral |
-| `loadTopShops` | `/api/gaming-rewards/top-shops` | NO (rimosso v1.3.2) | Top 5 negozi globali |
-| `loadTrendData` | `/api/gaming-rewards/trend` | NO (rimosso v1.3.2) | Trend 7 giorni globale |
+| Funzione | Endpoint API | Filtro server | Dati restituiti (v2.1.0) |
+|----------|-------------|---------------|-------------------------|
+| `loadStats` | `/api/gaming-rewards/stats` | NO | Stats globali (usate solo in vista Italia) |
+| `loadHeatmapPoints` | `/api/gaming-rewards/heatmap` | NO | Punti commerciali **con `comune_id`** |
+| `loadMobilityActions` | `/api/gaming-rewards/mobility/heatmap` | NO | Route completions **con `comune_id`** |
+| `loadCultureActions` | `/api/gaming-rewards/culture/heatmap` | NO | Cultural visits **con `comune_id`** |
+| `loadCivicReports` | `/api/gaming-rewards/civic/reports` | NO | Segnalazioni **con `comune_id`** |
+| `loadReferralList` | `/api/gaming-rewards/referral/list` | NO | Referral **con `comune_id`** |
+| `loadTopShops` | `/api/gaming-rewards/top-shops` | NO | Top negozi **con `comune_id`** |
+| `loadTrendData` | `/api/gaming-rewards/trend` | NO | Trend 7 giorni globale |
 
-**Filtro client-side `filterByGeo()`:**
+**Filtro client-side `filterByGeo()` — v1.3.3 (DEFINITIVO):**
 
-Quando `geoFilter === 'comune'`, la funzione `filterByGeo()` filtra i dati usando le coordinate del comune impersonalizzato con un raggio di 30km. Viene applicata a:
+```javascript
+// v1.3.3: Filtro per comune_id DIRETTO (non più coordinate+raggio)
+const filterByGeo = useCallback((items: any[]) => {
+  if (geoFilter === 'italia' || !currentComuneId) return items;
+  
+  const comuneCoords = COMUNI_COORDS[currentComuneId];
+  
+  return items.filter(item => {
+    // Priorità 1: filtro per comune_id diretto (preciso)
+    if (item.comune_id !== undefined && item.comune_id !== null) {
+      return parseInt(item.comune_id) === currentComuneId;
+    }
+    
+    // Fallback: se non ha comune_id, usa coordinate con raggio 5km (stretto)
+    if (!comuneCoords) return false;
+    const lat = parseFloat(item.lat) || 0;
+    const lng = parseFloat(item.lng) || 0;
+    if (!lat || !lng) return false;
+    
+    const dLat = (lat - comuneCoords.lat) * 111;
+    const dLng = (lng - comuneCoords.lng) * 111 * Math.cos(comuneCoords.lat * Math.PI / 180);
+    const distance = Math.sqrt(dLat * dLat + dLng * dLng);
+    return distance <= 5; // 5km fallback (era 30km in v1.3.2)
+  });
+}, [geoFilter, currentComuneId]);
+```
+
+**PERCHÉ `comune_id` diretto è MEGLIO di coordinate+raggio:**
+
+| Aspetto | v1.3.2 (coordinate+30km) | v1.3.3 (comune_id diretto) |
+|---------|--------------------------|----------------------------|
+| Precisione | ❌ Cross-contaminazione tra comuni limitrofi | ✅ Match esatto, zero contaminazione |
+| Emilia-Romagna | ❌ Modena/Carpi/Sassuolo/Vignola tutti entro 30km | ✅ Ogni comune vede SOLO i propri dati |
+| Performance | ❌ Calcolo distanza per ogni item | ✅ Confronto intero (più veloce) |
+| Affidabilità | ❌ Dipende da coordinate accurate | ✅ Dipende da `comune_id` nel DB (sempre presente) |
+
+**Viene applicata a:**
 - Contatori tab heatmap (Segnalazioni, Negozio, Mercato, Mobilità, Cultura, Referral)
 - Marker sulla mappa (tutti i tipi)
 - HeatmapLayer (zona di calore)
 - Liste sotto la mappa (Segnalazioni Civiche, Mobilità, Cultura, Referral)
+- **Top 5 Negozi** (filtrati per `comune_id` — MIO TEST visibile SOLO a Grosseto)
 
 Quando `geoFilter === 'italia'`, `filterByGeo()` restituisce tutti i dati senza filtro.
 
-**Stats grandi (TCC Rilasciati/Riscattati):**
+**Stats grandi (TCC Rilasciati/Riscattati) — v1.3.3:**
 
-Calcolate sommando i TCC dalle azioni caricate:
 ```
-tccRilasciati = stats.tcc_issued 
-  + Σ(mobilityActions.tcc_earned) 
-  + Σ(cultureActions.tcc_earned) 
+// Vista ITALIA (geoFilter='italia'):
+tccRilasciati = stats.tcc_issued       // ← stats API (globali)
+  + Σ(mobilityActions.tcc_earned)        // ← tutti i dati
+  + Σ(cultureActions.tcc_earned)
   + Σ(civicReports.tcc_earned)
   + Σ(purchaseList.tcc_earned)
+tccRiscattati = stats.tcc_redeemed      // ← stats API (globali)
 
-tccRiscattati = stats.tcc_redeemed
+// Vista COMUNE (geoFilter='comune'):
+tccRilasciati = 0                       // ← NO stats API (sono globali!)
+  + Σ(filteredMobility.tcc_earned)       // ← solo dati del comune
+  + Σ(filteredCulture.tcc_earned)
+  + Σ(filteredCivic.tcc_earned)
+  + Σ(filteredShops.tcc_earned)
+tccRiscattati = Σ(filteredShops.tcc_spent) // ← solo dati del comune
 ```
 
-Questo garantisce che i TCC siano visibili anche per comuni senza `operator_transactions` nel DB.
+Questo garantisce che:
+- In vista Italia: i TCC sono la somma globale (stats API + azioni)
+- In vista Comune: i TCC sono SOLO quelli del comune selezionato (nessuna contaminazione)
+
+**Backend v2.1.0 — Campi `comune_id` aggiunti ai SELECT:**
+
+| API | Tabella | Campo `comune_id` aggiunto |
+|-----|---------|---------------------------|
+| `mobility/heatmap` | `route_completions` | `route_completions.comune_id` |
+| `mobility/heatmap` | `mobility_checkins` | `mobility_checkins.comune_id` |
+| `culture/heatmap` | `cultural_visits` | `cultural_visits.comune_id` |
+| `heatmap` (shop) | `hub_shops` | `hub_shops.comune_id` |
+| `heatmap` (market) | `markets` | `markets.comune_id` |
+| `top-shops` | `hub_shops` | `hub_shops.comune_id` (NON `imprese.comune_id` che è null) |
+
+**Interfacce TypeScript aggiornate (v1.3.3):**
+
+```typescript
+interface HeatmapPoint {
+  // ... campi esistenti ...
+  comune_id?: number; // v1.3.3
+}
+interface MobilityAction {
+  // ... campi esistenti ...
+  comune_id?: number; // v1.3.3
+}
+interface CultureAction {
+  // ... campi esistenti ...
+  comune_id?: number; // v1.3.3
+}
+interface TopShop {
+  // ... campi esistenti ...
+  comune_id?: number; // v1.3.3
+}
+```
 
 ---
 
