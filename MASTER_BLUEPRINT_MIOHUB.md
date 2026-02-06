@@ -1167,7 +1167,14 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 | Grosseto (1) | 2350 | 2665 | 5 | 4 | 4 | 55 |
 | Carpi (9) | 0 | 0 | 0 | 0 | 2 | 0 |
 
-**Commit Frontend:** `fc4ed17` (v1.3.4)
+**Commit Frontend:** `fc4ed17` (v1.3.4), `78f9f7b` (v1.3.4b)
+
+**Fix v1.3.4b — Trend reload silenzioso:**
+`loadTrendData` rimosso dal `useEffect` principale (che usa `setLoading(true)`) e messo in un `useEffect` separato SENZA `setLoading`. Così quando si switcha Italia↔Comune:
+- La mappa zooma istantaneamente
+- I dati si filtrano client-side senza reload
+- Il trend si ricarica silenziosamente in background via API `?comune_id=X`
+- Nessun reload visibile della pagina
 
 ---
 
