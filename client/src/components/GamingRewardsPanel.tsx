@@ -631,10 +631,10 @@ export default function GamingRewardsPanel() {
   // Se admin non sta impersonando, non filtrare per comune (vede tutto)
   // Se sta impersonando, usa il comune selezionato
   const currentComuneId = isImpersonating && comuneId ? parseInt(comuneId) : null;
-  // v1.3.1: comuneQueryParam NON dipende da geoFilter
-  // Carica SEMPRE i dati del comune impersonalizzato (se presente)
-  // geoFilter è SOLO per zoom mappa + filtro client-side (NO reload API)
-  const comuneQueryParam = currentComuneId ? `comune_id=${currentComuneId}` : '';
+  // v1.3.2: Le API caricano SEMPRE TUTTI i dati (senza filtro comune)
+  // Il filtro per comune è SOLO client-side via filterByGeo
+  // Così "Tutta Italia" mostra tutto e "[Comune]" filtra localmente
+  const comuneQueryParam = ''; // Non filtrare mai lato server
   // Per la configurazione: usare sempre un comune_id valido (default Grosseto=1)
   const configComuneId = currentComuneId || 1;
 
@@ -758,7 +758,7 @@ export default function GamingRewardsPanel() {
   }, [comuneQueryParam]);
 
   // Funzione per caricare le segnalazioni civiche
-  // v1.3.1: Carica SEMPRE i dati del comune impersonalizzato (NON dipende da geoFilter)
+  // v1.3.2: Carica TUTTI i dati senza filtro comune — filtro è solo client-side
   const loadCivicReports = useCallback(async () => {
     if (!config.civic_enabled) {
       setCivicReports([]);
@@ -766,9 +766,6 @@ export default function GamingRewardsPanel() {
     }
     try {
       let url = `${API_BASE_URL}/api/civic-reports/stats`;
-      if (currentComuneId) {
-        url += `?comune_id=${currentComuneId}`;
-      }
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
@@ -791,7 +788,7 @@ export default function GamingRewardsPanel() {
     } catch (error) {
       console.error('Errore caricamento segnalazioni:', error);
     }
-  }, [currentComuneId, config.civic_enabled]);
+  }, [config.civic_enabled]);
 
   // Funzione per caricare i punti heatmap via REST API
   const loadHeatmapPoints = useCallback(async () => {
@@ -885,11 +882,8 @@ export default function GamingRewardsPanel() {
       };
       const period = periodMap[timeFilter] || 'all';
       
-      // Carica sempre con comune_id se impersonalizzazione attiva
+      // v1.3.2: Carica TUTTI i dati senza filtro comune — filtro è solo client-side
       let url = `${API_BASE_URL}/api/gaming-rewards/mobility/heatmap?period=${period}`;
-      if (currentComuneId) {
-        url += `&comune_id=${currentComuneId}`;
-      }
       
       const response = await fetch(url);
       if (response.ok) {
@@ -916,10 +910,10 @@ export default function GamingRewardsPanel() {
       console.error('Errore caricamento mobility actions:', error);
       setMobilityActions([]);
     }
-  }, [currentComuneId, config.mobility_enabled, timeFilter]);
+  }, [config.mobility_enabled, timeFilter]);
 
   // Funzione per caricare le Azioni Cultura (visite effettuate dai cittadini)
-  // v1.3.1: Carica SEMPRE i dati del comune impersonalizzato (NON dipende da geoFilter)
+  // v1.3.2: Carica TUTTI i dati senza filtro comune — filtro è solo client-side
   const loadCultureActions = useCallback(async () => {
     if (!config.culture_enabled) {
       setCultureActions([]);
@@ -935,11 +929,8 @@ export default function GamingRewardsPanel() {
       };
       const period = periodMap[timeFilter] || 'all';
       
-      // Carica sempre con comune_id se impersonalizzazione attiva
+      // v1.3.2: Carica TUTTI i dati senza filtro comune
       let url = `${API_BASE_URL}/api/gaming-rewards/culture/heatmap?period=${period}`;
-      if (currentComuneId) {
-        url += `&comune_id=${currentComuneId}`;
-      }
       
       const response = await fetch(url);
       if (response.ok) {
@@ -966,7 +957,7 @@ export default function GamingRewardsPanel() {
       console.error('Errore caricamento culture actions:', error);
       setCultureActions([]);
     }
-  }, [currentComuneId, config.culture_enabled, timeFilter]);
+  }, [config.culture_enabled, timeFilter]);
 
   // Funzione per caricare la lista Referral dal backend
   const loadReferralList = useCallback(async () => {
@@ -984,11 +975,8 @@ export default function GamingRewardsPanel() {
         'year': 365
       };
       const days = periodMap[timeFilter] || 3650;
-      // v1.3.1: Carica sempre con comune_id se impersonalizzazione attiva
+      // v1.3.2: Carica TUTTI i dati senza filtro comune
       let referralUrl = `${API_BASE_URL}/api/gaming-rewards/referral/list?days=${days}`;
-      if (currentComuneId) {
-        referralUrl += `&comune_id=${currentComuneId}`;
-      }
       const response = await fetch(referralUrl);
       if (response.ok) {
         const result = await response.json();
@@ -1005,7 +993,7 @@ export default function GamingRewardsPanel() {
       setReferralList([]);
       setReferralTotal(0);
     }
-  }, [currentComuneId, config.shopping_enabled, timeFilter]);
+  }, [config.shopping_enabled, timeFilter]);
 
   // Funzione per caricare le Challenges dal backend
   const loadChallenges = useCallback(async () => {
@@ -1321,58 +1309,91 @@ export default function GamingRewardsPanel() {
       )}
 
       {/* Statistiche */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 text-[#e8fbff]/70 text-sm mb-1">
-              <Coins className="h-4 w-4 text-yellow-500" />
-              TCC Rilasciati
-            </div>
-            <div className="text-2xl font-bold text-[#22c55e]">
-              {stats?.total_tcc_issued?.toLocaleString() || 0}
-            </div>
-          </CardContent>
-        </Card>
+      {/* v1.3.2: Stats calcolate combinando API /stats + somma TCC dalle azioni caricate */}
+      {/* Quando geoFilter='comune', filtra anche le stats per il comune selezionato */}
+      {(() => {
+        // Calcola TCC dalle azioni caricate (mobilità + cultura + segnalazioni + acquisti)
+        const filteredMobility = filterData(mobilityActions, 'completed_at');
+        const filteredCulture = filterData(cultureActions, 'visit_date');
+        const filteredCivic = filterData(civicReports, 'created_at');
+        const filteredShops = filterData(heatmapPoints, 'created_at');
+        
+        // TCC rilasciati = somma TCC da tutte le azioni + stats API (operator_transactions)
+        const tccFromMobility = filteredMobility.reduce((sum, a) => sum + (a.tcc_reward || 0), 0);
+        const tccFromCulture = filteredCulture.reduce((sum, a) => sum + (a.tcc_reward || 0), 0);
+        const tccFromCivic = filteredCivic.reduce((sum, r) => sum + (r.tcc_earned || 0), 0);
+        const tccFromShops = filteredShops.reduce((sum, p) => sum + (p.tcc_earned || 0), 0);
+        const tccFromApi = stats?.total_tcc_issued || 0;
+        const totalTccIssued = tccFromMobility + tccFromCulture + tccFromCivic + tccFromShops + tccFromApi;
+        
+        // TCC riscattati = stats API (operator_transactions)
+        const totalTccSpent = stats?.total_tcc_spent || 0;
+        
+        // Utenti attivi = stats API + utenti unici dalle azioni
+        const uniqueUserIds = new Set<number>();
+        filteredMobility.forEach(a => a.user_id && uniqueUserIds.add(a.user_id));
+        filteredCulture.forEach(a => a.user_id && uniqueUserIds.add(a.user_id));
+        const totalActiveUsers = Math.max(stats?.active_users || 0, uniqueUserIds.size);
+        
+        // CO2 = stats API + CO2 dalla mobilità
+        const co2FromMobility = filteredMobility.reduce((sum, a) => sum + (a.co2_saved_g || 0), 0) / 1000;
+        const totalCo2 = (stats?.co2_saved_kg || 0) + co2FromMobility;
+        
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-[#e8fbff]/70 text-sm mb-1">
+                  <Coins className="h-4 w-4 text-yellow-500" />
+                  TCC Rilasciati
+                </div>
+                <div className="text-2xl font-bold text-[#22c55e]">
+                  {totalTccIssued.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 text-[#e8fbff]/70 text-sm mb-1">
-              <TrendingUp className="h-4 w-4 text-blue-500" />
-              TCC Riscattati
-            </div>
-            <div className="text-2xl font-bold text-[#3b82f6]">
-              {stats?.total_tcc_spent?.toLocaleString() || 0}
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-[#e8fbff]/70 text-sm mb-1">
+                  <TrendingUp className="h-4 w-4 text-blue-500" />
+                  TCC Riscattati
+                </div>
+                <div className="text-2xl font-bold text-[#3b82f6]">
+                  {totalTccSpent.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 text-[#e8fbff]/70 text-sm mb-1">
-              <Users className="h-4 w-4 text-purple-500" />
-              Utenti Attivi
-            </div>
-            <div className="text-2xl font-bold text-[#8b5cf6]">
-              {stats?.active_users?.toLocaleString() || 0}
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-[#e8fbff]/70 text-sm mb-1">
+                  <Users className="h-4 w-4 text-purple-500" />
+                  Utenti Attivi
+                </div>
+                <div className="text-2xl font-bold text-[#8b5cf6]">
+                  {totalActiveUsers.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 text-[#e8fbff]/70 text-sm mb-1">
-              <Leaf className="h-4 w-4 text-green-500" />
-              CO₂ Risparmiata
-            </div>
-            <div className="text-2xl font-bold text-[#22c55e]">
-              {(stats?.co2_saved_kg || 0).toFixed(1)} kg
-            </div>
-            <div className="text-xs text-slate-400">
-              ({((stats?.co2_saved_kg || 0) / 1000).toFixed(2)}t)
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-[#e8fbff]/70 text-sm mb-1">
+                  <Leaf className="h-4 w-4 text-green-500" />
+                  CO₂ Risparmiata
+                </div>
+                <div className="text-2xl font-bold text-[#22c55e]">
+                  {totalCo2.toFixed(1)} kg
+                </div>
+                <div className="text-xs text-slate-400">
+                  ({(totalCo2 / 1000).toFixed(2)}t)
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
 
       {/* Heatmap */}
       <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
@@ -1570,10 +1591,10 @@ export default function GamingRewardsPanel() {
               />
               <MapCenterUpdater points={heatmapPoints} civicReports={filterData(civicReports, 'created_at')} mobilityActions={mobilityActions} cultureActions={cultureActions} referralList={referralList} comuneId={currentComuneId} selectedLayer={selectedLayer} layerTrigger={layerTrigger} geoFilter={geoFilter} />
               <HeatmapLayer points={[
-                ...heatmapPoints, 
+                ...filterData(heatmapPoints, 'created_at'), 
                 ...filterData(civicReports, 'created_at'),
-                // Aggiungi punti mobilità come HeatmapPoint
-                ...mobilityActions.map(m => ({
+                // Aggiungi punti mobilità filtrati come HeatmapPoint
+                ...filterData(mobilityActions, 'completed_at').map(m => ({
                   id: m.id,
                   lat: parseFloat(String(m.lat)),
                   lng: parseFloat(String(m.lng)),
@@ -1583,8 +1604,8 @@ export default function GamingRewardsPanel() {
                   tcc_spent: 0,
                   transactions: 1
                 })),
-                // Aggiungi punti cultura come HeatmapPoint
-                ...cultureActions.map(c => ({
+                // Aggiungi punti cultura filtrati come HeatmapPoint
+                ...filterData(cultureActions, 'visit_date').map(c => ({
                   id: c.id,
                   lat: parseFloat(String(c.lat)),
                   lng: parseFloat(String(c.lng)),
@@ -1596,7 +1617,7 @@ export default function GamingRewardsPanel() {
                 }))
               ]} selectedLayer={selectedLayer} />
               {/* Marker negozi/hub/mercati - con offset spirale per punti sovrapposti */}
-              {(selectedLayer === 'all' || selectedLayer === 'shop' || selectedLayer === 'market') && applySpiralOffset(heatmapPoints).filter(p => selectedLayer === 'all' || p.type === selectedLayer).map((point) => {
+              {(selectedLayer === 'all' || selectedLayer === 'shop' || selectedLayer === 'market') && applySpiralOffset(filterData(heatmapPoints, 'created_at')).filter(p => selectedLayer === 'all' || p.type === selectedLayer).map((point) => {
                 const intensity = Math.min((point.tcc_earned + point.tcc_spent) / 5000, 1.0);
                 return (
                   <Marker
@@ -1631,7 +1652,7 @@ export default function GamingRewardsPanel() {
                 </Marker>
               ))}
               {/* Marker Mobilità Sostenibile - azioni cittadini (percorsi completati) - con offset spirale */}
-              {(selectedLayer === 'all' || selectedLayer === 'mobility') && config.mobility_enabled && applySpiralOffsetGeneric(mobilityActions).map((action) => (
+              {(selectedLayer === 'all' || selectedLayer === 'mobility') && config.mobility_enabled && applySpiralOffsetGeneric(filterData(mobilityActions, 'completed_at')).map((action) => (
                 <Marker
                   key={`mobility-${action.id}`}
                   position={[action.lat + action.offsetLat, action.lng + action.offsetLng]}
@@ -1658,7 +1679,7 @@ export default function GamingRewardsPanel() {
                 </Marker>
               ))}
               {/* Marker Cultura - visite effettuate dai cittadini - con offset spirale */}
-              {(selectedLayer === 'all' || selectedLayer === 'culture') && config.culture_enabled && applySpiralOffsetGeneric(cultureActions).map((visit) => (
+              {(selectedLayer === 'all' || selectedLayer === 'culture') && config.culture_enabled && applySpiralOffsetGeneric(filterData(cultureActions, 'visit_date')).map((visit) => (
                 <Marker
                   key={`culture-${visit.id}`}
                   position={[visit.lat + visit.offsetLat, visit.lng + visit.offsetLng]}
