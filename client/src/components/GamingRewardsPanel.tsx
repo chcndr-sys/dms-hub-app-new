@@ -1562,7 +1562,7 @@ export default function GamingRewardsPanel() {
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 mt-4 text-sm text-[#e8fbff]/70">
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#f97316]"></span> 📢 Segnalazioni</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#22c55e]"></span> 🏪 Negozi</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#84cc16]"></span> 🏪 Negozi</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#eab308]"></span> 🛒 Mercati</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#8b5cf6]"></span> 🏢 Hub</span>
             {config.mobility_enabled && (
@@ -1570,6 +1570,9 @@ export default function GamingRewardsPanel() {
             )}
             {config.culture_enabled && (
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#a855f7]"></span> 🏛️ Visite Culturali</span>
+            )}
+            {config.shopping_enabled && (
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-[#EC4899]"></span> 🎁 Presenta un Amico</span>
             )}
           </div>
         </CardContent>
@@ -1736,10 +1739,15 @@ export default function GamingRewardsPanel() {
                       <span className="text-[#e8fbff]/70">Cultura</span>
                     </span>
                   )}
-
+                  {config.shopping_enabled && (
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded bg-[#EC4899]"></span>
+                      <span className="text-[#e8fbff]/70">Referral</span>
+                    </span>
+                  )}
                 </div>
                 {/* Totali periodo */}
-                <div className="grid grid-cols-4 lg:grid-cols-7 gap-2 pt-4 border-t border-[#e8fbff]/10">
+                <div className="grid grid-cols-4 lg:grid-cols-8 gap-2 pt-4 border-t border-[#e8fbff]/10">
                   <div className="text-center">
                     <div className="text-sm font-bold text-[#22c55e]">
                       {trendData.reduce((sum, d) => sum + d.tcc_earned, 0)}
@@ -1790,7 +1798,14 @@ export default function GamingRewardsPanel() {
                       <div className="text-xs text-[#e8fbff]/50">Cultura</div>
                     </div>
                   )}
-
+                  {config.shopping_enabled && (
+                    <div className="text-center">
+                      <div className="text-sm font-bold text-[#EC4899]">
+                        0
+                      </div>
+                      <div className="text-xs text-[#e8fbff]/50">Referral</div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
