@@ -1124,35 +1124,35 @@ export default function GamingRewardsPanel() {
                 </div>
               </CategoryCard>
 
-              {/* Acquisti Locali */}
+              {/* Presenta un Amico */}
               <CategoryCard
-                title="Acquisti Locali"
-                icon={ShoppingCart}
-                color="blue-500"
+                title="Presenta un Amico"
+                icon={Gift}
+                color="pink-500"
                 enabled={config.shopping_enabled}
                 onToggle={(v) => setConfig({ ...config, shopping_enabled: v })}
               >
                 <div className="space-y-3">
                   <ParamInput
-                    label="Cashback"
+                    label="TCC Invito"
                     value={config.shopping_cashback_percent}
                     onChange={(v) => setConfig({ ...config, shopping_cashback_percent: v })}
-                    suffix="%"
-                    max={100}
+                    suffix="TCC"
+                    max={1000}
                   />
                   <ParamInput
-                    label="Bonus Km0"
+                    label="TCC Benvenuto"
                     value={config.shopping_km0_bonus}
                     onChange={(v) => setConfig({ ...config, shopping_km0_bonus: v })}
-                    suffix="%"
-                    max={100}
+                    suffix="TCC"
+                    max={1000}
                   />
                   <ParamInput
-                    label="Bonus Mercato"
+                    label="Bonus Primo Acquisto"
                     value={config.shopping_market_bonus}
                     onChange={(v) => setConfig({ ...config, shopping_market_bonus: v })}
-                    suffix="%"
-                    max={100}
+                    suffix="TCC"
+                    max={1000}
                   />
                 </div>
               </CategoryCard>
