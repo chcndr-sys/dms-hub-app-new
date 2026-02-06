@@ -51,6 +51,9 @@ const COMUNI_COORDS: Record<number, { lat: number; lng: number; nome: string }> 
   7: { lat: 44.4898, lng: 11.0123, nome: 'Vignola' },
   8: { lat: 44.6471, lng: 10.9252, nome: 'Modena' },
   9: { lat: 44.7842, lng: 10.8847, nome: 'Carpi' },
+  10: { lat: 44.5343, lng: 10.7847, nome: 'Sassuolo' },
+  12: { lat: 44.4726, lng: 11.2755, nome: 'Casalecchio di Reno' },
+  13: { lat: 44.4175, lng: 12.1996, nome: 'Ravenna' },
 };
 
 const DEFAULT_CENTER = { lat: 42.5, lng: 12.5 };
@@ -214,13 +217,14 @@ const DEFAULT_CONFIG: GamingConfig = {
 // v1.2.0: Aggiunto supporto per mobility e culture layers
 function MapCenterUpdater({ 
   points, 
-  civicReports, 
+  civicReports,
   mobilityActions,
   cultureActions,
   referralList = [],
   comuneId, 
   selectedLayer,
-  layerTrigger 
+  layerTrigger,
+  geoFilter = 'italia'
 }: { 
   points: HeatmapPoint[]; 
   civicReports: HeatmapPoint[]; 
@@ -230,13 +234,27 @@ function MapCenterUpdater({
   comuneId: number | null;
   selectedLayer: string;
   layerTrigger: number;
+  geoFilter?: 'italia' | 'comune';
 }) {
   const map = useMap();
   
   useEffect(() => {
     if (!map) return;
     
-    // Determina quali punti mostrare in base al layer selezionato
+    // v1.3.0: Se geoFilter='italia', mostra vista Italia
+    if (geoFilter === 'italia') {
+      map.flyTo([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], DEFAULT_ZOOM, { duration: 1 });
+      return;
+    }
+    
+    // Se geoFilter='comune', centra sul comune selezionato
+    if (comuneId && COMUNI_COORDS[comuneId]) {
+      const coords = COMUNI_COORDS[comuneId];
+      map.flyTo([coords.lat, coords.lng], 14, { duration: 1.5 });
+      return;
+    }
+    
+    // Fallback: determina quali punti mostrare in base al layer selezionato
     let targetPoints: Array<{lat: number; lng: number}> = [];
     
     if (selectedLayer === 'civic') {
@@ -246,22 +264,16 @@ function MapCenterUpdater({
     } else if (selectedLayer === 'market') {
       targetPoints = points.filter(p => p.type === 'market');
     } else if (selectedLayer === 'mobility') {
-      // Converti mobilityActions in punti con lat/lng
       targetPoints = mobilityActions.map(m => ({ lat: parseFloat(String(m.lat)), lng: parseFloat(String(m.lng)) }));
     } else if (selectedLayer === 'culture') {
-      // Converti cultureActions in punti con lat/lng
       targetPoints = cultureActions.map(c => ({ lat: parseFloat(String(c.lat)), lng: parseFloat(String(c.lng)) }));
     } else if (selectedLayer === 'referral') {
-      // Punti referral dal backend
       targetPoints = referralList.filter(r => r.lat && r.lng).map(r => ({ lat: r.lat!, lng: r.lng! }));
-    } else if (selectedLayer === 'all') {
-      targetPoints = [...points, ...civicReports];
     } else {
       targetPoints = [...points, ...civicReports];
     }
     
     if (targetPoints.length > 0) {
-      // Calcola bounding box per mostrare tutti i punti
       const lats = targetPoints.map(p => p.lat);
       const lngs = targetPoints.map(p => p.lng);
       const minLat = Math.min(...lats);
@@ -269,13 +281,11 @@ function MapCenterUpdater({
       const minLng = Math.min(...lngs);
       const maxLng = Math.max(...lngs);
       
-      // Se c'è un solo punto o punti molto vicini, usa flyTo
       if (maxLat - minLat < 0.01 && maxLng - minLng < 0.01) {
         const avgLat = (minLat + maxLat) / 2;
         const avgLng = (minLng + maxLng) / 2;
         map.flyTo([avgLat, avgLng], 15, { duration: 1.5 });
       } else {
-        // Usa fitBounds per mostrare tutti i punti
         map.flyToBounds(
           [[minLat, minLng], [maxLat, maxLng]],
           { padding: [50, 50], duration: 1.5, maxZoom: 16 }
@@ -284,14 +294,8 @@ function MapCenterUpdater({
       return;
     }
     
-    if (comuneId && COMUNI_COORDS[comuneId]) {
-      const coords = COMUNI_COORDS[comuneId];
-      map.flyTo([coords.lat, coords.lng], 14, { duration: 1.5 });
-      return;
-    }
-    
     map.flyTo([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], DEFAULT_ZOOM, { duration: 1 });
-  }, [map, points, civicReports, comuneId, selectedLayer, layerTrigger]);
+  }, [map, points, civicReports, comuneId, selectedLayer, layerTrigger, geoFilter]);
   
   return null;
 }
@@ -607,7 +611,11 @@ export default function GamingRewardsPanel() {
   const [selectedLayer, setSelectedLayer] = useState<string>('all');
   const [layerTrigger, setLayerTrigger] = useState<number>(0); // Trigger per forzare flyTo su cambio layer
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year'>('all');
-  const [geoFilter, setGeoFilter] = useState<'italia' | 'comune'>('italia'); // Filtro geografico: tutta Italia o solo comune
+  // v1.3.0: Leggo impersonalizzazione PRIMA di inizializzare geoFilter
+  const { comuneId, comuneNome, isImpersonating } = useImpersonation();
+  
+  // geoFilter default: 'comune' se impersonalizzazione attiva, 'italia' altrimenti
+  const [geoFilter, setGeoFilter] = useState<'italia' | 'comune'>(isImpersonating && comuneId ? 'comune' : 'italia');
   const [topShops, setTopShops] = useState<TopShop[]>([]);
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([]);
   const [selectedReport, setSelectedReport] = useState<HeatmapPoint | null>(null);
@@ -620,12 +628,13 @@ export default function GamingRewardsPanel() {
   const [challengesList, setChallengesList] = useState<ChallengeItem[]>([]);
   const [challengesExpanded, setChallengesExpanded] = useState(true);
   
-  const { comuneId, comuneNome, isImpersonating } = useImpersonation();
   // Se admin non sta impersonando, non filtrare per comune (vede tutto)
   // Se sta impersonando, usa il comune selezionato
   const currentComuneId = isImpersonating && comuneId ? parseInt(comuneId) : null;
-  // Per i dati: non passare comune_id se admin non impersona (vede tutto)
-  const comuneQueryParam = currentComuneId ? `comune_id=${currentComuneId}` : '';
+  // Per i dati: comuneQueryParam rispetta geoFilter
+  // Se geoFilter='italia' → nessun filtro (vede tutto)
+  // Se geoFilter='comune' e c'è un comune → filtra per comune_id
+  const comuneQueryParam = (geoFilter === 'comune' && currentComuneId) ? `comune_id=${currentComuneId}` : '';
   // Per la configurazione: usare sempre un comune_id valido (default Grosseto=1)
   const configComuneId = currentComuneId || 1;
 
@@ -749,15 +758,17 @@ export default function GamingRewardsPanel() {
   }, [comuneQueryParam]);
 
   // Funzione per caricare le segnalazioni civiche
+  // v1.3.0: Rispetta geoFilter - se 'italia' carica tutto, se 'comune' filtra per comune_id
   const loadCivicReports = useCallback(async () => {
     if (!config.civic_enabled) {
       setCivicReports([]);
       return;
     }
     try {
-      const url = currentComuneId 
-        ? `${API_BASE_URL}/api/civic-reports/stats?comune_id=${currentComuneId}`
-        : `${API_BASE_URL}/api/civic-reports/stats`;
+      let url = `${API_BASE_URL}/api/civic-reports/stats`;
+      if (geoFilter === 'comune' && currentComuneId) {
+        url += `?comune_id=${currentComuneId}`;
+      }
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
@@ -780,7 +791,7 @@ export default function GamingRewardsPanel() {
     } catch (error) {
       console.error('Errore caricamento segnalazioni:', error);
     }
-  }, [configComuneId, config.civic_enabled]);
+  }, [currentComuneId, config.civic_enabled, geoFilter]);
 
   // Funzione per caricare i punti heatmap via REST API
   const loadHeatmapPoints = useCallback(async () => {
@@ -858,16 +869,14 @@ export default function GamingRewardsPanel() {
   }, [comuneQueryParam]);
 
   // Funzione per caricare le Azioni Mobilità (percorsi completati dai cittadini)
+  // v1.3.0: Usa comune_id per filtrare lato server quando geoFilter='comune'
+  // Quando geoFilter='italia' carica TUTTI i dati senza filtro
   const loadMobilityActions = useCallback(async () => {
     if (!config.mobility_enabled) {
       setMobilityActions([]);
       return;
     }
     try {
-      // Usa le coordinate del comune per centrare la ricerca
-      const coords = COMUNI_COORDS[configComuneId];
-      const lat = coords?.lat || 44.49;
-      const lng = coords?.lng || 11.34;
       // Mappa timeFilter al parametro period dell'API
       const periodMap: Record<string, string> = {
         'all': 'all',
@@ -877,7 +886,15 @@ export default function GamingRewardsPanel() {
         'year': '1year'
       };
       const period = periodMap[timeFilter] || 'all';
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/mobility/heatmap?lat=${lat}&lng=${lng}&radius=50&period=${period}`);
+      
+      // Costruisci URL: se geoFilter='comune' e abbiamo un comune, filtra per comune_id
+      // Se geoFilter='italia' o nessun comune, carica tutto
+      let url = `${API_BASE_URL}/api/gaming-rewards/mobility/heatmap?period=${period}`;
+      if (geoFilter === 'comune' && currentComuneId) {
+        url += `&comune_id=${currentComuneId}`;
+      }
+      
+      const response = await fetch(url);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && Array.isArray(result.data)) {
@@ -902,19 +919,16 @@ export default function GamingRewardsPanel() {
       console.error('Errore caricamento mobility actions:', error);
       setMobilityActions([]);
     }
-  }, [configComuneId, config.mobility_enabled, timeFilter]);
+  }, [currentComuneId, config.mobility_enabled, timeFilter, geoFilter]);
 
   // Funzione per caricare le Azioni Cultura (visite effettuate dai cittadini)
+  // v1.3.0: Usa comune_id per filtrare lato server quando geoFilter='comune'
   const loadCultureActions = useCallback(async () => {
     if (!config.culture_enabled) {
       setCultureActions([]);
       return;
     }
     try {
-      // Usa le coordinate del comune per centrare la ricerca
-      const coords = COMUNI_COORDS[configComuneId];
-      const lat = coords?.lat || 44.49;
-      const lng = coords?.lng || 11.34;
       // Mappa timeFilter al parametro period dell'API
       const periodMap: Record<string, string> = {
         'all': 'all',
@@ -924,7 +938,15 @@ export default function GamingRewardsPanel() {
         'year': '1year'
       };
       const period = periodMap[timeFilter] || 'all';
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/culture/heatmap?lat=${lat}&lng=${lng}&radius=50&period=${period}`);
+      
+      // Costruisci URL: se geoFilter='comune' e abbiamo un comune, filtra per comune_id
+      // Se geoFilter='italia' o nessun comune, carica tutto
+      let url = `${API_BASE_URL}/api/gaming-rewards/culture/heatmap?period=${period}`;
+      if (geoFilter === 'comune' && currentComuneId) {
+        url += `&comune_id=${currentComuneId}`;
+      }
+      
+      const response = await fetch(url);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && Array.isArray(result.data)) {
@@ -949,7 +971,7 @@ export default function GamingRewardsPanel() {
       console.error('Errore caricamento culture actions:', error);
       setCultureActions([]);
     }
-  }, [configComuneId, config.culture_enabled, timeFilter]);
+  }, [currentComuneId, config.culture_enabled, timeFilter, geoFilter]);
 
   // Funzione per caricare la lista Referral dal backend
   const loadReferralList = useCallback(async () => {
@@ -967,7 +989,13 @@ export default function GamingRewardsPanel() {
         'year': 365
       };
       const days = periodMap[timeFilter] || 3650;
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/referral/list?comune_id=${configComuneId}&days=${days}`);
+      // Se geoFilter='comune' e abbiamo un comune, filtra per comune_id
+      // Se geoFilter='italia', carica tutto (senza filtro comune)
+      let referralUrl = `${API_BASE_URL}/api/gaming-rewards/referral/list?days=${days}`;
+      if (geoFilter === 'comune' && currentComuneId) {
+        referralUrl += `&comune_id=${currentComuneId}`;
+      }
+      const response = await fetch(referralUrl);
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
@@ -983,7 +1011,7 @@ export default function GamingRewardsPanel() {
       setReferralList([]);
       setReferralTotal(0);
     }
-  }, [configComuneId, config.shopping_enabled, timeFilter]);
+  }, [currentComuneId, config.shopping_enabled, timeFilter, geoFilter]);
 
   // Funzione per caricare le Challenges dal backend
   const loadChallenges = useCallback(async () => {
@@ -1094,9 +1122,10 @@ export default function GamingRewardsPanel() {
   };
 
   // Determina centro iniziale mappa
+  // v1.3.0: Rispetta geoFilter - se 'italia' vista Italia, se 'comune' centra sul comune
   const getInitialCenter = (): [number, number] => {
-    if (configComuneId && COMUNI_COORDS[configComuneId]) {
-      return [COMUNI_COORDS[configComuneId].lat, COMUNI_COORDS[configComuneId].lng];
+    if (geoFilter === 'comune' && currentComuneId && COMUNI_COORDS[currentComuneId]) {
+      return [COMUNI_COORDS[currentComuneId].lat, COMUNI_COORDS[currentComuneId].lng];
     }
     return [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng];
   };
@@ -1421,7 +1450,7 @@ export default function GamingRewardsPanel() {
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                🏪 Negozio ({heatmapPoints.filter(p => p.type === 'shop').length})
+                🏪 Negozio ({filterData(heatmapPoints, 'created_at').filter(p => p.type === 'shop').length})
               </button>
             )}
             {config.shopping_enabled && (
@@ -1433,7 +1462,7 @@ export default function GamingRewardsPanel() {
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                🛒 Mercato ({heatmapPoints.filter(p => p.type === 'market').length})
+                🛒 Mercato ({filterData(heatmapPoints, 'created_at').filter(p => p.type === 'market').length})
               </button>
             )}
             {config.mobility_enabled && (
@@ -1445,7 +1474,7 @@ export default function GamingRewardsPanel() {
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                🚌 Mobilità ({mobilityActions.length})
+                🚌 Mobilità ({filterData(mobilityActions, 'completed_at').length})
               </button>
             )}
             {config.culture_enabled && (
@@ -1457,7 +1486,7 @@ export default function GamingRewardsPanel() {
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                🏛️ Cultura ({cultureActions.length})
+                🏛️ Cultura ({filterData(cultureActions, 'visit_date').length})
               </button>
             )}
             {config.shopping_enabled && (
@@ -1532,7 +1561,7 @@ export default function GamingRewardsPanel() {
           <div className="h-[600px] rounded-lg overflow-hidden">
             <MapContainer
               center={getInitialCenter()}
-              zoom={14}
+              zoom={geoFilter === 'italia' ? DEFAULT_ZOOM : 14}
               style={{ height: '100%', width: '100%' }}
               className="rounded-lg"
               scrollWheelZoom={false}
@@ -1545,7 +1574,7 @@ export default function GamingRewardsPanel() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapCenterUpdater points={heatmapPoints} civicReports={filterData(civicReports, 'created_at')} mobilityActions={mobilityActions} cultureActions={cultureActions} referralList={referralList} comuneId={currentComuneId} selectedLayer={selectedLayer} layerTrigger={layerTrigger} />
+              <MapCenterUpdater points={heatmapPoints} civicReports={filterData(civicReports, 'created_at')} mobilityActions={mobilityActions} cultureActions={cultureActions} referralList={referralList} comuneId={currentComuneId} selectedLayer={selectedLayer} layerTrigger={layerTrigger} geoFilter={geoFilter} />
               <HeatmapLayer points={[
                 ...heatmapPoints, 
                 ...filterData(civicReports, 'created_at'),
