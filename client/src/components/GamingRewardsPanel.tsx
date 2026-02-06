@@ -277,7 +277,7 @@ function HeatmapLayer({ points, selectedLayer }: { points: HeatmapPoint[]; selec
       } else if (p.type === 'culture') {
         intensity = 0.25; // Intensità bassa per cultura
       } else {
-        // Acquisti: intensità bassa, scala con TCC ma max 0.3
+        // Referral: intensità bassa, scala con TCC ma max 0.3
         intensity = Math.min((p.tcc_earned + p.tcc_spent) / 20000, 0.3);
         if (intensity === 0) intensity = 0.15; // Minimo visibile per mercati
       }
@@ -1302,11 +1302,11 @@ export default function GamingRewardsPanel() {
                 onClick={() => { setSelectedLayer('shopping'); setLayerTrigger(t => t + 1); }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   selectedLayer === 'shopping' 
-                    ? 'bg-[#22c55e] text-white' 
+                    ? 'bg-[#EC4899] text-white' 
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                🛒 Acquisti ({heatmapPoints.filter(p => p.type === 'shop').length})
+                🎁 Referral ({heatmapPoints.filter(p => p.type === 'shop').length})
               </button>
             )}
             {config.mobility_enabled && (
@@ -1641,9 +1641,9 @@ export default function GamingRewardsPanel() {
                           )}
                           {config.shopping_enabled && (
                             <div 
-                              className="w-2 bg-[#eab308] rounded-t transition-all" 
+                              className="w-2 bg-[#EC4899] rounded-t transition-all" 
                               style={{ height: `${shoppingHeight}%`, minHeight: (day.shopping || 0) > 0 ? '4px' : '0' }}
-                              title={`Acquisti: ${day.shopping || 0}`}
+                              title={`Referral: ${day.shopping || 0}`}
                             />
                           )}
                         </div>
@@ -1680,8 +1680,8 @@ export default function GamingRewardsPanel() {
                   )}
                   {config.shopping_enabled && (
                     <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded bg-[#eab308]"></span>
-                      <span className="text-[#e8fbff]/70">Acquisti</span>
+                      <span className="w-2 h-2 rounded bg-[#EC4899]"></span>
+                      <span className="text-[#e8fbff]/70">Referral</span>
                     </span>
                   )}
                 </div>
@@ -1723,10 +1723,10 @@ export default function GamingRewardsPanel() {
                   )}
                   {config.shopping_enabled && (
                     <div className="text-center">
-                      <div className="text-sm font-bold text-[#eab308]">
+                      <div className="text-sm font-bold text-[#EC4899]">
                         {trendData.reduce((sum, d) => sum + (d.shopping || 0), 0)}
                       </div>
-                      <div className="text-xs text-[#e8fbff]/50">Acquisti</div>
+                      <div className="text-xs text-[#e8fbff]/50">Referral</div>
                     </div>
                   )}
                 </div>
@@ -1919,30 +1919,30 @@ export default function GamingRewardsPanel() {
         </Card>
       )}
 
-      {/* Sezione Lista Acquisti */}
+      {/* Sezione Lista Referral */}
       {config.shopping_enabled && (
-        <Card className="bg-[#1a2332] border-[#22c55e]/30">
+        <Card className="bg-[#1a2332] border-[#EC4899]/30">
           <CardHeader>
             <CardTitle className="text-[#e8fbff] flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-[#22c55e]" />
-                Acquisti & Cashback
+                <Gift className="h-5 w-5 text-[#EC4899]" />
+                Presenta un Amico
               </span>
-              <Badge variant="outline" className="text-[#22c55e] border-[#22c55e]/50">
+              <Badge variant="outline" className="text-[#EC4899] border-[#EC4899]/50">
                 {filterData(heatmapPoints, 'created_at').length} totali
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {filterData(heatmapPoints, 'created_at').length > 0 ? (
-              <div className="max-h-80 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-[#22c55e]/30 scrollbar-track-transparent">
+              <div className="max-h-80 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-[#EC4899]/30 scrollbar-track-transparent">
                 {filterData(heatmapPoints, 'created_at').map((point) => (
                   <div 
                     key={`shopping-list-${point.id}`}
-                    className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg hover:bg-[#0b1220]/80 hover:border-[#22c55e]/50 border border-transparent transition-all"
+                    className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg hover:bg-[#0b1220]/80 hover:border-[#EC4899]/50 border border-transparent transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-[#22c55e]/20 flex items-center justify-center text-lg">
+                      <span className="w-8 h-8 rounded-full bg-[#EC4899]/20 flex items-center justify-center text-lg">
                         {point.type === 'shop' && '🏪'}
                         {point.type === 'hub' && '🏢'}
                         {point.type === 'market' && '🛒'}
@@ -1972,8 +1972,8 @@ export default function GamingRewardsPanel() {
               </div>
             ) : (
               <div className="text-center text-[#e8fbff]/50 py-8">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-30" />
-                <p>Nessun acquisto nel periodo selezionato</p>
+                <Gift className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                <p>Nessun referral nel periodo selezionato</p>
               </div>
             )}
           </CardContent>
