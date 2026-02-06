@@ -1116,15 +1116,15 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
               >
                 {mode === 'mercato' ? 'M' : 'H'}
               </span>
-              <span className="text-[#e8fbff] font-medium text-sm truncate">
-                {item.name.length > 18 ? item.name.substring(0, 18) + '...' : item.name}
+              <span className="text-[#e8fbff] font-bold text-sm truncate">
+                {mode === 'mercato' 
+                  ? ((item as Market).comune || 'Italia')
+                  : ((item as HubLocation).city || 'Italia')
+                }
               </span>
             </div>
             <div className="text-[#e8fbff]/50 text-xs ml-8 truncate mt-1">
-              {mode === 'mercato' 
-                ? (item as Market).comune || 'Italia'
-                : (item as HubLocation).city || 'Italia'
-              }
+              {item.name.length > 18 ? item.name.substring(0, 18) + '...' : item.name}
             </div>
           </div>
         );
