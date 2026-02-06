@@ -1039,6 +1039,9 @@ export default function GamingRewardsPanel() {
 
   // Carica i dati (stats, heatmap, etc.) all'avvio e quando cambiano le dipendenze
   // ESCLUSO loadConfig per evitare di sovrascrivere i toggle modificati dall'utente
+  // v1.3.4b: loadTrendData RIMOSSO da qui — ha il suo useEffect separato
+  // così quando cambia geoFilter (Italia↔Comune) il trend si ricarica in background
+  // SENZA setLoading(true) che causerebbe il reload visibile di tutta la pagina
   useEffect(() => {
     const loadAllData = async () => {
       setLoading(true);
@@ -1047,7 +1050,6 @@ export default function GamingRewardsPanel() {
         loadHeatmapPoints(), 
         loadCivicReports(), 
         loadTopShops(), 
-        loadTrendData(),
         loadMobilityActions(),
         loadCultureActions(),
         loadReferralList(),
@@ -1056,7 +1058,15 @@ export default function GamingRewardsPanel() {
       setLoading(false);
     };
     loadAllData();
-  }, [loadStats, loadHeatmapPoints, loadCivicReports, loadTopShops, loadTrendData, loadMobilityActions, loadCultureActions, loadReferralList, loadChallenges]);
+  }, [loadStats, loadHeatmapPoints, loadCivicReports, loadTopShops, loadMobilityActions, loadCultureActions, loadReferralList, loadChallenges]);
+
+  // v1.3.4b: useEffect SEPARATO per il trend — si ricarica silenziosamente in background
+  // quando cambia geoFilter (Italia↔Comune) senza causare setLoading(true)
+  // Questo permette lo switch istantaneo: la mappa zooma, i dati si filtrano client-side,
+  // e il trend si aggiorna in background senza ricaricare la pagina
+  useEffect(() => {
+    loadTrendData();
+  }, [loadTrendData]);
 
   // Salva configurazione via REST API
   const saveConfig = async () => {
