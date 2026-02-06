@@ -4543,9 +4543,9 @@ const creditFactors = {
 ## 🎮 GAMING & REWARDS PANEL - STATO ATTUALE (6 Febbraio 2026)
 
 ### Commit Stabile Attuale
-- **Commit:** `171ac36` (frontend) + `6e96306` (backend)
+- **Commit:** `668c8a1` (frontend) + `6e96306` (backend)
 - **Branch:** master
-- **Stato:** Funzionante con dati reali + Mobilità + Cultura + Negozio/Mercato separati + Presenta un Amico + Config DB collegata + Referral Backend + Challenges Backend
+- **Stato:** Funzionante con dati reali + Mobilità + Cultura + Negozio/Mercato separati + Presenta un Amico + Config DB collegata + Referral Backend + Challenges Backend + Frontend Referral+Challenges collegato
 
 ### 🚀 AGGIORNAMENTO v3.98.0 - 6 FEBBRAIO 2026 - REFACTORING GAMING & REWARDS
 
@@ -4639,6 +4639,7 @@ WHERE ot.type = 'issue' AND ot.comune_id = $1;
 | `cfe42a4` | Liste separate Acquisti Negozio e Acquisti Mercato |
 | `a344594` | Aggiunge Presenta un Amico in legenda mappa + trend (fuchsia) |
 | `171ac36` | Rimuove Hub dalla legenda mappa (non necessario) |
+| `668c8a1` | FASE 4: Collega frontend referral+challenges a backend reale (UI completa) |
 
 #### Commit Backend (GitHub → Hetzner git pull + PM2 restart)
 
@@ -4651,7 +4652,9 @@ WHERE ot.type = 'issue' AND ot.comune_id = $1;
 - La lista "Acquisti & Cashback" originale (verde, ShoppingCart) è stata **rimossa** e sostituita dalle due liste separate
 - TCC+ (verde) e TCC- (blu) nel trend rappresentano i **token Carbon Credit regionali** (rilasciati/riscattati)
 - Le barre Negozio e Mercato nel trend contano le **transazioni** (non i TCC), per mostrare l'attività commerciale
-- Il sistema "Presenta un Amico" è predisposto nell'UI ma **non ha ancora dati backend** — la tabella `referrals` e gli endpoint dedicati sono da implementare
+- Il sistema "Presenta un Amico" è ora **completamente collegato al backend** — tabella `referrals`, 7 endpoint, heatmap e lista con dati reali
+- La sezione **Sfide Attive** mostra le challenges dal backend con barre progresso, partecipanti e date
+- Tutti i contatori (tab heatmap, totale trend) sono ora **dinamici** e collegati ai dati reali
 
 ---
 
