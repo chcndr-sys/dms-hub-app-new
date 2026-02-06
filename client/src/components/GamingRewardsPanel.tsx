@@ -631,10 +631,10 @@ export default function GamingRewardsPanel() {
   // Se admin non sta impersonando, non filtrare per comune (vede tutto)
   // Se sta impersonando, usa il comune selezionato
   const currentComuneId = isImpersonating && comuneId ? parseInt(comuneId) : null;
-  // Per i dati: comuneQueryParam rispetta geoFilter
-  // Se geoFilter='italia' → nessun filtro (vede tutto)
-  // Se geoFilter='comune' e c'è un comune → filtra per comune_id
-  const comuneQueryParam = (geoFilter === 'comune' && currentComuneId) ? `comune_id=${currentComuneId}` : '';
+  // v1.3.1: comuneQueryParam NON dipende da geoFilter
+  // Carica SEMPRE i dati del comune impersonalizzato (se presente)
+  // geoFilter è SOLO per zoom mappa + filtro client-side (NO reload API)
+  const comuneQueryParam = currentComuneId ? `comune_id=${currentComuneId}` : '';
   // Per la configurazione: usare sempre un comune_id valido (default Grosseto=1)
   const configComuneId = currentComuneId || 1;
 
@@ -758,7 +758,7 @@ export default function GamingRewardsPanel() {
   }, [comuneQueryParam]);
 
   // Funzione per caricare le segnalazioni civiche
-  // v1.3.0: Rispetta geoFilter - se 'italia' carica tutto, se 'comune' filtra per comune_id
+  // v1.3.1: Carica SEMPRE i dati del comune impersonalizzato (NON dipende da geoFilter)
   const loadCivicReports = useCallback(async () => {
     if (!config.civic_enabled) {
       setCivicReports([]);
@@ -766,7 +766,7 @@ export default function GamingRewardsPanel() {
     }
     try {
       let url = `${API_BASE_URL}/api/civic-reports/stats`;
-      if (geoFilter === 'comune' && currentComuneId) {
+      if (currentComuneId) {
         url += `?comune_id=${currentComuneId}`;
       }
       const response = await fetch(url);
@@ -791,7 +791,7 @@ export default function GamingRewardsPanel() {
     } catch (error) {
       console.error('Errore caricamento segnalazioni:', error);
     }
-  }, [currentComuneId, config.civic_enabled, geoFilter]);
+  }, [currentComuneId, config.civic_enabled]);
 
   // Funzione per caricare i punti heatmap via REST API
   const loadHeatmapPoints = useCallback(async () => {
@@ -869,15 +869,13 @@ export default function GamingRewardsPanel() {
   }, [comuneQueryParam]);
 
   // Funzione per caricare le Azioni Mobilità (percorsi completati dai cittadini)
-  // v1.3.0: Usa comune_id per filtrare lato server quando geoFilter='comune'
-  // Quando geoFilter='italia' carica TUTTI i dati senza filtro
+  // v1.3.1: Carica SEMPRE i dati del comune impersonalizzato (NON dipende da geoFilter)
   const loadMobilityActions = useCallback(async () => {
     if (!config.mobility_enabled) {
       setMobilityActions([]);
       return;
     }
     try {
-      // Mappa timeFilter al parametro period dell'API
       const periodMap: Record<string, string> = {
         'all': 'all',
         'today': 'today',
@@ -887,10 +885,9 @@ export default function GamingRewardsPanel() {
       };
       const period = periodMap[timeFilter] || 'all';
       
-      // Costruisci URL: se geoFilter='comune' e abbiamo un comune, filtra per comune_id
-      // Se geoFilter='italia' o nessun comune, carica tutto
+      // Carica sempre con comune_id se impersonalizzazione attiva
       let url = `${API_BASE_URL}/api/gaming-rewards/mobility/heatmap?period=${period}`;
-      if (geoFilter === 'comune' && currentComuneId) {
+      if (currentComuneId) {
         url += `&comune_id=${currentComuneId}`;
       }
       
@@ -919,17 +916,16 @@ export default function GamingRewardsPanel() {
       console.error('Errore caricamento mobility actions:', error);
       setMobilityActions([]);
     }
-  }, [currentComuneId, config.mobility_enabled, timeFilter, geoFilter]);
+  }, [currentComuneId, config.mobility_enabled, timeFilter]);
 
   // Funzione per caricare le Azioni Cultura (visite effettuate dai cittadini)
-  // v1.3.0: Usa comune_id per filtrare lato server quando geoFilter='comune'
+  // v1.3.1: Carica SEMPRE i dati del comune impersonalizzato (NON dipende da geoFilter)
   const loadCultureActions = useCallback(async () => {
     if (!config.culture_enabled) {
       setCultureActions([]);
       return;
     }
     try {
-      // Mappa timeFilter al parametro period dell'API
       const periodMap: Record<string, string> = {
         'all': 'all',
         'today': 'today',
@@ -939,10 +935,9 @@ export default function GamingRewardsPanel() {
       };
       const period = periodMap[timeFilter] || 'all';
       
-      // Costruisci URL: se geoFilter='comune' e abbiamo un comune, filtra per comune_id
-      // Se geoFilter='italia' o nessun comune, carica tutto
+      // Carica sempre con comune_id se impersonalizzazione attiva
       let url = `${API_BASE_URL}/api/gaming-rewards/culture/heatmap?period=${period}`;
-      if (geoFilter === 'comune' && currentComuneId) {
+      if (currentComuneId) {
         url += `&comune_id=${currentComuneId}`;
       }
       
@@ -971,7 +966,7 @@ export default function GamingRewardsPanel() {
       console.error('Errore caricamento culture actions:', error);
       setCultureActions([]);
     }
-  }, [currentComuneId, config.culture_enabled, timeFilter, geoFilter]);
+  }, [currentComuneId, config.culture_enabled, timeFilter]);
 
   // Funzione per caricare la lista Referral dal backend
   const loadReferralList = useCallback(async () => {
@@ -989,10 +984,9 @@ export default function GamingRewardsPanel() {
         'year': 365
       };
       const days = periodMap[timeFilter] || 3650;
-      // Se geoFilter='comune' e abbiamo un comune, filtra per comune_id
-      // Se geoFilter='italia', carica tutto (senza filtro comune)
+      // v1.3.1: Carica sempre con comune_id se impersonalizzazione attiva
       let referralUrl = `${API_BASE_URL}/api/gaming-rewards/referral/list?days=${days}`;
-      if (geoFilter === 'comune' && currentComuneId) {
+      if (currentComuneId) {
         referralUrl += `&comune_id=${currentComuneId}`;
       }
       const response = await fetch(referralUrl);
@@ -1011,7 +1005,7 @@ export default function GamingRewardsPanel() {
       setReferralList([]);
       setReferralTotal(0);
     }
-  }, [currentComuneId, config.shopping_enabled, timeFilter, geoFilter]);
+  }, [currentComuneId, config.shopping_enabled, timeFilter]);
 
   // Funzione per caricare le Challenges dal backend
   const loadChallenges = useCallback(async () => {
