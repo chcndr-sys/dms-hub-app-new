@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.99.3  
-> **Data:** 6 Febbraio 2026 (Fix Definitivo Filtri Gaming & Rewards v1.3.3 — comune_id diretto)  
+> **Versione:** 3.99.4  
+> **Data:** 6 Febbraio 2026 (Fix Completo Filtri Gaming & Rewards v1.3.4 — Trend TCC filtrato per comune)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1144,6 +1144,32 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 ---
 
 #### 📝 CHANGELOG
+
+### v3.99.4 (06/02/2026) - Fix Trend TCC filtrato per comune v1.3.4
+
+**Problema v1.3.3:** Il grafico "Trend TCC - Ultimi 7 giorni" e i contatori sotto (TCC+, TCC-, Negozio, Mercato, Civic, Mobilità, Cultura, Referral) mostravano SEMPRE dati globali (es. 2350 TCC+, 2665 TCC-) indipendentemente dal comune selezionato. Questo perché `loadTrendData` usava `comuneQueryParam` che era sempre vuoto (`''`).
+
+**Causa root:** Il trend è un'aggregazione giornaliera (SUM per date), NON una lista di items con lat/lng/comune_id. Quindi NON può essere filtrato client-side con `filterByGeo()`. Serve il filtro server-side via API `?comune_id=X`.
+
+**Soluzione v1.3.4:**
+1. Creato `trendComuneQueryParam` che dipende da `geoFilter`:
+   - `geoFilter='comune'`: `comune_id=${currentComuneId}` (filtro server-side)
+   - `geoFilter='italia'`: `''` (nessun filtro, dati globali)
+2. `loadTrendData` usa `trendComuneQueryParam` (non più `comuneQueryParam`)
+3. `loadTrendData` ha `[trendComuneQueryParam]` come dipendenza → si ricarica quando cambia geoFilter
+
+**Risultato verificato:**
+
+| Comune | TCC+ | TCC- | Civic | Mobility | Culture | Shop |
+|--------|------|------|-------|----------|---------|------|
+| Globale | 2350 | 2665 | 22 | 14 | 18 | 55 |
+| Vignola (7) | 0 | 0 | 17 | 2 | 2 | 0 |
+| Grosseto (1) | 2350 | 2665 | 5 | 4 | 4 | 55 |
+| Carpi (9) | 0 | 0 | 0 | 0 | 2 | 0 |
+
+**Commit Frontend:** `fc4ed17` (v1.3.4)
+
+---
 
 ### v3.99.3 (06/02/2026) - FIX DEFINITIVO Filtri Gaming & Rewards v1.3.3 — comune_id diretto
 
@@ -5995,6 +6021,7 @@ curl "https://orchestratore.mio-hub.me/api/gaming-rewards/culture/heatmap?comune
 
 | Versione | Data | Modifiche |
 |----------|------|-----------|
+| v3.99.4 | 06/02/2026 | **FIX TREND v1.3.4**: Grafico Trend TCC e contatori sotto filtrati per comune via API `?comune_id=X`. Creato `trendComuneQueryParam` che dipende da `geoFilter`. |
 | v3.99.3 | 06/02/2026 | **FIX DEFINITIVO FILTRI v1.3.3**: `filterByGeo()` usa `comune_id` diretto (match esatto) invece di coordinate+raggio 30km. Backend v2.1.0 aggiunge `comune_id` a tutti i SELECT. Stats TCC in vista comune usano SOLO dati filtrati. Top 5 Negozi filtrati per `comune_id`. |
 | v3.99.2 | 06/02/2026 | **FIX FILTRI v1.3.2**: API caricano TUTTO, filtro solo client-side, stats TCC calcolate da azioni, HeatmapLayer filtrata |
 | v3.99.1 | 06/02/2026 | **FIX FILTRI v1.3.1**: Switch tab Italia/Comune senza reload API |
@@ -6116,11 +6143,11 @@ curl "https://orchestratore.mio-hub.me/api/gaming-rewards/nearby-pois?lat=42.761
 | `dms-hub-app-new/client/src/hooks/useNearbyPOIs.ts` | Nuovo hook GPS |
 | `dms-hub-app-new/client/src/components/NearbyPOIPopup.tsx` | Nuovi componenti UI |
 | `dms-hub-app-new/client/src/pages/WalletPage.tsx` | Integrazione ECO CREDIT |
-| `dms-hub-app-new/client/src/components/GamingRewardsPanel.tsx` | Heatmap isolata, marker 15px, flyTo, filtri geoFilter **v1.3.3** (filtro `comune_id` diretto, stats TCC in vista comune solo da dati filtrati, Top 5 filtrati per `comune_id`) |
+| `dms-hub-app-new/client/src/components/GamingRewardsPanel.tsx` | Heatmap isolata, marker 15px, flyTo, filtri geoFilter **v1.3.4** (filtro `comune_id` diretto, stats TCC in vista comune solo da dati filtrati, Top 5 filtrati per `comune_id`, **Trend TCC filtrato per comune via API**) |
 
 ---
 
-## 🔧 FIX FILTRI GAMING & REWARDS v1.3.0 → v1.3.3 (6 Febbraio 2026)
+## 🔧 FIX FILTRI GAMING & REWARDS v1.3.0 → v1.3.4 (6 Febbraio 2026)
 
 ### Problema Originale (v1.3.0–v1.3.2)
 Quando si impersonalizzava un comune (es. Carpi), la sezione Gaming & Rewards mostrava dati di TUTTI i comuni invece di filtrare solo quelli del comune selezionato:
@@ -6204,7 +6231,7 @@ Il sistema di filtraggio è stato completamente riprogettato nella v1.3.2 e **pe
 | `loadCivicReports` | `/api/gaming-rewards/civic/reports` | NO | Segnalazioni **con `comune_id`** |
 | `loadReferralList` | `/api/gaming-rewards/referral/list` | NO | Referral **con `comune_id`** |
 | `loadTopShops` | `/api/gaming-rewards/top-shops` | NO | Top negozi **con `comune_id`** |
-| `loadTrendData` | `/api/gaming-rewards/trend` | NO | Trend 7 giorni globale |
+| `loadTrendData` | `/api/gaming-rewards/trend` | **SÌ (v1.3.4)**: `trendComuneQueryParam` | Trend 7 giorni **filtrato per comune** quando `geoFilter='comune'` |
 
 **Filtro client-side `filterByGeo()` — v1.3.3 (DEFINITIVO):**
 
@@ -6252,6 +6279,24 @@ const filterByGeo = useCallback((items: any[]) => {
 - **Top 5 Negozi** (filtrati per `comune_id` — MIO TEST visibile SOLO a Grosseto)
 
 Quando `geoFilter === 'italia'`, `filterByGeo()` restituisce tutti i dati senza filtro.
+
+**⚠️ ECCEZIONE TREND TCC (v1.3.4):**
+
+Il grafico "Trend TCC - Ultimi 7 giorni" e i contatori sotto (TCC+, TCC-, Negozio, Mercato, Civic, Mobilità, Cultura, Referral) **NON possono** essere filtrati client-side con `filterByGeo()` perché il trend è un'aggregazione giornaliera (SUM per date), non una lista di items con `comune_id`.
+
+Soluzione: `loadTrendData` usa `trendComuneQueryParam` (NON `comuneQueryParam`):
+
+```javascript
+// v1.3.4: Il trend è un'aggregazione, NON può essere filtrato client-side
+const trendComuneQueryParam = (geoFilter === 'comune' && currentComuneId) 
+  ? `comune_id=${currentComuneId}` 
+  : '';
+
+// loadTrendData usa trendComuneQueryParam (dipende da geoFilter)
+const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/trend${trendComuneQueryParam ? '?' + trendComuneQueryParam : ''}`);
+```
+
+Questo è l'UNICO dato che usa filtro server-side (API `?comune_id=X`). Tutti gli altri dati usano filtro client-side con `filterByGeo()`.
 
 **Stats grandi (TCC Rilasciati/Riscattati) — v1.3.3:**
 
