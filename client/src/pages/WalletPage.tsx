@@ -1131,6 +1131,8 @@ export default function WalletPage() {
               </CardContent>
             </Card>
 
+            {/* Sezione scrollabile - POI Vicini + istruzioni */}
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 sm:overflow-visible">
             {/* POI Vicini - Solo se ECO CREDIT attivo */}
             {ecoCreditsEnabled && (
               <Card>
@@ -1209,9 +1211,6 @@ export default function WalletPage() {
                 </CardContent>
               </Card>
             )}
-
-            {/* Sezione scrollabile - istruzioni */}
-            <div className="flex-1 overflow-y-auto space-y-4 sm:overflow-visible">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
