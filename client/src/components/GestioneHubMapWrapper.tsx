@@ -359,7 +359,8 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
     // Scroll alla mappa su mobile
     if (window.innerWidth < 640) {
       setTimeout(() => {
-        document.getElementById('map-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const el = document.getElementById('map-container');
+        if (el) { const r = el.getBoundingClientRect(); window.scrollTo({ top: window.scrollY + r.top - 120, behavior: 'smooth' }); }
       }, 100);
     }
     
@@ -383,7 +384,8 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
     // Scroll alla mappa su mobile
     if (window.innerWidth < 640) {
       setTimeout(() => {
-        document.getElementById('map-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const el = document.getElementById('map-container');
+        if (el) { const r = el.getBoundingClientRect(); window.scrollTo({ top: window.scrollY + r.top - 120, behavior: 'smooth' }); }
       }, 100);
     }
     
@@ -417,7 +419,8 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
       // Scroll alla mappa su mobile
       if (window.innerWidth < 640) {
         setTimeout(() => {
-          document.getElementById('map-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const el = document.getElementById('map-container');
+          if (el) { const r = el.getBoundingClientRect(); window.scrollTo({ top: window.scrollY + r.top - 120, behavior: 'smooth' }); }
         }, 100);
       }
       toast.success('Vista precedente');
@@ -433,7 +436,8 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
         // Scroll alla mappa su mobile
         if (window.innerWidth < 640) {
           setTimeout(() => {
-            document.getElementById('map-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const el = document.getElementById('map-container');
+            if (el) { const r = el.getBoundingClientRect(); window.scrollTo({ top: window.scrollY + r.top - 120, behavior: 'smooth' }); }
           }, 100);
         }
         toast.success(`Vista: ${selectedRegione.nome}`);
@@ -449,7 +453,8 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
       // Scroll alla mappa su mobile
       if (window.innerWidth < 640) {
         setTimeout(() => {
-          document.getElementById('map-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const el = document.getElementById('map-container');
+          if (el) { const r = el.getBoundingClientRect(); window.scrollTo({ top: window.scrollY + r.top - 120, behavior: 'smooth' }); }
         }, 100);
       }
       toast.success('Vista Italia');
