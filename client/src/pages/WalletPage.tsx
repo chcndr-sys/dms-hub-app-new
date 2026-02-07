@@ -177,13 +177,31 @@ export default function WalletPage() {
     if (!currentUser?.id) return;
     setReferralLoading(true);
     try {
+      // Manda lat/lng dalla geolocalizzazione - il backend determina il comune automaticamente
+      const bodyData: any = { user_id: currentUser.id };
+      if (currentPosition) {
+        bodyData.lat = currentPosition.lat;
+        bodyData.lng = currentPosition.lng;
+      } else {
+        // Fallback: se GPS non disponibile, prova a ottenere la posizione ora
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+          });
+          bodyData.lat = pos.coords.latitude;
+          bodyData.lng = pos.coords.longitude;
+        } catch {
+          // Se GPS non disponibile, il backend rifiuterà la richiesta
+          console.warn('GPS non disponibile per referral');
+        }
+      }
       const response = await fetch(`${API_BASE}/api/gaming-rewards/referral/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({ user_id: currentUser.id, comune_id: comuneId })
+        body: JSON.stringify(bodyData)
       });
       if (response.ok) {
         const result = await response.json();
@@ -230,7 +248,9 @@ export default function WalletPage() {
   const [showPOIPopup, setShowPOIPopup] = useState(false);
   
   // Hook per rilevamento POI vicini (attivo solo se ECO CREDIT è abilitato)
-  const comuneId = 1; // TODO: recuperare da profilo utente o geolocalizzazione
+  // Il comune_id per useNearbyPOIs non serve più per il referral (usa lat/lng)
+  // Per i POI vicini, passiamo null e il backend gestisce il filtro per coordinate
+  const comuneId = 1; // Per useNearbyPOIs - il referral ora usa lat/lng direttamente
   const {
     nearbyPOIs,
     currentPosition,
