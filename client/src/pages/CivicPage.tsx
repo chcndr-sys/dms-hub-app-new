@@ -207,7 +207,10 @@ export default function CivicPage() {
       // Upload foto prima
       const photoUrls = await uploadPhotosToS3();
       
-      const currentComuneId = comuneId ? parseInt(comuneId) : 1;
+      // comune_id: se l'utente è in modalità impersonificazione, usa quel comune_id.
+      // Altrimenti NON inviare comune_id, così il backend fa auto-detect dalle coordinate GPS
+      // tramite findComuneByCoords(lat, lng)
+      const currentComuneId = comuneId ? parseInt(comuneId) : null;
       
       // Recupera user_id dall'utente loggato per il sistema TCC
       // Supporta sia login ARPA (miohub_user_info) che login email (user)
@@ -234,7 +237,7 @@ export default function CivicPage() {
         description: description,
         lat: location.lat.toString(),
         lng: location.lng.toString(),
-        comune_id: currentComuneId,
+        ...(currentComuneId ? { comune_id: currentComuneId } : {}),
         user_id: currentUserId,
         impresa_id: null,
         priority: 'NORMAL',
