@@ -1562,7 +1562,7 @@ export default function GamingRewardsPanel() {
                     : 'bg-[#0b1220] text-[#e8fbff]/70 hover:bg-[#0b1220]/80'
                 }`}
               >
-                🎁 Referral ({referralTotal})
+                🎁 Referral ({filterData(referralList, 'created_at').length})
               </button>
             )}
             
@@ -1663,6 +1663,17 @@ export default function GamingRewardsPanel() {
                   tcc_earned: c.tcc_reward,
                   tcc_spent: 0,
                   transactions: 1
+                })),
+                // Aggiungi punti referral filtrati come HeatmapPoint
+                ...filterData(referralList, 'created_at').filter(r => r.lat && r.lng).map(r => ({
+                  id: r.id,
+                  lat: parseFloat(String(r.lat)),
+                  lng: parseFloat(String(r.lng)),
+                  name: `Referral ${r.referral_code}`,
+                  type: 'referral' as const,
+                  tcc_earned: r.tcc_earned_referrer || 0,
+                  tcc_spent: 0,
+                  transactions: 1
                 }))
               ]} selectedLayer={selectedLayer} />
               {/* Marker negozi/hub/mercati - con offset spirale per punti sovrapposti */}
@@ -1754,11 +1765,11 @@ export default function GamingRewardsPanel() {
                 </Marker>
               ))}
 
-              {/* Marker Referral "Presenta un Amico" - punti fuchsia */}
-              {(selectedLayer === 'all' || selectedLayer === 'referral') && referralList.filter(r => r.lat && r.lng).map((ref) => (
+              {/* Marker Referral "Presenta un Amico" - punti fuchsia - con offset spirale e filtro geo+tempo */}
+              {(selectedLayer === 'all' || selectedLayer === 'referral') && applySpiralOffsetGeneric(filterData(referralList, 'created_at').filter(r => r.lat && r.lng) as (ReferralItem & { lat: number; lng: number })[]).map((ref) => (
                 <Marker
                   key={`referral-${ref.id}`}
-                  position={[ref.lat!, ref.lng!]}
+                  position={[ref.lat + ref.offsetLat, ref.lng + ref.offsetLng]}
                   icon={getMarkerIcon('referral', 0.8)}
                 >
                   <Popup>
@@ -2040,7 +2051,7 @@ export default function GamingRewardsPanel() {
                   {config.shopping_enabled && (
                     <div className="text-center">
                       <div className="text-sm font-bold text-[#EC4899]">
-                        {referralTotal}
+                        {filterData(referralList, 'created_at').length}
                       </div>
                       <div className="text-xs text-[#e8fbff]/50">Referral</div>
                     </div>
@@ -2424,19 +2435,19 @@ export default function GamingRewardsPanel() {
                 Presenta un Amico
               </span>
               <Badge variant="outline" className="text-[#EC4899] border-[#EC4899]/50">
-                {referralTotal} totali
+                {filterData(referralList, 'created_at').length} totali
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {referralList.length === 0 ? (
+            {filterData(referralList, 'created_at').length === 0 ? (
               <div className="text-center text-[#e8fbff]/50 py-8">
                 <Gift className="h-12 w-12 mx-auto mb-2 opacity-30" />
                 <p>Nessun referral nel periodo selezionato</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {referralList.map((ref, idx) => (
+                {filterData(referralList, 'created_at').map((ref, idx) => (
                   <div key={ref.id} className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
