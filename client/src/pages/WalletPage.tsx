@@ -1055,21 +1055,59 @@ export default function WalletPage() {
                   {transactions.length === 0 ? (
                     <p className="text-center text-muted-foreground py-3 sm:py-4 text-sm">Nessuna transazione</p>
                   ) : (
-                    transactions.map((tx) => (
-                      <div key={tx.id} className="flex items-center justify-between p-2 sm:p-3 bg-muted/30 rounded-lg">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-xs sm:text-base truncate">{tx.description}</p>
-                          <p className="text-[10px] sm:text-sm text-muted-foreground">
-                            {new Date(tx.created_at).toLocaleDateString('it-IT', {
-                              day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                            })}
-                          </p>
+                    transactions.map((tx) => {
+                      // Determina se è un accredito (earn, civic, mobility, culture) o una spesa
+                      const isCredit = ['earn', 'civic', 'mobility', 'culture'].includes(tx.type);
+                      
+                      // Badge colore per tipo
+                      const badgeClass = 
+                        tx.type === 'civic' ? 'bg-orange-500/20 text-orange-500' :
+                        tx.type === 'mobility' ? 'bg-blue-500/20 text-blue-500' :
+                        tx.type === 'culture' ? 'bg-purple-500/20 text-purple-500' :
+                        tx.type === 'earn' ? 'bg-green-500/20 text-green-500' :
+                        'bg-red-500/20 text-red-500';
+                      
+                      // Semaforino colore
+                      const dotColor = 
+                        tx.type === 'civic' ? 'bg-orange-500' :
+                        tx.type === 'mobility' ? 'bg-blue-500' :
+                        tx.type === 'culture' ? 'bg-purple-500' :
+                        tx.type === 'earn' ? 'bg-green-500' :
+                        'bg-red-500';
+                      
+                      // Label tipo accredito
+                      const typeLabel = 
+                        tx.type === 'civic' ? 'Segnalazione Civica' :
+                        tx.type === 'mobility' ? 'Mobilità Sostenibile' :
+                        tx.type === 'culture' ? 'Cultura & Turismo' :
+                        tx.type === 'earn' ? 'Acquisto' :
+                        'Pagamento TCC';
+                      
+                      return (
+                        <div key={tx.id} className="flex items-center justify-between p-2 sm:p-3 bg-muted/30 rounded-lg">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            {/* Semaforino colorato */}
+                            <div className={`w-3 h-3 rounded-full flex-shrink-0 ${dotColor}`} />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-xs sm:text-base truncate">{tx.description}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className={`inline-block px-2 py-0.5 text-[10px] sm:text-xs rounded-full ${badgeClass}`}>
+                                  {typeLabel}
+                                </span>
+                                <span className="text-[10px] sm:text-sm text-muted-foreground">
+                                  {new Date(tx.created_at).toLocaleDateString('it-IT', {
+                                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className={`text-base sm:text-lg font-semibold ml-2 ${isCredit ? 'text-green-500' : 'text-red-500'}`}>
+                            {isCredit ? '+' : '-'}{Math.abs(tx.amount)} TCC
+                          </div>
                         </div>
-                        <div className={`text-base sm:text-lg font-semibold ml-2 ${tx.type === 'earn' ? 'text-green-600' : 'text-red-500'}`}>
-                          {tx.type === 'earn' ? '+' : '-'}{tx.amount}
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </CardContent>
