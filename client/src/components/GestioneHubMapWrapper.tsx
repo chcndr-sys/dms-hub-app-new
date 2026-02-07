@@ -505,11 +505,13 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
           console.log('[GestioneHubMapWrapper] Loaded', stallsResponse.data.length, 'stalls');
         }
       }
-    // Su mobile: scrolla alla mappa per mostrarla fullscreen
+    // Su mobile: scrolla alla mappa lasciando visibile Indietro + lista hub
       if (isMobile) {
         const mapElement = document.getElementById('map-container');
         if (mapElement) {
-          mapElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          const rect = mapElement.getBoundingClientRect();
+          const offset = 120; // Lascia spazio per Indietro + lista hub
+          window.scrollTo({ top: window.scrollY + rect.top - offset, behavior: 'smooth' });
         }
       }
     } catch (error) {
@@ -536,12 +538,13 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
     
     setViewTrigger(prev => prev + 1);
     
-    // Su mobile: scrolla alla mappa per mostrarla fullscreen
+    // Su mobile: scrolla alla mappa lasciando visibile Indietro + lista hub
     if (isMobile) {
-      // Scrolla alla mappa
       const mapElement = document.getElementById('map-container');
       if (mapElement) {
-        mapElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const rect = mapElement.getBoundingClientRect();
+        const offset = 120; // Lascia spazio per Indietro + lista hub
+        window.scrollTo({ top: window.scrollY + rect.top - offset, behavior: 'smooth' });
       }
     }
   };
