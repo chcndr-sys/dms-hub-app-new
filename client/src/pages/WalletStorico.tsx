@@ -116,6 +116,12 @@ export default function WalletStorico() {
     }
     if (tx.type === 'mobility') return 'Mobilità Sostenibile';
     if (tx.type === 'culture') return 'Cultura & Turismo';
+    if (tx.type === 'referral') {
+      if (tx.description.includes('registrato') || tx.description.includes('invito')) return 'Invito Amico';
+      if (tx.description.includes('primo acquisto')) return 'Bonus Primo Acquisto';
+      if (tx.description.includes('Benvenuto')) return 'Benvenuto Referral';
+      return 'Presenta un Amico';
+    }
     // Fallback: cerca nel description
     const match = tx.description.match(/presso (.+?)(?:\s*-|$)/i);
     return match ? match[1] : (tx.type === 'earn' ? 'Acquisto' : 'Pagamento');
@@ -207,8 +213,8 @@ export default function WalletStorico() {
                     <p className="text-2xl sm:text-3xl font-black text-white drop-shadow-lg">
                       €{lastTx.euro_value ? (lastTx.euro_value / 100).toFixed(2) : '0.00'}
                     </p>
-                    <p className="text-lg font-bold" style={{ color: ['earn', 'civic', 'mobility', 'culture'].includes(lastTx.type) ? '#6ee7b7' : '#fca5a5' }}>
-                      {['earn', 'civic', 'mobility', 'culture'].includes(lastTx.type) ? '+' : '-'}{Math.abs(lastTx.amount)} TCC
+                    <p className="text-lg font-bold" style={{ color: ['earn', 'civic', 'mobility', 'culture', 'referral'].includes(lastTx.type) ? '#6ee7b7' : '#fca5a5' }}>
+                      {['earn', 'civic', 'mobility', 'culture', 'referral'].includes(lastTx.type) ? '+' : '-'}{Math.abs(lastTx.amount)} TCC
                     </p>
                   </div>
                   <div className="pt-2 border-t border-emerald-400/30">
@@ -300,12 +306,14 @@ export default function WalletStorico() {
                           tx.type === 'civic' ? 'bg-orange-500/20 text-orange-600' :
                           tx.type === 'mobility' ? 'bg-blue-500/20 text-blue-600' :
                           tx.type === 'culture' ? 'bg-purple-500/20 text-purple-600' :
+                          tx.type === 'referral' ? 'bg-pink-500/20 text-pink-500' :
                           'bg-red-500/20 text-red-500'
                         }`}>
                           {tx.type === 'earn' ? 'Acquisto' : 
                            tx.type === 'civic' ? 'Segnalazione Civica' :
                            tx.type === 'mobility' ? 'Mobilità Sostenibile' :
                            tx.type === 'culture' ? 'Cultura & Turismo' :
+                           tx.type === 'referral' ? 'Presenta un Amico' :
                            'Pagamento TCC'}
                         </span>
                       </div>
@@ -316,13 +324,13 @@ export default function WalletStorico() {
                             €{(tx.euro_value / 100).toFixed(2)}
                           </p>
                         )}
-                        {/* TCC - verde per accrediti (earn, civic, mobility, culture), rosso per spese */}
+                        {/* TCC - verde per accrediti (earn, civic, mobility, culture, referral), rosso per spese */}
                         <p className={`text-lg font-bold ${
-                          ['earn', 'civic', 'mobility', 'culture'].includes(tx.type) 
+                          ['earn', 'civic', 'mobility', 'culture', 'referral'].includes(tx.type) 
                             ? 'text-green-600' 
                             : 'text-red-500'
                         }`}>
-                          {['earn', 'civic', 'mobility', 'culture'].includes(tx.type) ? '+' : '-'}{Math.abs(tx.amount)} TCC
+                          {['earn', 'civic', 'mobility', 'culture', 'referral'].includes(tx.type) ? '+' : '-'}{Math.abs(tx.amount)} TCC
                         </p>
                       </div>
                     </div>

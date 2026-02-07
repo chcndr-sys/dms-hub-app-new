@@ -1115,8 +1115,8 @@ export default function WalletPage() {
                     <p className="text-center text-muted-foreground py-3 sm:py-4 text-sm">Nessuna transazione</p>
                   ) : (
                     transactions.map((tx) => {
-                      // Determina se è un accredito (earn, civic, mobility, culture) o una spesa
-                      const isCredit = ['earn', 'civic', 'mobility', 'culture'].includes(tx.type);
+                      // Determina se è un accredito (earn, civic, mobility, culture, referral) o una spesa
+                      const isCredit = ['earn', 'civic', 'mobility', 'culture', 'referral'].includes(tx.type);
                       
                       // Badge colore per tipo
                       const badgeClass = 
@@ -1124,6 +1124,7 @@ export default function WalletPage() {
                         tx.type === 'mobility' ? 'bg-blue-500/20 text-blue-500' :
                         tx.type === 'culture' ? 'bg-purple-500/20 text-purple-500' :
                         tx.type === 'earn' ? 'bg-green-500/20 text-green-500' :
+                        tx.type === 'referral' ? 'bg-pink-500/20 text-pink-500' :
                         'bg-red-500/20 text-red-500';
                       
                       // Semaforino colore
@@ -1132,6 +1133,7 @@ export default function WalletPage() {
                         tx.type === 'mobility' ? 'bg-blue-500' :
                         tx.type === 'culture' ? 'bg-purple-500' :
                         tx.type === 'earn' ? 'bg-green-500' :
+                        tx.type === 'referral' ? 'bg-pink-500' :
                         'bg-red-500';
                       
                       // Label tipo accredito
@@ -1140,6 +1142,7 @@ export default function WalletPage() {
                         tx.type === 'mobility' ? 'Mobilità Sostenibile' :
                         tx.type === 'culture' ? 'Cultura & Turismo' :
                         tx.type === 'earn' ? 'Acquisto' :
+                        tx.type === 'referral' ? 'Presenta un Amico' :
                         'Pagamento TCC';
                       
                       return (
@@ -1177,30 +1180,22 @@ export default function WalletPage() {
           {/* TAB ECO CREDIT */}
           {/* ================================================================ */}
           <TabsContent value="eco_credit" className="flex flex-col gap-4 px-2 sm:px-0 h-[calc(100vh-70px)] sm:h-auto overflow-hidden sm:overflow-visible">
-            {/* Header ECO CREDIT con pulsante torna */}
-            <Card className="bg-gradient-to-br from-emerald-600 via-emerald-500 to-green-500 text-white border-0 shadow-xl">
-              <CardHeader>
+
+            {/* Container Partecipazione al Programma - con header verde */}
+            <Card className="border-0 shadow-xl overflow-hidden">
+              {/* Header verde con dicitura programma */}
+              <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-500 p-3 sm:p-4">
                 <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => setActiveTab('cliente')}
-                    className="p-3 bg-white/20 rounded-xl hover:bg-white/30 transition-colors"
-                  >
-                    <ChevronLeft className="h-8 w-8" />
-                  </button>
-                  <div className="p-3 bg-white/20 rounded-xl">
-                    <Leaf className="h-8 w-8" />
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <Leaf className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <CardTitle className="text-2xl text-white">Programma ECO CREDIT</CardTitle>
-                    <CardDescription className="text-white/80">Guadagna Token con azioni sostenibili</CardDescription>
+                    <p className="text-lg font-bold text-white">Programma ECO CREDIT</p>
+                    <p className="text-xs text-white/80">Guadagna Token con azioni sostenibili</p>
                   </div>
                 </div>
-              </CardHeader>
-            </Card>
-
-            {/* Toggle Attivazione */}
-            <Card>
-              <CardContent className="pt-6">
+              </div>
+              <CardContent className="pt-4 sm:pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-full ${ecoCreditsEnabled ? 'bg-emerald-100' : 'bg-gray-100'}`}>
@@ -1282,7 +1277,7 @@ export default function WalletPage() {
             </Card>
 
             {/* Sezione scrollabile - POI Vicini + istruzioni */}
-            <div className="h-[calc(100vh-380px)] overflow-y-auto space-y-4 sm:h-auto sm:overflow-visible">
+            <div className="h-[calc(100vh-320px)] overflow-y-auto space-y-4 sm:h-auto sm:overflow-visible">
             {/* POI Vicini - Solo se ECO CREDIT attivo */}
             {ecoCreditsEnabled && (
               <Card>
