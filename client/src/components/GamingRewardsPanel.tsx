@@ -799,6 +799,7 @@ export default function GamingRewardsPanel() {
               tcc_earned: r.tcc_reward || 0,
               tcc_spent: 0,
               transactions: 1,
+              created_at: r.created_at || r.resolved_at || undefined, // v1.3.12: data/ora segnalazione
               comune_id: r.comune_id ? parseInt(r.comune_id) : undefined, // v1.3.3
             }));
           setCivicReports(points);
@@ -2042,11 +2043,25 @@ export default function GamingRewardsPanel() {
                     </span>
                     <div>
                       <div className="text-[#e8fbff] font-medium group-hover:text-[#f97316] transition-colors">
-                        {report.name}
+                        Segnalazione {report.name}
                       </div>
-                      <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2">
-                        <MapPin className="h-3 w-3" />
-                        {report.lat.toFixed(4)}, {report.lng.toFixed(4)}
+                      <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2 flex-wrap">
+                        {report.created_at ? (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {new Date(report.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            {' '}
+                            {new Date(report.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {report.lat.toFixed(4)}, {report.lng.toFixed(4)}
+                          </span>
+                        )}
+                        {report.tcc_earned > 0 && (
+                          <span className="text-[#22c55e]">Risolta</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2104,8 +2119,24 @@ export default function GamingRewardsPanel() {
                         <div className="text-[#e8fbff] font-medium">
                           {action.name}
                         </div>
-                        <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2">
-                          <span className="capitalize">{action.type}</span>
+                        <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2 flex-wrap">
+                          <span className="capitalize">
+                            {action.type === 'bus' ? 'Autobus' :
+                             action.type === 'train' ? 'Treno' :
+                             action.type === 'tram' ? 'Tram' :
+                             action.type === 'bike' ? 'Bicicletta' :
+                             action.type === 'walk' ? 'A piedi' :
+                             action.type === 'stop' ? 'Check-in fermata' :
+                             action.type}
+                          </span>
+                          {action.completed_at && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(action.completed_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              {' '}
+                              {new Date(action.completed_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
                           {action.co2_saved_g > 0 && (
                             <span className="text-emerald-400">🌿 {(action.co2_saved_g / 1000).toFixed(2)} kg CO₂</span>
                           )}
@@ -2164,10 +2195,23 @@ export default function GamingRewardsPanel() {
                         <div className="text-[#e8fbff] font-medium">
                           {visit.name}
                         </div>
-                        <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2">
-                          <span className="capitalize">{visit.type}</span>
+                        <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2 flex-wrap">
+                          <span className="capitalize">
+                            {visit.type === 'museum' ? 'Museo' :
+                             visit.type === 'castle' ? 'Castello' :
+                             visit.type === 'monument' ? 'Monumento' :
+                             visit.type === 'archaeological' ? 'Sito Archeologico' :
+                             visit.type === 'theatre' ? 'Teatro' :
+                             visit.type === 'memorial' ? 'Memoriale' :
+                             visit.type}
+                          </span>
                           {visit.visit_date && (
-                            <span>📅 {new Date(visit.visit_date).toLocaleDateString('it-IT')}</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(visit.visit_date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              {' '}
+                              {new Date(visit.visit_date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -2219,9 +2263,19 @@ export default function GamingRewardsPanel() {
                         <div className="text-[#e8fbff] font-medium">
                           {point.name}
                         </div>
-                        <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2">
-                          <span>Negozio</span>
-                          <span>{point.transactions} transazioni</span>
+                        <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2 flex-wrap">
+                          <span>🏠 Negozio</span>
+                          {point.created_at && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(point.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              {' '}
+                              {new Date(point.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                          {point.transactions > 1 && (
+                            <span>{point.transactions} operazioni</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2277,9 +2331,19 @@ export default function GamingRewardsPanel() {
                         <div className="text-[#e8fbff] font-medium">
                           {point.name}
                         </div>
-                        <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2">
-                          <span>Mercato</span>
-                          <span>{point.transactions} transazioni</span>
+                        <div className="text-xs text-[#e8fbff]/50 flex items-center gap-2 flex-wrap">
+                          <span>🛒 Mercato</span>
+                          {point.created_at && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(point.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                              {' '}
+                              {new Date(point.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                          {point.transactions > 1 && (
+                            <span>{point.transactions} operazioni</span>
+                          )}
                         </div>
                       </div>
                     </div>
