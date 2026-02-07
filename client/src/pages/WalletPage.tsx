@@ -834,7 +834,7 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="h-screen sm:min-h-screen bg-background pb-0 sm:pb-20 overflow-hidden sm:overflow-auto">
+    <div className="h-screen sm:min-h-screen bg-background pb-0 sm:pb-20 overflow-y-auto sm:overflow-auto">
       {/* Header - v3.75.2: freccia visibile sempre, logout solo PC/Tablet */}
       <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-3 sm:p-4 shadow-lg">
         <div className="w-full px-3 sm:px-4 md:px-8 flex items-center justify-between">
@@ -1100,6 +1100,76 @@ export default function WalletPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Presenta un Amico - SOLO Desktop */}
+            {ecoCreditsEnabled && (
+              <Card className="hidden sm:block border-2 border-pink-500/30 bg-gradient-to-br from-pink-500/5 to-fuchsia-500/5 rounded-lg shadow">
+                <CardHeader className="p-3 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-pink-500 text-sm sm:text-base">
+                    <Gift className="h-4 w-4 sm:h-5 sm:w-5" />
+                    Presenta un Amico
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">Invita amici e guadagna TCC</CardDescription>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-6 pt-0">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Condividi il tuo link e guadagna TCC per ogni amico che si registra!</p>
+                    </div>
+                    {!referralCode ? (
+                      <Button
+                        size="sm"
+                        onClick={generateReferralLink}
+                        disabled={referralLoading}
+                        className="bg-pink-500 hover:bg-pink-600 text-white ml-4 flex-shrink-0"
+                      >
+                        {referralLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <><Share2 className="h-4 w-4 mr-1" /> Genera Link</>
+                        )}
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={copyReferralLink}
+                          className="text-xs"
+                        >
+                          {referralCopied ? (
+                            <><Check className="h-3 w-3 mr-1 text-emerald-500" /> Copiato!</>
+                          ) : (
+                            <><Copy className="h-3 w-3 mr-1" /> Copia</>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={shareReferralLink}
+                          className="bg-pink-500 hover:bg-pink-600 text-white text-xs"
+                        >
+                          <Share2 className="h-3 w-3 mr-1" /> Invia
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  {/* Mostra link generato e info TCC - Desktop */}
+                  {referralCode && (
+                    <div className="mt-3 p-3 bg-pink-50 rounded-lg border border-pink-200">
+                      <p className="text-xs text-pink-700 font-medium mb-1">Il tuo link referral:</p>
+                      <p className="text-xs text-pink-600 break-all font-mono bg-white/50 p-2 rounded">
+                        {`${window.location.origin}/#/register?ref=${referralCode}`}
+                      </p>
+                      <div className="mt-2 text-xs text-pink-600 flex gap-4">
+                        <span>🎁 Tu ricevi <strong>+5 TCC</strong> per ogni invito</span>
+                        <span>👋 Il tuo amico riceve <strong>+5 TCC</strong> di benvenuto</span>
+                        <span>🛒 Bonus <strong>+5 TCC</strong> al primo acquisto</span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Storico Transazioni - SOLO Desktop */}
             <Card className="hidden sm:block rounded-lg border shadow">
