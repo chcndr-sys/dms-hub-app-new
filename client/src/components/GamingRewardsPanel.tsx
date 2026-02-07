@@ -193,6 +193,7 @@ interface TrendDataPoint {
   shopping?: number;  // Transazioni acquisti (totale, legacy)
   shopping_shop?: number;  // Acquisti Negozio
   shopping_market?: number;  // Acquisti Mercato
+  referral?: number;  // Referral "Presenta un Amico"
 }
 
 // Default config
@@ -489,6 +490,8 @@ const getMarkerIcon = (type: string, intensity: number = 0.5) => {
     'monument': '🗿',
     'archaeological': '⛏️',
     'theatre': '🎭',
+    // Referral
+    'referral': '🎁',
   };
   
   const iconEmoji = emoji[type] || '📍';
@@ -501,6 +504,8 @@ const getMarkerIcon = (type: string, intensity: number = 0.5) => {
     bgColor = '#06b6d4'; // Cyan per mobilità
   } else if (['museum', 'castle', 'monument', 'archaeological', 'theatre'].includes(type)) {
     bgColor = '#a855f7'; // Viola per cultura
+  } else if (type === 'referral') {
+    bgColor = '#EC4899'; // Fuchsia per referral
   } else if (intensity > 0.7) {
     bgColor = '#8b5cf6'; // Viola per alta intensità
   } else if (intensity > 0.4) {
@@ -879,6 +884,7 @@ export default function GamingRewardsPanel() {
             shopping: parseInt(day.shopping) || 0,
             shopping_shop: parseInt(day.shopping_shop) || 0,
             shopping_market: parseInt(day.shopping_market) || 0,
+            referral: parseInt(day.referral) || 0,
           }));
           setTrendData(mappedTrend);
         }
@@ -1715,7 +1721,7 @@ export default function GamingRewardsPanel() {
                         <div className="text-xs text-emerald-600">🌿 CO₂ risparmiata: {(action.co2_saved_g / 1000).toFixed(2)} kg</div>
                       )}
                       {action.completed_at && (
-                        <div className="text-xs text-gray-500">📅 {new Date(action.completed_at).toLocaleDateString('it-IT')}</div>
+                        <div className="text-xs text-gray-500">📅 {new Date(action.completed_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })} {new Date(action.completed_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</div>
                       )}
                     </div>
                   </Popup>
@@ -1741,7 +1747,39 @@ export default function GamingRewardsPanel() {
                       <div className="text-xs text-gray-600 capitalize">Visita {visit.type}</div>
                       <div>TCC Rilasciati: <span className="text-green-600 font-semibold">+{visit.tcc_reward}</span></div>
                       {visit.visit_date && (
-                        <div className="text-xs text-gray-500">📅 {new Date(visit.visit_date).toLocaleDateString('it-IT')}</div>
+                        <div className="text-xs text-gray-500">📅 {new Date(visit.visit_date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })} {new Date(visit.visit_date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</div>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+
+              {/* Marker Referral "Presenta un Amico" - punti fuchsia */}
+              {(selectedLayer === 'all' || selectedLayer === 'referral') && referralList.filter(r => r.lat && r.lng).map((ref) => (
+                <Marker
+                  key={`referral-${ref.id}`}
+                  position={[ref.lat!, ref.lng!]}
+                  icon={getMarkerIcon('referral', 0.8)}
+                >
+                  <Popup>
+                    <div className="text-sm max-w-xs">
+                      <div className="font-bold text-pink-600">
+                        🎁 Presenta un Amico
+                      </div>
+                      <div className="text-xs text-gray-600">Codice: {ref.referral_code}</div>
+                      <div className="text-xs text-gray-600">Stato: <span className={`font-semibold ${
+                        ref.status === 'first_purchase' ? 'text-pink-600' :
+                        ref.status === 'registered' ? 'text-yellow-600' :
+                        'text-gray-500'
+                      }`}>
+                        {ref.status === 'first_purchase' ? 'Primo acquisto completato' :
+                         ref.status === 'registered' ? 'Amico registrato' :
+                         ref.status === 'pending' ? 'In attesa' :
+                         ref.status === 'expired' ? 'Scaduto' : ref.status}
+                      </span></div>
+                      <div>TCC Guadagnati: <span className="text-green-600 font-semibold">+{ref.tcc_earned_referrer}</span></div>
+                      {ref.created_at && (
+                        <div className="text-xs text-gray-500">📅 {new Date(ref.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                       )}
                     </div>
                   </Popup>
@@ -1832,7 +1870,7 @@ export default function GamingRewardsPanel() {
                 <div className="flex items-end justify-between h-40 gap-2">
                   {trendData.map((day, index) => {
                     const maxValue = Math.max(...trendData.map(d => Math.max(d.tcc_earned, d.tcc_spent)));
-                    const maxActivities = Math.max(...trendData.map(d => Math.max(d.reports || 0, d.mobility || 0, d.culture || 0, d.shopping_shop || 0, d.shopping_market || 0)));
+                    const maxActivities = Math.max(...trendData.map(d => Math.max(d.reports || 0, d.mobility || 0, d.culture || 0, d.shopping_shop || 0, d.shopping_market || 0, d.referral || 0)));
                     const earnedHeight = maxValue > 0 ? (day.tcc_earned / maxValue) * 100 : 0;
                     const spentHeight = maxValue > 0 ? (day.tcc_spent / maxValue) * 100 : 0;
                     const reportsHeight = maxActivities > 0 ? ((day.reports || 0) / maxActivities) * 100 : 0;
@@ -1840,6 +1878,7 @@ export default function GamingRewardsPanel() {
                     const cultureHeight = maxActivities > 0 ? ((day.culture || 0) / maxActivities) * 100 : 0;
                     const shopHeight = maxActivities > 0 ? ((day.shopping_shop || 0) / maxActivities) * 100 : 0;
                     const marketHeight = maxActivities > 0 ? ((day.shopping_market || 0) / maxActivities) * 100 : 0;
+                    const referralHeight = maxActivities > 0 ? ((day.referral || 0) / maxActivities) * 100 : 0;
                     const dayName = new Date(day.date).toLocaleDateString('it-IT', { weekday: 'short' });
                     
                     return (
@@ -1888,6 +1927,12 @@ export default function GamingRewardsPanel() {
                               title={`Cultura: ${day.culture || 0}`}
                             />
                           )}
+                          {/* Barra Referral fuchsia */}
+                          <div 
+                            className="w-2 bg-[#EC4899] rounded-t transition-all" 
+                            style={{ height: `${referralHeight}%`, minHeight: (day.referral || 0) > 0 ? '4px' : '0' }}
+                            title={`Referral: ${day.referral || 0}`}
+                          />
 
                         </div>
                         <span className="text-xs text-[#e8fbff]/50 mt-2 capitalize">{dayName}</span>
@@ -2406,12 +2451,14 @@ export default function GamingRewardsPanel() {
                           Codice: {ref.referral_code}
                         </p>
                         <p className="text-[#e8fbff]/50 text-xs">
-                          {ref.status === 'pending' ? '⏳ In attesa' :
-                           ref.status === 'registered' ? '✅ Registrato' :
-                           ref.status === 'first_purchase' ? '🎉 Primo acquisto' :
-                           ref.status}
-                          {ref.created_at && ` · ${new Date(ref.created_at).toLocaleDateString('it-IT')}`}
-                        </p>
+                           {ref.status === 'pending' ? '⏳ In attesa' :
+                            ref.status === 'registered' ? '✅ Registrato' :
+                            ref.status === 'first_purchase' ? '🎉 Primo acquisto completato' :
+                            ref.status === 'expired' ? '⌛ Scaduto' :
+                            ref.status === 'completed' ? '✅ Completato' :
+                            ref.status}
+                           {ref.created_at && ` · ${new Date(ref.created_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`}
+                         </p>
                       </div>
                     </div>
                     <div className="text-right">

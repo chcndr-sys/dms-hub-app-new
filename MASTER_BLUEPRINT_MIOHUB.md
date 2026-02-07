@@ -6819,6 +6819,32 @@ Aggiunto `created_at` nel mapping delle segnalazioni civiche (prima non veniva p
 
 ---
 
+### 🔧 FIX #13: MARKER REFERRAL MAPPA + LINEA FUCHSIA TREND + ORARIO NOTIFICHE (v1.3.17)
+
+**Problemi segnalati:**
+1. **Mappa Gaming Dashboard**: nella sezione "Presenta un Amico" mancavano i marker individuali fuchsia sulla mappa. C'era solo la voce nella legenda ma nessun punto visibile.
+2. **Trend TCC**: mancava la barra fuchsia per i referral nel grafico trend giornaliero.
+3. **Notifiche referral**: mancava l'orario nelle date (mostrava solo giorno/mese/anno senza ore:minuti).
+4. **Tab ECO Credit mobile**: la Card "Partecipazione al Programma" aveva `overflow-hidden` che poteva tagliare il contenuto del referral link generato.
+5. **Tab ECO Credit mobile**: mancava un tasto "Torna al Wallet" per tornare facilmente al tab principale.
+6. **Link referral generato**: non mostrava il link testuale né le info sui TCC guadagnabili.
+
+**Soluzioni:**
+1. **Marker mappa**: aggiunto tipo `'referral'` a `getMarkerIcon()` con emoji 🎁 e colore `#EC4899` (fuchsia). Aggiunti `<Marker>` per ogni referral con `lat/lng` validi, con popup che mostra codice, stato tradotto in italiano, TCC guadagnati e data+orario.
+2. **Trend chart**: aggiunto campo `referral?: number` a `TrendDataPoint`, mappato dal backend. Aggiunta barra `bg-[#EC4899]` nel grafico con calcolo altezza proporzionale.
+3. **Orario notifiche**: aggiunto `{ hour: '2-digit', minute: '2-digit' }` a tutte le `toLocaleDateString` nelle sezioni referral, mobilità (popup mappa) e cultura (popup mappa).
+4. **Card ECO Credit**: rimosso `overflow-hidden` dalla Card "Partecipazione al Programma".
+5. **Tasto indietro**: aggiunto bottone "Torna al Wallet" visibile solo su mobile (`sm:hidden`) nel tab ECO Credit.
+6. **Info referral**: quando il link viene generato, mostra il link completo in un box rosa con le info: +5 TCC per invito, +5 TCC benvenuto amico, +5 TCC primo acquisto.
+
+**File modificati:**
+- `client/src/components/GamingRewardsPanel.tsx` — marker mappa, trend chart, orario popup
+- `client/src/pages/WalletPage.tsx` — overflow-hidden, tasto indietro, info referral link
+
+- Commit: v1.3.17
+
+---
+
 ### ⚠️ NOTE IMPORTANTI PER SESSIONI FUTURE
 
 1. **NON rimettere `comune_id` nel POST body di CivicPage.tsx** — il backend lo determina dalle coordinate GPS
@@ -6833,5 +6859,8 @@ Aggiunto `created_at` nel mapping delle segnalazioni civiche (prima non veniva p
 10. **Tipo `referral`**: badge fuchsia (pink-500), semaforino fuchsia, label "Presenta un Amico" — vale sia per storico mobile che desktop
 11. **Score TCC**: DEVE usare `walletStats.total_earned + walletStats.total_spent` dal wallet API — ENTRAMBE sono azioni sostenibili (guadagnare E spendere TCC nel territorio)
 12. **NON usare `overflow-hidden` su TabsContent mobile** — impedisce lo scroll. Usare `overflow-y-auto`
+13. **Marker referral sulla mappa**: usano `getMarkerIcon('referral')` con colore `#EC4899` fuchsia — richiedono che `referralList` abbia `lat/lng` non null
+14. **Barra referral nel trend chart**: campo `referral` in `TrendDataPoint` — il backend deve restituire `referral` nel JSON del trend
+15. **Orario nelle notifiche**: TUTTE le date nelle liste e popup devono avere `{ hour: '2-digit', minute: '2-digit' }` — non solo giorno/mese/anno
 
 ---

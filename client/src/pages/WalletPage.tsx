@@ -834,7 +834,7 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="h-screen sm:min-h-screen bg-background pb-0 sm:pb-20 overflow-hidden sm:overflow-auto">
+    <div className="min-h-screen bg-background pb-0 sm:pb-20 overflow-auto">
       {/* Header - v3.75.2: freccia visibile sempre, logout solo PC/Tablet */}
       <header className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-3 sm:p-4 shadow-lg">
         <div className="w-full px-3 sm:px-4 md:px-8 flex items-center justify-between">
@@ -879,7 +879,7 @@ export default function WalletPage() {
           {/* ================================================================ */}
           {/* TAB CLIENTE */}
           {/* ================================================================ */}
-          <TabsContent value="cliente" className="flex flex-col h-[calc(100vh-60px)] sm:h-auto sm:space-y-6 mt-0 sm:mt-4 px-0 sm:px-0 overflow-hidden sm:overflow-visible">
+          <TabsContent value="cliente" className="flex flex-col sm:h-auto sm:space-y-6 mt-0 sm:mt-4 px-0 sm:px-0 pb-20 sm:pb-0">
             {/* Saldo Principale - Mobile: barra più alta con nome, Desktop: card grande - v3.75.0 */}
             <div className="bg-gradient-to-r from-primary via-primary/90 to-emerald-600 text-primary-foreground p-4 sm:hidden">
               <div className="flex items-center justify-between">
@@ -1179,10 +1179,21 @@ export default function WalletPage() {
           {/* ================================================================ */}
           {/* TAB ECO CREDIT */}
           {/* ================================================================ */}
-          <TabsContent value="eco_credit" className="flex flex-col gap-4 px-2 sm:px-0 h-[calc(100vh-70px)] sm:h-auto overflow-y-auto sm:overflow-visible">
+          <TabsContent value="eco_credit" className="flex flex-col gap-4 px-2 sm:px-0 pb-20">
+
+            {/* Tasto torna al Wallet - solo mobile */}
+            <button 
+              onClick={() => setActiveTab('cliente')}
+              className="sm:hidden flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Torna al Wallet
+            </button>
 
             {/* Container Partecipazione al Programma - con header verde */}
-            <Card className="border-0 shadow-xl overflow-hidden">
+            <Card className="border-0 shadow-xl">
               {/* Header verde con dicitura programma */}
               <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-500 p-3 sm:p-4">
                 <div className="flex items-center gap-3">
@@ -1271,6 +1282,20 @@ export default function WalletPage() {
                         </div>
                       )}
                     </div>
+                    {/* Mostra link generato e info TCC */}
+                    {referralCode && (
+                      <div className="mt-3 p-3 bg-pink-50 rounded-lg border border-pink-200">
+                        <p className="text-xs text-pink-700 font-medium mb-1">Il tuo link referral:</p>
+                        <p className="text-xs text-pink-600 break-all font-mono bg-white/50 p-2 rounded">
+                          {`${window.location.origin}/#/register?ref=${referralCode}`}
+                        </p>
+                        <div className="mt-2 text-xs text-pink-600 space-y-0.5">
+                          <p>🎁 Tu ricevi <strong>+5 TCC</strong> per ogni invito</p>
+                          <p>👋 Il tuo amico riceve <strong>+5 TCC</strong> di benvenuto</p>
+                          <p>🛒 Bonus <strong>+5 TCC</strong> al primo acquisto dell'amico</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
