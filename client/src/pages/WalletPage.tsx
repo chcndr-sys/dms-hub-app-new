@@ -1202,9 +1202,9 @@ export default function WalletPage() {
                         {`${window.location.origin}/#/register?ref=${referralCode}`}
                       </p>
                       <div className="mt-2 text-xs text-pink-600 flex gap-4">
-                        <span>🎁 Tu ricevi <strong>+5 TCC</strong> per ogni invito</span>
-                        <span>👋 Il tuo amico riceve <strong>+5 TCC</strong> di benvenuto</span>
-                        <span>🛒 Bonus <strong>+5 TCC</strong> al primo acquisto</span>
+                        <span>🎁 Tu ricevi <strong>TCC</strong> per ogni invito</span>
+                        <span>👋 Il tuo amico riceve <strong>TCC</strong> di benvenuto</span>
+                        <span>🛒 Bonus <strong>TCC</strong> al primo acquisto</span>
                       </div>
                     </div>
                   )}
@@ -1351,9 +1351,9 @@ export default function WalletPage() {
                     </div>
                     {referralCode && (
                       <div className="mt-2 text-[11px] text-pink-400 flex gap-3">
-                        <span>🎁 +5 TCC per invito</span>
-                        <span>👋 +5 TCC amico</span>
-                        <span>🛒 +5 TCC 1° acquisto</span>
+                        <span>🎁 TCC per invito</span>
+                        <span>👋 TCC amico</span>
+                        <span>🛒 TCC 1° acquisto</span>
                       </div>
                     )}
                   </div>
@@ -1439,7 +1439,7 @@ export default function WalletPage() {
                         <p className="text-xs font-medium text-blue-300">Mobilità Sostenibile</p>
                         <p className="text-[10px] text-blue-400/60">Bus, bici, a piedi — rilevamento automatico</p>
                       </div>
-                      <span className="text-xs font-bold text-blue-400 flex-shrink-0">+10 TCC</span>
+                      <span className="text-xs font-bold text-blue-400 flex-shrink-0">TCC</span>
                     </div>
                     <div className="flex items-center gap-2 p-2 rounded-lg border border-purple-500/20 bg-purple-950/20">
                       <Award className="h-4 w-4 text-purple-400 flex-shrink-0" />
@@ -1447,7 +1447,7 @@ export default function WalletPage() {
                         <p className="text-xs font-medium text-purple-300">Cultura & Turismo</p>
                         <p className="text-[10px] text-purple-400/60">Musei, monumenti, percorsi culturali</p>
                       </div>
-                      <span className="text-xs font-bold text-purple-400 flex-shrink-0">+50 TCC</span>
+                      <span className="text-xs font-bold text-purple-400 flex-shrink-0">TCC</span>
                     </div>
                     <div className="flex items-center gap-2 p-2 rounded-lg border border-amber-500/20 bg-amber-950/20">
                       <Store className="h-4 w-4 text-amber-400 flex-shrink-0" />
@@ -1455,7 +1455,7 @@ export default function WalletPage() {
                         <p className="text-xs font-medium text-amber-300">Acquisti Locali</p>
                         <p className="text-[10px] text-amber-400/60">Cashback sostenibile nei negozi aderenti</p>
                       </div>
-                      <span className="text-xs font-bold text-amber-400 flex-shrink-0">1-3%</span>
+                      <span className="text-xs font-bold text-amber-400 flex-shrink-0">TCC</span>
                     </div>
                     <div className="flex items-center gap-2 p-2 rounded-lg border border-orange-500/20 bg-orange-950/20">
                       <TrendingUp className="h-4 w-4 text-orange-400 flex-shrink-0" />
@@ -1463,7 +1463,7 @@ export default function WalletPage() {
                         <p className="text-xs font-medium text-orange-300">Segnalazioni Civiche</p>
                         <p className="text-[10px] text-orange-400/60">Segnala problemi alla PA, ricevi TCC</p>
                       </div>
-                      <span className="text-xs font-bold text-orange-400 flex-shrink-0">+20 TCC</span>
+                      <span className="text-xs font-bold text-orange-400 flex-shrink-0">TCC</span>
                     </div>
                     <div className="flex items-center gap-2 p-2 rounded-lg border border-pink-500/20 bg-pink-950/20">
                       <Gift className="h-4 w-4 text-pink-400 flex-shrink-0" />
@@ -1471,7 +1471,7 @@ export default function WalletPage() {
                         <p className="text-xs font-medium text-pink-300">Presenta un Amico</p>
                         <p className="text-[10px] text-pink-400/60">Invita amici e guadagna entrambi</p>
                       </div>
-                      <span className="text-xs font-bold text-pink-400 flex-shrink-0">+5 TCC</span>
+                      <span className="text-xs font-bold text-pink-400 flex-shrink-0">TCC</span>
                     </div>
                   </div>
                 </div>
@@ -1611,9 +1611,9 @@ export default function WalletPage() {
                             {`${window.location.origin}/#/register?ref=${referralCode}`}
                           </p>
                           <div className="mt-2 text-xs text-pink-400 flex gap-4">
-                            <span>🎁 Tu ricevi <strong>+5 TCC</strong> per ogni invito</span>
-                            <span>👋 Il tuo amico riceve <strong>+5 TCC</strong> di benvenuto</span>
-                            <span>🛒 Bonus <strong>+5 TCC</strong> al primo acquisto</span>
+                            <span>🎁 Tu ricevi <strong>TCC</strong> per ogni invito</span>
+                            <span>👋 Il tuo amico riceve <strong>TCC</strong> di benvenuto</span>
+                            <span>🛒 Bonus <strong>TCC</strong> al primo acquisto</span>
                           </div>
                         </div>
                       )}
@@ -1753,7 +1753,7 @@ export default function WalletPage() {
                       <Gift className="h-5 w-5 text-pink-400 mt-0.5" />
                       <div>
                         <p className="font-medium text-pink-300">Presenta un Amico</p>
-                        <p className="text-sm text-pink-400/60">Invita amici e guadagna +5 TCC per ogni registrazione.</p>
+                        <p className="text-sm text-pink-400/60">Invita amici e guadagna TCC per ogni registrazione.</p>
                       </div>
                     </div>
                   </div>
