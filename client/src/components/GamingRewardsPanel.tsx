@@ -273,7 +273,7 @@ function MapCenterUpdater({
     } else if (selectedLayer === 'culture') {
       targetPoints = cultureActions.map(c => ({ lat: parseFloat(String(c.lat)), lng: parseFloat(String(c.lng)) }));
     } else if (selectedLayer === 'referral') {
-      targetPoints = referralList.filter(r => r.lat && r.lng).map(r => ({ lat: r.lat!, lng: r.lng! }));
+      targetPoints = referralList.filter(r => r.lat && r.lng).map(r => ({ lat: Number(r.lat), lng: Number(r.lng) }));
     } else {
       targetPoints = [...points, ...civicReports];
     }
@@ -1767,7 +1767,7 @@ export default function GamingRewardsPanel() {
               ))}
 
               {/* Marker Referral "Presenta un Amico" - punti fuchsia - con offset spirale e filtro geo+tempo */}
-              {(selectedLayer === 'all' || selectedLayer === 'referral') && applySpiralOffsetGeneric(filterData(referralList, 'created_at').filter(r => r.lat && r.lng) as (ReferralItem & { lat: number; lng: number })[]).map((ref) => (
+              {(selectedLayer === 'all' || selectedLayer === 'referral') && applySpiralOffsetGeneric(filterData(referralList, 'created_at').filter(r => r.lat && r.lng).map(r => ({ ...r, lat: Number(r.lat), lng: Number(r.lng) }))).map((ref) => (
                 <Marker
                   key={`referral-${ref.id}`}
                   position={[ref.lat + ref.offsetLat, ref.lng + ref.offsetLng]}
