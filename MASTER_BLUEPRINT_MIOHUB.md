@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
 > **Versione:** 4.0.0  
-> **Data:** 7 Febbraio 2026 (v1.3.14 — Fix mappa interazione, storico wallet desktop, gaming rewards descrizioni, tasto referral wallet)  
+> **Data:** 7 Febbraio 2026 (v1.3.15 — Fix referral storico, rimuovi container verde ECO Credit, restyling Partecipazione)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -6639,7 +6639,7 @@ if (el) {
 
 | Componente | Versione | Ultimo Commit | Deploy |
 |------------|----------|---------------|--------|
-| Frontend (dms-hub-app-new) | v1.3.14 | — | Vercel (auto da GitHub) |
+| Frontend (dms-hub-app-new) | v1.3.15 | — | Vercel (auto da GitHub) |
 | Backend (mihub-backend) | v1.3.8 | `3ceac46` | Hetzner (push manuale) |
 | Database | aggiornato | — | Neon PostgreSQL |
 
@@ -6657,6 +6657,8 @@ if (el) {
 - [x] Fix storico wallet desktop/iPad: +TCC verde per accrediti (civic/mobility/culture), badge colorati e semaforino (v1.3.12)
 - [x] Fix gaming rewards: data/ora e descrizioni leggibili in italiano per tutte le sezioni (v1.3.13)
 - [x] Tasto "Genera Link" referral nel wallet mobile, dentro container Partecipazione al Programma (v1.3.14)
+- [x] Fix referral nello storico mobile/desktop: +TCC verde con badge fuchsia "Presenta un Amico" (v1.3.15)
+- [x] Rimosso container verde grande ECO Credit (freccia indietro duplicata), restyling container Partecipazione con header verde (v1.3.15)
 
 ---
 
@@ -6673,6 +6675,7 @@ if (el) {
 | `5fced0b` | v1.3.12 | `WalletPage.tsx` | Fix storico wallet desktop/iPad: +TCC verde, badge colorati, semaforino per tipo |
 | `637ab9a` | v1.3.13 | `GamingRewardsPanel.tsx` | Gaming rewards: data/ora e descrizioni leggibili per tutte le sezioni |
 | — | v1.3.14 | `WalletPage.tsx` | Tasto "Genera Link" referral dentro container Partecipazione al Programma |
+| `c753ca5` | v1.3.15 | `WalletPage.tsx`, `WalletStorico.tsx` | Fix referral storico (+5 verde badge fuchsia), rimuovi container verde, restyling Partecipazione |
 
 ### 🗺️ FIX #7: MAPPA MOBILE — INTERAZIONE DINAMICA (v1.3.11)
 
@@ -6773,6 +6776,24 @@ Aggiunto `created_at` nel mapping delle segnalazioni civiche (prima non veniva p
 
 ---
 
+### 🎨 FIX #11: REFERRAL STORICO + RESTYLING ECO CREDIT (v1.3.15)
+
+**Problemi:**
+1. **Storico mobile (WalletStorico.tsx)**: le transazioni referral mostravano "-5 TCC" in rosso con badge "Pagamento TCC" → dovevano essere "+5 TCC" in verde con badge fuchsia "Presenta un Amico"
+2. **Storico desktop (WalletPage.tsx)**: stesso problema — tipo `referral` non riconosciuto
+3. **Container verde grande ECO Credit**: freccia indietro duplicata (c'era già nella barra sopra), occupava spazio inutile
+4. **Container Partecipazione**: design piatto, senza identità visiva del programma
+
+**Soluzioni:**
+1. Aggiunto `'referral'` a `isCredit` array in WalletStorico.tsx e WalletPage.tsx
+2. Aggiunto badge fuchsia `bg-pink-500/20 text-pink-500` + semaforino `bg-pink-500` + label "Presenta un Amico"
+3. Rimosso il Card verde grande con ChevronLeft (righe 1181-1199)
+4. Trasformato il container Partecipazione con header verde gradient (`from-emerald-600 via-emerald-500 to-green-500`) con icona Leaf e dicitura "Programma ECO CREDIT"
+
+- Commit: `c753ca5` (v1.3.15)
+
+---
+
 ### ⚠️ NOTE IMPORTANTI PER SESSIONI FUTURE
 
 1. **NON rimettere `comune_id` nel POST body di CivicPage.tsx** — il backend lo determina dalle coordinate GPS
@@ -6783,6 +6804,7 @@ Aggiunto `created_at` nel mapping delle segnalazioni civiche (prima non veniva p
 6. **I 4 slot gaming configurabili sono**: Civic, Cultura, Mobilità, Presenta un amico — NON toccare Shopping/Acquisti
 7. **Carbon credit regionali** (tcc.js) sono separati e funzionano correttamente — NON modificare
 8. **NON aggiungere `interactionDisabled` alla key del MapContainer** — usare InteractionController con useMap() per abilitare/disabilitare dragging dinamicamente
-9. **Storico wallet desktop**: i tipi `civic`, `mobility`, `culture` sono accrediti (+TCC verde), non spese
+9. **Storico wallet desktop**: i tipi `civic`, `mobility`, `culture`, `referral` sono accrediti (+TCC verde), non spese
+10. **Tipo `referral`**: badge fuchsia (pink-500), semaforino fuchsia, label "Presenta un Amico" — vale sia per storico mobile che desktop
 
 ---
