@@ -35,6 +35,7 @@ export default function WalletStorico() {
   
   // Dati
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [walletStats, setWalletStats] = useState<{total_earned: number; total_spent: number; total_transactions: number; balance: number} | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Check auth
@@ -54,25 +55,38 @@ export default function WalletStorico() {
     }
   }, []);
 
-  // Carica transazioni
+  // Carica transazioni e dati wallet
   useEffect(() => {
     if (currentUser?.id) {
-      fetch(`${API_BASE}/api/tcc/wallet/${currentUser.id}/transactions`)
+      // Carica transazioni
+      const txPromise = fetch(`${API_BASE}/api/tcc/wallet/${currentUser.id}/transactions`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
             setTransactions(data.transactions || []);
           }
-        })
+        });
+      // Carica wallet stats (total_earned reale dal backend)
+      const walletPromise = fetch(`${API_BASE}/api/tcc/wallet/${currentUser.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.wallet) {
+            setWalletStats({
+              total_earned: data.wallet.stats?.total_earned || 0,
+              total_spent: data.wallet.stats?.total_spent || 0,
+              total_transactions: data.wallet.stats?.total_transactions || 0,
+              balance: data.wallet.balance || 0
+            });
+          }
+        });
+      Promise.all([txPromise, walletPromise])
         .catch(console.error)
         .finally(() => setLoading(false));
     }
   }, [currentUser?.id]);
 
-  // Calcoli - somma TUTTI i token (guadagnati + spesi)
-  const totalTCC = transactions.reduce((sum, tx) => {
-    return sum + Math.abs(tx.amount);
-  }, 0);
+  // Score = total_earned dal wallet API (dato reale dal backend, non limitato alle ultime 50 tx)
+  const totalTCC = walletStats?.total_earned || transactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const totalTrees = (totalTCC / 22).toFixed(1);
   
   // Ultima transazione
@@ -174,7 +188,7 @@ export default function WalletStorico() {
         <History className="h-5 w-5 sm:h-6 sm:w-6" />
         <div>
           <h1 className="text-base sm:text-lg font-bold">Storico & Impatto</h1>
-          <p className="text-xs text-white/70">{transactions.length} transazioni</p>
+          <p className="text-xs text-white/70">{walletStats?.total_transactions || transactions.length} transazioni</p>
         </div>
       </header>
 

@@ -1179,7 +1179,7 @@ export default function WalletPage() {
           {/* ================================================================ */}
           {/* TAB ECO CREDIT */}
           {/* ================================================================ */}
-          <TabsContent value="eco_credit" className="flex flex-col gap-4 px-2 sm:px-0 h-[calc(100vh-70px)] sm:h-auto overflow-hidden sm:overflow-visible">
+          <TabsContent value="eco_credit" className="flex flex-col gap-4 px-2 sm:px-0 h-[calc(100vh-70px)] sm:h-auto overflow-y-auto sm:overflow-visible">
 
             {/* Container Partecipazione al Programma - con header verde */}
             <Card className="border-0 shadow-xl overflow-hidden">
@@ -1276,8 +1276,8 @@ export default function WalletPage() {
               </CardContent>
             </Card>
 
-            {/* Sezione scrollabile - POI Vicini + istruzioni */}
-            <div className="h-[calc(100vh-320px)] overflow-y-auto space-y-4 sm:h-auto sm:overflow-visible">
+            {/* POI Vicini + istruzioni */}
+            <div className="space-y-4">
             {/* POI Vicini - Solo se ECO CREDIT attivo */}
             {ecoCreditsEnabled && (
               <Card>
@@ -1451,7 +1451,7 @@ export default function WalletPage() {
                 </CardContent>
               </Card>
             )}
-            </div>{/* Fine sezione scrollabile */}
+            </div>{/* Fine POI + istruzioni */}
 
           </TabsContent>
 

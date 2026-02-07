@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
 > **Versione:** 4.0.0  
-> **Data:** 7 Febbraio 2026 (v1.3.15 — Fix referral storico, rimuovi container verde ECO Credit, restyling Partecipazione)  
+> **Data:** 7 Febbraio 2026 (v1.3.16 — Fix scroll ECO Credit, score TCC reale, referral storico)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -6639,7 +6639,7 @@ if (el) {
 
 | Componente | Versione | Ultimo Commit | Deploy |
 |------------|----------|---------------|--------|
-| Frontend (dms-hub-app-new) | v1.3.15 | — | Vercel (auto da GitHub) |
+| Frontend (dms-hub-app-new) | v1.3.16 | — | Vercel (auto da GitHub) |
 | Backend (mihub-backend) | v1.3.8 | `3ceac46` | Hetzner (push manuale) |
 | Database | aggiornato | — | Neon PostgreSQL |
 
@@ -6659,6 +6659,9 @@ if (el) {
 - [x] Tasto "Genera Link" referral nel wallet mobile, dentro container Partecipazione al Programma (v1.3.14)
 - [x] Fix referral nello storico mobile/desktop: +TCC verde con badge fuchsia "Presenta un Amico" (v1.3.15)
 - [x] Rimosso container verde grande ECO Credit (freccia indietro duplicata), restyling container Partecipazione con header verde (v1.3.15)
+- [x] Fix scroll ECO Credit: rimosso overflow-hidden, tutta la sezione scrollabile (v1.3.16)
+- [x] Fix score TCC: usa total_earned dal wallet API (dato reale) invece della somma limitata a 50 tx (v1.3.16)
+- [x] Fix contatore transazioni: usa total_transactions dal wallet API (83 reali, non 50 limitate) (v1.3.16)
 
 ---
 
@@ -6676,6 +6679,7 @@ if (el) {
 | `637ab9a` | v1.3.13 | `GamingRewardsPanel.tsx` | Gaming rewards: data/ora e descrizioni leggibili per tutte le sezioni |
 | — | v1.3.14 | `WalletPage.tsx` | Tasto "Genera Link" referral dentro container Partecipazione al Programma |
 | `c753ca5` | v1.3.15 | `WalletPage.tsx`, `WalletStorico.tsx` | Fix referral storico (+5 verde badge fuchsia), rimuovi container verde, restyling Partecipazione |
+| — | v1.3.16 | `WalletPage.tsx`, `WalletStorico.tsx` | Fix scroll ECO Credit, score TCC da wallet API (total_earned reale) |
 
 ### 🗺️ FIX #7: MAPPA MOBILE — INTERAZIONE DINAMICA (v1.3.11)
 
@@ -6794,6 +6798,27 @@ Aggiunto `created_at` nel mapping delle segnalazioni civiche (prima non veniva p
 
 ---
 
+### 📡 FIX #12: SCROLL ECO CREDIT + SCORE TCC REALE (v1.3.16)
+
+**Problemi:**
+1. **Scroll ECO Credit mobile**: la sezione non scrollava fino in fondo. Il `TabsContent` aveva `overflow-hidden` che bloccava lo scroll, e la sezione interna aveva `h-[calc(100vh-320px)]` troppo piccola che rimbalzava.
+2. **Score TCC che cala**: il totale mostrava 6.657 (somma delle ultime 50 transazioni) invece di 14.680 (total_earned reale). L'API `/transactions` restituisce max 50 record, ma lo score usava `Math.abs()` su quei 50 come se fossero tutte le transazioni.
+3. **Contatore transazioni**: mostrava "50 transazioni" (limite API) invece di 83 (reali).
+
+**Causa root dello score:**
+- `totalTCC = transactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0)` → somma solo le ultime 50 tx
+- L'API `/wallet/{id}` restituisce `stats.total_earned = 14680` e `stats.total_transactions = 83` (dati reali dal DB)
+- Il frontend non usava questi dati per lo score
+
+**Soluzioni:**
+1. **Scroll**: rimosso `overflow-hidden` dal TabsContent, cambiato in `overflow-y-auto`. Rimossa la sezione scrollabile interna con altezza fissa.
+2. **Score**: aggiunto `walletStats` state, caricato da `GET /api/tcc/wallet/{id}`. Lo score ora usa `walletStats.total_earned` (14.680) come dato primario, con fallback alla somma transazioni.
+3. **Contatore**: usa `walletStats.total_transactions` (83) con fallback a `transactions.length`.
+
+- Commit: v1.3.16
+
+---
+
 ### ⚠️ NOTE IMPORTANTI PER SESSIONI FUTURE
 
 1. **NON rimettere `comune_id` nel POST body di CivicPage.tsx** — il backend lo determina dalle coordinate GPS
@@ -6806,5 +6831,7 @@ Aggiunto `created_at` nel mapping delle segnalazioni civiche (prima non veniva p
 8. **NON aggiungere `interactionDisabled` alla key del MapContainer** — usare InteractionController con useMap() per abilitare/disabilitare dragging dinamicamente
 9. **Storico wallet desktop**: i tipi `civic`, `mobility`, `culture`, `referral` sono accrediti (+TCC verde), non spese
 10. **Tipo `referral`**: badge fuchsia (pink-500), semaforino fuchsia, label "Presenta un Amico" — vale sia per storico mobile che desktop
+11. **Score TCC**: DEVE usare `walletStats.total_earned` dal wallet API, NON la somma delle transazioni (che sono limitate a 50)
+12. **NON usare `overflow-hidden` su TabsContent mobile** — impedisce lo scroll. Usare `overflow-y-auto`
 
 ---
