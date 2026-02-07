@@ -1,7 +1,7 @@
 /**
  * GamingRewardsPanel - Pannello Gaming & Rewards per Dashboard PA
- * Versione: 1.1.0
- * Data: 03 Febbraio 2026
+ * Versione: 1.3.5
+ * Data: 07 Febbraio 2026
  * 
  * Sistema unificato di gamification e incentivi per l'ecosistema MioHub.
  * Include: Regolatori TCC, Heatmap Commerciale, Statistiche, Classifiche.
@@ -641,7 +641,13 @@ export default function GamingRewardsPanel() {
   const comuneQueryParam = ''; // Non filtrare mai lato server
   // v1.3.4: Il trend è un'aggregazione giornaliera (SUM per date), NON può essere filtrato client-side.
   // Quindi passiamo comune_id all'API trend SOLO quando geoFilter='comune'
-  const trendComuneQueryParam = (geoFilter === 'comune' && currentComuneId) ? `comune_id=${currentComuneId}` : '';
+  // v1.3.5: Il trend ora risponde ai filtri temporali (Tutto, Oggi, 7gg, 30gg, 1 anno)
+  const trendDaysMap: Record<string, number> = { 'all': 3650, 'today': 1, 'week': 7, 'month': 30, 'year': 365 };
+  const trendDays = trendDaysMap[timeFilter] || 7;
+  const trendQueryParams: string[] = [];
+  if (geoFilter === 'comune' && currentComuneId) trendQueryParams.push(`comune_id=${currentComuneId}`);
+  trendQueryParams.push(`days=${trendDays}`);
+  const trendComuneQueryParam = trendQueryParams.join('&');
   // Per la configurazione: usare sempre un comune_id valido (default Grosseto=1)
   const configComuneId = currentComuneId || 1;
 
@@ -856,8 +862,8 @@ export default function GamingRewardsPanel() {
   // Funzione per caricare Trend TCC (ultimi 7 giorni) via REST API
   const loadTrendData = useCallback(async () => {
     try {
-      // v1.3.4: Il trend usa trendComuneQueryParam (dipende da geoFilter)
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/trend${trendComuneQueryParam ? '?' + trendComuneQueryParam : ''}`);
+      // v1.3.5: Il trend usa trendComuneQueryParam (dipende da geoFilter + timeFilter)
+      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/trend?${trendComuneQueryParam}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && Array.isArray(result.data)) {
@@ -1815,7 +1821,7 @@ export default function GamingRewardsPanel() {
           <CardHeader>
             <CardTitle className="text-[#e8fbff] flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-[#3b82f6]" />
-              Trend TCC - Ultimi 7 giorni
+              Trend TCC - {timeFilter === 'all' ? 'Tutto il periodo' : timeFilter === 'today' ? 'Oggi' : timeFilter === 'week' ? 'Ultimi 7 giorni' : timeFilter === 'month' ? 'Ultimi 30 giorni' : 'Ultimo anno'}
             </CardTitle>
           </CardHeader>
           <CardContent>
