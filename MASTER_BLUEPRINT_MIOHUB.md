@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.0.0  
-> **Data:** 7 Febbraio 2026 (v1.3.16 — Fix scroll ECO Credit, score TCC reale, referral storico)  
+> **Versione:** 4.1.0  
+> **Data:** 7 Febbraio 2026 (v1.3.21 — Referral GPS auto-detect, filtri heatmap, spirale marker, trend filtrato, animazione zoom)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -6882,7 +6882,7 @@ Aggiunto `created_at` nel mapping delle segnalazioni civiche (prima non veniva p
 └─────────────────────────────┘
 ```
 
-**Nota su Gaming (marker + trend):** Il codice frontend per marker referral fuchsia sulla mappa e barra fuchsia nel trend chart è CORRETTO e pronto. Il problema è lato backend (Hetzner): l'API `referral/list` non restituisce `lat/lng` (sono null) e l'API `trend` non restituisce il campo `referral`. Quando il backend verrà aggiornato, i marker e la barra appariranno automaticamente.
+**Nota su Gaming (marker + trend):** ✅ RISOLTO nella sessione del 7 Febbraio 2026 sera (v1.3.19→v1.3.21). Il backend ora restituisce `lat/lng` (con subquery COALESCE su civic_reports/route_completions/cultural_visits) e il campo `referral` nel trend (con JOIN su tabella referrals per filtro comune_id). I marker fuchsia e la barra trend sono ora visibili e filtrati per comune.
 
 **File modificato:** `client/src/pages/WalletPage.tsx`
 **Commit:** v1.3.18

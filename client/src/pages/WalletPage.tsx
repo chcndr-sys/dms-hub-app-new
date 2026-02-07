@@ -134,6 +134,19 @@ export default function WalletPage() {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralLoading, setReferralLoading] = useState(false);
   const [referralCopied, setReferralCopied] = useState(false);
+
+  // Lista comuni con Hub attivo (per mostrare dove il programma è disponibile)
+  const [activeComuni, setActiveComuni] = useState<{id: number; nome: string; provincia: string}[]>([]);
+  useEffect(() => {
+    fetch(`${API_BASE}/api/tcc/v2/comuni`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.comuni)) {
+          setActiveComuni(data.comuni.map((c: any) => ({ id: c.hub_id, nome: c.nome, provincia: c.provincia || '' })));
+        }
+      })
+      .catch(() => {});
+  }, []);
   
   const toggleEcoCredit = async (enabled: boolean) => {
     // Aggiorna subito lo stato locale per UX reattiva
@@ -1080,7 +1093,7 @@ export default function WalletPage() {
                     </div>
                     <div className="p-2 sm:p-3 bg-amber-500/10 rounded-lg">
                       <p className="text-xs sm:text-sm text-muted-foreground">Importo</p>
-                      <p className="text-xl sm:text-2xl font-bold">€{parseFloat(spendAmount || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                      <p className="text-xl sm:text-2xl font-bold">€{parseFloat(spendAmount || '0').toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                       <p className="text-base sm:text-lg text-amber-600 font-semibold">{spendQRData.tcc_amount} TCC</p>
                     </div>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">
@@ -1269,304 +1282,496 @@ export default function WalletPage() {
           {/* ================================================================ */}
           {/* TAB ECO CREDIT */}
           {/* ================================================================ */}
-          <TabsContent value="eco_credit" className="flex flex-col gap-4 px-2 sm:px-0 h-[calc(100vh-70px)] sm:h-auto overflow-y-auto sm:overflow-visible pb-20 sm:pb-0">
+          <TabsContent value="eco_credit" className="flex flex-col h-[calc(100vh-70px)] sm:h-auto mt-0 sm:mt-4 px-0 sm:px-0 overflow-hidden sm:overflow-visible">
 
-            {/* Tasto torna al Wallet - solo mobile */}
-            <button 
-              onClick={() => setActiveTab('cliente')}
-              className="sm:hidden flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Torna al Wallet
-            </button>
-
-            {/* Container Partecipazione al Programma - con header verde */}
-            <Card className="border-0 shadow-xl">
-              {/* Header verde con dicitura programma */}
-              <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-500 p-3 sm:p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/20 rounded-xl">
-                    <Leaf className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-white">Programma ECO CREDIT</p>
-                    <p className="text-xs text-white/80">Guadagna Token con azioni sostenibili</p>
-                  </div>
-                </div>
-              </div>
-              <CardContent className="pt-4 sm:pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${ecoCreditsEnabled ? 'bg-emerald-100' : 'bg-gray-100'}`}>
-                      {ecoCreditsEnabled ? (
-                        <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-                      ) : (
-                        <XCircle className="h-6 w-6 text-gray-400" />
-                      )}
+            {/* ===== MOBILE: Layout con header fisso + scroll interno ===== */}
+            <div className="flex flex-col h-full sm:hidden">
+              {/* HEADER FISSO: Programma + Toggle + Referral */}
+              <div className="flex-shrink-0">
+                {/* Barra verde programma */}
+                <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-500 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Leaf className="h-5 w-5 text-white" />
+                      <p className="text-base font-bold text-white">Programma ECO CREDIT</p>
                     </div>
-                    <div>
-                      <p className="font-semibold">Partecipazione al Programma</p>
-                      <p className="text-sm text-muted-foreground">
-                        {ecoCreditsEnabled ? 'Attivo - Stai guadagnando TCC!' : 'Non attivo'}
-                      </p>
-                    </div>
+                    <Button
+                      size="sm"
+                      variant={ecoCreditsEnabled ? 'destructive' : 'default'}
+                      onClick={() => toggleEcoCredit(!ecoCreditsEnabled)}
+                      className={`h-8 text-xs ${ecoCreditsEnabled ? '' : 'bg-white text-emerald-700 hover:bg-white/90'}`}
+                    >
+                      {ecoCreditsEnabled ? 'Disattiva' : 'Attiva'}
+                    </Button>
                   </div>
-                  <Button
-                    variant={ecoCreditsEnabled ? 'destructive' : 'default'}
-                    onClick={() => toggleEcoCredit(!ecoCreditsEnabled)}
-                    className={ecoCreditsEnabled ? '' : 'bg-emerald-600 hover:bg-emerald-700'}
-                  >
-                    {ecoCreditsEnabled ? 'Disattiva' : 'Attiva'}
-                  </Button>
+                  <p className="text-xs text-white/80 mt-1">
+                    {ecoCreditsEnabled ? 'Attivo — Stai guadagnando TCC!' : 'Attiva per guadagnare Token con azioni sostenibili'}
+                  </p>
                 </div>
 
-                {/* Presenta un Amico - dentro lo stesso container */}
+                {/* Presenta un Amico - compatto sotto la barra verde */}
                 {ecoCreditsEnabled && (
-                  <div className="mt-4 pt-4 border-t border-border">
+                  <div className="px-3 py-2 bg-pink-50 border-b border-pink-200">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-pink-100">
-                          <Gift className="h-5 w-5 text-pink-500" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm">Presenta un Amico</p>
-                          <p className="text-xs text-muted-foreground">Invita e guadagna TCC</p>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Gift className="h-4 w-4 text-pink-500" />
+                        <span className="text-sm font-semibold text-pink-700">Presenta un Amico</span>
                       </div>
                       {!referralCode ? (
                         <Button
                           size="sm"
                           onClick={generateReferralLink}
                           disabled={referralLoading}
-                          className="bg-pink-500 hover:bg-pink-600 text-white"
+                          className="bg-pink-500 hover:bg-pink-600 text-white h-7 text-xs px-3"
                         >
                           {referralLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
-                            <><Share2 className="h-4 w-4 mr-1" /> Genera Link</>
+                            <><Share2 className="h-3 w-3 mr-1" /> Genera Link</>
                           )}
                         </Button>
                       ) : (
                         <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={copyReferralLink}
-                            className="text-xs px-2"
-                          >
-                            {referralCopied ? (
-                              <><Check className="h-3 w-3 mr-1 text-emerald-500" /> Copiato!</>
-                            ) : (
-                              <><Copy className="h-3 w-3 mr-1" /> Copia</>
-                            )}
+                          <Button size="sm" variant="outline" onClick={copyReferralLink} className="text-xs px-2 h-7">
+                            {referralCopied ? <><Check className="h-3 w-3 mr-1 text-emerald-500" /> Copiato!</> : <><Copy className="h-3 w-3 mr-1" /> Copia</>}
                           </Button>
-                          <Button
-                            size="sm"
-                            onClick={shareReferralLink}
-                            className="bg-pink-500 hover:bg-pink-600 text-white text-xs px-2"
-                          >
+                          <Button size="sm" onClick={shareReferralLink} className="bg-pink-500 hover:bg-pink-600 text-white text-xs px-2 h-7">
                             <Share2 className="h-3 w-3 mr-1" /> Invia
                           </Button>
                         </div>
                       )}
                     </div>
-                    {/* Mostra link generato e info TCC */}
                     {referralCode && (
-                      <div className="mt-3 p-3 bg-pink-50 rounded-lg border border-pink-200">
-                        <p className="text-xs text-pink-700 font-medium mb-1">Il tuo link referral:</p>
-                        <p className="text-xs text-pink-600 break-all font-mono bg-white/50 p-2 rounded">
-                          {`${window.location.origin}/#/register?ref=${referralCode}`}
-                        </p>
-                        <div className="mt-2 text-xs text-pink-600 space-y-0.5">
-                          <p>🎁 Tu ricevi <strong>+5 TCC</strong> per ogni invito</p>
-                          <p>👋 Il tuo amico riceve <strong>+5 TCC</strong> di benvenuto</p>
-                          <p>🛒 Bonus <strong>+5 TCC</strong> al primo acquisto dell'amico</p>
-                        </div>
+                      <div className="mt-2 text-[11px] text-pink-600 flex gap-3">
+                        <span>🎁 +5 TCC per invito</span>
+                        <span>👋 +5 TCC amico</span>
+                        <span>🛒 +5 TCC 1° acquisto</span>
                       </div>
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
 
-            {/* POI Vicini + istruzioni */}
-            <div className="space-y-4">
-            {/* POI Vicini - Solo se ECO CREDIT attivo */}
-            {ecoCreditsEnabled && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-emerald-600" />
-                    Luoghi Vicini
-                    {gpsLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-                  </CardTitle>
-                  <CardDescription>
-                    {currentPosition 
-                      ? `Posizione rilevata (precisione: ${Math.round(currentPosition.accuracy)}m)`
-                      : 'Rilevamento posizione in corso...'
-                    }
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {/* Banner POI vicino */}
-                  {hasUnvisitedPOIs && nearbyPOIs.filter(p => !p.already_visited_today)[0] && (
-                    <div className="mb-4">
-                      <NearbyPOIBanner 
-                        poi={nearbyPOIs.filter(p => !p.already_visited_today)[0]}
-                        onTap={() => {
-                          setSelectedPOI(nearbyPOIs.filter(p => !p.already_visited_today)[0]);
-                          setShowPOIPopup(true);
-                        }}
-                      />
+                {/* Statistiche compatte - solo se attivo */}
+                {ecoCreditsEnabled && (
+                  <div className="grid grid-cols-2 gap-2 px-3 py-2 bg-muted/30 border-b">
+                    <div className="text-center p-2 bg-emerald-50 rounded-lg">
+                      <p className="text-lg font-bold text-emerald-600">{walletData?.balance || 0}</p>
+                      <p className="text-[10px] text-emerald-700">TCC Totali</p>
                     </div>
-                  )}
-                  
-                  {/* Stato GPS */}
-                  {permissionStatus === 'denied' && (
-                    <div className="p-3 bg-red-50 rounded-lg text-red-700 text-sm mb-4">
-                      <strong>Permesso GPS negato.</strong> Abilita la geolocalizzazione nelle impostazioni del browser per rilevare i POI vicini.
+                    <div className="text-center p-2 bg-blue-50 rounded-lg">
+                      <p className="text-lg font-bold text-blue-600">{((walletData?.balance || 0) * 0.089).toFixed(2)}€</p>
+                      <p className="text-[10px] text-blue-700">Valore in Euro</p>
                     </div>
-                  )}
-                  
-                  {gpsError && (
-                    <div className="p-3 bg-amber-50 rounded-lg text-amber-700 text-sm mb-4">
-                      {gpsError}
+                  </div>
+                )}
+              </div>
+
+              {/* CONTAINER SCROLLABILE INTERNO */}
+              <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 pb-6">
+                {/* POI Vicini - Solo se ECO CREDIT attivo */}
+                {ecoCreditsEnabled && (
+                  <div className="bg-white rounded-lg border shadow-sm p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="h-4 w-4 text-emerald-600" />
+                      <span className="font-semibold text-sm">Luoghi Vicini</span>
+                      {gpsLoading && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
                     </div>
-                  )}
-                  
-                  {/* Lista POI */}
-                  {nearbyPOIs.length > 0 ? (
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm text-muted-foreground">
-                          {unvisitedCount} luoghi da visitare ({totalTCCAvailable} TCC disponibili)
-                        </p>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={refreshPosition}
-                          disabled={gpsLoading}
-                        >
-                          <RefreshCw className={`h-4 w-4 ${gpsLoading ? 'animate-spin' : ''}`} />
-                        </Button>
+                    {currentPosition && (
+                      <p className="text-[10px] text-muted-foreground mb-2">Posizione rilevata (precisione: {Math.round(currentPosition.accuracy)}m)</p>
+                    )}
+                    {hasUnvisitedPOIs && nearbyPOIs.filter(p => !p.already_visited_today)[0] && (
+                      <div className="mb-2">
+                        <NearbyPOIBanner 
+                          poi={nearbyPOIs.filter(p => !p.already_visited_today)[0]}
+                          onTap={() => {
+                            setSelectedPOI(nearbyPOIs.filter(p => !p.already_visited_today)[0]);
+                            setShowPOIPopup(true);
+                          }}
+                        />
                       </div>
-                      <NearbyPOIList 
-                        pois={nearbyPOIs}
-                        onSelectPOI={(poi) => {
-                          setSelectedPOI(poi);
-                          setShowPOIPopup(true);
-                        }}
-                        isLoading={gpsLoading}
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <MapPin className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                      <p>Nessun luogo nelle vicinanze</p>
-                      <p className="text-sm">Avvicinati a un museo, monumento o fermata</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-emerald-600" />
-                  Come Funziona
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-muted-foreground">
-                  Il programma ECO CREDIT ti premia per le tue azioni sostenibili con <strong>Token Commercio Circolare (TCC)</strong>, 
-                  che puoi spendere nei negozi aderenti del territorio.
-                </p>
-                
-                <div className="grid gap-3">
-                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                    <Bus className="h-5 w-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-blue-900">Mobilità Sostenibile</p>
-                      <p className="text-sm text-blue-700">Guadagna TCC usando bus, bici o camminando. Il sistema rileva automaticamente quando sei vicino a una fermata.</p>
-                    </div>
+                    )}
+                    {permissionStatus === 'denied' && (
+                      <div className="p-2 bg-red-50 rounded text-red-700 text-xs mb-2">
+                        <strong>GPS negato.</strong> Abilita la geolocalizzazione nelle impostazioni.
+                      </div>
+                    )}
+                    {nearbyPOIs.length > 0 ? (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs text-muted-foreground">{unvisitedCount} luoghi ({totalTCCAvailable} TCC)</p>
+                          <Button variant="ghost" size="sm" onClick={refreshPosition} disabled={gpsLoading} className="h-6 w-6 p-0">
+                            <RefreshCw className={`h-3 w-3 ${gpsLoading ? 'animate-spin' : ''}`} />
+                          </Button>
+                        </div>
+                        <NearbyPOIList 
+                          pois={nearbyPOIs}
+                          onSelectPOI={(poi) => { setSelectedPOI(poi); setShowPOIPopup(true); }}
+                          isLoading={gpsLoading}
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-center py-3 text-muted-foreground">
+                        <MapPin className="h-6 w-6 mx-auto mb-1 opacity-50" />
+                        <p className="text-xs">Nessun luogo nelle vicinanze</p>
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
-                    <Award className="h-5 w-5 text-purple-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-purple-900">Cultura & Turismo</p>
-                      <p className="text-sm text-purple-700">Visita musei, monumenti e luoghi culturali del territorio per ricevere TCC.</p>
-                    </div>
+                )}
+
+                {/* Come guadagnare TCC - lista compatta */}
+                <div className="bg-white rounded-lg border shadow-sm p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="h-4 w-4 text-emerald-600" />
+                    <span className="font-semibold text-sm">Come guadagnare TCC</span>
                   </div>
-                  
-                  <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
-                    <Store className="h-5 w-5 text-amber-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-900">Acquisti Locali</p>
-                      <p className="text-sm text-amber-700">Compra nei negozi aderenti e ricevi TCC come cashback sostenibile.</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-2 bg-blue-50 rounded">
+                      <Bus className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-blue-900">Mobilità Sostenibile</p>
+                        <p className="text-[10px] text-blue-700">Bus, bici, a piedi — rilevamento automatico</p>
+                      </div>
+                      <span className="text-xs font-bold text-blue-600 flex-shrink-0">+10 TCC</span>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-orange-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-orange-900">Segnalazioni Civiche</p>
-                      <p className="text-sm text-orange-700">Segnala problemi alla PA (buche, rifiuti, illuminazione) e ricevi TCC quando vengono risolti.</p>
+                    <div className="flex items-center gap-2 p-2 bg-purple-50 rounded">
+                      <Award className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-purple-900">Cultura & Turismo</p>
+                        <p className="text-[10px] text-purple-700">Musei, monumenti, percorsi culturali</p>
+                      </div>
+                      <span className="text-xs font-bold text-purple-600 flex-shrink-0">+50 TCC</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 bg-amber-50 rounded">
+                      <Store className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-amber-900">Acquisti Locali</p>
+                        <p className="text-[10px] text-amber-700">Cashback sostenibile nei negozi aderenti</p>
+                      </div>
+                      <span className="text-xs font-bold text-amber-600 flex-shrink-0">1-3%</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 bg-orange-50 rounded">
+                      <TrendingUp className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-orange-900">Segnalazioni Civiche</p>
+                        <p className="text-[10px] text-orange-700">Segnala problemi alla PA, ricevi TCC</p>
+                      </div>
+                      <span className="text-xs font-bold text-orange-600 flex-shrink-0">+20 TCC</span>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 bg-pink-50 rounded">
+                      <Gift className="h-4 w-4 text-pink-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-pink-900">Presenta un Amico</p>
+                        <p className="text-[10px] text-pink-700">Invita amici e guadagna entrambi</p>
+                      </div>
+                      <span className="text-xs font-bold text-pink-500 flex-shrink-0">+5 TCC</span>
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Privacy e GPS */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  📍 Informativa GPS e Privacy
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Attivando il programma ECO CREDIT, autorizzi l'app a utilizzare la tua posizione GPS per:
-                </p>
-                <ul className="mt-2 space-y-1 text-sm text-muted-foreground list-disc list-inside">
-                  <li>Rilevare quando sei vicino a fermate bus/tram</li>
-                  <li>Rilevare quando visiti musei e luoghi culturali</li>
-                  <li>Calcolare i percorsi sostenibili completati</li>
-                </ul>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  <strong>La posizione viene rilevata solo quando apri l'app</strong>, non in background. 
-                  I tuoi dati sono trattati in conformità al GDPR e non vengono condivisi con terze parti.
-                </p>
-              </CardContent>
-            </Card>
+                {/* Comuni con Hub Attivo */}
+                {activeComuni.length > 0 && (
+                  <div className="bg-white rounded-lg border shadow-sm p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Landmark className="h-4 w-4 text-primary" />
+                      <span className="font-semibold text-sm">Comuni con Hub Attivo</span>
+                      <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{activeComuni.length}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mb-2">Il programma ECO CREDIT è disponibile in questi comuni:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {activeComuni.map((c) => (
+                        <span key={c.id} className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[11px] font-medium border border-emerald-200">
+                          <MapPin className="h-2.5 w-2.5" />
+                          {c.nome}{c.provincia ? ` (${c.provincia})` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {/* Statistiche personali (se attivo) */}
-            {ecoCreditsEnabled && (
+                {/* Informativa GPS compatta */}
+                <div className="bg-muted/30 rounded-lg p-3 border">
+                  <p className="text-[10px] text-muted-foreground">
+                    📍 <strong>GPS e Privacy:</strong> La posizione viene rilevata solo quando apri l'app, non in background. 
+                    Serve per rilevare fermate bus, musei e percorsi sostenibili. Dati trattati in conformità al GDPR.
+                  </p>
+                </div>
+              </div>{/* Fine container scrollabile mobile */}
+            </div>{/* Fine layout mobile */}
+
+            {/* ===== DESKTOP/TABLET: Layout classico con cards ===== */}
+            <div className="hidden sm:flex sm:flex-col sm:gap-4">
+              {/* Card Programma + Toggle */}
+              <Card className="border-0 shadow-xl">
+                <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-500 p-4 rounded-t-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 rounded-xl">
+                      <Leaf className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-white">Programma ECO CREDIT</p>
+                      <p className="text-xs text-white/80">Guadagna Token con azioni sostenibili</p>
+                    </div>
+                  </div>
+                </div>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-full ${ecoCreditsEnabled ? 'bg-emerald-100' : 'bg-gray-100'}`}>
+                        {ecoCreditsEnabled ? (
+                          <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                        ) : (
+                          <XCircle className="h-6 w-6 text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold">Partecipazione al Programma</p>
+                        <p className="text-sm text-muted-foreground">
+                          {ecoCreditsEnabled ? 'Attivo - Stai guadagnando TCC!' : 'Non attivo'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant={ecoCreditsEnabled ? 'destructive' : 'default'}
+                      onClick={() => toggleEcoCredit(!ecoCreditsEnabled)}
+                      className={ecoCreditsEnabled ? '' : 'bg-emerald-600 hover:bg-emerald-700'}
+                    >
+                      {ecoCreditsEnabled ? 'Disattiva' : 'Attiva'}
+                    </Button>
+                  </div>
+
+                  {/* Presenta un Amico - Desktop */}
+                  {ecoCreditsEnabled && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-pink-100">
+                            <Gift className="h-5 w-5 text-pink-500" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm">Presenta un Amico</p>
+                            <p className="text-xs text-muted-foreground">Condividi il tuo link e guadagna TCC per ogni amico che si registra!</p>
+                          </div>
+                        </div>
+                        {!referralCode ? (
+                          <Button
+                            size="sm"
+                            onClick={generateReferralLink}
+                            disabled={referralLoading}
+                            className="bg-pink-500 hover:bg-pink-600 text-white ml-4 flex-shrink-0"
+                          >
+                            {referralLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <><Share2 className="h-4 w-4 mr-1" /> Genera Link</>
+                            )}
+                          </Button>
+                        ) : (
+                          <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                            <Button size="sm" variant="outline" onClick={copyReferralLink} className="text-xs">
+                              {referralCopied ? <><Check className="h-3 w-3 mr-1 text-emerald-500" /> Copiato!</> : <><Copy className="h-3 w-3 mr-1" /> Copia</>}
+                            </Button>
+                            <Button size="sm" onClick={shareReferralLink} className="bg-pink-500 hover:bg-pink-600 text-white text-xs">
+                              <Share2 className="h-3 w-3 mr-1" /> Invia
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      {referralCode && (
+                        <div className="mt-3 p-3 bg-pink-50 rounded-lg border border-pink-200">
+                          <p className="text-xs text-pink-700 font-medium mb-1">Il tuo link referral:</p>
+                          <p className="text-xs text-pink-600 break-all font-mono bg-white/50 p-2 rounded">
+                            {`${window.location.origin}/#/register?ref=${referralCode}`}
+                          </p>
+                          <div className="mt-2 text-xs text-pink-600 flex gap-4">
+                            <span>🎁 Tu ricevi <strong>+5 TCC</strong> per ogni invito</span>
+                            <span>👋 Il tuo amico riceve <strong>+5 TCC</strong> di benvenuto</span>
+                            <span>🛒 Bonus <strong>+5 TCC</strong> al primo acquisto</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Statistiche - Desktop */}
+              {ecoCreditsEnabled && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-emerald-600" />
+                      Le Tue Statistiche
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 bg-emerald-50 rounded-lg">
+                        <p className="text-3xl font-bold text-emerald-600">{walletData?.balance || 0}</p>
+                        <p className="text-xs text-emerald-700">TCC Totali</p>
+                      </div>
+                      <div className="text-center p-4 bg-blue-50 rounded-lg">
+                        <p className="text-3xl font-bold text-blue-600">{((walletData?.balance || 0) * 0.089).toFixed(2)}€</p>
+                        <p className="text-xs text-blue-700">Valore in Euro</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* POI Vicini - Desktop */}
+              {ecoCreditsEnabled && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-emerald-600" />
+                      Luoghi Vicini
+                      {gpsLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                    </CardTitle>
+                    <CardDescription>
+                      {currentPosition 
+                        ? `Posizione rilevata (precisione: ${Math.round(currentPosition.accuracy)}m)`
+                        : 'Rilevamento posizione in corso...'
+                      }
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {hasUnvisitedPOIs && nearbyPOIs.filter(p => !p.already_visited_today)[0] && (
+                      <div className="mb-4">
+                        <NearbyPOIBanner 
+                          poi={nearbyPOIs.filter(p => !p.already_visited_today)[0]}
+                          onTap={() => {
+                            setSelectedPOI(nearbyPOIs.filter(p => !p.already_visited_today)[0]);
+                            setShowPOIPopup(true);
+                          }}
+                        />
+                      </div>
+                    )}
+                    {permissionStatus === 'denied' && (
+                      <div className="p-3 bg-red-50 rounded-lg text-red-700 text-sm mb-4">
+                        <strong>Permesso GPS negato.</strong> Abilita la geolocalizzazione nelle impostazioni del browser.
+                      </div>
+                    )}
+                    {gpsError && (
+                      <div className="p-3 bg-amber-50 rounded-lg text-amber-700 text-sm mb-4">{gpsError}</div>
+                    )}
+                    {nearbyPOIs.length > 0 ? (
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-sm text-muted-foreground">{unvisitedCount} luoghi da visitare ({totalTCCAvailable} TCC disponibili)</p>
+                          <Button variant="ghost" size="sm" onClick={refreshPosition} disabled={gpsLoading}>
+                            <RefreshCw className={`h-4 w-4 ${gpsLoading ? 'animate-spin' : ''}`} />
+                          </Button>
+                        </div>
+                        <NearbyPOIList 
+                          pois={nearbyPOIs}
+                          onSelectPOI={(poi) => { setSelectedPOI(poi); setShowPOIPopup(true); }}
+                          isLoading={gpsLoading}
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <MapPin className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                        <p>Nessun luogo nelle vicinanze</p>
+                        <p className="text-sm">Avvicinati a un museo, monumento o fermata</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Come Funziona - Desktop (cards grandi) */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-emerald-600" />
-                    Le Tue Statistiche
+                    <Award className="h-5 w-5 text-emerald-600" />
+                    Come Funziona
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-3 bg-emerald-50 rounded-lg">
-                      <p className="text-2xl font-bold text-emerald-600">{walletData?.balance || 0}</p>
-                      <p className="text-xs text-emerald-700">TCC Totali</p>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Il programma ECO CREDIT ti premia per le tue azioni sostenibili con <strong>Token Commercio Circolare (TCC)</strong>, 
+                    che puoi spendere nei negozi aderenti del territorio.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                      <Bus className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-blue-900">Mobilità Sostenibile</p>
+                        <p className="text-sm text-blue-700">Guadagna TCC usando bus, bici o camminando. Rilevamento automatico vicino alle fermate.</p>
+                      </div>
                     </div>
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <p className="text-2xl font-bold text-blue-600">{((walletData?.balance || 0) * 0.089).toFixed(2)}€</p>
-                      <p className="text-xs text-blue-700">Valore in Euro</p>
+                    <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
+                      <Award className="h-5 w-5 text-purple-600 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-purple-900">Cultura & Turismo</p>
+                        <p className="text-sm text-purple-700">Visita musei, monumenti e luoghi culturali del territorio per ricevere TCC.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
+                      <Store className="h-5 w-5 text-amber-600 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-amber-900">Acquisti Locali</p>
+                        <p className="text-sm text-amber-700">Compra nei negozi aderenti e ricevi TCC come cashback sostenibile.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-orange-600 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-orange-900">Segnalazioni Civiche</p>
+                        <p className="text-sm text-orange-700">Segnala problemi alla PA e ricevi TCC quando vengono risolti.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-pink-50 rounded-lg">
+                      <Gift className="h-5 w-5 text-pink-500 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-pink-900">Presenta un Amico</p>
+                        <p className="text-sm text-pink-700">Invita amici e guadagna +5 TCC per ogni registrazione.</p>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            )}
-            </div>{/* Fine POI + istruzioni */}
+
+              {/* Comuni con Hub Attivo - Desktop */}
+              {activeComuni.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2">
+                      <Landmark className="h-5 w-5 text-primary" />
+                      Comuni con Hub Attivo
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{activeComuni.length}</span>
+                    </CardTitle>
+                    <CardDescription>Il programma ECO CREDIT è disponibile in questi comuni</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {activeComuni.map((c) => (
+                        <span key={c.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-sm font-medium border border-emerald-200">
+                          <MapPin className="h-3 w-3" />
+                          {c.nome}{c.provincia ? ` (${c.provincia})` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Privacy e GPS - Desktop */}
+              <Card className="bg-muted/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    📍 Informativa GPS e Privacy
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Attivando il programma ECO CREDIT, autorizzi l'app a utilizzare la tua posizione GPS per rilevare fermate bus/tram, 
+                    musei, luoghi culturali e percorsi sostenibili. <strong>La posizione viene rilevata solo quando apri l'app</strong>, 
+                    non in background. I tuoi dati sono trattati in conformità al GDPR e non vengono condivisi con terze parti.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>{/* Fine layout desktop */}
 
           </TabsContent>
 
