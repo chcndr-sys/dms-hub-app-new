@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 3.99.5  
-> **Data:** 7 Febbraio 2026 (v1.3.5 — Trend TCC connesso ai filtri temporali Tutto/Oggi/7gg/30gg/1anno)  
+> **Versione:** 4.0.0  
+> **Data:** 7 Febbraio 2026 (v1.3.8 — Fix segnalazioni civiche, default TCC azzerati, UI wallet ECO, mappa mobile scroll)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -6418,3 +6418,252 @@ interface TopShop {
 
 ---
 
+
+## 🔄 AGGIORNAMENTO SESSIONE 6-7 FEBBRAIO 2026 (v1.3.4b → v1.3.8)
+
+> **Data:** 6-7 Febbraio 2026  
+> **Sessione:** Sera 6 Feb + Notte 7 Feb  
+> **Stato:** Tutte le modifiche deployate e funzionanti
+
+---
+
+### 📋 RIEPILOGO COMPLETO MODIFICHE
+
+#### FRONTEND (dms-hub-app-new → GitHub → Vercel auto-deploy)
+
+| Commit | Versione | File Modificato | Descrizione |
+|--------|----------|-----------------|-------------|
+| `78f9f7b` | v1.3.4b | `AnalysisGamingRewards.tsx` | Trend reload silenzioso senza ricaricare pagina |
+| `e185bb8` | v1.3.5 | `AnalysisGamingRewards.tsx` | Grafico Trend TCC connesso ai filtri temporali |
+| `f7d7868` | docs | `MASTER_BLUEPRINT_MIOHUB.md` | Blueprint v3.99.5 |
+| `abf9ffa` | v1.3.6 | `CivicPage.tsx` | Fix segnalazioni civiche: rimuovi comune_id hardcoded |
+| `791d33f` | v1.3.7 | `WalletPage.tsx`, `WalletStorico.tsx` | Fix ECO tab scroll + rimuovi BottomNav da Storico |
+| `e62b5c2` | v1.3.7.1 | `WalletPage.tsx` | Fix ECO: POI Vicini dentro div scrollabile |
+| `adcd969` | v1.3.7.2 | `WalletPage.tsx` | Fix ECO: altezza calcolata esplicita `h-[calc(100vh-380px)]` |
+| `5258bba` | v1.3.7.3 | `GestioneHubMapWrapper.tsx` | Mappa mobile: scroll si ferma sotto Indietro + lista hub |
+| `dc04cc9` | v1.3.7.4 | `GestioneHubMapWrapper.tsx` | Mappa mobile: TUTTI gli scroll con offset 120px |
+
+#### BACKEND (mihub-backend → GitHub → Hetzner)
+
+| Commit | Versione | File Modificato | Descrizione |
+|--------|----------|-----------------|-------------|
+| `3ceac46` | v1.3.8 | `civic-reports.js`, `gaming-rewards.js` | Azzera tutti i default TCC nei 4 slot gaming configurabili |
+
+#### DATABASE (Neon PostgreSQL)
+
+| Modifica | Tabella | Dettaglio |
+|----------|---------|-----------|
+| UPDATE 7 righe | `civic_reports` | Segnalazioni id 25-31: `comune_id` da 1 (Grosseto) a 7 (Vignola) |
+| UPDATE tutte le righe | `civic_config` | Tutti i comuni: `tcc_reward_default=5`, `tcc_reward_urgent=5` |
+
+---
+
+### 🐛 BUG FIX #1: SEGNALAZIONI CIVICHE — COMUNE ERRATO (v1.3.6)
+
+**Problema:** Le segnalazioni civiche inviate da qualsiasi posizione venivano sempre assegnate a `comune_id=1` (Grosseto) invece del comune corretto determinato dalle coordinate GPS.
+
+**Causa root:** In `CivicPage.tsx`, il POST body includeva sempre `comune_id: currentComuneId` dove `currentComuneId` aveva un fallback hardcoded a `1`. Questo impediva al backend di fare l'auto-detect tramite `findComuneByCoords(lat, lng)`.
+
+**Logica backend (civic-reports.js, riga 166-172):**
+```javascript
+// Il backend fa auto-detect SOLO se comune_id NON viene passato
+let comune_id = requestedComuneId;  // dal body della request
+if (!comune_id && lat && lng) {
+  comune_id = findComuneByCoords(lat, lng);  // auto-detect da GPS
+}
+```
+
+**Fix applicata (CivicPage.tsx):**
+```javascript
+// PRIMA (ERRATO):
+body: JSON.stringify({
+  comune_id: currentComuneId,  // ← sempre 1 senza impersonificazione
+  // ...
+})
+
+// DOPO (CORRETTO):
+body: JSON.stringify({
+  ...(currentComuneId ? { comune_id: currentComuneId } : {}),  // ← solo se impersonificazione attiva
+  // ...
+})
+```
+
+**Flusso corretto ora:**
+1. Cittadino invia segnalazione con coordinate GPS
+2. Il frontend NON invia `comune_id` (a meno che non ci sia impersonificazione)
+3. Il backend riceve le coordinate e usa `findComuneByCoords()` per determinare il comune
+4. Il sistema assegna automaticamente il `comune_id` corretto
+
+**Correzione database:** 7 segnalazioni (id 25-31) con coordinate di Vignola ma `comune_id=1` aggiornate a `comune_id=7`.
+
+**⚠️ REGOLA FONDAMENTALE:** Il `comune_id` nelle segnalazioni civiche viene SEMPRE determinato dal BACKEND tramite le coordinate GPS. Il frontend NON deve mai decidere il comune per le segnalazioni normali dei cittadini.
+
+---
+
+### 🐛 BUG FIX #2: DEFAULT TCC HARDCODED — AZZERAMENTO (v1.3.8)
+
+**Problema:** I valori di default TCC hardcoded nel codice backend erano troppo alti (10-300 TCC). Se la configurazione del comune veniva cancellata dal database, il sistema assegnava token con i default hardcoded invece di non assegnare nulla.
+
+**I 4 slot configurabili dalla dashboard PA (sezione Gaming):**
+1. **Civic** (segnalazioni civiche)
+2. **Cultura** (visite culturali)
+3. **Mobilità** (check-in fermate, percorsi)
+4. **Presenta un amico**
+
+**Valori impostati dall'utente nel database:** tutti a **5 TCC**
+
+**Fix: tutti i default a 0 nei file backend:**
+
+| File | Funzione/Variabile | Prima | Dopo |
+|------|---------------------|-------|------|
+| `civic-reports.js` | `let tccReward` | 20 | **0** |
+| `civic-reports.js` | `tcc_reward_default \|\|` | 20 | **0** |
+| `civic-reports.js` | `tcc_reward_urgent \|\|` | 30 | **0** |
+| `civic-reports.js` | `tcc_reward_photo_bonus \|\|` | 5 | **0** |
+| `gaming-rewards.js` | `getDefaultConfig()` civic | 10/5/5 | **0/0/0** |
+| `gaming-rewards.js` | `getDefaultConfig()` mobilità | 15/3/5 | **0/0/0** |
+| `gaming-rewards.js` | `getDefaultConfig()` cultura | 100/50/300 | **0/0/0** |
+| `gaming-rewards.js` | Fallback mobilità `\|\|` | 15/3/5/2 | **0/0/0/0** |
+| `gaming-rewards.js` | Fallback cultura `\|\|` | 100/50/300 | **0/0/0** |
+| `gaming-rewards.js` | `getTCCRewardByType()` | 15-60 | **tutti 0** |
+| `gaming-rewards.js` | `getMobilityTCCReward()` | 5-15 | **tutti 0** |
+| `gaming-rewards.js` | switch default mode | 25 | **0** |
+
+**NON TOCCATI (funzionano correttamente):**
+- Shopping/Acquisti (cashback, km0, market bonus) — legati alla spesa, sistema Carbon Credit regionale separato (`tcc.js`)
+- Carbon credit regionali hardcoded
+
+**⚠️ REGOLA FONDAMENTALE:** Se la `gaming_rewards_config` o `civic_config` viene cancellata per un comune, il sistema NON assegna TCC (default=0). I valori reali vengono SEMPRE dalla configurazione nel database.
+
+---
+
+### 🐛 BUG FIX #3: CONFIGURAZIONE TCC CIVIC — AGGIORNAMENTO DATABASE
+
+**Problema:** La tabella `civic_config` aveva ancora i valori di default iniziali (20/30 TCC) per tutti i comuni tranne Grosseto, nonostante l'utente li avesse impostati tutti a 5.
+
+**Fix SQL applicata:**
+```sql
+UPDATE civic_config SET tcc_reward_default = 5, tcc_reward_urgent = 5;
+```
+
+**Stato attuale `civic_config`:**
+
+| comune_id | Comune | tcc_reward_default | tcc_reward_urgent |
+|-----------|--------|-------------------|-------------------|
+| 1 | Grosseto | 5 | 5 |
+| 6 | Bologna | 5 | 5 |
+| 7 | Vignola | 5 | 5 |
+| 8 | Modena | 5 | 5 |
+| 9 | Carpi | 5 | 5 |
+
+---
+
+### 🎨 FIX UI #4: WALLET TAB ECO — SEZIONE ISTRUZIONI TAGLIATA (v1.3.7)
+
+**Problema:** Nel tab ECO del Wallet (vista mobile/app), la sezione "Come Funziona" con le istruzioni del programma ECOCREDIT era tagliata e non visibile. La pagina è fissa (`overflow-hidden`) ma il contenuto sotto era più lungo dello schermo.
+
+**Fix applicata (WalletPage.tsx):**
+
+**Layout tab ECO su mobile (struttura finale):**
+```
+┌─────────────────────────────┐
+│ Header ECO CREDIT (verde)   │ ← FISSO
+│ Toggle Attiva/Disattiva     │ ← FISSO
+├─────────────────────────────┤
+│ Luoghi Vicini (se attivo)   │ ← SCROLLABILE
+│ Come Funziona               │ ← SCROLLABILE
+│ Privacy                     │ ← SCROLLABILE
+│ Statistiche                 │ ← SCROLLABILE
+└─────────────────────────────┘
+```
+
+**Codice chiave:**
+```jsx
+{/* Sezione scrollabile sotto - solo mobile */}
+<div className="sm:hidden h-[calc(100vh-380px)] overflow-y-auto sm:h-auto sm:overflow-visible space-y-4">
+  {/* Luoghi Vicini POI (quando attivo) */}
+  {/* Come Funziona */}
+  {/* Privacy */}
+  {/* Statistiche */}
+</div>
+```
+
+**Nota tecnica:** `flex-1 min-h-0` non funziona dentro il `TabsContent` di shadcn/ui su mobile. La soluzione è usare un'altezza calcolata esplicita `h-[calc(100vh-380px)]` (schermo meno header wallet ~70px, header ECO ~170px, toggle ~130px).
+
+---
+
+### 🎨 FIX UI #5: PAGINA STORICO — RIMOZIONE BOTTOMNAV (v1.3.7)
+
+**Problema:** La pagina Storico (WalletStorico.tsx) aveva la barra tab in basso (Home/Mappa/Route/Wallet/Segnala) che non serviva più.
+
+**Fix:** Rimosso `<BottomNav />` e relativo import da `WalletStorico.tsx`.
+
+---
+
+### 🗺️ FIX UI #6: MAPPA MOBILE — SCROLL CON OFFSET (v1.3.7.3 + v1.3.7.4)
+
+**Problema:** Quando si cliccava un hub/mercato su mobile, la mappa si espandeva a tutto schermo coprendo il pulsante "< Indietro" e la lista hub. Lo stesso problema si verificava quando si cliccava "Indietro" per tornare alla vista precedente.
+
+**Causa:** `scrollIntoView({ behavior: 'smooth', block: 'start' })` scrollava il `map-container` fino al top dello schermo (0px).
+
+**Fix applicata (GestioneHubMapWrapper.tsx):**
+
+Sostituiti **TUTTI** gli `scrollIntoView({ block: 'start' })` con:
+```javascript
+const el = document.getElementById('map-container');
+if (el) {
+  const r = el.getBoundingClientRect();
+  window.scrollTo({ top: window.scrollY + r.top - 120, behavior: 'smooth' });
+}
+```
+
+**Offset di 120px** lascia visibili:
+- Pulsante "< Indietro"
+- Lista hub/mercati scrollabile orizzontalmente
+
+**Funzioni modificate (7 punti di scroll):**
+
+| Funzione | Evento | Scroll |
+|----------|--------|--------|
+| `handleRegioneSelect` | Click su regione | offset 120px |
+| `handleProvinciaSelect` | Click su provincia | offset 120px |
+| `handleGoBack` → "Vista precedente" | Indietro da hub/mercato | offset 120px |
+| `handleGoBack` → "Vista regione" | Indietro da provincia | offset 120px |
+| `handleGoBack` → "Vista Italia" | Indietro da regione | offset 120px |
+| `handleHubClick` | Click su marker hub | offset 120px |
+| `handleMarketClick` | Click su marker mercato | offset 120px |
+
+---
+
+### 📊 STATO VERSIONI CORRENTE (7 Febbraio 2026)
+
+| Componente | Versione | Ultimo Commit | Deploy |
+|------------|----------|---------------|--------|
+| Frontend (dms-hub-app-new) | v1.3.7.4 | `dc04cc9` | Vercel (auto da GitHub) |
+| Backend (mihub-backend) | v1.3.8 | `3ceac46` | Hetzner (push manuale) |
+| Database | aggiornato | — | Neon PostgreSQL |
+
+### 📋 CHECKLIST MODIFICHE COMPLETATE
+
+- [x] Fix segnalazioni civiche: comune auto-detect da GPS (v1.3.6)
+- [x] Correzione 7 segnalazioni errate nel database (id 25-31)
+- [x] Azzeramento default TCC in civic-reports.js (v1.3.8)
+- [x] Azzeramento default TCC in gaming-rewards.js (v1.3.8)
+- [x] Aggiornamento civic_config: tutti i comuni a 5 TCC
+- [x] Fix tab ECO: sezione istruzioni scrollabile su mobile (v1.3.7)
+- [x] Rimozione BottomNav da pagina Storico (v1.3.7)
+- [x] Fix mappa mobile: scroll con offset 120px su tutti i punti di navigazione (v1.3.7.4)
+
+---
+
+### ⚠️ NOTE IMPORTANTI PER SESSIONI FUTURE
+
+1. **NON rimettere `comune_id` nel POST body di CivicPage.tsx** — il backend lo determina dalle coordinate GPS
+2. **NON alzare i default TCC nel backend** — devono restare a 0, i valori reali vengono dalla config nel database
+3. **NON usare `scrollIntoView({ block: 'start' })` nella mappa mobile** — usare sempre `scrollTo` con offset 120px
+4. **NON usare `flex-1 min-h-0` dentro TabsContent di shadcn/ui su mobile** — usare altezza calcolata esplicita
+5. **Il wallet ha due viste**: iPad/PC (funziona bene) e smartphone/app (pagine diverse, riconosce quando è smartphone)
+6. **I 4 slot gaming configurabili sono**: Civic, Cultura, Mobilità, Presenta un amico — NON toccare Shopping/Acquisti
+7. **Carbon credit regionali** (tcc.js) sono separati e funzionano correttamente — NON modificare
+
+---
