@@ -85,8 +85,8 @@ export default function WalletStorico() {
     }
   }, [currentUser?.id]);
 
-  // Score = total_earned dal wallet API (dato reale dal backend, non limitato alle ultime 50 tx)
-  const totalTCC = walletStats?.total_earned || transactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  // Score = total_earned + total_spent dal wallet API (entrambe sono azioni sostenibili: guadagnare E spendere TCC)
+  const totalTCC = walletStats ? (walletStats.total_earned + walletStats.total_spent) : transactions.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
   const totalTrees = (totalTCC / 22).toFixed(1);
   
   // Ultima transazione
