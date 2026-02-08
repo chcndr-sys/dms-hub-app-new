@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.2.0  
-> **Data:** 7 Febbraio 2026 (v4.2.0 — Redesign Wallet ECO Credit Tab Dark Theme & Comuni Cards)  
+> **Versione:** 4.3.0  
+> **Data:** 8 Febbraio 2026 (v4.3.0 — Allineamento sistema, fix TCC hardcoded, aggiunta Pizzeria Castello)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -6537,7 +6537,7 @@ body: JSON.stringify({
 
 ---
 
-### 🐛 BUG FIX #2: DEFAULT TCC HARDCODED — AZZERAMENTO (v1.3.8)
+### 🐛 BUG FIX #2: DEFAULT TCC HARDCODED — AZZERAMENTO (v1.3.8 e v4.3.0)
 
 **Problema:** I valori di default TCC hardcoded nel codice backend erano troppo alti (10-300 TCC). Se la configurazione del comune veniva cancellata dal database, il sistema assegnava token con i default hardcoded invece di non assegnare nulla.
 
@@ -6560,6 +6560,9 @@ body: JSON.stringify({
 | `gaming-rewards.js` | `getDefaultConfig()` civic | 10/5/5 | **0/0/0** |
 | `gaming-rewards.js` | `getDefaultConfig()` mobilità | 15/3/5 | **0/0/0** |
 | `gaming-rewards.js` | `getDefaultConfig()` cultura | 100/50/300 | **0/0/0** |
+| `gaming-rewards.js` | `getDefaultConfig()` shopping | 1/20/10 | **0/0/0** |
+| `gaming-rewards.js` | Config fallback (no DB) | 5-300 | **tutti 0** |
+| `gaming-rewards.js` | Referral fallback | 50/30/20 | **0/0/0** |
 | `gaming-rewards.js` | Fallback mobilità `\|\|` | 15/3/5/2 | **0/0/0/0** |
 | `gaming-rewards.js` | Fallback cultura `\|\|` | 100/50/300 | **0/0/0** |
 | `gaming-rewards.js` | `getTCCRewardByType()` | 15-60 | **tutti 0** |
@@ -6699,6 +6702,33 @@ if (el) {
 - [x] Fix scroll ECO Credit: rimosso overflow-hidden, tutta la sezione scrollabile (v1.3.16)
 - [x] Fix score TCC: usa total_earned dal wallet API (dato reale) invece della somma limitata a 50 tx (v1.3.16)
 - [x] Fix contatore transazioni: usa total_transactions dal wallet API (83 reali, non 50 limitate) (v1.3.16)
+
+---
+
+## 🔄 AGGIORNAMENTO SESSIONE 8 FEBBRAIO 2026 — POMERIGGIO (v4.3.0)
+
+> **Data:** 8 Febbraio 2026
+> **Sessione:** Allineamento sistema, fix TCC hardcoded, aggiunta Pizzeria Castello
+
+#### DATABASE (Neon)
+
+- **Aggiunta colonna `address`** alla tabella `hub_shops`
+- **Aggiornato record `hub_shops` id=18 (Castello Cucina & Pizza):**
+  - `comune_id` impostato a 7 (Vignola)
+  - Coordinate GPS corrette: `44.4769932, 11.0108770`
+  - Indirizzo completo aggiunto
+
+#### BACKEND (mihub-backend-rest → GitHub → Hetzner)
+
+| Commit | Versione | File Modificato | Descrizione |
+|---|---|---|---|
+| `0e3ae65` | v4.3.0 | `routes/gaming-rewards.js` | **FIX TCC HARDCODED:** Azzerati tutti i fallback TCC (config default, referral) a 0 |
+
+#### FRONTEND (dms-hub-app-new → GitHub → Vercel)
+
+| Commit | Versione | File Modificato | Descrizione |
+|---|---|---|---|
+| `23571c8` | v4.3.0 | `client/src/pages/WalletPage.tsx` | **FIX TCC HARDCODED:** Rimosse tutte le label TCC (+10, +50, ecc.) dalla UI |
 
 ---
 
