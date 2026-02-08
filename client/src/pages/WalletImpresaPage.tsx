@@ -517,30 +517,30 @@ export default function WalletImpresaPage() {
       <div className="w-full px-0 sm:px-2 py-2 sm:py-4 space-y-3 sm:space-y-4">
         {/* Cards Riepilogo (v4.3.6 - card più larghe, font più grande, gap ridotto) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-1 sm:gap-4">
-          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg">
-            <CardContent className="p-2 sm:p-4">
-              <p className="text-[11px] sm:text-sm text-[#e8fbff]/50">Saldo Totale</p>
-              <p className={`text-base sm:text-2xl font-bold ${totaleSaldo >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
+          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg py-0 sm:py-6 gap-0 sm:gap-6">
+            <CardContent className="p-3 sm:p-4 px-3 sm:px-6">
+              <p className="text-sm sm:text-sm text-[#e8fbff]/50">Saldo Totale</p>
+              <p className={`text-xl sm:text-2xl font-bold ${totaleSaldo >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
                 €{totaleSaldo.toFixed(2)}
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg">
-            <CardContent className="p-2 sm:p-4">
-              <p className="text-[11px] sm:text-sm text-[#e8fbff]/50">Wallet Spunta</p>
-              <p className="text-base sm:text-2xl font-bold text-[#14b8a6]">{company?.spunta_wallets?.length || 0}</p>
+          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg py-0 sm:py-6 gap-0 sm:gap-6">
+            <CardContent className="p-3 sm:p-4 px-3 sm:px-6">
+              <p className="text-sm sm:text-sm text-[#e8fbff]/50">Wallet Spunta</p>
+              <p className="text-xl sm:text-2xl font-bold text-[#14b8a6]">{company?.spunta_wallets?.length || 0}</p>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg">
-            <CardContent className="p-2 sm:p-4">
-              <p className="text-[11px] sm:text-sm text-[#e8fbff]/50">Concessioni</p>
-              <p className="text-base sm:text-2xl font-bold text-[#3b82f6]">{company?.concession_wallets?.length || 0}</p>
+          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg py-0 sm:py-6 gap-0 sm:gap-6">
+            <CardContent className="p-3 sm:p-4 px-3 sm:px-6">
+              <p className="text-sm sm:text-sm text-[#e8fbff]/50">Concessioni</p>
+              <p className="text-xl sm:text-2xl font-bold text-[#3b82f6]">{company?.concession_wallets?.length || 0}</p>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg">
-            <CardContent className="p-2 sm:p-4">
-              <p className="text-[11px] sm:text-sm text-[#e8fbff]/50">Da Pagare</p>
-              <p className="text-base sm:text-2xl font-bold text-[#ef4444] truncate">€{totaleDaPagare.toFixed(2)}</p>
+          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg py-0 sm:py-6 gap-0 sm:gap-6">
+            <CardContent className="p-3 sm:p-4 px-3 sm:px-6">
+              <p className="text-sm sm:text-sm text-[#e8fbff]/50">Da Pagare</p>
+              <p className="text-xl sm:text-2xl font-bold text-[#ef4444] truncate">€{totaleDaPagare.toFixed(2)}</p>
             </CardContent>
           </Card>
         </div>
@@ -564,8 +564,8 @@ export default function WalletImpresaPage() {
 
           {/* Tab Wallet */}
           <TabsContent value="wallet">
-            <Card className="bg-[#1a2332] border-[#14b8a6]/20 overflow-hidden">
-              <CardHeader className="border-b border-[#14b8a6]/10 p-3 sm:p-6">
+            <Card className="bg-[#1a2332] border-[#14b8a6]/20 overflow-hidden py-0 sm:py-6 gap-0 sm:gap-6 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+              <CardHeader className="border-b border-[#14b8a6]/10 p-3 sm:p-6 px-3 sm:px-6">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                     <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-[#14b8a6] flex-shrink-0" />
@@ -584,7 +584,7 @@ export default function WalletImpresaPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 px-2 sm:px-6">
                 {loading ? (
                   <div className="text-center py-8 text-[#e8fbff]/50">
                     <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin" />
@@ -693,14 +693,14 @@ export default function WalletImpresaPage() {
 
           {/* Tab Scadenze */}
           <TabsContent value="scadenze">
-            <Card className="bg-[#1a2332] border-[#14b8a6]/20">
-              <CardHeader>
+            <Card className="bg-[#1a2332] border-[#14b8a6]/20 py-0 sm:py-6 gap-0 sm:gap-6 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+              <CardHeader className="px-3 sm:px-6">
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-[#14b8a6]" />
                   Scadenze da Pagare
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-2 sm:px-6">
                 {scadenzeNonPagate.length === 0 ? (
                   <div className="text-center py-8">
                     <CheckCircle className="w-12 h-12 mx-auto mb-4 text-[#10b981]" />
@@ -751,8 +751,8 @@ export default function WalletImpresaPage() {
             
             {/* v3.53.0: Sezione Sanzioni/Verbali PM */}
             {sanzioni.length > 0 && (
-              <Card className="bg-[#1a2332] border-[#f59e0b]/20 mt-4">
-                <CardHeader>
+              <Card className="bg-[#1a2332] border-[#f59e0b]/20 mt-4 py-0 sm:py-6 gap-0 sm:gap-6 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+                <CardHeader className="px-3 sm:px-6">
                   <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-[#f59e0b]" />
                     Sanzioni/Verbali PM da Pagare
@@ -762,7 +762,7 @@ export default function WalletImpresaPage() {
                     Verbali di contestazione emessi dalla Polizia Municipale
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-2 sm:px-6">
                   <div className="space-y-3">
                     {sanzioni.map((sanzione) => (
                       <div key={sanzione.id} className="p-4 bg-[#0b1220] rounded-lg border border-[#f59e0b]/20">
@@ -845,14 +845,14 @@ export default function WalletImpresaPage() {
 
           {/* Tab Storico */}
           <TabsContent value="storico">
-            <Card className="bg-[#1a2332] border-[#14b8a6]/20">
-              <CardHeader>
+            <Card className="bg-[#1a2332] border-[#14b8a6]/20 py-0 sm:py-6 gap-0 sm:gap-6 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+              <CardHeader className="px-3 sm:px-6">
                 <CardTitle className="text-[#e8fbff] flex items-center gap-2">
                   <Receipt className="w-5 h-5 text-[#14b8a6]" />
                   Storico Movimenti
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-2 sm:px-6">
                 {scadenze.filter(s => s.stato === 'PAGATO').length === 0 && transactions.length === 0 && sanzioniPagate.length === 0 ? (
                   <div className="text-center py-8">
                     <Receipt className="w-12 h-12 mx-auto mb-4 text-[#e8fbff]/30" />
