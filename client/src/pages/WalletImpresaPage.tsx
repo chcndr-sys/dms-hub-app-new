@@ -516,31 +516,31 @@ export default function WalletImpresaPage() {
 
       <div className="w-full px-0 sm:px-2 py-2 sm:py-4 space-y-3 sm:space-y-4">
         {/* Cards Riepilogo (v4.3.6 - card più larghe, font più grande, gap ridotto) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-4">
-          <Card className="bg-[#1a2332] border-[#14b8a6]/20">
-            <CardContent className="p-2.5 sm:p-4">
-              <p className="text-xs sm:text-sm text-[#e8fbff]/50">Saldo Totale</p>
-              <p className={`text-lg sm:text-2xl font-bold ${totaleSaldo >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-1 sm:gap-4">
+          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg">
+            <CardContent className="p-2 sm:p-4">
+              <p className="text-[11px] sm:text-sm text-[#e8fbff]/50">Saldo Totale</p>
+              <p className={`text-base sm:text-2xl font-bold ${totaleSaldo >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
                 €{totaleSaldo.toFixed(2)}
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a2332] border-[#14b8a6]/20">
-            <CardContent className="p-2.5 sm:p-4">
-              <p className="text-xs sm:text-sm text-[#e8fbff]/50">Wallet Spunta</p>
-              <p className="text-lg sm:text-2xl font-bold text-[#14b8a6]">{company?.spunta_wallets?.length || 0}</p>
+          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg">
+            <CardContent className="p-2 sm:p-4">
+              <p className="text-[11px] sm:text-sm text-[#e8fbff]/50">Wallet Spunta</p>
+              <p className="text-base sm:text-2xl font-bold text-[#14b8a6]">{company?.spunta_wallets?.length || 0}</p>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a2332] border-[#14b8a6]/20">
-            <CardContent className="p-2.5 sm:p-4">
-              <p className="text-xs sm:text-sm text-[#e8fbff]/50">Concessioni</p>
-              <p className="text-lg sm:text-2xl font-bold text-[#3b82f6]">{company?.concession_wallets?.length || 0}</p>
+          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg">
+            <CardContent className="p-2 sm:p-4">
+              <p className="text-[11px] sm:text-sm text-[#e8fbff]/50">Concessioni</p>
+              <p className="text-base sm:text-2xl font-bold text-[#3b82f6]">{company?.concession_wallets?.length || 0}</p>
             </CardContent>
           </Card>
-          <Card className="bg-[#1a2332] border-[#14b8a6]/20">
-            <CardContent className="p-2.5 sm:p-4">
-              <p className="text-xs sm:text-sm text-[#e8fbff]/50">Da Pagare</p>
-              <p className="text-lg sm:text-2xl font-bold text-[#ef4444] truncate">€{totaleDaPagare.toFixed(2)}</p>
+          <Card className="bg-[#1a2332] border-[#14b8a6]/20 rounded-md sm:rounded-lg">
+            <CardContent className="p-2 sm:p-4">
+              <p className="text-[11px] sm:text-sm text-[#e8fbff]/50">Da Pagare</p>
+              <p className="text-base sm:text-2xl font-bold text-[#ef4444] truncate">€{totaleDaPagare.toFixed(2)}</p>
             </CardContent>
           </Card>
         </div>

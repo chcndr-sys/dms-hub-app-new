@@ -1616,7 +1616,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
             <MarketMapComponent
               refreshKey={mapRefreshKey}
               mapData={mapData}  // Passa sempre mapData così i posteggi sono visibili durante l'animazione
-              center={viewMode === 'mercato' ? marketCenter : [41.5, 12.5] as [number, number]}
+              center={viewMode === 'mercato' ? marketCenter : [43.5, 12.5] as [number, number]}
               zoom={viewMode === 'mercato' ? 17 : 6.3}
               height="100%"
               isSpuntaMode={isSpuntaMode}

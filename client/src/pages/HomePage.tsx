@@ -359,66 +359,66 @@ export default function HomePage() {
           </div>
 
           {/* Tab Pubblici - Riga 1 (v4.3.6 - card più larghe, gap ridotto, font più grande) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap md:justify-center gap-1.5 sm:gap-4 w-full max-w-4xl px-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap md:justify-center gap-2 sm:gap-4 w-full max-w-4xl px-2">
             <Button
               variant="outline"
               size="lg"
               onClick={() => handleProtectedNavigation('/mappa-italia')}
-              className="h-18 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+              className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
             >
-              <MapPin className="w-6 h-6 sm:w-6 sm:h-6" />
-              <span className="text-sm sm:text-sm">Mappa</span>
+              <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Mappa</span>
             </Button>
             <Button
               variant="outline"
               size="lg"
               onClick={() => handleProtectedNavigation('/route')}
-              className="h-18 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+              className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
             >
-              <TrendingUp className="w-6 h-6 sm:w-6 sm:h-6" />
-              <span className="text-sm sm:text-sm">Route</span>
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Route</span>
             </Button>
             <Button
               variant="outline"
               size="lg"
               onClick={() => handleProtectedNavigation('/wallet')}
-              className="h-18 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+              className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
             >
-              <Leaf className="w-6 h-6 sm:w-6 sm:h-6" />
-              <span className="text-sm sm:text-sm">Wallet</span>
+              <Leaf className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Wallet</span>
             </Button>
             <Button
               variant="outline"
               size="lg"
               onClick={() => handleProtectedNavigation('/civic')}
-              className="h-18 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+              className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
             >
-              <Search className="w-6 h-6 sm:w-6 sm:h-6" />
-              <span className="text-sm sm:text-sm">Segnala</span>
+              <Search className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Segnala</span>
             </Button>
             <Button
               variant="outline"
               size="lg"
               onClick={() => handleProtectedNavigation('/vetrine')}
-              className="h-18 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 col-span-2 sm:col-span-1"
+              className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 col-span-2 sm:col-span-1"
             >
-              <Store className="w-6 h-6 sm:w-6 sm:h-6" />
-              <span className="text-sm sm:text-sm">Vetrine</span>
+              <Store className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Vetrine</span>
             </Button>
           </div>
 
           {/* Tab Impresa - Riga 2 (v4.3.4 - Presenze in fondo, col-span-2) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap md:justify-center gap-1.5 sm:gap-4 w-full max-w-4xl px-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap md:justify-center gap-2 sm:gap-4 w-full max-w-4xl px-2">
             {/* Wallet Impresa - pagamenti PagoPA */}
             {(permissionsLoading || canViewTab('wallet_impresa')) && (
               <Button
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/app/impresa/wallet')}
-                className="h-18 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
               >
-                <Wallet className="w-6 h-6 sm:w-6 sm:h-6" />
-                <span className="text-sm sm:text-sm">Wallet Imp.</span>
+                <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="text-xs sm:text-sm">Wallet Imp.</span>
               </Button>
             )}
             {/* Hub Operatore */}
@@ -427,10 +427,10 @@ export default function HomePage() {
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/hub-operatore')}
-                className="h-18 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
               >
-                <Activity className="w-6 h-6 sm:w-6 sm:h-6" />
-                <span className="text-sm sm:text-sm">Hub Op.</span>
+                <Activity className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="text-xs sm:text-sm">Hub Op.</span>
               </Button>
             )}
             {/* Notifiche */}
@@ -439,10 +439,10 @@ export default function HomePage() {
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/app/impresa/notifiche')}
-                className="h-18 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 relative"
+                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 relative"
               >
-                <Bell className="w-6 h-6 sm:w-6 sm:h-6" />
-                <span className="text-sm sm:text-sm">Notifiche</span>
+                <Bell className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="text-xs sm:text-sm">Notifiche</span>
                 {unreadNotifications > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {unreadNotifications > 99 ? '99+' : unreadNotifications}
@@ -456,10 +456,10 @@ export default function HomePage() {
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/app/impresa/anagrafica')}
-                className="h-18 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
               >
-                <Menu className="w-6 h-6 sm:w-6 sm:h-6" />
-                <span className="text-sm sm:text-sm">Anagrafica</span>
+                <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="text-xs sm:text-sm">Anagrafica</span>
               </Button>
             )}
             {/* Presenze - in fondo, grande come Vetrine (col-span-2 su mobile) */}
@@ -468,10 +468,10 @@ export default function HomePage() {
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/app/impresa/presenze')}
-                className="h-18 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 col-span-2 sm:col-span-1"
+                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 col-span-2 sm:col-span-1"
               >
-                <ClipboardList className="w-6 h-6 sm:w-6 sm:h-6" />
-                <span className="text-sm sm:text-sm">Presenze</span>
+                <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="text-xs sm:text-sm">Presenze</span>
               </Button>
             )}
           </div>

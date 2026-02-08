@@ -199,7 +199,7 @@ export function MarketMapComponent({
   
   // Se showItalyView è true e non c'è un center specifico, usa coordinate Italia
   // Se mapData è null (vista Italia), usa coordinate Italia come fallback
-  const mapCenter: [number, number] = center || (showItalyView || !mapData ? [41.5, 12.5] : [mapData.center.lat, mapData.center.lng]);
+  const mapCenter: [number, number] = center || (showItalyView || !mapData ? [43.5, 12.5] : [mapData.center.lat, mapData.center.lng]);
   
   // L'animazione è gestita direttamente da MapCenterController tramite useAnimation
 

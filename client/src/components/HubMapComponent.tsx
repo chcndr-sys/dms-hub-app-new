@@ -162,10 +162,10 @@ export function HubMapComponent({
   // Centro mappa: se vista Italia usa centro Italia, altrimenti centro HUB
   const mapCenter: [number, number] = center || (
     showItalyView 
-      ? [41.5, 12.5] 
+      ? [43.5, 12.5] 
       : hubData 
         ? [parseFloat(hubData.center_lat || hubData.lat), parseFloat(hubData.center_lng || hubData.lng)]
-        : [41.5, 12.5]
+        : [43.5, 12.5]
   );
   
   const mapZoom = showItalyView ? 6.3 : zoom;

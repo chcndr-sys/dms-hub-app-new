@@ -575,9 +575,9 @@ export default function HubOperatore() {
         {/* Gestione Presenze RIMOSSO in v4.3.4 — residuo non necessario */}
 
         {/* Statistiche Giornaliere (v4.3.6 - card più larghe, font più grande) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-4">
-          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden">
-            <CardContent className="p-2.5 sm:p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-1 sm:gap-4">
+          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden rounded-md sm:rounded-lg">
+            <CardContent className="p-2 sm:p-4">
               <p className="text-xs sm:text-sm text-[#94a3b8]">Vendite Oggi</p>
               <div className="flex items-center justify-between gap-1">
                 <p className="text-lg sm:text-2xl font-bold text-[#e8fbff] truncate">
@@ -588,8 +588,8 @@ export default function HubOperatore() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden">
-            <CardContent className="p-2.5 sm:p-4">
+          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden rounded-md sm:rounded-lg">
+            <CardContent className="p-2 sm:p-4">
               <p className="text-xs sm:text-sm text-[#94a3b8]">TCC Rilasciati</p>
               <div className="flex items-center justify-between gap-1">
                 <p className="text-lg sm:text-2xl font-bold text-[#14b8a6] truncate">
@@ -600,8 +600,8 @@ export default function HubOperatore() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden">
-            <CardContent className="p-2.5 sm:p-4">
+          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden rounded-md sm:rounded-lg">
+            <CardContent className="p-2 sm:p-4">
               <p className="text-xs sm:text-sm text-[#94a3b8]">TCC Riscattati</p>
               <div className="flex items-center justify-between gap-1">
                 <p className="text-lg sm:text-2xl font-bold text-[#f59e0b] truncate">
@@ -612,8 +612,8 @@ export default function HubOperatore() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden">
-            <CardContent className="p-2.5 sm:p-4">
+          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden rounded-md sm:rounded-lg">
+            <CardContent className="p-2 sm:p-4">
               <p className="text-xs sm:text-sm text-[#94a3b8]">Differenza</p>
               <div className="flex items-center justify-between gap-1">
                 <p className="text-lg sm:text-2xl font-bold text-[#10b981] truncate">
