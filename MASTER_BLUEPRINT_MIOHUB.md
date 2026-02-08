@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.3.0  
-> **Data:** 8 Febbraio 2026 (v4.3.0 — Allineamento sistema, fix TCC hardcoded, aggiunta Pizzeria Castello)  
+> **Versione:** 4.3.3  
+> **Data:** 8 Febbraio 2026 (v4.3.3 — Fix UI Mobile App Impresa e Adattamento Mobile)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1143,7 +1143,55 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 
 ---
 
+## 📱 APP IMPRESA - ADATTAMENTO MOBILE (v4.3.x)
+
+> **Data Inizio:** 8 Febbraio 2026
+> **Obiettivo:** Adattare l'intera App Impresa per una fruizione ottimale su dispositivi smartphone, mantenendo l'attuale layout per tablet e desktop. L'approccio è "mobile-first" con override per schermi più grandi (`sm:`).
+
+### Componenti Coinvolti
+
+| Pagina | File | Stato Adattamento |
+|---|---|---|
+| **Dashboard** | `DashboardImpresa.tsx` | ✅ Adattata (v4.3.2) |
+| **Wallet** | `WalletImpresaPage.tsx` | ✅ Adattata (v4.3.3) |
+| **Notifiche** | `NotifichePage.tsx` | ✅ Adattata (v4.3.2) |
+| **Anagrafica** | `AnagraficaPage.tsx` | ✅ Adattata (v4.3.2) |
+| **Presenze** | `PresenzePage.tsx` | ✅ Adattata (v4.3.2) |
+| **Hub Operatore** | `HubOperatore.tsx` | ✅ Adattata (v4.3.3) |
+| **Home Page** | `HomePage.tsx` | ✅ Adattata (v4.3.3) |
+
+### Approccio Tecnico Generale
+
+1.  **Layout Full-Screen:** Rimozione dei `container` principali e utilizzo di `w-full` per sfruttare l'intera larghezza dello schermo su mobile.
+2.  **Griglie Responsive:** Utilizzo di `grid-cols-2` o `grid-cols-1` per mobile, che diventano `sm:grid-cols-3` o più su schermi grandi.
+3.  **Header Compatti:** Riduzione del padding, della dimensione del font e uso di `truncate` negli header delle pagine per evitare overflow.
+4.  **Testo e Icone:** Dimensione del testo e delle icone ridotta su mobile (`text-xs`, `w-4 h-4`) e ingrandita su desktop (`sm:text-sm`, `sm:w-6 sm:h-6`).
+5.  **Integrazione Iframe (Presenze):** La pagina Presenze integra l'app DMS esterna tramite un `iframe` che occupa il 100% dell'altezza e della larghezza del viewport, garantendo un'esperienza nativa.
+
+---
+
 #### 📝 CHANGELOG
+
+### v4.3.3 (08/02/2026) - Fix UI Mobile App Impresa (HomePage, HubOperatore, Wallet)
+
+**Obiettivo:** Risolvere una serie di bug visivi e di layout nell'interfaccia mobile dell'App Impresa e dell'Hub Operatore, migliorando l'usabilità su smartphone senza alterare la vista desktop/tablet.
+
+**Modifiche Frontend (Commit `781ddac`):**
+
+| File | Bug Risolto | Dettagli della Soluzione |
+|---|---|---|
+| **HomePage.tsx** | Il tab "Presenze" era piccolo e non in prima posizione. | **Layout Rivisto:** Il tab "Presenze" è stato spostato in prima posizione nella seconda riga e reso `col-span-2` su mobile, occupando la stessa larghezza del tab "Vetrine" per maggiore importanza visiva. |
+| **HubOperatore.tsx** | Header arancione con dati errati e overflow su mobile. | **Correzione Dati e Stile:** Rimosso il nome mock "Frutta e Verdura Bio" e il prefisso "Operatore". Ora mostra solo il nome reale dell'impresa (`impresaNome`) o "MIO TEST". Applicato padding responsive, `truncate` e font ridotti per evitare l'overflow del testo e del badge su schermi piccoli. |
+| **HubOperatore.tsx** | I numeri nelle card statistiche (TCC, Vendite) venivano tagliati. | **Card Responsive:** Ridotto il padding e la dimensione del font (`text-lg sm:text-2xl`) all'interno delle card solo per la vista mobile. Aggiunto `truncate` per gestire numeri molto grandi. |
+| **HubOperatore.tsx** | Il testo nei tab ("Scanner QR", "Transazioni") veniva troncato. | **Tab Compatti:** Ridotto il font (`text-xs sm:text-sm`), il margine delle icone e applicato `truncate` alle label per garantire che il testo sia sempre visibile anche su schermi stretti. |
+| **WalletImpresaPage.tsx**| Anche qui, il testo nei tab ("Scadenze", "Storico") veniva troncato. | **Soluzione Coerente:** Applicate le stesse classi CSS dei tab dell'Hub Operatore per garantire coerenza e leggibilità (`text-xs sm:text-sm`, `truncate`). |
+
+**Approccio Tecnico:**
+- **Mobile-First con Breakpoint `sm:`:** Tutte le modifiche sono state applicate usando classi utility di Tailwind CSS con il breakpoint `sm:` (640px). Questo assicura che gli stili personalizzati per il mobile non influenzino le viste per tablet e desktop.
+- **Nessuna Logica Modificata:** I fix sono puramente stilistici e non alterano la logica di business o il flusso dati dei componenti.
+
+---
+
 
 ### v4.2.0 (07/02/2026) - Redesign Wallet ECO Credit Tab (Dark Theme & Comuni Cards)
 
@@ -6702,6 +6750,32 @@ if (el) {
 - [x] Fix scroll ECO Credit: rimosso overflow-hidden, tutta la sezione scrollabile (v1.3.16)
 - [x] Fix score TCC: usa total_earned dal wallet API (dato reale) invece della somma limitata a 50 tx (v1.3.16)
 - [x] Fix contatore transazioni: usa total_transactions dal wallet API (83 reali, non 50 limitate) (v1.3.16)
+
+---
+
+## 🔄 AGGIORNAMENTO SESSIONE 8 FEBBRAIO 2026 — SERA (v4.3.3)
+
+> **Data:** 8 Febbraio 2026
+> **Sessione:** Fix UI Mobile App Impresa, Adattamento Mobile HubOperatore, HomePage e WalletImpresa
+
+#### FRONTEND (dms-hub-app-new → GitHub → Vercel)
+
+| Commit | Versione | File Modificato | Descrizione |
+|---|---|---|---|
+| `781ddac` | v4.3.3 | `client/src/pages/HomePage.tsx` | Tab "Presenze" spostato in prima posizione riga 2, `col-span-2` su mobile |
+| `781ddac` | v4.3.3 | `client/src/pages/HubOperatore.tsx` | Rimosso mock "Frutta e Verdura Bio", rimosso prefisso "Operatore", fix overflow header e card TCC, fix tab troncati |
+| `781ddac` | v4.3.3 | `client/src/pages/WalletImpresaPage.tsx` | Fix tab troncati su mobile (font ridotto, truncate) |
+
+### 📋 CHECKLIST MODIFICHE COMPLETATE
+
+- [x] HomePage: Presenze in prima posizione riga 2, grande come Vetrine (col-span-2)
+- [x] HubOperatore: Rimosso nome mock "Frutta e Verdura Bio" dall'header arancione
+- [x] HubOperatore: Rimosso prefisso "Operatore" dal lato destro, ora mostra solo impresaNome o "MIO TEST"
+- [x] HubOperatore: Fix overflow mobile header arancione (padding, font, truncate)
+- [x] HubOperatore: Fix card statistiche TCC/Vendite troncate su mobile (padding compatto, font ridotto)
+- [x] HubOperatore: Fix tab Scanner/Transazioni/Wallet troncati su mobile
+- [x] WalletImpresaPage: Fix tab Wallet/Scadenze/Storico troncati su mobile
+- [x] Master Blueprint aggiornato a v4.3.3 con nuova sezione "App Impresa - Adattamento Mobile"
 
 ---
 
