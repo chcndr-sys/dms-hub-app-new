@@ -548,17 +548,17 @@ export default function WalletImpresaPage() {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-[#1a2332] border border-[#14b8a6]/20 w-full sm:w-auto overflow-x-auto">
-            <TabsTrigger value="wallet" className="data-[state=active]:bg-[#14b8a6]/20">
-              <Wallet className="w-4 h-4 mr-2" />
-              Wallet
+            <TabsTrigger value="wallet" className="data-[state=active]:bg-[#14b8a6]/20 text-xs sm:text-sm px-2 sm:px-3">
+              <Wallet className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">Wallet</span>
             </TabsTrigger>
-            <TabsTrigger value="scadenze" className="data-[state=active]:bg-[#14b8a6]/20">
-              <Calendar className="w-4 h-4 mr-2" />
-              Scadenze ({scadenzeNonPagate.length})
+            <TabsTrigger value="scadenze" className="data-[state=active]:bg-[#14b8a6]/20 text-xs sm:text-sm px-2 sm:px-3">
+              <Calendar className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">Scadenze ({scadenzeNonPagate.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="storico" className="data-[state=active]:bg-[#14b8a6]/20">
-              <Receipt className="w-4 h-4 mr-2" />
-              Storico
+            <TabsTrigger value="storico" className="data-[state=active]:bg-[#14b8a6]/20 text-xs sm:text-sm px-2 sm:px-3">
+              <Receipt className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">Storico</span>
             </TabsTrigger>
           </TabsList>
 

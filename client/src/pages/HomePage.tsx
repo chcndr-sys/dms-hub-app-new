@@ -407,15 +407,15 @@ export default function HomePage() {
             </Button>
           </div>
 
-          {/* Tab Impresa - Riga 2 (v3.70.0) */}
+          {/* Tab Impresa - Riga 2 (v4.3.3) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap md:justify-center gap-2 sm:gap-4 w-full max-w-4xl px-2">
-            {/* Presenze - apre app Heroku */}
+            {/* Presenze - apre app DMS (grande come Vetrine, col-span-2 su mobile) */}
             {(permissionsLoading || canViewTab('presenze')) && (
               <Button
                 variant="outline"
                 size="lg"
                 onClick={() => handleProtectedNavigation('/app/impresa/presenze')}
-                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 col-span-2 sm:col-span-1"
               >
                 <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6" />
                 <span className="text-xs sm:text-sm">Presenze</span>
@@ -462,7 +462,7 @@ export default function HomePage() {
                 )}
               </Button>
             )}
-            {/* Anagrafica - placeholder per sviluppi futuri */}
+            {/* Anagrafica */}
             {(permissionsLoading || canViewTab('anagrafica')) && (
               <Button
                 variant="outline"

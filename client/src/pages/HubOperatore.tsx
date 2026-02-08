@@ -555,20 +555,18 @@ export default function HubOperatore() {
         </Link>
       </div>
       
-      {/* Header */}
-      <header className="bg-gradient-to-r from-[#f97316] to-[#f59e0b] p-4 shadow-lg mt-2">
-        <div className="w-full px-2 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white">HUB Operatore</h1>
-              <p className="text-sm text-white/80">{operatore.negozio}</p>
+      {/* Header (v4.3.3 - fix mobile overflow + dati corretti) */}
+      <header className="bg-gradient-to-r from-[#f97316] to-[#f59e0b] p-3 sm:p-4 shadow-lg mt-2">
+        <div className="w-full px-1 sm:px-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold text-white truncate">HUB Operatore</h1>
             </div>
             {/* Semaforo Wallet TCC (v5.7.0) */}
             <WalletStatusIndicator operatorId={operatore.id} />
           </div>
-          <div className="text-right">
-            <p className="text-sm text-white/80">{operatore.ruolo}</p>
-            <p className="font-semibold text-white">{impresaNome || operatore.nome}</p>
+          <div className="text-right flex-shrink-0">
+            <p className="font-semibold text-white text-sm sm:text-base truncate max-w-[120px] sm:max-w-none">{impresaNome || 'MIO TEST'}</p>
           </div>
         </div>
       </header>
@@ -622,79 +620,79 @@ export default function HubOperatore() {
           </CardContent>
         </Card>
 
-        {/* Statistiche Giornaliere dal Wallet Reale */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-[#1e293b] border-[#334155]">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-[#94a3b8]">Vendite Oggi</CardDescription>
+        {/* Statistiche Giornaliere dal Wallet Reale (v4.3.3 - fix mobile overflow) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden">
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardDescription className="text-[#94a3b8] text-xs sm:text-sm">Vendite Oggi</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <p className="text-2xl font-bold text-[#e8fbff]">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-lg sm:text-2xl font-bold text-[#e8fbff] truncate">
                   €{parseFloat(operatorWallet?.euro_sales || 0).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                 </p>
-                <TrendingUp className="w-5 h-5 text-[#10b981]" />
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#10b981] flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-[#334155]">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-[#94a3b8]">TCC Rilasciati</CardDescription>
+          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden">
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardDescription className="text-[#94a3b8] text-xs sm:text-sm">TCC Rilasciati</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <p className="text-2xl font-bold text-[#14b8a6]">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-lg sm:text-2xl font-bold text-[#14b8a6] truncate">
                   {operatorWallet?.tcc_issued || 0}
                 </p>
-                <ArrowUpCircle className="w-5 h-5 text-[#14b8a6]" />
+                <ArrowUpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#14b8a6] flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-[#334155]">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-[#94a3b8]">TCC Riscattati</CardDescription>
+          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden">
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardDescription className="text-[#94a3b8] text-xs sm:text-sm">TCC Riscattati</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <p className="text-2xl font-bold text-[#f59e0b]">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-lg sm:text-2xl font-bold text-[#f59e0b] truncate">
                   {operatorWallet?.tcc_redeemed || 0}
                 </p>
-                <ArrowDownCircle className="w-5 h-5 text-[#f59e0b]" />
+                <ArrowDownCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#f59e0b] flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e293b] border-[#334155]">
-            <CardHeader className="pb-2">
-              <CardDescription className="text-[#94a3b8]">Differenza</CardDescription>
+          <Card className="bg-[#1e293b] border-[#334155] overflow-hidden">
+            <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
+              <CardDescription className="text-[#94a3b8] text-xs sm:text-sm">Differenza</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <p className="text-2xl font-bold text-[#10b981]">
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-lg sm:text-2xl font-bold text-[#10b981] truncate">
                   {operatorWallet?.difference || 0}
                 </p>
-                <Leaf className="w-5 h-5 text-[#10b981]" />
+                <Leaf className="w-4 h-4 sm:w-5 sm:h-5 text-[#10b981] flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Tabs Funzionalita */}
+        {/* Tabs Funzionalita (v4.3.3 - fix mobile text truncation) */}
         <Tabs defaultValue="scanner" className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-[#1e293b]">
-            <TabsTrigger value="scanner" className="data-[state=active]:bg-[#f97316]">
-              <QrCode className="w-4 h-4 mr-2" />
-              Scanner QR
+            <TabsTrigger value="scanner" className="data-[state=active]:bg-[#f97316] text-xs sm:text-sm px-1 sm:px-3">
+              <QrCode className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">Scanner</span>
             </TabsTrigger>
-            <TabsTrigger value="transazioni" className="data-[state=active]:bg-[#f97316]">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Transazioni
+            <TabsTrigger value="transazioni" className="data-[state=active]:bg-[#f97316] text-xs sm:text-sm px-1 sm:px-3">
+              <BarChart3 className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">Transazioni</span>
             </TabsTrigger>
-            <TabsTrigger value="wallet" className="data-[state=active]:bg-[#f97316]">
-              <Wallet className="w-4 h-4 mr-2" />
-              Wallet
+            <TabsTrigger value="wallet" className="data-[state=active]:bg-[#f97316] text-xs sm:text-sm px-1 sm:px-3">
+              <Wallet className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">Wallet</span>
             </TabsTrigger>
           </TabsList>
 
