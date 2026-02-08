@@ -957,39 +957,39 @@ export default function WalletImpresaPage() {
         </Tabs>
       </div>
 
-      {/* Dialog Pagamento Scadenza */}
+      {/* Dialog Pagamento Scadenza (v4.3.5 - fix mobile padding e overflow) */}
       <Dialog open={showPagamentoDialog} onOpenChange={setShowPagamentoDialog}>
-        <DialogContent className="bg-[#1a2332] border-[#14b8a6]/20 text-[#e8fbff] max-w-[95vw] sm:max-w-lg">
+        <DialogContent className="bg-[#1a2332] border-[#14b8a6]/20 text-[#e8fbff] max-w-[90vw] sm:max-w-lg mx-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-[#14b8a6]" />
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <CreditCard className="w-5 h-5 text-[#14b8a6] flex-shrink-0" />
               Pagamento Canone
             </DialogTitle>
-            <DialogDescription className="text-[#e8fbff]/70">
+            <DialogDescription className="text-[#e8fbff]/70 text-xs sm:text-sm">
               {selectedScadenza?.mercato_nome} - Posteggio {selectedScadenza?.posteggio}
             </DialogDescription>
           </DialogHeader>
           
           {selectedScadenza && (
-            <div className="space-y-4">
-              <div className="bg-[#0b1220] p-4 rounded-lg">
-                <div className="flex justify-between mb-2">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="bg-[#0b1220] p-3 sm:p-4 rounded-lg">
+                <div className="flex justify-between mb-2 text-sm sm:text-base">
                   <span className="text-[#e8fbff]/70">Rata {selectedScadenza.rata_numero}/{selectedScadenza.rata_totale}</span>
                   <span className="text-[#e8fbff]">€{parseFloat(selectedScadenza.importo_dovuto).toFixed(2)}</span>
                 </div>
                 {parseFloat(selectedScadenza.importo_mora) > 0 && (
-                  <div className="flex justify-between mb-2 text-red-400">
+                  <div className="flex justify-between mb-2 text-red-400 text-sm sm:text-base">
                     <span>Mora ({selectedScadenza.giorni_ritardo_calc} gg)</span>
                     <span>+€{parseFloat(selectedScadenza.importo_mora).toFixed(2)}</span>
                   </div>
                 )}
                 {parseFloat(selectedScadenza.importo_interessi) > 0 && (
-                  <div className="flex justify-between mb-2 text-red-400">
+                  <div className="flex justify-between mb-2 text-red-400 text-sm sm:text-base">
                     <span>Interessi</span>
                     <span>+€{parseFloat(selectedScadenza.importo_interessi).toFixed(2)}</span>
                   </div>
                 )}
-                <div className="border-t border-[#14b8a6]/20 pt-2 mt-2 flex justify-between font-bold text-lg">
+                <div className="border-t border-[#14b8a6]/20 pt-2 mt-2 flex justify-between font-bold text-base sm:text-lg">
                   <span>TOTALE</span>
                   <span className="text-[#14b8a6]">
                     €{(parseFloat(selectedScadenza.importo_dovuto) + parseFloat(selectedScadenza.importo_mora || '0') + parseFloat(selectedScadenza.importo_interessi || '0')).toFixed(2)}
@@ -997,12 +997,12 @@ export default function WalletImpresaPage() {
                 </div>
               </div>
               
-              <div className="flex gap-3 justify-end">
-                <Button variant="outline" onClick={() => setShowPagamentoDialog(false)} className="border-[#14b8a6]/30">
+              <div className="flex gap-2 sm:gap-3 justify-end">
+                <Button variant="outline" onClick={() => setShowPagamentoDialog(false)} className="border-[#14b8a6]/30 text-xs sm:text-sm px-3 sm:px-4">
                   Annulla
                 </Button>
-                <Button onClick={handleConfirmaPagamento} className="bg-[#14b8a6] hover:bg-[#14b8a6]/80">
-                  <CreditCard className="w-4 h-4 mr-2" />
+                <Button onClick={handleConfirmaPagamento} className="bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-xs sm:text-sm px-3 sm:px-4">
+                  <CreditCard className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
                   Paga Ora (Simulazione)
                 </Button>
               </div>
