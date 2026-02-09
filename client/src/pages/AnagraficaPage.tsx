@@ -7,7 +7,7 @@
  * Replica il formato della Dashboard PA con design mobile-first.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { 
   ArrowLeft, Building2, MapPin, FileText, Users, Shield, ClipboardList,
@@ -1302,40 +1302,56 @@ function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRef
       return acc;
     }, [] as { idx: number; label: string; market_name: string; comune_rilascio: string; market_id: number | null }[]);
 
-  // v4.5.6: Pre-compilazione dal banner presenze
+  // v4.5.6b: Pre-compilazione dal banner presenze (approccio robusto con ref)
+  const prefillApplied = useRef(false);
   useEffect(() => {
-    if (prefill && comuniMercati.length > 0) {
-      // Trova il mercato corrispondente
-      const mercatoIdx = comuniMercati.findIndex(cm => 
-        cm.market_name === prefill.market_name || cm.comune_rilascio === prefill.comune
+    // Reset flag quando arriva un nuovo prefill
+    if (prefill) prefillApplied.current = false;
+  }, [prefill]);
+  
+  useEffect(() => {
+    if (!prefill || prefillApplied.current || comuniMercati.length === 0) return;
+    
+    // Trova il mercato corrispondente (confronto case-insensitive)
+    const mercatoIdx = comuniMercati.findIndex(cm => {
+      const nameMatch = cm.market_name && prefill.market_name && 
+        cm.market_name.toLowerCase() === prefill.market_name.toLowerCase();
+      const comuneMatch = cm.comune_rilascio && prefill.comune &&
+        cm.comune_rilascio.toLowerCase() === prefill.comune.toLowerCase();
+      return nameMatch || comuneMatch;
+    });
+    
+    // Converti giorno da ISO (2026-02-09T00:00:00.000Z) a YYYY-MM-DD
+    const giornoClean = prefill.giorno ? prefill.giorno.split('T')[0] : new Date().toISOString().split('T')[0];
+    
+    if (mercatoIdx >= 0) {
+      // Trova il posteggio corrispondente
+      const filteredConc = concessioni.filter(c => 
+        (c.stato_calcolato === 'ATTIVA' || c.stato === 'ATTIVA') && 
+        c.market_name === comuniMercati[mercatoIdx].market_name && 
+        c.comune_rilascio === comuniMercati[mercatoIdx].comune_rilascio
       );
-      if (mercatoIdx >= 0) {
-        const newFormData: any = {
-          ...formData,
-          concessione_idx: String(mercatoIdx),
-          giorno_mercato: prefill.giorno || formData.giorno_mercato,
-          tipo_giustifica: 'uscita_anticipata',
-        };
-        setFormData(newFormData);
-        setShowForm(true);
-        // Trova il posteggio corrispondente dopo che posteggiFiltrati si aggiorna
-        setTimeout(() => {
-          const filteredConc = concessioni.filter(c => 
-            (c.stato_calcolato === 'ATTIVA' || c.stato === 'ATTIVA') && 
-            c.market_name === comuniMercati[mercatoIdx].market_name && 
-            c.comune_rilascio === comuniMercati[mercatoIdx].comune_rilascio
-          );
-          const postIdx = filteredConc.findIndex(c => c.stall_number === prefill.stall_number);
-          if (postIdx >= 0) {
-            setFormData(prev => ({ ...prev, posteggio_idx: String(postIdx) }));
-          }
-        }, 100);
-      } else {
-        setShowForm(true);
-      }
-      onPrefillConsumed?.();
+      const postIdx = filteredConc.findIndex(c => String(c.stall_number) === String(prefill.stall_number));
+      
+      setFormData({
+        concessione_idx: String(mercatoIdx),
+        giorno_mercato: giornoClean,
+        tipo_giustifica: 'uscita_anticipata',
+        reason: '',
+        posteggio_idx: postIdx >= 0 ? String(postIdx) : '',
+      });
+    } else {
+      // Mercato non trovato, apri il form con la data precompilata
+      setFormData(prev => ({
+        ...prev,
+        giorno_mercato: giornoClean,
+        tipo_giustifica: 'uscita_anticipata',
+      }));
     }
-  }, [prefill, comuniMercati.length]);
+    setShowForm(true);
+    prefillApplied.current = true;
+    onPrefillConsumed?.();
+  }, [prefill, comuniMercati.length, concessioni]);
 
   // v4.5.6: Filtra i posteggi disponibili per il mercato selezionato
   const selectedMercato = formData.concessione_idx !== '' ? comuniMercati[Number(formData.concessione_idx)] : null;

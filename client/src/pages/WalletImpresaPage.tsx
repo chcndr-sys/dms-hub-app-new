@@ -765,7 +765,7 @@ export default function WalletImpresaPage() {
                 <CardContent className="px-2 sm:px-6">
                   <div className="space-y-3">
                     {sanzioni.map((sanzione) => (
-                      <div key={sanzione.id} className="p-4 bg-[#0b1220] rounded-lg border border-[#f59e0b]/20">
+                      <div key={sanzione.id} className="p-4 bg-[#0b1220] rounded-lg border border-[#f59e0b]/20 overflow-hidden">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -776,7 +776,7 @@ export default function WalletImpresaPage() {
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-[#e8fbff]/50 break-words">
+                            <p className="text-sm text-[#e8fbff]/50 break-words line-clamp-2">
                               {(sanzione.infraction_description || sanzione.infraction_code || '').replace(/_/g, ' ')}
                             </p>
                             <p className="text-xs text-[#e8fbff]/30">
@@ -913,14 +913,14 @@ export default function WalletImpresaPage() {
                     
                     {/* v3.54.1: Sanzioni/Verbali PM Pagati */}
                     {sanzioniPagate.map((sanzione) => (
-                      <div key={`sanzione-${sanzione.id}`} className="p-4 bg-[#0b1220] rounded-lg border border-red-500/10">
+                      <div key={`sanzione-${sanzione.id}`} className="p-4 bg-[#0b1220] rounded-lg border border-red-500/10 overflow-hidden">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-[#e8fbff] truncate">
                               <AlertTriangle className="w-4 h-4 inline mr-1 text-red-400" />
                               Verbale {sanzione.verbale_code}
                             </p>
-                            <p className="text-sm text-[#e8fbff]/50 break-words">
+                            <p className="text-sm text-[#e8fbff]/50 break-words line-clamp-2">
                               {sanzione.infraction_description || sanzione.infraction_code}
                             </p>
                             <p className="text-xs text-[#e8fbff]/30">
