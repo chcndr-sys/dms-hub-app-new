@@ -228,6 +228,7 @@ interface Transgression {
   business_id: number;
   business_name: string;
   business_cf: string;
+  business_piva?: string;
   transgression_type: string;
   status: string;
   justification_deadline: string;
@@ -236,6 +237,10 @@ interface Transgression {
   justification_notes: string | null;
   justification_display_status: string;
   days_remaining: number;
+  checkin_time?: string;
+  checkin_local?: string;
+  detection_details?: string;
+  sanction_id?: number;
   created_at: string;
 }
 
@@ -1155,7 +1160,7 @@ export default function ControlliSanzioniPanel() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-[#e8fbff]/60 mb-1">Da Controllare</p>
-                <p className="text-3xl font-bold text-[#f59e0b]">{stats?.watchlist.da_controllare || 0}</p>
+                <p className="text-3xl font-bold text-[#f59e0b]">{(stats?.watchlist.da_controllare || 0) + transgressions.filter(t => t.justification_display_status === 'SEGNALAZIONE' || t.justification_display_status === 'VERBALE_AUTOMATICO').length}</p>
               </div>
               <Bell className="h-8 w-8 text-[#f59e0b]/50" />
             </div>
@@ -1198,7 +1203,7 @@ export default function ControlliSanzioniPanel() {
             className="data-[state=active]:bg-[#f59e0b]/20 data-[state=active]:text-[#f59e0b]"
           >
             <Bell className="h-4 w-4 mr-2" />
-            Da Controllare ({stats?.watchlist.da_controllare || 0})
+            Da Controllare ({(stats?.watchlist.da_controllare || 0) + transgressions.filter(t => t.justification_display_status === 'SEGNALAZIONE' || t.justification_display_status === 'VERBALE_AUTOMATICO').length})
           </TabsTrigger>
           <TabsTrigger 
             value="sanctions" 
@@ -1359,8 +1364,125 @@ export default function ControlliSanzioniPanel() {
           </Card>
         </TabsContent>
 
-        {/* Tab: Da Controllare (Watchlist) */}
+        {/* Tab: Da Controllare (Watchlist + Segnalazioni CRON) */}
         <TabsContent value="watchlist" className="space-y-4 mt-4">
+          {/* Sezione Segnalazioni CRON */}
+          {transgressions.filter(t => t.justification_display_status === 'SEGNALAZIONE' || t.justification_display_status === 'VERBALE_AUTOMATICO').length > 0 && (
+            <Card className="bg-[#1a2332] border-[#ef4444]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-[#ef4444]" />
+                  Segnalazioni Automatiche CRON
+                  <Badge className="bg-red-500/20 text-red-400 border-red-500/30 ml-2">
+                    {transgressions.filter(t => t.justification_display_status === 'SEGNALAZIONE' || t.justification_display_status === 'VERBALE_AUTOMATICO').length}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="text-[#e8fbff]/60">
+                  Trasgressioni rilevate automaticamente dal sistema di monitoraggio
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {transgressions
+                    .filter(t => t.justification_display_status === 'SEGNALAZIONE' || t.justification_display_status === 'VERBALE_AUTOMATICO')
+                    .map((t) => (
+                    <div 
+                      key={`cron-${t.id}`} 
+                      className="bg-[#0f1729] rounded-lg p-4 border border-[#ef4444]/20 hover:border-[#ef4444]/40 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                              {t.transgression_type.replace(/_/g, ' ')}
+                            </Badge>
+                            {/* Semaforo sanzione */}
+                            {t.justification_display_status === 'VERBALE_AUTOMATICO' || t.sanction_id ? (
+                              <Badge className="bg-red-600/20 text-red-400 border-red-600/30">
+                                <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1.5 animate-pulse"></span>
+                                Sanzione Emessa
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                                <span className="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>
+                                Da Sanzionare
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-[#e8fbff] font-medium text-lg">{t.business_name || 'Impresa N/D'}</p>
+                          <p className="text-[#e8fbff]/50 text-sm">
+                            P.IVA: {t.business_piva || t.business_cf || 'N/D'}
+                          </p>
+                          <p className="text-[#e8fbff]/50 text-sm mt-1">
+                            {t.market_name} - {new Date(t.market_date).toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          </p>
+                          {/* Orario entrata */}
+                          <div className="mt-2 flex items-center gap-4">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-4 w-4 text-[#f59e0b]" />
+                              <span className="text-[#f59e0b] font-medium text-sm">
+                                {t.checkin_local ? `Entrata: ${t.checkin_local}` : 'Nessuna entrata registrata'}
+                              </span>
+                            </div>
+                            {t.detection_details && (
+                              <span className="text-[#e8fbff]/40 text-xs">
+                                {t.detection_details}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {/* Pulsante Emetti Sanzione */}
+                          {!t.sanction_id && t.justification_display_status !== 'VERBALE_AUTOMATICO' && (
+                            <Button
+                              size="sm"
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                              onClick={async () => {
+                                if (!confirm(`Emettere sanzione per ${t.business_name}?`)) return;
+                                try {
+                                  const res = await fetch(`${MIHUB_API}/market-settings/transgressions/${t.id}/sanction`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ sanction_id: null })
+                                  });
+                                  if (res.ok) {
+                                    setTransgressions(prev => prev.map(tr => 
+                                      tr.id === t.id ? { ...tr, status: 'SANCTIONED', justification_display_status: 'VERBALE_AUTOMATICO', sanction_id: -1 } : tr
+                                    ));
+                                    // Aggiorna anche la watchlist
+                                    try {
+                                      await fetch(`${MIHUB_API}/watchlist`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({})
+                                      });
+                                    } catch (_) {}
+                                  }
+                                } catch (err) {
+                                  console.error('Errore emissione sanzione:', err);
+                                }
+                              }}
+                            >
+                              <FileText className="h-4 w-4 mr-1" />
+                              Emetti Sanzione
+                            </Button>
+                          )}
+                          {(t.sanction_id || t.justification_display_status === 'VERBALE_AUTOMATICO') && (
+                            <Badge className="bg-green-600/20 text-green-400 border-green-600/30 justify-center">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Sanzionato
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Sezione Watchlist classica */}
           <Card className="bg-[#1a2332] border-[#f59e0b]/30">
             <CardHeader>
               <div className="flex items-center justify-between">
