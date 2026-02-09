@@ -705,55 +705,219 @@ function DomandaSpuntaDetailView({ domanda, onBack }: { domanda: DomandaSpuntaDa
 }
 
 // ============================================================================
-// SUB-SECTION: COLLABORATORI
+// SUB-SECTION: COLLABORATORI (TEAM)
+// Formato persona fisica: familiari, soci, dipendenti
+// Con numero di telefono per autorizzazione presenze via App DMS
 // ============================================================================
-function CollaboratoriSection({ impresaId }: { impresaId: number | null }) {
-  const [collaboratori, setCollaboratori] = useState<any[]>([]);
+interface Collaboratore {
+  id: string;
+  nome: string;
+  cognome: string;
+  codice_fiscale: string;
+  ruolo: 'Titolare' | 'Socio' | 'Familiare' | 'Dipendente' | 'Collaboratore';
+  telefono: string;
+  autorizzato_presenze: boolean;
+}
+
+function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null; impresa: ImpresaData | null }) {
+  const [collaboratori, setCollaboratori] = useState<Collaboratore[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!impresaId) { setLoading(false); return; }
-    const fetchCollaboratori = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/vendors`);
-        const json = await res.json();
-        if (json.success && json.data) {
-          setCollaboratori(json.data.slice(0, 20));
+    // Carica collaboratori dal localStorage (dati locali per ora)
+    // In futuro: endpoint /api/imprese/:id/collaboratori
+    try {
+      const stored = localStorage.getItem(`team_impresa_${impresaId}`);
+      if (stored) {
+        setCollaboratori(JSON.parse(stored));
+      } else {
+        // Genera il titolare dall'anagrafica impresa come primo collaboratore
+        if (impresa?.rappresentante_legale_nome && impresa?.rappresentante_legale_cognome) {
+          const titolare: Collaboratore = {
+            id: 'titolare-1',
+            nome: impresa.rappresentante_legale_nome,
+            cognome: impresa.rappresentante_legale_cognome,
+            codice_fiscale: impresa.rappresentante_legale_cf || '',
+            ruolo: 'Titolare',
+            telefono: impresa.telefono || '',
+            autorizzato_presenze: true,
+          };
+          setCollaboratori([titolare]);
+          localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify([titolare]));
         }
-      } catch (err) {
-        console.error('Errore fetch collaboratori:', err);
-      } finally {
-        setLoading(false);
       }
+    } catch { /* ignore */ }
+    setLoading(false);
+  }, [impresaId, impresa]);
+
+  const toggleAutorizzazione = (id: string) => {
+    const updated = collaboratori.map(c => 
+      c.id === id ? { ...c, autorizzato_presenze: !c.autorizzato_presenze } : c
+    );
+    setCollaboratori(updated);
+    localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify(updated));
+  };
+
+  const addCollaboratore = () => {
+    const newCollab: Collaboratore = {
+      id: `collab-${Date.now()}`,
+      nome: '',
+      cognome: '',
+      codice_fiscale: '',
+      ruolo: 'Collaboratore',
+      telefono: '',
+      autorizzato_presenze: false,
     };
-    fetchCollaboratori();
-  }, [impresaId]);
+    const updated = [...collaboratori, newCollab];
+    setCollaboratori(updated);
+    localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify(updated));
+  };
+
+  const updateCollaboratore = (id: string, field: keyof Collaboratore, value: string | boolean) => {
+    const updated = collaboratori.map(c => 
+      c.id === id ? { ...c, [field]: value } : c
+    );
+    setCollaboratori(updated);
+    localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify(updated));
+  };
+
+  const removeCollaboratore = (id: string) => {
+    if (collaboratori.find(c => c.id === id)?.ruolo === 'Titolare') return; // Non rimuovere il titolare
+    const updated = collaboratori.filter(c => c.id !== id);
+    setCollaboratori(updated);
+    localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify(updated));
+  };
+
+  const ruoloColors: Record<string, string> = {
+    'Titolare': 'bg-[#14b8a6]/20 text-[#14b8a6] border-[#14b8a6]/30',
+    'Socio': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    'Familiare': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    'Dipendente': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    'Collaboratore': 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  };
 
   if (loading) return <LoadingSpinner />;
-  if (collaboratori.length === 0) return <EmptyState text="Nessun collaboratore trovato" />;
 
   return (
-    <div className="space-y-2 sm:space-y-3">
-      {collaboratori.map((c: any) => (
+    <div className="space-y-3">
+      {/* Info banner */}
+      <Card className="bg-[#14b8a6]/5 border-[#14b8a6]/20 py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-start gap-2">
+            <Phone className="w-4 h-4 text-[#14b8a6] mt-0.5 flex-shrink-0" />
+            <p className="text-xs sm:text-sm text-[#e8fbff]/70">
+              I collaboratori autorizzati potranno scaricare l'app DMS e registrare le presenze sui posteggi dell'impresa inserendo il numero di telefono associato.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista collaboratori */}
+      {collaboratori.map((c) => (
         <Card key={c.id} className="bg-[#1a2332] border-[#14b8a6]/20 py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
           <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#14b8a6]/10 flex items-center justify-center flex-shrink-0">
-                <User className="w-4 h-4 sm:w-5 sm:h-5 text-[#14b8a6]" />
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#14b8a6]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <User className="w-5 h-5 text-[#14b8a6]" />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm sm:text-base font-semibold text-[#e8fbff] truncate">
-                  {c.contact_name || c.business_name || 'Operatore'}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-400 truncate">
-                  {c.code || ''} {c.phone ? `\u00b7 ${c.phone}` : ''} {c.email ? `\u00b7 ${c.email}` : ''}
-                </p>
+              <div className="flex-1 min-w-0 space-y-2">
+                {/* Riga 1: Nome e Cognome */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Nome"
+                      value={c.nome}
+                      onChange={(e) => updateCollaboratore(c.id, 'nome', e.target.value)}
+                      className="bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-2.5 py-1.5 text-sm text-[#e8fbff] placeholder-gray-600 focus:border-[#14b8a6]/50 focus:outline-none w-full"
+                      readOnly={c.ruolo === 'Titolare'}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Cognome"
+                      value={c.cognome}
+                      onChange={(e) => updateCollaboratore(c.id, 'cognome', e.target.value)}
+                      className="bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-2.5 py-1.5 text-sm text-[#e8fbff] placeholder-gray-600 focus:border-[#14b8a6]/50 focus:outline-none w-full"
+                      readOnly={c.ruolo === 'Titolare'}
+                    />
+                  </div>
+                </div>
+                {/* Riga 2: CF e Ruolo */}
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="Codice Fiscale"
+                    value={c.codice_fiscale}
+                    onChange={(e) => updateCollaboratore(c.id, 'codice_fiscale', e.target.value.toUpperCase())}
+                    className="bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-2.5 py-1.5 text-xs text-[#e8fbff] placeholder-gray-600 focus:border-[#14b8a6]/50 focus:outline-none uppercase"
+                    maxLength={16}
+                  />
+                  <select
+                    value={c.ruolo}
+                    onChange={(e) => updateCollaboratore(c.id, 'ruolo', e.target.value)}
+                    disabled={c.ruolo === 'Titolare'}
+                    className="bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-2.5 py-1.5 text-xs text-[#e8fbff] focus:border-[#14b8a6]/50 focus:outline-none"
+                  >
+                    <option value="Titolare">Titolare</option>
+                    <option value="Socio">Socio</option>
+                    <option value="Familiare">Familiare</option>
+                    <option value="Dipendente">Dipendente</option>
+                    <option value="Collaboratore">Collaboratore</option>
+                  </select>
+                </div>
+                {/* Riga 3: Telefono + Toggle Autorizzazione */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <Phone className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                    <input
+                      type="tel"
+                      placeholder="+39 333 1234567"
+                      value={c.telefono}
+                      onChange={(e) => updateCollaboratore(c.id, 'telefono', e.target.value)}
+                      className="bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-2.5 py-1.5 text-sm text-[#e8fbff] placeholder-gray-600 focus:border-[#14b8a6]/50 focus:outline-none flex-1"
+                    />
+                  </div>
+                  <button
+                    onClick={() => toggleAutorizzazione(c.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      c.autorizzato_presenze
+                        ? 'bg-[#14b8a6]/15 text-[#14b8a6] border-[#14b8a6]/30'
+                        : 'bg-red-500/10 text-red-400 border-red-500/20'
+                    }`}
+                  >
+                    {c.autorizzato_presenze ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                    {c.autorizzato_presenze ? 'Autorizzato' : 'Non Autoriz.'}
+                  </button>
+                </div>
+                {/* Badge ruolo e rimuovi */}
+                <div className="flex items-center justify-between">
+                  <Badge className={`text-[10px] border ${ruoloColors[c.ruolo] || ruoloColors['Collaboratore']}`}>
+                    {c.ruolo}
+                  </Badge>
+                  {c.ruolo !== 'Titolare' && (
+                    <button
+                      onClick={() => removeCollaboratore(c.id)}
+                      className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors"
+                    >
+                      Rimuovi
+                    </button>
+                  )}
+                </div>
               </div>
-              <Badge className={`text-[10px] sm:text-xs ${getStatoBadgeClass(c.status)}`}>{c.status || 'N/D'}</Badge>
             </div>
           </CardContent>
         </Card>
       ))}
+
+      {/* Pulsante Aggiungi */}
+      <button
+        onClick={addCollaboratore}
+        className="w-full border-2 border-dashed border-[#14b8a6]/20 rounded-none sm:rounded-xl py-4 text-sm text-[#14b8a6]/60 hover:text-[#14b8a6] hover:border-[#14b8a6]/40 transition-all flex items-center justify-center gap-2"
+      >
+        <Users className="w-4 h-4" />
+        Aggiungi Collaboratore
+      </button>
     </div>
   );
 }
@@ -816,9 +980,25 @@ export default function AnagraficaPage() {
       if (impresaJson.success) setImpresa(impresaJson.data);
 
       try {
-        const concRes = await fetch(`${API_BASE_URL}/api/concessions?vendor_id=${IMPRESA_ID}`);
-        const concJson = await concRes.json();
-        if (concJson.success) setConcessioni(concJson.data || []);
+        // Step 1: Trova il vendor_id associato all'impresa
+        const vendorsRes = await fetch(`${API_BASE_URL}/api/vendors`);
+        const vendorsJson = await vendorsRes.json();
+        const myVendors = (vendorsJson.data || []).filter((v: any) => v.impresa_id === IMPRESA_ID);
+        
+        if (myVendors.length > 0) {
+          // Step 2: Carica concessioni per ogni vendor dell'impresa
+          const allConcessioni: ConcessioneData[] = [];
+          for (const vendor of myVendors) {
+            const concRes = await fetch(`${API_BASE_URL}/api/concessions?vendor_id=${vendor.id}`);
+            const concJson = await concRes.json();
+            if (concJson.success && concJson.data) {
+              allConcessioni.push(...concJson.data);
+            }
+          }
+          setConcessioni(allConcessioni);
+        } else {
+          setConcessioni([]);
+        }
       } catch { /* silenzioso */ }
 
       try {
@@ -934,7 +1114,7 @@ export default function AnagraficaPage() {
             ? <DomandaSpuntaDetailView domanda={selectedDomanda} onBack={() => setSelectedDomanda(null)} />
             : <DomandeSpuntaSection domande={domande} loading={loading} onSelect={setSelectedDomanda} />
         )}
-        {activeTab === 'collaboratori' && <CollaboratoriSection impresaId={IMPRESA_ID} />}
+        {activeTab === 'collaboratori' && <CollaboratoriSection impresaId={IMPRESA_ID} impresa={impresa} />}
 
         {/* Summary indicators */}
         {activeTab === 'impresa' && !loading && impresa && (
