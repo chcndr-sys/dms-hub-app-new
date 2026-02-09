@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.3.3  
-> **Data:** 8 Febbraio 2026 (v4.3.3 — Fix UI Mobile App Impresa e Adattamento Mobile)  
+> **Versione:** 4.4.0  
+> **Data:** 9 Febbraio 2026 (v4.4.0 — Implementazione completa Anagrafica Impresa)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -1155,7 +1155,7 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 | **Dashboard** | `DashboardImpresa.tsx` | ✅ Adattata (v4.3.2) |
 | **Wallet** | `WalletImpresaPage.tsx` | ✅ Adattata (v4.3.3) |
 | **Notifiche** | `NotifichePage.tsx` | ✅ Adattata (v4.3.2) |
-| **Anagrafica** | `AnagraficaPage.tsx` | ✅ Adattata (v4.3.2) |
+| **Anagrafica** | `AnagraficaPage.tsx` | ✅ **Completa (v4.4.0)** — 6 tab con API reali |
 | **Presenze** | `PresenzePage.tsx` | ✅ Adattata (v4.3.2) |
 | **Hub Operatore** | `HubOperatore.tsx` | ✅ Adattata (v4.3.3) |
 | **Home Page** | `HomePage.tsx` | ✅ Adattata (v4.3.3) |
@@ -1171,6 +1171,48 @@ Sarà aggiunta un'impostazione a livello di Comune (`comuni.blocco_automatico_pa
 ---
 
 #### 📝 CHANGELOG
+
+### 📱 APP IMPRESA - SEZIONE ANAGRAFICA COMPLETA (v4.4.0)
+
+> **Data:** 9 Febbraio 2026
+> **Obiettivo:** Sostituire la pagina placeholder dell'Anagrafica Impresa con una versione completa e funzionale, replicando il formato della Dashboard PA e integrando le API reali per 6 sotto-sezioni.
+
+#### Approccio "Chirurgico"
+
+L'implementazione è stata eseguita con un approccio "chirurgico", modificando **esclusivamente il file `AnagraficaPage.tsx`**. Nessun altro file è stato toccato per minimizzare l'impatto sul codebase esistente e garantire la stabilità. L'intero componente, incluse le viste di dettaglio e le chiamate API, è stato implementato inline.
+
+#### Struttura della Pagina (6 Tab)
+
+La nuova pagina è organizzata in 6 tab principali, ognuno corrispondente a una sezione specifica dell'anagrafica aziendale.
+
+| Tab | Icona | Descrizione | Stato |
+|---|---|---|---|
+| **Impresa** | `Building2` | Vista completa dei dati anagrafici dell'impresa, suddivisi in card tematiche (Identità, Sede, Contatti, Rappresentante Legale, etc.). | ✅ **Implementato** |
+| **Concessioni** | `MapPin` | Lista delle concessioni attive. Ogni concessione è cliccabile e apre una vista di dettaglio completa. | ✅ **Implementato** |
+| **Qualifiche** | `Shield` | Elenco delle qualificazioni dell'impresa (DURC, HACCP, etc.) con indicazione dello stato (attiva/scaduta). | ✅ **Implementato** |
+| **Autorizzazioni** | `FileCheck` | Lista delle autorizzazioni commerciali (Tipo A/B). Ogni autorizzazione apre una vista di dettaglio. | ✅ **Implementato** |
+| **Spunta** | `ClipboardList`| Elenco delle domande di spunta presentate, con vista di dettaglio per ogni domanda. | ✅ **Implementato** |
+| **Team** | `Users` | Lista dei collaboratori (vendors) associati all'impresa. | ✅ **Implementato** |
+
+#### Componenti e Logica
+
+-   **Navigazione a Tab:** Una barra di navigazione a tab, scrollabile su mobile, permette di passare agilmente tra le 6 sezioni.
+-   **Viste di Dettaglio:** Le sezioni Concessioni, Autorizzazioni e Domande Spunta presentano una lista di card. Cliccando su una card, l'utente accede a una vista di dettaglio completa per quell'elemento, con un pulsante "Indietro" per tornare alla lista.
+-   **Chiamate API Dinamiche:** La pagina recupera dinamicamente l' `impresa_id` dal `localStorage` e carica tutti i dati necessari in un'unica chiamata `fetchAllData` all'avvio. Un pulsante di refresh permette di ricaricare i dati on-demand.
+-   **Design Mobile-First:** Il layout è ottimizzato per smartphone, con card full-width e testo compatto, ma si adatta a schermi più grandi con griglie multi-colonna.
+
+#### API Endpoints Utilizzati
+
+| Sezione | Endpoint | Metodo | Descrizione |
+|---|---|---|---|
+| **Impresa** | `/api/imprese/:id` | GET | Recupera i dati anagrafici completi dell'impresa. |
+| **Concessioni** | `/api/concessions?vendor_id=:id` | GET | Lista delle concessioni associate all'impresa (tramite vendor). |
+| **Qualificazioni**| `/api/qualificazioni/impresa/:id` | GET | Lista di tutte le qualifiche dell'impresa. |
+| **Autorizzazioni**| `/api/autorizzazioni?impresa_id=:id`| GET | Lista delle autorizzazioni commerciali. |
+| **Domande Spunta`| `/api/domande-spunta?impresa_id=:id`| GET | Lista delle domande di spunta. |
+| **Collaboratori** | `/api/vendors` | GET | Lista di tutti i vendors (filtrati lato client). |
+
+---
 
 ### v4.3.3 (08/02/2026) - Fix UI Mobile App Impresa (HomePage, HubOperatore, Wallet)
 
@@ -6750,6 +6792,28 @@ if (el) {
 - [x] Fix scroll ECO Credit: rimosso overflow-hidden, tutta la sezione scrollabile (v1.3.16)
 - [x] Fix score TCC: usa total_earned dal wallet API (dato reale) invece della somma limitata a 50 tx (v1.3.16)
 - [x] Fix contatore transazioni: usa total_transactions dal wallet API (83 reali, non 50 limitate) (v1.3.16)
+
+---
+
+## 🔄 AGGIORNAMENTO SESSIONE 9 FEBBRAIO 2026 — SERA (v4.4.0)
+
+> **Data:** 9 Febbraio 2026
+> **Sessione:** Implementazione completa Anagrafica Impresa v4.4.0
+
+#### FRONTEND (dms-hub-app-new → GitHub → Vercel)
+
+| Commit | Versione | File Modificato | Descrizione |
+|---|---|---|---|
+| `ace5cbe` | v4.4.0 | `client/src/pages/AnagraficaPage.tsx` | **SOSTITUZIONE COMPLETA:** La pagina placeholder è stata sostituita con una versione funzionale con 6 tab (Impresa, Concessioni, Qualifiche, Autorizzazioni, Spunta, Team), viste di dettaglio e chiamate API reali. |
+
+### 📋 CHECKLIST MODIFICHE COMPLETATE
+
+- [x] Sostituito `AnagraficaPage.tsx` con versione completa v4.4.0 (965 righe).
+- [x] Implementate 6 sotto-sezioni con dati reali da API.
+- [x] Aggiunte viste di dettaglio per Concessioni, Autorizzazioni e Domande Spunta.
+- [x] Design mobile-first con tab scrollabili e card responsive.
+- [x] Commit `ace5cbe` pushato su GitHub e deployato su Vercel.
+- [x] Master Blueprint aggiornato a v4.4.0 con nuova sezione "App Impresa - Anagrafica Completa".
 
 ---
 
