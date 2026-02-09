@@ -181,6 +181,10 @@ interface PresenzaData {
   notes: string | null;
   presenze_totali: number;
   assenze_non_giustificate: number;
+  // v4.5.4: Limiti orari dal market_settings per color-coding
+  limite_entrata: string | null;
+  limite_rifiuti: string | null;
+  limite_uscita_min: string | null;
 }
 
 interface GiustificazioneData {
@@ -1148,30 +1152,60 @@ function PresenzeSection({ presenze, stats, loading }: { presenze: PresenzaData[
                       <span className="text-sm font-semibold text-[#14b8a6]">&euro;{parseFloat(p.importo_addebitato || '0').toFixed(2)}</span>
                     </div>
                     
-                    {/* Timeline orari */}
+                    {/* Timeline orari - v4.5.4: Color-coding condizionale verde/rosso */}
+                    {(() => {
+                      // Funzione helper per confrontare orari HH:MM con limiti HH:MM:SS
+                      const parseTime = (t: string | null) => {
+                        if (!t) return null;
+                        const parts = t.split(':').map(Number);
+                        return parts[0] * 60 + parts[1];
+                      };
+                      const oraAccMin = parseTime(p.ora_accesso);
+                      const limiteEntMin = parseTime(p.limite_entrata);
+                      const oraRifMin = parseTime(p.ora_rifiuti);
+                      const limiteRifMin = parseTime(p.limite_rifiuti);
+                      const oraUscMin = parseTime(p.ora_uscita);
+                      const limiteUscMin = parseTime(p.limite_uscita_min);
+                      
+                      // Entrata: verde se registrata E entro il limite, rosso se in ritardo o mancante
+                      const entrataOk = oraAccMin !== null && (limiteEntMin === null || oraAccMin <= limiteEntMin);
+                      // Rifiuti: verde se registrato E entro il limite, rosso se in ritardo o mancante
+                      const rifiutiOk = oraRifMin !== null && (limiteRifMin === null || oraRifMin <= limiteRifMin);
+                      // Uscita: verde se registrata, rosso se mancante
+                      const uscitaOk = oraUscMin !== null;
+                      
+                      const entrataColor = p.ora_accesso ? (entrataOk ? 'text-green-400' : 'text-red-400') : 'text-gray-500';
+                      const rifiutiColor = p.ora_rifiuti ? (rifiutiOk ? 'text-green-400' : 'text-red-400') : 'text-gray-500';
+                      const uscitaColor = p.ora_uscita ? (uscitaOk ? 'text-green-400' : 'text-red-400') : 'text-gray-500';
+                      
+                      return (
                     <div className="grid grid-cols-3 gap-2 mt-2">
-                      <div className="bg-[#0b1220]/50 rounded-lg p-2 text-center">
+                      <div className={`bg-[#0b1220]/50 rounded-lg p-2 text-center ${p.ora_accesso && !entrataOk ? 'border border-red-500/30' : ''}`}>
                         <div className="flex items-center justify-center gap-1 mb-0.5">
-                          <Clock className="w-3 h-3 text-green-400" />
+                          <Clock className={`w-3 h-3 ${entrataColor}`} />
                         </div>
-                        <p className="text-xs sm:text-sm font-mono font-bold text-green-400">{p.ora_accesso || '--:--'}</p>
+                        <p className={`text-xs sm:text-sm font-mono font-bold ${entrataColor}`}>{p.ora_accesso || '--:--'}</p>
                         <p className="text-[9px] text-gray-500">Entrata</p>
+                        {p.limite_entrata && <p className="text-[8px] text-gray-600">max {p.limite_entrata.substring(0,5)}</p>}
                       </div>
-                      <div className="bg-[#0b1220]/50 rounded-lg p-2 text-center">
+                      <div className={`bg-[#0b1220]/50 rounded-lg p-2 text-center ${p.ora_rifiuti && !rifiutiOk ? 'border border-red-500/30' : ''}`}>
                         <div className="flex items-center justify-center gap-1 mb-0.5">
-                          <Trash2 className="w-3 h-3 text-yellow-400" />
+                          <Trash2 className={`w-3 h-3 ${rifiutiColor}`} />
                         </div>
-                        <p className="text-xs sm:text-sm font-mono font-bold text-yellow-400">{p.ora_rifiuti || '--:--'}</p>
+                        <p className={`text-xs sm:text-sm font-mono font-bold ${rifiutiColor}`}>{p.ora_rifiuti || '--:--'}</p>
                         <p className="text-[9px] text-gray-500">Rifiuti</p>
+                        {p.limite_rifiuti && <p className="text-[8px] text-gray-600">max {p.limite_rifiuti.substring(0,5)}</p>}
                       </div>
-                      <div className="bg-[#0b1220]/50 rounded-lg p-2 text-center">
+                      <div className={`bg-[#0b1220]/50 rounded-lg p-2 text-center ${p.ora_uscita && !uscitaOk ? 'border border-red-500/30' : ''}`}>
                         <div className="flex items-center justify-center gap-1 mb-0.5">
-                          <ArrowLeft className="w-3 h-3 text-red-400" />
+                          <ArrowLeft className={`w-3 h-3 ${uscitaColor}`} />
                         </div>
-                        <p className="text-xs sm:text-sm font-mono font-bold text-red-400">{p.ora_uscita || '--:--'}</p>
+                        <p className={`text-xs sm:text-sm font-mono font-bold ${uscitaColor}`}>{p.ora_uscita || '--:--'}</p>
                         <p className="text-[9px] text-gray-500">Uscita</p>
                       </div>
                     </div>
+                      );
+                    })()}
                     
                     {/* Contatori */}
                     <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[#14b8a6]/5">
