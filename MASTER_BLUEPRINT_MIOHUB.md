@@ -216,23 +216,103 @@ La card "DMS Legacy (Heroku)" nel tab "Connessioni" mostrerà:
   - `[Health Check]`: Testa la raggiungibilità degli endpoint proxy.
   - `[Sincronizza Ora]`: Esegue la sincronizzazione manuale.
 
-#### 6. Monitoraggio e Sicurezza
+#### 6. Monitoraggio Guardian e Tab Integrazioni
 
-- **Guardian:** Tutti i **7 nuovi endpoint** verranno aggiunti all'inventario di Guardian e resi visibili nel tab "API Dashboard" per il monitoraggio continuo.
-- **Credenziali:** Le credenziali di accesso al DMS Legacy (`DMS_LEGACY_USER`, `DMS_LEGACY_PASSWORD`) verranno salvate come variabili d'ambiente sicure sul server Hetzner e mai esposte nel codice o nel frontend.
+Tutti i **7 nuovi endpoint** verranno registrati nel sistema Guardian e resi visibili nella **Dashboard PA → Integrazioni → Tab API Dashboard**.
 
-#### 7. Piano di Lavoro (Stimato)
+##### Registrazione in Guardian (`MIO-hub/api/index.json`)
+
+I seguenti endpoint verranno aggiunti al file `api/index.json` nel repository MIO-hub, che è la **fonte di verità** per il conteggio Guardian:
+
+| # | Endpoint | Metodo | Categoria Guardian | Health Check |
+|---|---|---|---|---|
+| 1 | `/api/integrations/dms-legacy/markets` | GET | DMS Legacy | `200 OK` + array mercati |
+| 2 | `/api/integrations/dms-legacy/vendors` | GET | DMS Legacy | `200 OK` + array ambulanti |
+| 3 | `/api/integrations/dms-legacy/concessions` | GET | DMS Legacy | `200 OK` + array concessioni |
+| 4 | `/api/integrations/dms-legacy/presences/:marketId` | GET | DMS Legacy | `200 OK` + oggetto presenze |
+| 5 | `/api/integrations/dms-legacy/market-sessions/:marketId` | GET | DMS Legacy | `200 OK` + array istanze |
+| 6 | `/api/integrations/dms-legacy/sync` | POST | DMS Legacy | `200 OK` + report sync |
+| 7 | `/api/integrations/dms-legacy/cron-sync` | POST | DMS Legacy | `200 OK` + report sync |
+
+**Totale endpoint Guardian aggiornato:** 353 (attuali) + 7 = **360 endpoint monitorati**.
+
+##### Visibilità nel Tab Integrazioni (`ConnessioniV2.tsx`)
+
+Nel componente `ConnessioniV2.tsx`, la card "DMS Legacy (Heroku)" mostrerà tutti e 7 gli endpoint con il loro stato in tempo reale (verde/rosso), la data dell'ultimo sync e il pulsante "Sincronizza Ora".
+
+##### Registrazione in `realEndpoints.ts`
+
+I 7 endpoint verranno anche aggiunti come `EndpointConfig[]` nella nuova categoria `dmsLegacyEndpoints` dentro `realEndpoints.ts`, con:
+- `id`, `method`, `path`, `name`, `description`, `category: 'DMS Legacy'`
+- `exampleResponse` con dati reali di esempio
+- `notes` con stato test
+
+#### 7. Sostituzione API Placeholder Esistenti
+
+Nel file `client/src/config/realEndpoints.ts` esiste già un'integrazione `dms-legacy` con `status: 'in_preparation'` e 3 endpoint placeholder:
+
+| Endpoint Placeholder (ATTUALE) | Stato | Azione |
+|---|---|---|
+| `/api/legacy/markets` | Mai implementato | **SOSTITUIRE** con `/api/integrations/dms-legacy/markets` |
+| `/api/legacy/vendors` | Mai implementato | **SOSTITUIRE** con `/api/integrations/dms-legacy/vendors` |
+| `/api/legacy/transactions` | Mai implementato | **SOSTITUIRE** con `/api/integrations/dms-legacy/concessions` + `/presences/:id` + `/market-sessions/:id` |
+
+**Decisione:** I 3 endpoint placeholder verranno **rimossi e sostituiti** con i 7 endpoint reali. L'URL base verrà corretto da `https://dms-legacy.herokuapp.com` a `https://mihub.157-90-29-66.nip.io`. Lo status passerà da `in_preparation` a `active`.
+
+Modifiche specifiche al file `realEndpoints.ts`:
+```typescript
+// PRIMA (placeholder)
+{
+  id: 'dms-legacy',
+  name: 'DMS Legacy (Heroku)',
+  baseUrl: 'https://dms-legacy.herokuapp.com',
+  status: 'in_preparation',
+  endpoints: ['/api/legacy/markets', '/api/legacy/vendors', '/api/legacy/transactions']
+}
+
+// DOPO (reale)
+{
+  id: 'dms-legacy',
+  name: 'DMS Legacy (Heroku)',
+  baseUrl: 'https://mihub.157-90-29-66.nip.io',
+  status: 'active',
+  dataOwner: 'DMS Legacy (Lapsy srl)',
+  notes: 'Integrazione attiva via API Proxy. I dati vengono letti dal backend Heroku e trasformati nel formato MioHub. Sync automatico ogni ora.',
+  endpoints: [
+    '/api/integrations/dms-legacy/markets',
+    '/api/integrations/dms-legacy/vendors',
+    '/api/integrations/dms-legacy/concessions',
+    '/api/integrations/dms-legacy/presences/:marketId',
+    '/api/integrations/dms-legacy/market-sessions/:marketId',
+    '/api/integrations/dms-legacy/sync',
+    '/api/integrations/dms-legacy/cron-sync'
+  ]
+}
+```
+
+#### 8. Sicurezza e Credenziali
+
+- **Credenziali:** Le credenziali di accesso al DMS Legacy verranno salvate come **variabili d'ambiente** sicure sul server Hetzner e mai esposte nel codice o nel frontend.
+  - `DMS_LEGACY_URL=https://lapsy-dms.herokuapp.com`
+  - `DMS_LEGACY_USER=checchi@me.com`
+  - `DMS_LEGACY_PASSWORD=Dms2022!`
+- **JWT Caching:** Il token JWT ottenuto dal DMS Legacy verrà cachato in memoria con TTL di 23 ore (il JWT scade dopo 24h). Nessun token verrà salvato su disco o database.
+- **Sola Lettura:** Il modulo eseguirà **esclusivamente operazioni GET** verso il DMS Legacy. Nessuna operazione di scrittura (POST/PUT/DELETE) verrà mai eseguita verso Heroku.
+
+#### 9. Piano di Lavoro (Stimato)
 
 | Fase | Task | Stima |
 |---|---|---|
-| 1 | Creazione struttura modulo backend (`dms-legacy`) | 1 ora |
-| 2 | Implementazione servizio di autenticazione e chiamate API | 2 ore |
-| 3 | Implementazione layer di trasformazione dati | 2 ore |
-| 4 | Creazione nuovi endpoint proxy e rotte | 1.5 ore |
-| 5 | Sviluppo CRON job per sync automatico | 1 ora |
-| 6 | Aggiornamento UI (`ConnessioniV2.tsx`) | 1.5 ore |
-| 7 | Aggiunta endpoint a Guardian e test | 0.5 ore |
-| **Totale** | | **9.5 ore** |
+| 1 | Creazione struttura modulo backend (`src/modules/dms-legacy/`) | 1 ora |
+| 2 | Implementazione `service.js` (auth + chiamate API) | 2 ore |
+| 3 | Implementazione `transformer.js` (mapping dati) | 2 ore |
+| 4 | Creazione `routes.js` (7 endpoint proxy) | 1.5 ore |
+| 5 | Sviluppo CRON job `sync-dms-legacy.js` | 1 ora |
+| 6 | Aggiornamento `realEndpoints.ts` (sostituzione placeholder) | 0.5 ore |
+| 7 | Aggiornamento `ConnessioniV2.tsx` (card DMS Legacy attiva) | 1 ora |
+| 8 | Registrazione 7 endpoint in Guardian (`api/index.json`) | 0.5 ore |
+| 9 | Test completo e deploy (GitHub → Vercel + Hetzner) | 1 ora |
+| **Totale** | | **10.5 ore** |
 
 ---
 
