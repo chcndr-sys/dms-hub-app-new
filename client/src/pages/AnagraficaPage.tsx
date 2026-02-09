@@ -958,35 +958,35 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
                     <option value="Collaboratore">Collaboratore</option>
                   </select>
                 </div>
-                {/* Riga 3: Telefono + Toggle Autorizzazione */}
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 flex-1">
-                    <Phone className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-                    <input
-                      type="tel"
-                      placeholder="+39 333 1234567"
-                      value={c.telefono}
-                      onChange={(e) => updateCollaboratore(c.id, 'telefono', e.target.value)}
-                      className="bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-2.5 py-1.5 text-sm text-[#e8fbff] placeholder-gray-600 focus:border-[#14b8a6]/50 focus:outline-none flex-1"
-                    />
-                  </div>
-                  <button
-                    onClick={() => toggleAutorizzazione(c.id)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                      c.autorizzato_presenze
-                        ? 'bg-[#14b8a6]/15 text-[#14b8a6] border-[#14b8a6]/30'
-                        : 'bg-red-500/10 text-red-400 border-red-500/20'
-                    }`}
-                  >
-                    {c.autorizzato_presenze ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                    {c.autorizzato_presenze ? 'Autorizzato' : 'Non Autoriz.'}
-                  </button>
+                {/* Riga 3: Telefono */}
+                <div className="flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                  <input
+                    type="tel"
+                    placeholder="+39 333 1234567"
+                    value={c.telefono}
+                    onChange={(e) => updateCollaboratore(c.id, 'telefono', e.target.value)}
+                    className="bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-2.5 py-1.5 text-sm text-[#e8fbff] placeholder-gray-600 focus:border-[#14b8a6]/50 focus:outline-none flex-1"
+                  />
                 </div>
-                {/* Badge ruolo e rimuovi */}
+                {/* Riga 4: Badge ruolo + Autorizzato + Rimuovi */}
                 <div className="flex items-center justify-between">
-                  <Badge className={`text-[10px] border ${ruoloColors[c.ruolo] || ruoloColors['Collaboratore']}`}>
-                    {c.ruolo}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className={`text-[10px] border ${ruoloColors[c.ruolo] || ruoloColors['Collaboratore']}`}>
+                      {c.ruolo}
+                    </Badge>
+                    <button
+                      onClick={() => toggleAutorizzazione(c.id)}
+                      className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all ${
+                        c.autorizzato_presenze
+                          ? 'bg-[#14b8a6]/15 text-[#14b8a6] border-[#14b8a6]/30'
+                          : 'bg-red-500/10 text-red-400 border-red-500/20'
+                      }`}
+                    >
+                      {c.autorizzato_presenze ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      {c.autorizzato_presenze ? 'Autorizzato' : 'Non Autoriz.'}
+                    </button>
+                  </div>
                   {c.ruolo !== 'Titolare' && (
                     <button
                       onClick={() => removeCollaboratore(c.id)}
@@ -1083,11 +1083,12 @@ function PresenzeSection({ presenze, stats, loading }: { presenze: PresenzaData[
         </div>
       )}
 
-      {/* Giornate di mercato */}
+      {/* Giornate di mercato — lista scrollabile */}
       {giornate.length === 0 ? (
         <EmptyState text="Nessuna presenza registrata" />
       ) : (
-        giornate.map((g, idx) => {
+        <div className="max-h-[60vh] sm:max-h-[65vh] overflow-y-auto space-y-3 sm:space-y-4 pr-1 scrollbar-thin">
+        {giornate.map((g, idx) => {
           const dataStr = g.giorno ? new Date(g.giorno).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-';
           const totalePagato = g.presenze.reduce((sum, p) => sum + parseFloat(p.importo_addebitato || '0'), 0);
           
@@ -1170,7 +1171,8 @@ function PresenzeSection({ presenze, stats, loading }: { presenze: PresenzaData[
               </CardContent>
             </Card>
           );
-        })
+        })}
+        </div>
       )}
     </div>
   );
