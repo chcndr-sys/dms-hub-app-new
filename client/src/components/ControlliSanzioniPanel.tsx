@@ -317,6 +317,9 @@ export default function ControlliSanzioniPanel() {
   const [selectedWatchlistItem, setSelectedWatchlistItem] = useState<WatchlistItem | null>(null);
   const [showWatchlistModal, setShowWatchlistModal] = useState(false);
   const [watchlistPosteggio, setWatchlistPosteggio] = useState<{lat: number, lng: number, numero: string} | null>(null);
+  
+  // v4.5.4: Sub-tab per Da Controllare (attive vs controllate)
+  const [watchlistSubTab, setWatchlistSubTab] = useState<'attive' | 'controllate'>('attive');
 
   // Fetch data on mount e quando cambia l'impersonificazione
   useEffect(() => {
@@ -1366,6 +1369,37 @@ export default function ControlliSanzioniPanel() {
 
         {/* Tab: Da Controllare (Watchlist + Segnalazioni CRON) */}
         <TabsContent value="watchlist" className="space-y-4 mt-4">
+          {/* v4.5.4: Sub-tab Attive / Controllate */}
+          <div className="flex gap-2 mb-4">
+            <Button
+              size="sm"
+              variant={watchlistSubTab === 'attive' ? 'default' : 'outline'}
+              className={watchlistSubTab === 'attive' ? 'bg-[#f59e0b] text-black hover:bg-[#f59e0b]/80' : 'border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/10'}
+              onClick={() => setWatchlistSubTab('attive')}
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Attive
+              <Badge className="ml-2 bg-red-500/20 text-red-400 border-red-500/30">
+                {transgressions.filter(t => t.justification_display_status === 'SEGNALAZIONE' || t.justification_display_status === 'VERBALE_AUTOMATICO' || t.justification_display_status === 'IN_ATTESA' || t.justification_display_status === 'SCADUTA' || t.justification_display_status === 'CERTIFICATO_INVIATO').length + watchlist.length}
+              </Badge>
+            </Button>
+            <Button
+              size="sm"
+              variant={watchlistSubTab === 'controllate' ? 'default' : 'outline'}
+              className={watchlistSubTab === 'controllate' ? 'bg-[#10b981] text-black hover:bg-[#10b981]/80' : 'border-[#10b981]/30 text-[#10b981] hover:bg-[#10b981]/10'}
+              onClick={() => setWatchlistSubTab('controllate')}
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Controllate
+              <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/30">
+                {transgressions.filter(t => t.justification_display_status === 'SANZIONATO').length}
+              </Badge>
+            </Button>
+          </div>
+
+          {/* === SUB-TAB ATTIVE === */}
+          {watchlistSubTab === 'attive' && (
+          <>
           {/* Sezione Segnalazioni CRON */}
           {transgressions.filter(t => t.justification_display_status === 'SEGNALAZIONE' || t.justification_display_status === 'VERBALE_AUTOMATICO').length > 0 && (
             <Card className="bg-[#1a2332] border-[#ef4444]/30">
@@ -1596,6 +1630,68 @@ export default function ControlliSanzioniPanel() {
               )}
             </CardContent>
           </Card>
+          </>
+          )}
+
+          {/* === SUB-TAB CONTROLLATE === */}
+          {watchlistSubTab === 'controllate' && (
+            <Card className="bg-[#1a2332] border-[#10b981]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-[#10b981]" />
+                  Trasgressioni Controllate / Sanzionate
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 ml-2">
+                    {transgressions.filter(t => t.justification_display_status === 'SANZIONATO').length}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="text-[#e8fbff]/60">
+                  Trasgressioni per cui è già stato emesso un verbale di sanzione
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {transgressions.filter(t => t.justification_display_status === 'SANZIONATO').length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle className="h-16 w-16 text-[#10b981]/30 mx-auto mb-4" />
+                    <p className="text-[#e8fbff]/50 text-lg">Nessuna trasgressione controllata</p>
+                    <p className="text-[#e8fbff]/30 text-sm mt-2">Le trasgressioni sanzionate appariranno qui</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {transgressions
+                      .filter(t => t.justification_display_status === 'SANZIONATO')
+                      .map((t) => (
+                      <div 
+                        key={`ctrl-${t.id}`} 
+                        className="bg-[#0f1729] rounded-lg p-4 border border-[#10b981]/20 hover:border-[#10b981]/40 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                                {t.transgression_type.replace(/_/g, ' ')}
+                              </Badge>
+                              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                                SANZIONATO
+                              </Badge>
+                            </div>
+                            <p className="text-[#e8fbff] font-medium">{t.business_name}</p>
+                            <p className="text-[#e8fbff]/50 text-sm">{t.market_name} &middot; {new Date(t.market_date).toLocaleDateString('it-IT')}</p>
+                            <p className="text-[#e8fbff]/40 text-xs mt-1">{t.description}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Controllato
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Tab: Verbali */}
