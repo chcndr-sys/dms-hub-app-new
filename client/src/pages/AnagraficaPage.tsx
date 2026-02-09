@@ -12,7 +12,8 @@ import { useLocation } from 'wouter';
 import { 
   ArrowLeft, Building2, MapPin, FileText, Users, Shield, ClipboardList,
   RefreshCw, Loader2, Calendar, Phone, Globe, ChevronRight,
-  CheckCircle, XCircle, Store, User, Wallet, FileCheck, Clock, TrendingUp, Trash2
+  CheckCircle, XCircle, Store, User, Wallet, FileCheck, Clock, TrendingUp, Trash2,
+  Camera, Upload, AlertCircle, Send, Eye, FileWarning
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -180,6 +181,26 @@ interface PresenzaData {
   notes: string | null;
   presenze_totali: number;
   assenze_non_giustificate: number;
+}
+
+interface GiustificazioneData {
+  id: number;
+  impresa_id: number;
+  comune_id: number;
+  market_id: number | null;
+  giorno_mercato: string;
+  tipo_giustifica: string;
+  reason: string;
+  justification_file_url: string;
+  status: string;
+  reviewed_by: number | null;
+  reviewed_at: string | null;
+  reviewer_notes: string;
+  market_name: string | null;
+  comune_name: string | null;
+  impresa_nome: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface PresenzeStats {
@@ -1201,6 +1222,314 @@ function EmptyState({ text }: { text: string }) {
 }
 
 // ============================================================================
+// GIUSTIFICAZIONI SECTION — Upload certificati medici / giustifiche uscite anticipate
+// ============================================================================
+function GiustificazioniSection({ impresaId, giustificazioni, onRefresh }: { impresaId: number | null; giustificazioni: GiustificazioneData[]; onRefresh: () => void }) {
+  const [showForm, setShowForm] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    giorno_mercato: new Date().toISOString().split('T')[0],
+    tipo_giustifica: 'certificato_medico',
+    reason: '',
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      if (file.type.startsWith('image/')) {
+        setPreviewUrl(URL.createObjectURL(file));
+      } else {
+        setPreviewUrl(null);
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!impresaId || !selectedFile) return;
+    setSending(true);
+    try {
+      // Recupera comune_id dall'utente
+      let comuneId = 1;
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          comuneId = user.comune_id || user.comuneId || 1;
+        }
+      } catch { /* default */ }
+
+      const fd = new FormData();
+      fd.append('file', selectedFile);
+      fd.append('impresa_id', String(impresaId));
+      fd.append('comune_id', String(comuneId));
+      fd.append('giorno_mercato', formData.giorno_mercato);
+      fd.append('tipo_giustifica', formData.tipo_giustifica);
+      fd.append('reason', formData.reason);
+
+      const res = await fetch(`${API_BASE_URL}/api/giustificazioni`, {
+        method: 'POST',
+        body: fd,
+      });
+      const json = await res.json();
+      if (json.success) {
+        setShowForm(false);
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        setFormData({ giorno_mercato: new Date().toISOString().split('T')[0], tipo_giustifica: 'certificato_medico', reason: '' });
+        onRefresh();
+      } else {
+        alert(json.error || 'Errore invio giustifica');
+      }
+    } catch (err) {
+      console.error('Errore invio giustifica:', err);
+      alert('Errore di connessione');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case 'INVIATA': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'ACCETTATA': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'RIFIUTATA': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case 'INVIATA': return 'In Attesa';
+      case 'ACCETTATA': return 'Accettata';
+      case 'RIFIUTATA': return 'Rifiutata';
+      default: return status;
+    }
+  };
+
+  const getTipoLabel = (tipo: string) => {
+    switch (tipo) {
+      case 'certificato_medico': return 'Certificato Medico';
+      case 'uscita_anticipata': return 'Uscita Anticipata';
+      case 'altro': return 'Altro';
+      default: return tipo;
+    }
+  };
+
+  const pendenti = giustificazioni.filter(g => g.status === 'INVIATA').length;
+  const accettate = giustificazioni.filter(g => g.status === 'ACCETTATA').length;
+  const rifiutate = giustificazioni.filter(g => g.status === 'RIFIUTATA').length;
+
+  return (
+    <div className="space-y-3">
+      {/* Info banner */}
+      <Card className="bg-[#14b8a6]/5 border-[#14b8a6]/20 py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-[#14b8a6] mt-0.5 flex-shrink-0" />
+            <p className="text-xs sm:text-sm text-[#e8fbff]/70">
+              Invia certificati medici o giustificazioni per uscite anticipate dal mercato. I documenti saranno esaminati dalla Polizia Municipale.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats */}
+      {giustificazioni.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <Card className="bg-[#1a2332] border-yellow-500/20 py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+            <CardContent className="p-2 sm:p-3 text-center">
+              <p className="text-lg sm:text-2xl font-bold text-yellow-400">{pendenti}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">In Attesa</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-[#1a2332] border-green-500/20 py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+            <CardContent className="p-2 sm:p-3 text-center">
+              <p className="text-lg sm:text-2xl font-bold text-green-400">{accettate}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">Accettate</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-[#1a2332] border-red-500/20 py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+            <CardContent className="p-2 sm:p-3 text-center">
+              <p className="text-lg sm:text-2xl font-bold text-red-400">{rifiutate}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">Rifiutate</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Pulsante Nuova Giustifica */}
+      {!showForm && (
+        <button
+          onClick={() => setShowForm(true)}
+          className="w-full bg-gradient-to-r from-[#14b8a6] to-[#0ea5e9] text-white font-medium py-3 rounded-none sm:rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all"
+        >
+          <Camera className="w-5 h-5" />
+          Invia Giustificazione
+        </button>
+      )}
+
+      {/* Form Nuova Giustifica */}
+      {showForm && (
+        <Card className="bg-[#1a2332] border-[#14b8a6]/30 py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+          <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-6">
+            <CardTitle className="text-[#14b8a6] flex items-center gap-2 text-base">
+              <Send className="w-4 h-4" />
+              Nuova Giustificazione
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-4 space-y-3">
+            {/* Data mercato */}
+            <div>
+              <label className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Giorno Mercato</label>
+              <input
+                type="date"
+                value={formData.giorno_mercato}
+                onChange={(e) => setFormData({ ...formData, giorno_mercato: e.target.value })}
+                className="w-full bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-3 py-2 text-sm text-[#e8fbff] focus:border-[#14b8a6]/50 focus:outline-none mt-1"
+              />
+            </div>
+            {/* Tipo giustifica */}
+            <div>
+              <label className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Tipo Giustificazione</label>
+              <select
+                value={formData.tipo_giustifica}
+                onChange={(e) => setFormData({ ...formData, tipo_giustifica: e.target.value })}
+                className="w-full bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-3 py-2 text-sm text-[#e8fbff] focus:border-[#14b8a6]/50 focus:outline-none mt-1"
+              >
+                <option value="certificato_medico">Certificato Medico</option>
+                <option value="uscita_anticipata">Uscita Anticipata</option>
+                <option value="altro">Altro</option>
+              </select>
+            </div>
+            {/* Motivo */}
+            <div>
+              <label className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Motivo (opzionale)</label>
+              <textarea
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                placeholder="Descrivi brevemente il motivo..."
+                rows={2}
+                className="w-full bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-3 py-2 text-sm text-[#e8fbff] placeholder-gray-600 focus:border-[#14b8a6]/50 focus:outline-none mt-1 resize-none"
+              />
+            </div>
+            {/* Upload file */}
+            <div>
+              <label className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Documento / Foto Certificato</label>
+              <div className="mt-1">
+                {!selectedFile ? (
+                  <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-[#14b8a6]/20 rounded-lg cursor-pointer hover:border-[#14b8a6]/40 transition-all bg-[#0b1220]/50">
+                    <Upload className="w-8 h-8 text-[#14b8a6]/40 mb-1" />
+                    <span className="text-xs text-gray-500">Tocca per caricare foto o PDF</span>
+                    <span className="text-[10px] text-gray-600 mt-0.5">JPG, PNG, PDF — max 10MB</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <div className="bg-[#0b1220]/50 border border-[#14b8a6]/20 rounded-lg p-3">
+                    {previewUrl && (
+                      <img src={previewUrl} alt="Preview" className="w-full h-32 object-cover rounded-lg mb-2" />
+                    )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="w-4 h-4 text-[#14b8a6] flex-shrink-0" />
+                        <span className="text-xs text-[#e8fbff] truncate">{selectedFile.name}</span>
+                      </div>
+                      <button
+                        onClick={() => { setSelectedFile(null); setPreviewUrl(null); }}
+                        className="text-[10px] text-red-400 hover:text-red-300 flex-shrink-0 ml-2"
+                      >
+                        Rimuovi
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Azioni */}
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => { setShowForm(false); setSelectedFile(null); setPreviewUrl(null); }}
+                className="flex-1 bg-gray-700/50 text-gray-300 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-700 transition-all"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={!selectedFile || sending}
+                className="flex-1 bg-gradient-to-r from-[#14b8a6] to-[#0ea5e9] text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {sending ? 'Invio...' : 'Invia'}
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Storico giustifiche */}
+      {giustificazioni.length === 0 ? (
+        <EmptyState text="Nessuna giustificazione inviata" />
+      ) : (
+        <div className="max-h-[55vh] sm:max-h-[60vh] overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+          {giustificazioni.map((g) => (
+            <Card key={g.id} className="bg-[#1a2332] border-[#14b8a6]/20 py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#14b8a6]/10 flex items-center justify-center">
+                      <FileWarning className="w-4 h-4 text-[#14b8a6]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#e8fbff]">{getTipoLabel(g.tipo_giustifica)}</p>
+                      <p className="text-[10px] text-gray-500">{formatDate(g.giorno_mercato)}{g.market_name ? ` — ${g.market_name}` : ''}</p>
+                    </div>
+                  </div>
+                  <Badge className={`text-[10px] border ${getStatusBadge(g.status)}`}>
+                    {getStatusLabel(g.status)}
+                  </Badge>
+                </div>
+                {g.reason && (
+                  <p className="text-xs text-gray-400 mb-2 pl-10">{g.reason}</p>
+                )}
+                <div className="flex items-center justify-between pl-10">
+                  <span className="text-[10px] text-gray-500">Inviata il {formatDate(g.created_at)}</span>
+                  <div className="flex items-center gap-2">
+                    {g.justification_file_url && (
+                      <a
+                        href={g.justification_file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[10px] text-[#14b8a6] hover:text-[#14b8a6]/80"
+                      >
+                        <Eye className="w-3 h-3" />
+                        Vedi
+                      </a>
+                    )}
+                  </div>
+                </div>
+                {g.reviewer_notes && g.status !== 'INVIATA' && (
+                  <div className="mt-2 pl-10 pt-2 border-t border-[#14b8a6]/5">
+                    <p className="text-[10px] text-gray-500">Note revisore:</p>
+                    <p className="text-xs text-[#e8fbff]/70">{g.reviewer_notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 export default function AnagraficaPage() {
@@ -1216,6 +1545,7 @@ export default function AnagraficaPage() {
   const [domande, setDomande] = useState<DomandaSpuntaData[]>([]);
   const [presenze, setPresenze] = useState<PresenzaData[]>([]);
   const [presenzeStats, setPresenzeStats] = useState<PresenzeStats | null>(null);
+  const [giustificazioni, setGiustificazioni] = useState<GiustificazioneData[]>([]);
 
   const [selectedConcessione, setSelectedConcessione] = useState<ConcessioneData | null>(null);
   const [selectedAutorizzazione, setSelectedAutorizzazione] = useState<AutorizzazioneData | null>(null);
@@ -1291,6 +1621,12 @@ export default function AnagraficaPage() {
         }
       } catch { /* silenzioso */ }
 
+      try {
+        const giustRes = await fetch(`${API_BASE_URL}/api/giustificazioni/impresa/${IMPRESA_ID}`);
+        const giustJson = await giustRes.json();
+        if (giustJson.success) setGiustificazioni(giustJson.data || []);
+      } catch { /* silenzioso */ }
+
     } catch (err) {
       console.error('Errore fetch anagrafica:', err);
     } finally {
@@ -1315,6 +1651,7 @@ export default function AnagraficaPage() {
     { id: 'domande', label: 'Spunta', icon: ClipboardList, count: domande.length },
     { id: 'presenze', label: 'Presenze', icon: Clock, count: presenze.length },
     { id: 'collaboratori', label: 'Team', icon: Users, count: null },
+    { id: 'giustificazioni', label: 'Giustif.', icon: FileWarning, count: giustificazioni.length },
   ];
 
   return (
@@ -1389,6 +1726,7 @@ export default function AnagraficaPage() {
         )}
         {activeTab === 'presenze' && <PresenzeSection presenze={presenze} stats={presenzeStats} loading={loading} />}
         {activeTab === 'collaboratori' && <CollaboratoriSection impresaId={IMPRESA_ID} impresa={impresa} />}
+        {activeTab === 'giustificazioni' && <GiustificazioniSection impresaId={IMPRESA_ID} giustificazioni={giustificazioni} onRefresh={() => fetchAllData(true)} />}
 
         {/* Summary indicators */}
         {activeTab === 'impresa' && !loading && impresa && (
