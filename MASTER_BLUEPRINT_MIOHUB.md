@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
 > **Versione:** 4.4.2  
-> **Data:** 9 Febbraio 2026 (v4.4.2 — Fix Anagrafica Impresa: Concessioni, DURC, Team DB, Impresa Light)  
+> **Data:** 9 Febbraio 2026 (v4.4.2 — Tab Presenze, Fix Concessioni/DURC/Team DB, Guardian Collaboratori+Presenze)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -6798,30 +6798,66 @@ if (el) {
 ## 🔄 AGGIORNAMENTO SESSIONE 9 FEBBRAIO 2026 — NOTTE (v4.4.2)
 
 > **Data:** 9 Febbraio 2026
-> **Sessione:** Fix Anagrafica Impresa: Concessioni, DURC, Team DB, Impresa Light
+> **Sessione:** Tab Presenze, Fix Concessioni/DURC/Team DB, Guardian Collaboratori+Presenze
 
 ### 🚀 FRONTEND (dms-hub-app-new → GitHub → Vercel)
 
 | Commit | Versione | File Modificato | Descrizione |
 |---|---|---|---|
-| `2f19d7c` | v4.4.2 | `client/src/pages/AnagraficaPage.tsx` | **4 FIX CHIRURGICI:** 1) Concessioni trovate (fix tipo `impresa_id`), 2) Stato DURC corretto (calcolo da date), 3) Caricamento impresa veloce (API `?fields=light`), 4) Team connesso a DB reale. |
+| `c3ec2ed` | v4.4.2 | `client/src/pages/AnagraficaPage.tsx`, `client/src/components/Integrazioni.tsx` | **TAB PRESENZE + FIX CHIRURGICI:** 1) Nuovo tab Presenze con dati reali spunta (ora entrata/uscita/rifiuti, importo, presenze/assenze). 2) Fix concessioni (tipo `impresa_id`). 3) Fix DURC (calcolo da date). 4) API `?fields=light`. 5) Team connesso a DB. 6) Guardian: case test collaboratori. |
 
 ### 🚀 BACKEND (mihub-backend-rest → GitHub → Hetzner)
 
 | Commit | Versione | File Modificati | Descrizione |
 |---|---|---|---|
-| `8d7d381` | v4.4.2 | `routes/imprese.js`, `routes/collaboratori.js`, `migrations/011_collaboratori_impresa.sql` | **DB + API TEAM, FIX IMPRESA LIGHT:** 1) Creata tabella `collaboratori_impresa` e API `/api/collaboratori`. 2) Aggiunto supporto `?fields=light` a `/api/imprese/:id` per escludere campi vetrina. 3) Fixato stato DURC nel DB. |
+| `d492300` | v4.4.2 | `routes/imprese.js`, `routes/collaboratori.js`, `routes/presenze.js`, `migrations/011_collaboratori_impresa.sql` | **PRESENZE/IMPRESA + COLLABORATORI + IMPRESA LIGHT:** 1) Nuovo endpoint `GET /api/presenze/impresa/:id` (storico presenze per impresa con stats). 2) Tabella `collaboratori_impresa` + API CRUD. 3) Supporto `?fields=light`. 4) Fix DURC nel DB. |
+
+### 🚀 GUARDIAN (MIO-hub/api/index.json)
+
+| Commit | Versione | Descrizione |
+|---|---|---|
+| `d7bc4be` | v4.4.2 | **+8 ENDPOINT:** 5 endpoint Collaboratori (`GET lista`, `GET :id`, `POST`, `PUT :id`, `DELETE :id`) + 3 endpoint Presenze (`GET /impresa/:id`, `GET /sessioni`, `GET /sessioni/:id/dettaglio`). |
+
+### 📐 TAB PRESENZE — ARCHITETTURA
+
+**Endpoint:** `GET /api/presenze/impresa/:id`
+
+**Dati restituiti per ogni presenza:**
+- `giorno` — data giornata di mercato
+- `market_name` / `comune` — mercato e comune
+- `stall_number` / `mq_posteggio` — posteggio e metratura
+- `tipo_presenza` — CONCESSION o SPUNTA
+- `ora_accesso` — ora entrata al mercato
+- `ora_rifiuti` — ora deposito spazzatura
+- `ora_uscita` — ora uscita dal mercato
+- `importo_addebitato` — prezzo pagato
+- `presenze_totali` / `assenze_non_giustificate` — contatori graduatoria
+
+**Stats aggregate:**
+- `totale_presenze` — numero giornate registrate
+- `totale_incassato` — somma importi pagati
+- `mercati_frequentati` — numero mercati distinti
+- `presenze_totali_graduatoria` — max presenze tra i mercati
+- `assenze_non_giustificate` — max assenze tra i mercati
+
+**Layout responsive:**
+- **Smartphone:** Card impilate, griglia 2 colonne per stats, timeline orari compatta
+- **iPad/PC:** Card più larghe, griglia 4 colonne per stats, più spazio tra elementi
 
 ### 📋 CHECKLIST MODIFICHE COMPLETATE
 
 - [x] **Backend:** Aggiunto endpoint `/api/collaboratori` con tabella DB.
 - [x] **Backend:** Aggiunto supporto `?fields=light` a `/api/imprese/:id`.
 - [x] **Backend:** Fixato stato DURC nel DB da "SCADUTA" a "ATTIVA".
+- [x] **Backend:** Nuovo endpoint `GET /api/presenze/impresa/:id` con stats aggregate.
 - [x] **Backend:** Deployato su Hetzner via Orchestrator.
+- [x] **Frontend:** Nuovo tab **Presenze** con card giornate, timeline orari, contatori.
 - [x] **Frontend:** Fixato caricamento concessioni (confronto `Number(impresa_id)`).
 - [x] **Frontend:** Fixato calcolo stato qualifiche (basato su date reali).
 - [x] **Frontend:** Chiamata a `/api/imprese/:id` ora usa `?fields=light`.
 - [x] **Frontend:** Sezione Team connessa all'API `/api/collaboratori` reale.
+- [x] **Frontend:** Guardian Integrazioni: aggiunti case test collaboratori.
+- [x] **Guardian:** +8 endpoint aggiunti (5 collaboratori + 3 presenze).
 
 ---
 
