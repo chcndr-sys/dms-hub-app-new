@@ -1042,7 +1042,7 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
 // ============================================================================
 // PRESENZE SECTION — Storico presenze giornate di mercato
 // ============================================================================
-function PresenzeSection({ presenze, stats, loading }: { presenze: PresenzaData[]; stats: PresenzeStats | null; loading: boolean }) {
+function PresenzeSection({ presenze, stats, loading, onNavigateGiustifica }: { presenze: PresenzaData[]; stats: PresenzeStats | null; loading: boolean; onNavigateGiustifica?: () => void }) {
   if (loading) return <LoadingSpinner />;
   
   // Raggruppa presenze per giorno + mercato
@@ -1171,8 +1171,8 @@ function PresenzeSection({ presenze, stats, loading }: { presenze: PresenzaData[
                       const entrataOk = oraAccMin !== null && (limiteEntMin === null || oraAccMin <= limiteEntMin);
                       // Rifiuti: verde se registrato E entro il limite, rosso se in ritardo o mancante
                       const rifiutiOk = oraRifMin !== null && (limiteRifMin === null || oraRifMin <= limiteRifMin);
-                      // Uscita: verde se registrata, rosso se mancante
-                      const uscitaOk = oraUscMin !== null;
+                      // Uscita: verde se registrata E dopo il limite minimo, rosso se anticipata o mancante
+                      const uscitaOk = oraUscMin !== null && (limiteUscMin === null || oraUscMin >= limiteUscMin);
                       
                       const entrataColor = p.ora_accesso ? (entrataOk ? 'text-green-400' : 'text-red-400') : 'text-gray-500';
                       const rifiutiColor = p.ora_rifiuti ? (rifiutiOk ? 'text-green-400' : 'text-red-400') : 'text-gray-500';
@@ -1202,8 +1202,19 @@ function PresenzeSection({ presenze, stats, loading }: { presenze: PresenzaData[
                         </div>
                         <p className={`text-xs sm:text-sm font-mono font-bold ${uscitaColor}`}>{p.ora_uscita || '--:--'}</p>
                         <p className="text-[9px] text-gray-500">Uscita</p>
+                        {p.limite_uscita_min && <p className="text-[8px] text-gray-600">min {p.limite_uscita_min.substring(0,5)}</p>}
                       </div>
                     </div>
+                    {/* v4.5.5: Banner uscita anticipata con link a giustifica */}
+                    {p.ora_uscita && !uscitaOk && (
+                      <button
+                        onClick={() => onNavigateGiustifica?.()}
+                        className="w-full mt-2 flex items-center justify-between px-3 py-1.5 bg-red-500/10 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors"
+                      >
+                        <span className="text-[10px] text-red-400 font-medium">Uscita anticipata — Da giustificare</span>
+                        <ArrowLeft className="w-3 h-3 text-red-400 rotate-180" />
+                      </button>
+                    )}
                       );
                     })()}
                     
@@ -1798,7 +1809,7 @@ export default function AnagraficaPage() {
             ? <DomandaSpuntaDetailView domanda={selectedDomanda} onBack={() => setSelectedDomanda(null)} />
             : <DomandeSpuntaSection domande={domande} loading={loading} onSelect={setSelectedDomanda} />
         )}
-        {activeTab === 'presenze' && <PresenzeSection presenze={presenze} stats={presenzeStats} loading={loading} />}
+        {activeTab === 'presenze' && <PresenzeSection presenze={presenze} stats={presenzeStats} loading={loading} onNavigateGiustifica={() => setActiveTab('giustificazioni')} />}
         {activeTab === 'collaboratori' && <CollaboratoriSection impresaId={IMPRESA_ID} impresa={impresa} />}
         {activeTab === 'giustificazioni' && <GiustificazioniSection impresaId={IMPRESA_ID} giustificazioni={giustificazioni} concessioni={concessioni} onRefresh={() => fetchAllData(true)} />}
 

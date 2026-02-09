@@ -287,7 +287,7 @@ export default function AppImpresaNotifiche() {
                     Inviati ({messaggiInviati.length})
                   </button>
                 </div>
-                <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
                   {loading ? (
                     <div className="text-center py-8 text-[#e8fbff]/50">
                       <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin" />

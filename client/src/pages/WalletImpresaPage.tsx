@@ -766,22 +766,22 @@ export default function WalletImpresaPage() {
                   <div className="space-y-3">
                     {sanzioni.map((sanzione) => (
                       <div key={sanzione.id} className="p-4 bg-[#0b1220] rounded-lg border border-[#f59e0b]/20">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-[#e8fbff]">{sanzione.verbale_code}</p>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-medium text-[#e8fbff] truncate">{sanzione.verbale_code}</p>
                               {sanzione.in_periodo_ridotto && (
                                 <Badge className="bg-green-500/20 text-green-400 text-xs">
                                   Sconto 30%
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-[#e8fbff]/50">
-                              {sanzione.infraction_description || sanzione.infraction_code}
+                            <p className="text-sm text-[#e8fbff]/50 break-words">
+                              {(sanzione.infraction_description || sanzione.infraction_code || '').replace(/_/g, ' ')}
                             </p>
                             <p className="text-xs text-[#e8fbff]/30">
                               Scadenza: {new Date(sanzione.due_date).toLocaleDateString('it-IT')}
-                              {sanzione.comune_nome && ` • ${sanzione.comune_nome}`}
+                              {sanzione.comune_nome && ` · ${sanzione.comune_nome}`}
                             </p>
                             {sanzione.in_periodo_ridotto && sanzione.giorni_ridotto_rimanenti > 0 && (
                               <p className="text-xs text-green-400 mt-1">
