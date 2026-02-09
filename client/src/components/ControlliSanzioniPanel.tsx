@@ -319,7 +319,9 @@ export default function ControlliSanzioniPanel() {
   const [watchlistPosteggio, setWatchlistPosteggio] = useState<{lat: number, lng: number, numero: string} | null>(null);
   
   // v4.5.4: Sub-tab per Da Controllare (attive vs controllate)
-  const [watchlistSubTab, setWatchlistSubTab] = useState<'attive' | 'controllate'>('attive');
+  const [watchlistSubTab, setWatchlistSubTab] = useState<'attive' | 'controllate' | 'archiviate'>('attive');
+  const [archiveNotes, setArchiveNotes] = useState<string>('');
+  const [archivingId, setArchivingId] = useState<number | null>(null);
 
   // Fetch data on mount e quando cambia l'impersonificazione
   useEffect(() => {
@@ -1395,6 +1397,18 @@ export default function ControlliSanzioniPanel() {
                 {transgressions.filter(t => t.justification_display_status === 'SANZIONATO').length}
               </Badge>
             </Button>
+            <Button
+              size="sm"
+              variant={watchlistSubTab === 'archiviate' ? 'default' : 'outline'}
+              className={watchlistSubTab === 'archiviate' ? 'bg-[#6b7280] text-white hover:bg-[#6b7280]/80' : 'border-[#6b7280]/30 text-[#6b7280] hover:bg-[#6b7280]/10'}
+              onClick={() => setWatchlistSubTab('archiviate')}
+            >
+              <FileCheck className="h-4 w-4 mr-2" />
+              Archiviate
+              <Badge className="ml-2 bg-gray-500/20 text-gray-400 border-gray-500/30">
+                {transgressions.filter(t => t.justification_display_status === 'ARCHIVIATA').length}
+              </Badge>
+            </Button>
           </div>
 
           {/* === SUB-TAB ATTIVE === */}
@@ -1503,6 +1517,66 @@ export default function ControlliSanzioniPanel() {
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Sanzionato
                             </Badge>
+                          )}
+                          {/* v4.5.5: Pulsante Archivia */}
+                          {!t.sanction_id && t.justification_display_status !== 'VERBALE_AUTOMATICO' && (
+                            archivingId === t.id ? (
+                              <div className="flex flex-col gap-1">
+                                <Input
+                                  placeholder="Note (opzionale)"
+                                  value={archiveNotes}
+                                  onChange={(e) => setArchiveNotes(e.target.value)}
+                                  className="bg-[#0b1220] border-gray-600 text-sm h-8"
+                                />
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    className="bg-gray-600 hover:bg-gray-700 text-white text-xs flex-1"
+                                    onClick={async () => {
+                                      try {
+                                        const res = await fetch(`${MIHUB_API}/market-settings/transgressions/${t.id}/archive`, {
+                                          method: 'PUT',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ notes: archiveNotes })
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok && data.success) {
+                                          setTransgressions(prev => prev.map(tr =>
+                                            tr.id === t.id ? { ...tr, status: 'ARCHIVED', justification_display_status: 'ARCHIVIATA' } : tr
+                                          ));
+                                          setArchivingId(null);
+                                          setArchiveNotes('');
+                                        } else {
+                                          alert(`Errore: ${data.error || 'Errore'}`);
+                                        }
+                                      } catch (err) {
+                                        alert('Errore di rete');
+                                      }
+                                    }}
+                                  >
+                                    Conferma
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs border-gray-600"
+                                    onClick={() => { setArchivingId(null); setArchiveNotes(''); }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-gray-500/30 text-gray-400 hover:bg-gray-500/10"
+                                onClick={() => setArchivingId(t.id)}
+                              >
+                                <FileCheck className="h-4 w-4 mr-1" />
+                                Archivia
+                              </Button>
+                            )
                           )}
                         </div>
                       </div>
@@ -1682,6 +1756,66 @@ export default function ControlliSanzioniPanel() {
                             <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Controllato
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* === SUB-TAB ARCHIVIATE === */}
+          {watchlistSubTab === 'archiviate' && (
+            <Card className="bg-[#1a2332] border-[#6b7280]/30">
+              <CardHeader>
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <FileCheck className="h-5 w-5 text-[#6b7280]" />
+                  Trasgressioni Archiviate
+                  <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 ml-2">
+                    {transgressions.filter(t => t.justification_display_status === 'ARCHIVIATA').length}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="text-[#e8fbff]/60">
+                  Trasgressioni archiviate senza emissione di verbale
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {transgressions.filter(t => t.justification_display_status === 'ARCHIVIATA').length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileCheck className="h-16 w-16 text-[#6b7280]/30 mx-auto mb-4" />
+                    <p className="text-[#e8fbff]/50 text-lg">Nessuna trasgressione archiviata</p>
+                    <p className="text-[#e8fbff]/30 text-sm mt-2">Le trasgressioni archiviate appariranno qui</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {transgressions
+                      .filter(t => t.justification_display_status === 'ARCHIVIATA')
+                      .map((t) => (
+                      <div 
+                        key={`arch-${t.id}`} 
+                        className="bg-[#0f1729] rounded-lg p-4 border border-[#6b7280]/20 hover:border-[#6b7280]/40 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                                {t.transgression_type.replace(/_/g, ' ')}
+                              </Badge>
+                              <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">
+                                ARCHIVIATA
+                              </Badge>
+                            </div>
+                            <p className="text-[#e8fbff] font-medium">{t.business_name}</p>
+                            <p className="text-[#e8fbff]/50 text-sm">{t.market_name} &middot; {new Date(t.market_date).toLocaleDateString('it-IT')}</p>
+                            <p className="text-[#e8fbff]/40 text-xs mt-1">{t.notes || 'Archiviata senza note'}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">
+                              <FileCheck className="h-3 w-3 mr-1" />
+                              Archiviata
                             </Badge>
                           </div>
                         </div>
