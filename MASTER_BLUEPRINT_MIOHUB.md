@@ -111,6 +111,56 @@
 
 ---
 
+## 🏛️ INTEGRAZIONE DMS LEGACY (Heroku)
+
+Questa sezione documenta l'architettura e la strategia di integrazione per il sistema DMS Legacy, ospitato su Heroku, che gestisce i mercati di Bologna e Cervia e l'app di spunta.
+
+### Architettura e Credenziali
+
+| Componente | Dettagli |
+|---|---|
+| **Piattaforma** | Heroku |
+| **Applicazione** | `lapsy-dms` |
+| **URL Gestionale** | `https://lapsy-dms.herokuapp.com/index.html` |
+| **Credenziali Gestionale** | `checchi@me.com` / `Dms2022!` |
+| **Backend** | Node.js + Express (con Webix UI) |
+| **Database** | PostgreSQL (su AWS RDS `eu-west-1`) |
+| **URI Database** | `postgres://u4gjr63u7b0f3k:p813...scl.eu-west-1.rds.amazonaws.com:5432/d18d7n7ncg8ao7` |
+| **Comunicazione Real-time** | Socket.IO per l'app di spunta |
+
+### API Endpoints Funzionanti
+
+Il backend del DMS Legacy espone una serie di endpoint REST-like (non pienamente RESTful) che richiedono autenticazione via JWT. Di seguito i principali endpoint funzionanti scoperti durante l'analisi.
+
+| Endpoint | Metodo | Descrizione |
+|---|---|---|
+| `/auth/login` | POST | Ottiene il JWT per le chiamate successive. |
+| `/ui/mercati` | GET | Restituisce la lista dei mercati gestiti (Bologna, Cervia). |
+| `/ui/amb` | GET | Restituisce la lista completa degli ambulanti (29 record). |
+| `/ui/concessioni` | GET | Fornisce l'elenco delle concessioni attive (25 record). |
+| `/ui/spuntisti` | GET | Lista degli operatori di spunta. |
+| `/presense/mercato/:id` | GET | Dati sulle presenze per un dato mercato, usata dall'app di spunta. |
+| `/mercato/:id/istanze/date` | GET | Fornisce le giornate di mercato (istanze) per un dato mercato. |
+
+### Diagramma di Interoperabilità
+
+Il diagramma seguente illustra l'architettura proposta per far coesistere e comunicare i due sistemi, MioHub e DMS Legacy, tramite un "ponte" di interoperabilità.
+
+![Diagramma di Interoperabilità DMS Legacy e MioHub](https://files.manuscdn.com/user_upload_by_module/session_file/310519663287267762/jNOCHZnIJLMBCPyY.png)
+
+### Strategia di Integrazione Continua
+
+L'obiettivo è far coesistere i due sistemi, garantendo che i dati dei mercati attivi sul DMS Legacy (Bologna, Cervia) siano visibili e utilizzabili all'interno di MioHub, e che le operazioni di spunta continuino a funzionare senza interruzioni. La strategia si basa sui seguenti punti chiave:
+
+1.  **API Proxy Layer**: Creare un layer nel backend di MioHub che faccia da proxy verso le API del DMS Legacy. Questo permette di centralizzare la logica di comunicazione e trasformazione dei dati.
+2.  **Sincronizzazione Bidirezionale**: Implementare meccanismi (CRON job o webhook) per sincronizzare le entità principali (Mercati, Ambulanti/Imprese, Concessioni, Presenze) tra i due database.
+3.  **WebSocket Bridge**: Creare un "ponte" per gli eventi Socket.IO generati dall'app di spunta, in modo che MioHub possa ricevere in tempo reale le informazioni sulle presenze.
+4.  **Migrazione Graduale**: Iniziare con una sincronizzazione in sola lettura dal DMS a MioHub, per poi passare a una gestione ibrida e infine valutare una migrazione completa.
+
+(Per un'analisi dettagliata, fare riferimento al file `CONFRONTO_DMS_LEGACY_vs_MIOHUB.xlsx`)
+
+---
+
 ## 📁 REPOSITORY GITHUB
 
 | Repository | Descrizione | URL |
