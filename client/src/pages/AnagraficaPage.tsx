@@ -1224,7 +1224,7 @@ function EmptyState({ text }: { text: string }) {
 // ============================================================================
 // GIUSTIFICAZIONI SECTION — Upload certificati medici / giustifiche uscite anticipate
 // ============================================================================
-function GiustificazioniSection({ impresaId, giustificazioni, onRefresh }: { impresaId: number | null; giustificazioni: GiustificazioneData[]; onRefresh: () => void }) {
+function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRefresh }: { impresaId: number | null; giustificazioni: GiustificazioneData[]; concessioni: ConcessioneData[]; onRefresh: () => void }) {
   const [showForm, setShowForm] = useState(false);
   const [sending, setSending] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -1233,7 +1233,18 @@ function GiustificazioniSection({ impresaId, giustificazioni, onRefresh }: { imp
     giorno_mercato: new Date().toISOString().split('T')[0],
     tipo_giustifica: 'certificato_medico',
     reason: '',
+    concessione_idx: '', // indice nella lista concessioni per selezionare comune/mercato
   });
+
+  // Estrai lista unica di comuni/mercati dalle concessioni attive
+  const comuniMercati = concessioni
+    .filter(c => c.stato_calcolato === 'ATTIVA' || c.stato === 'ATTIVA')
+    .map((c, idx) => ({
+      idx,
+      label: `${c.market_name || 'Mercato N/D'} - ${c.comune_rilascio || 'Comune N/D'}`,
+      market_name: c.market_name,
+      comune_rilascio: c.comune_rilascio,
+    }));
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1261,6 +1272,9 @@ function GiustificazioniSection({ impresaId, giustificazioni, onRefresh }: { imp
         }
       } catch { /* default */ }
 
+      // Recupera info mercato dalla concessione selezionata
+      const selectedConc = formData.concessione_idx !== '' ? comuniMercati[Number(formData.concessione_idx)] : null;
+
       const fd = new FormData();
       fd.append('file', selectedFile);
       fd.append('impresa_id', String(impresaId));
@@ -1268,6 +1282,10 @@ function GiustificazioniSection({ impresaId, giustificazioni, onRefresh }: { imp
       fd.append('giorno_mercato', formData.giorno_mercato);
       fd.append('tipo_giustifica', formData.tipo_giustifica);
       fd.append('reason', formData.reason);
+      if (selectedConc) {
+        fd.append('market_name', selectedConc.market_name || '');
+        fd.append('comune_name', selectedConc.comune_rilascio || '');
+      }
 
       const res = await fetch(`${API_BASE_URL}/api/giustificazioni`, {
         method: 'POST',
@@ -1278,14 +1296,14 @@ function GiustificazioniSection({ impresaId, giustificazioni, onRefresh }: { imp
         setShowForm(false);
         setSelectedFile(null);
         setPreviewUrl(null);
-        setFormData({ giorno_mercato: new Date().toISOString().split('T')[0], tipo_giustifica: 'certificato_medico', reason: '' });
+        setFormData({ giorno_mercato: new Date().toISOString().split('T')[0], tipo_giustifica: 'certificato_medico', reason: '', concessione_idx: '' });
         onRefresh();
       } else {
-        alert(json.error || 'Errore invio giustifica');
+        alert(json.error || json.message || 'Errore invio giustifica');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Errore invio giustifica:', err);
-      alert('Errore di connessione');
+      alert(`Errore: ${err?.message || 'Connessione al server non riuscita. Verifica la connessione internet e riprova.'}`);
     } finally {
       setSending(false);
     }
@@ -1381,6 +1399,22 @@ function GiustificazioniSection({ impresaId, giustificazioni, onRefresh }: { imp
             </CardTitle>
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-3 sm:pb-4 space-y-3">
+            {/* Selettore Comune/Mercato */}
+            {comuniMercati.length > 0 && (
+              <div>
+                <label className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Comune / Mercato</label>
+                <select
+                  value={formData.concessione_idx}
+                  onChange={(e) => setFormData({ ...formData, concessione_idx: e.target.value })}
+                  className="w-full bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-3 py-2 text-sm text-[#e8fbff] focus:border-[#14b8a6]/50 focus:outline-none mt-1"
+                >
+                  <option value="">Seleziona mercato...</option>
+                  {comuniMercati.map((cm) => (
+                    <option key={cm.idx} value={String(cm.idx)}>{cm.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {/* Data mercato */}
             <div>
               <label className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Giorno Mercato</label>
@@ -1726,7 +1760,7 @@ export default function AnagraficaPage() {
         )}
         {activeTab === 'presenze' && <PresenzeSection presenze={presenze} stats={presenzeStats} loading={loading} />}
         {activeTab === 'collaboratori' && <CollaboratoriSection impresaId={IMPRESA_ID} impresa={impresa} />}
-        {activeTab === 'giustificazioni' && <GiustificazioniSection impresaId={IMPRESA_ID} giustificazioni={giustificazioni} onRefresh={() => fetchAllData(true)} />}
+        {activeTab === 'giustificazioni' && <GiustificazioniSection impresaId={IMPRESA_ID} giustificazioni={giustificazioni} concessioni={concessioni} onRefresh={() => fetchAllData(true)} />}
 
         {/* Summary indicators */}
         {activeTab === 'impresa' && !loading && impresa && (
