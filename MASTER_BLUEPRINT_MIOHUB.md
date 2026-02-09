@@ -148,183 +148,158 @@ Il diagramma seguente illustra l'architettura proposta per far coesistere e comu
 
 ![Diagramma di Interoperabilità DMS Legacy e MioHub](https://files.manuscdn.com/user_upload_by_module/session_file/310519663287267762/jNOCHZnIJLMBCPyY.png)
 
-### 🔌 Progetto di Integrazione: Modulo DMS Legacy
+### 🔌 Modulo Integrazione DMS Legacy — v2.0.0 (Connessione Diretta DB)
 
-Questa sezione definisce il progetto tecnico per l'implementazione del modulo di integrazione con il DMS Legacy, secondo l'**Approccio A (API Proxy)**. L'obiettivo è leggere i dati dal sistema legacy in tempo reale, renderli disponibili in MioHub e mantenere l'operatività dell'app di spunta esistente, senza modificare il sistema sorgente.
+**Stato: ✅ IMPLEMENTATO E ATTIVO** — Deploy 9 Febbraio 2026
 
-#### 1. Architettura della Soluzione
+Questa sezione documenta l'implementazione del modulo di integrazione con il DMS Legacy. L'approccio è stato aggiornato da **API Proxy** a **Connessione Diretta al Database PostgreSQL** su AWS RDS, per maggiore affidabilità e indipendenza dal backend Heroku.
 
-L'integrazione avverrà creando un **modulo proxy** nel nostro backend (`mihub-backend-rest`). Questo modulo gestirà tutta la comunicazione con l'API Heroku del DMS Legacy, occupandosi di:
-1.  **Autenticazione:** Ottenere e mantenere un JWT valido.
-2.  **Proxy delle Chiamate:** Esporre nuovi endpoint su MioHub che chiamano gli endpoint corrispondenti su Heroku.
-3.  **Trasformazione Dati:** Mappare e trasformare i dati dal formato DMS Legacy al formato MioHub.
-4.  **Sincronizzazione:** Fornire meccanismi per la sincronizzazione periodica e on-demand dei dati.
+#### 1. Architettura della Soluzione (v2.0.0)
 
-#### 2. Componenti da Implementare
+**Connessione:** Diretta al database PostgreSQL del DMS Legacy su AWS RDS (eu-west-1).
+**Sicurezza:** Solo query `SELECT` — blocco hardware su qualsiasi query non-SELECT.
+**Pool:** Max 3 connessioni, timeout 10s, idle 30s.
+
+```
+┌─────────────────┐     SELECT only      ┌──────────────────────┐
+│  MioHub Backend  │ ──────────────────── │  DB DMS Legacy       │
+│  (Hetzner)       │     Pool max 3       │  (AWS RDS eu-west-1) │
+│                  │                      │  PostgreSQL          │
+│  dms-legacy/     │                      │  25 tabelle          │
+│  service.js      │ ◄─── Dati Legacy ─── │  amb, mercati,       │
+│  transformer.js  │                      │  conc_std, presenze  │
+│  routes.js       │                      │  piazzole, istanze   │
+└─────────────────┘                      └──────────────────────┘
+        │
+        │  Trasformazione
+        │  Legacy → MioHub
+        ▼
+┌─────────────────┐
+│  Frontend MioHub │
+│  Tab Connessioni │
+│  Health Check    │
+│  Sincronizza Ora │
+└─────────────────┘
+```
+
+**Architettura BIDIREZIONALE predisposta:**
+
+| Direzione | Stato | Descrizione |
+|---|---|---|
+| **EXPORT** (Legacy → MioHub) | ✅ **ATTIVO** | Lettura dati dal DB Legacy via SELECT |
+| **IMPORT** (MioHub → Legacy) | 🔒 **BLOCCATO** | Predisposto nel codice, da sbloccare in futuro |
+
+#### 2. Componenti Implementati
 
 ##### Backend (`mihub-backend-rest`)
 
-- **Nuovo Modulo:** Verrà creata una nuova cartella `src/modules/dms-legacy/`.
-  - `service.js`: Conterrà la logica di business. Funzione `getLegacyJwt()` per ottenere e cachare il token di autenticazione. Funzioni per ogni chiamata API a Heroku (es. `fetchLegacyMarkets()`, `fetchLegacyVendors()`).
-  - `controller.js`: Conterrà i controller per le nuove rotte, che useranno il servizio per recuperare i dati e li passeranno al layer di trasformazione.
-  - `transformer.js`: Conterrà le funzioni pure per mappare i dati (es. `transformMarket(legacyMarket)`, `transformVendor(legacyVendor)`), basandosi sull'inventario Excel.
-  - `routes.js`: Definirà i nuovi endpoint API esposti da MioHub.
-
-- **CRON Job:** Verrà aggiunto un nuovo job in `src/jobs/`.
-  - `sync-dms-legacy.js`: Un CRON job schedulato (es. ogni ora) che chiamerà l'endpoint di sincronizzazione per mantenere i dati allineati.
+| File | Funzione | Stato |
+|---|---|---|
+| `routes/dms-legacy-service.js` | Pool connessione DB RDS, query SELECT, guard import, health check, fetch per ogni entità | ✅ Attivo |
+| `routes/dms-legacy-transformer.js` | Mapping colonna per colonna: mercati, ambulanti→imprese, concessioni, presenze, sessioni | ✅ Attivo |
+| `routes/dms-legacy.js` | 14 endpoint REST (9 export + 3 import bloccati + 2 sync) | ✅ Attivo |
+| `index.js` | +2 righe: import route + mount `/api/integrations/dms-legacy` + CRON ogni 60 min | ✅ Attivo |
 
 ##### Frontend (`dms-hub-app-new`)
 
-- **Configurazione:**
-  - `client/src/config/realEndpoints.ts`: L'integrazione `dms-legacy` verrà aggiornata a `status: 'active'` e gli `endpoints` verranno sostituiti con i nuovi endpoint proxy di MioHub.
+| File | Modifica | Stato |
+|---|---|---|
+| `client/src/config/realEndpoints.ts` | DMS Legacy: `status: 'active'`, 7 endpoint reali, URL corretto | ✅ Attivo |
+| `client/src/components/ConnessioniV2.tsx` | Card DMS Legacy con Health Check, Sincronizza Ora, ultimo sync | ✅ Attivo |
 
-- **Componenti:**
-  - `client/src/components/ConnessioniV2.tsx`: La card "DMS Legacy (Heroku)" verrà potenziata per mostrare lo stato reale, la data dell'ultimo sync e includerà un pulsante "Sincronizza Ora".
+#### 3. Endpoint API Completi
 
-#### 3. Nuovi Endpoint API (MioHub Proxy)
+Tutti gli endpoint sono prefissati con `/api/integrations/dms-legacy/`.
 
-Verranno creati i seguenti endpoint nel nostro backend (`mihub-backend-rest`) per esporre i dati del DMS Legacy. Saranno tutti prefissati con `/api/integrations/dms-legacy/`.
+##### EXPORT (Legacy → MioHub) — ✅ ATTIVI
 
-| Metodo | Endpoint MioHub | Chiama Heroku | Descrizione |
+| # | Metodo | Endpoint | Query DB Legacy | Descrizione |
+|---|---|---|---|---|
+| 1 | `GET` | `/markets` | `SELECT * FROM mercati` + conteggi piazzole/concessioni | Mercati DMS mappati formato MioHub |
+| 2 | `GET` | `/vendors` | `SELECT * FROM amb` + conteggi concessioni/documenti | Ambulanti mappati come Imprese MioHub |
+| 3 | `GET` | `/concessions` | `SELECT * FROM conc_std` + JOIN mercati/amb/piazzole | Concessioni con dati relazionati |
+| 4 | `GET` | `/presences/:marketId` | `SELECT * FROM presenze` + JOIN amb/piazzole/mercati | Presenze per mercato specifico |
+| 5 | `GET` | `/market-sessions/:marketId` | `SELECT * FROM istanze` + conteggi presenti/assenti/spuntisti | Giornate di mercato con statistiche |
+| 6 | `GET` | `/stalls/:marketId` | `SELECT * FROM piazzole` + JOIN concessione attiva + ambulante | Piazzole con assegnatario |
+| 7 | `GET` | `/spuntisti` | `SELECT * FROM spuntisti` + JOIN mercati | Operatori di spunta |
+| 8 | `GET` | `/documents` | `SELECT * FROM amb_doc` + JOIN amb/tipi_doc | Documenti ambulanti |
+| 9 | `GET` | `/stats` | Conteggi aggregati su tutte le tabelle | Statistiche generali DB Legacy |
+
+**Parametro `?raw=true`:** Aggiungendo `?raw=true` a qualsiasi endpoint EXPORT, la risposta include anche i dati grezzi originali del DB Legacy (campo `raw`), utile per debug e confronto.
+
+##### IMPORT (MioHub → Legacy) — 🔒 BLOCCATI
+
+| # | Metodo | Endpoint | Stato | Note |
+|---|---|---|---|---|
+| 10 | `POST` | `/import/market` | 🔒 Bloccato | Restituisce 403 + messaggio |
+| 11 | `POST` | `/import/vendor` | 🔒 Bloccato | Restituisce 403 + messaggio |
+| 12 | `POST` | `/import/concession` | 🔒 Bloccato | Restituisce 403 + messaggio |
+
+**Per sbloccare l'import:** Modificare `SYNC_CONFIG.import.enabled = true` in `dms-legacy-service.js`.
+
+##### SYNC & UTILITY
+
+| # | Metodo | Endpoint | Descrizione |
 |---|---|---|---|
-| `GET` | `/api/integrations/dms-legacy/markets` | `/ui/mercati` | Restituisce i mercati di Bologna e Cervia mappati nel formato MioHub. |
-| `GET` | `/api/integrations/dms-legacy/vendors` | `/ui/amb` | Restituisce gli ambulanti mappati come Imprese MioHub. |
-| `GET` | `/api/integrations/dms-legacy/concessions` | `/ui/concessioni` | Restituisce le concessioni mappate nel formato MioHub. |
-| `GET` | `/api/integrations/dms-legacy/presences/:marketId` | `/presense/mercato/:id` | Fornisce i dati di presenza in tempo reale per un mercato, usati dall'app di spunta. |
-| `GET` | `/api/integrations/dms-legacy/market-sessions/:marketId` | `/mercato/:id/istanze/date` | Fornisce le giornate di mercato (istanze) per un dato mercato. |
-| `POST`| `/api/integrations/dms-legacy/sync` | Tutti gli endpoint | **Azione manuale:** Esegue una sincronizzazione completa on-demand di tutte le entità. |
-| `POST`| `/api/integrations/dms-legacy/cron-sync` | Tutti gli endpoint | **CRON Job:** Endpoint interno chiamato dal CRON per la sincronizzazione periodica. |
+| 13 | `POST` | `/sync` | Sincronizzazione manuale on-demand (solo export) |
+| 14 | `POST` | `/cron-sync` | Sincronizzazione CRON periodica (ogni 60 min) |
+| — | `GET` | `/health` | Health check: connessione DB + stats + ultimo sync |
+| — | `GET` | `/status` | Stato integrazione + lista endpoint + config sync |
 
 #### 4. Flusso di Sincronizzazione
 
-1.  **Periodica (Automatica):** Un CRON job (`sync-dms-legacy`) viene eseguito ogni ora sul server Hetzner.
-2.  Il job chiama l'endpoint `POST /api/integrations/dms-legacy/cron-sync`.
-3.  Il backend MioHub esegue le seguenti operazioni in sequenza:
-    a. Fetch dei dati da tutti gli endpoint principali del DMS Legacy (`/ui/mercati`, `/ui/amb`, etc.).
-    b. Trasformazione di ogni record nel formato dati di MioHub.
-    c. Operazione di `UPSERT` (UPDATE o INSERT se non esiste) nelle tabelle corrispondenti del database Neon (es. `markets`, `imprese`, `concessions`). Verrà usato un campo `legacy_dms_id` per mantenere il riferimento all'ID originale.
-4.  **Manuale (On-demand):** L'utente può cliccare "Sincronizza Ora" dalla UI (sezione Integrazioni), che chiamerà l'endpoint `POST /api/integrations/dms-legacy/sync` per forzare lo stesso processo.
+1.  **Periodica (Automatica):** CRON job ogni 60 minuti su Hetzner.
+2.  Il CRON chiama `POST /api/integrations/dms-legacy/cron-sync`.
+3.  Il backend esegue SELECT su mercati, ambulanti, concessioni dal DB Legacy.
+4.  I dati vengono trasformati nel formato MioHub e il risultato viene loggato.
+5.  **Manuale (On-demand):** Click su "Sincronizza Ora" nel tab Connessioni → `POST /sync`.
 
-#### 5. Interfaccia Utente (Sezione Integrazioni)
+#### 5. Sicurezza
 
-La card "DMS Legacy (Heroku)" nel tab "Connessioni" mostrerà:
-- **Stato:** ✅ Attivo
-- **URL Base:** `https://mihub.157-90-29-66.nip.io/api/integrations/dms-legacy/`
-- **Data Owner:** DMS Legacy
-- **Ultimo Sync:** [Data e ora dell'ultima sincronizzazione riuscita]
-- **Azioni:**
-  - `[Health Check]`: Testa la raggiungibilità degli endpoint proxy.
-  - `[Sincronizza Ora]`: Esegue la sincronizzazione manuale.
+| Aspetto | Implementazione |
+|---|---|
+| **Connessione DB** | URL in variabile d'ambiente `DMS_LEGACY_DB_URL` su Hetzner |
+| **Blocco Scrittura** | Guard hardware: qualsiasi query non-SELECT viene rifiutata con errore |
+| **Pool Limitato** | Max 3 connessioni simultanee per non sovraccaricare il DB Legacy |
+| **Import Bloccato** | Flag `SYNC_CONFIG.import.enabled = false` + funzione `guardImport()` |
+| **Sola Lettura** | Nessuna operazione INSERT/UPDATE/DELETE verso il DB Legacy |
 
-#### 6. Monitoraggio Guardian e Tab Integrazioni
+#### 6. Monitoraggio Guardian
 
-Tutti i **7 nuovi endpoint** verranno registrati nel sistema Guardian e resi visibili nella **Dashboard PA → Integrazioni → Tab API Dashboard**.
+7 endpoint principali registrati in Guardian (`MIO-hub/api/index.json`):
 
-##### Registrazione in Guardian (`MIO-hub/api/index.json`)
+| # | Endpoint | Metodo | Categoria Guardian |
+|---|---|---|---|
+| 1 | `/api/integrations/dms-legacy/markets` | GET | DMS Legacy Integration |
+| 2 | `/api/integrations/dms-legacy/vendors` | GET | DMS Legacy Integration |
+| 3 | `/api/integrations/dms-legacy/concessions` | GET | DMS Legacy Integration |
+| 4 | `/api/integrations/dms-legacy/presences/:marketId` | GET | DMS Legacy Integration |
+| 5 | `/api/integrations/dms-legacy/market-sessions/:marketId` | GET | DMS Legacy Integration |
+| 6 | `/api/integrations/dms-legacy/sync` | POST | DMS Legacy Integration |
+| 7 | `/api/integrations/dms-legacy/cron-sync` | POST | DMS Legacy Integration |
 
-I seguenti endpoint verranno aggiunti al file `api/index.json` nel repository MIO-hub, che è la **fonte di verità** per il conteggio Guardian:
+**Totale endpoint Guardian:** 761 monitorati.
 
-| # | Endpoint | Metodo | Categoria Guardian | Health Check |
-|---|---|---|---|---|
-| 1 | `/api/integrations/dms-legacy/markets` | GET | DMS Legacy | `200 OK` + array mercati |
-| 2 | `/api/integrations/dms-legacy/vendors` | GET | DMS Legacy | `200 OK` + array ambulanti |
-| 3 | `/api/integrations/dms-legacy/concessions` | GET | DMS Legacy | `200 OK` + array concessioni |
-| 4 | `/api/integrations/dms-legacy/presences/:marketId` | GET | DMS Legacy | `200 OK` + oggetto presenze |
-| 5 | `/api/integrations/dms-legacy/market-sessions/:marketId` | GET | DMS Legacy | `200 OK` + array istanze |
-| 6 | `/api/integrations/dms-legacy/sync` | POST | DMS Legacy | `200 OK` + report sync |
-| 7 | `/api/integrations/dms-legacy/cron-sync` | POST | DMS Legacy | `200 OK` + report sync |
+#### 7. Sostituzione API Placeholder
 
-**Totale endpoint Guardian aggiornato:** 353 (attuali) + 7 = **360 endpoint monitorati**.
+I 3 endpoint placeholder originali sono stati **rimossi e sostituiti**:
 
-##### Visibilità nel Tab Integrazioni (`ConnessioniV2.tsx`)
+| Prima (placeholder) | Dopo (reale) |
+|---|---|
+| `status: 'in_preparation'` | `status: 'active'` |
+| `baseUrl: 'https://dms-legacy.herokuapp.com'` | `baseUrl: 'https://mihub.157-90-29-66.nip.io'` |
+| 3 endpoint mai implementati | 7+ endpoint funzionanti |
 
-Nel componente `ConnessioniV2.tsx`, la card "DMS Legacy (Heroku)" mostrerà tutti e 7 gli endpoint con il loro stato in tempo reale (verde/rosso), la data dell'ultimo sync e il pulsante "Sincronizza Ora".
+#### 8. Evoluzione Futura
 
-##### Registrazione in `realEndpoints.ts`
+L'architettura bidirezionale è predisposta per le seguenti evoluzioni:
 
-I 7 endpoint verranno anche aggiunti come `EndpointConfig[]` nella nuova categoria `dmsLegacyEndpoints` dentro `realEndpoints.ts`, con:
-- `id`, `method`, `path`, `name`, `description`, `category: 'DMS Legacy'`
-- `exampleResponse` con dati reali di esempio
-- `notes` con stato test
+1.  **Fase attuale:** EXPORT only (Legacy → MioHub) — sola lettura
+2.  **Fase 2:** Sblocco IMPORT selettivo — scrivere nel DB Legacy solo entità specifiche
+3.  **Fase 3:** Sincronizzazione bidirezionale completa — entrambe le direzioni attive
+4.  **Fase 4:** Migrazione graduale — spostamento progressivo dei mercati dal DMS Legacy a MioHub
 
-#### 7. Sostituzione API Placeholder Esistenti
-
-Nel file `client/src/config/realEndpoints.ts` esiste già un'integrazione `dms-legacy` con `status: 'in_preparation'` e 3 endpoint placeholder:
-
-| Endpoint Placeholder (ATTUALE) | Stato | Azione |
-|---|---|---|
-| `/api/legacy/markets` | Mai implementato | **SOSTITUIRE** con `/api/integrations/dms-legacy/markets` |
-| `/api/legacy/vendors` | Mai implementato | **SOSTITUIRE** con `/api/integrations/dms-legacy/vendors` |
-| `/api/legacy/transactions` | Mai implementato | **SOSTITUIRE** con `/api/integrations/dms-legacy/concessions` + `/presences/:id` + `/market-sessions/:id` |
-
-**Decisione:** I 3 endpoint placeholder verranno **rimossi e sostituiti** con i 7 endpoint reali. L'URL base verrà corretto da `https://dms-legacy.herokuapp.com` a `https://mihub.157-90-29-66.nip.io`. Lo status passerà da `in_preparation` a `active`.
-
-Modifiche specifiche al file `realEndpoints.ts`:
-```typescript
-// PRIMA (placeholder)
-{
-  id: 'dms-legacy',
-  name: 'DMS Legacy (Heroku)',
-  baseUrl: 'https://dms-legacy.herokuapp.com',
-  status: 'in_preparation',
-  endpoints: ['/api/legacy/markets', '/api/legacy/vendors', '/api/legacy/transactions']
-}
-
-// DOPO (reale)
-{
-  id: 'dms-legacy',
-  name: 'DMS Legacy (Heroku)',
-  baseUrl: 'https://mihub.157-90-29-66.nip.io',
-  status: 'active',
-  dataOwner: 'DMS Legacy (Lapsy srl)',
-  notes: 'Integrazione attiva via API Proxy. I dati vengono letti dal backend Heroku e trasformati nel formato MioHub. Sync automatico ogni ora.',
-  endpoints: [
-    '/api/integrations/dms-legacy/markets',
-    '/api/integrations/dms-legacy/vendors',
-    '/api/integrations/dms-legacy/concessions',
-    '/api/integrations/dms-legacy/presences/:marketId',
-    '/api/integrations/dms-legacy/market-sessions/:marketId',
-    '/api/integrations/dms-legacy/sync',
-    '/api/integrations/dms-legacy/cron-sync'
-  ]
-}
-```
-
-#### 8. Sicurezza e Credenziali
-
-- **Credenziali:** Le credenziali di accesso al DMS Legacy verranno salvate come **variabili d'ambiente** sicure sul server Hetzner e mai esposte nel codice o nel frontend.
-  - `DMS_LEGACY_URL=https://lapsy-dms.herokuapp.com`
-  - `DMS_LEGACY_USER=checchi@me.com`
-  - `DMS_LEGACY_PASSWORD=Dms2022!`
-- **JWT Caching:** Il token JWT ottenuto dal DMS Legacy verrà cachato in memoria con TTL di 23 ore (il JWT scade dopo 24h). Nessun token verrà salvato su disco o database.
-- **Sola Lettura:** Il modulo eseguirà **esclusivamente operazioni GET** verso il DMS Legacy. Nessuna operazione di scrittura (POST/PUT/DELETE) verrà mai eseguita verso Heroku.
-
-#### 9. Piano di Lavoro (Stimato)
-
-| Fase | Task | Stima |
-|---|---|---|
-| 1 | Creazione struttura modulo backend (`src/modules/dms-legacy/`) | 1 ora |
-| 2 | Implementazione `service.js` (auth + chiamate API) | 2 ore |
-| 3 | Implementazione `transformer.js` (mapping dati) | 2 ore |
-| 4 | Creazione `routes.js` (7 endpoint proxy) | 1.5 ore |
-| 5 | Sviluppo CRON job `sync-dms-legacy.js` | 1 ora |
-| 6 | Aggiornamento `realEndpoints.ts` (sostituzione placeholder) | 0.5 ore |
-| 7 | Aggiornamento `ConnessioniV2.tsx` (card DMS Legacy attiva) | 1 ora |
-| 8 | Registrazione 7 endpoint in Guardian (`api/index.json`) | 0.5 ore |
-| 9 | Test completo e deploy (GitHub → Vercel + Hetzner) | 1 ora |
-| **Totale** | | **10.5 ore** |
-
----
-
-
-L'obiettivo è far coesistere i due sistemi, garantendo che i dati dei mercati attivi sul DMS Legacy (Bologna, Cervia) siano visibili e utilizzabili all'interno di MioHub, e che le operazioni di spunta continuino a funzionare senza interruzioni. La strategia si basa sui seguenti punti chiave:
-
-1.  **API Proxy Layer**: Creare un layer nel backend di MioHub che faccia da proxy verso le API del DMS Legacy. Questo permette di centralizzare la logica di comunicazione e trasformazione dei dati.
-2.  **Sincronizzazione Bidirezionale**: Implementare meccanismi (CRON job o webhook) per sincronizzare le entità principali (Mercati, Ambulanti/Imprese, Concessioni, Presenze) tra i due database.
-3.  **WebSocket Bridge**: Creare un "ponte" per gli eventi Socket.IO generati dall'app di spunta, in modo che MioHub possa ricevere in tempo reale le informazioni sulle presenze.
-4.  **Migrazione Graduale**: Iniziare con una sincronizzazione in sola lettura dal DMS a MioHub, per poi passare a una gestione ibrida e infine valutare una migrazione completa.
-
-(Per un'analisi dettagliata, fare riferimento al file `CONFRONTO_DMS_LEGACY_vs_MIOHUB.xlsx`)
+(Per l'inventario completo colonna per colonna, fare riferimento al file `INVENTARIO_COMPLETO_DMS_vs_MIOHUB.xlsx`)
 
 ---
 
