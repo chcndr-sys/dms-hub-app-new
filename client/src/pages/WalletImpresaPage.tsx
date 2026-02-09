@@ -789,7 +789,7 @@ export default function WalletImpresaPage() {
                               </p>
                             )}
                           </div>
-                          <div className="text-right">
+                          <div className="text-right flex-shrink-0">
                             <Badge className="bg-[#f59e0b]/20 text-[#f59e0b]">
                               {sanzione.payment_status}
                             </Badge>
@@ -914,13 +914,13 @@ export default function WalletImpresaPage() {
                     {/* v3.54.1: Sanzioni/Verbali PM Pagati */}
                     {sanzioniPagate.map((sanzione) => (
                       <div key={`sanzione-${sanzione.id}`} className="p-4 bg-[#0b1220] rounded-lg border border-red-500/10">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-[#e8fbff]">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-[#e8fbff] truncate">
                               <AlertTriangle className="w-4 h-4 inline mr-1 text-red-400" />
                               Verbale {sanzione.verbale_code}
                             </p>
-                            <p className="text-sm text-[#e8fbff]/50">
+                            <p className="text-sm text-[#e8fbff]/50 break-words">
                               {sanzione.infraction_description || sanzione.infraction_code}
                             </p>
                             <p className="text-xs text-[#e8fbff]/30">
@@ -937,7 +937,7 @@ export default function WalletImpresaPage() {
                               Vedi Verbale
                             </Button>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right flex-shrink-0">
                             <Badge className="bg-red-500/20 text-red-400">SANZIONE</Badge>
                             <p className="text-lg font-bold text-red-400">
                               €{sanzione.importo_effettivo_pagato || parseFloat(sanzione.amount).toFixed(2)}

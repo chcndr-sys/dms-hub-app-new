@@ -1541,8 +1541,10 @@ export default function ControlliSanzioniPanel() {
                                         });
                                         const data = await res.json();
                                         if (res.ok && data.success) {
+                                          // v4.5.6: Usa i dati completi dal backend per aggiornare lo stato locale
+                                          // incluse le justification_notes appena salvate
                                           setTransgressions(prev => prev.map(tr =>
-                                            tr.id === t.id ? { ...tr, status: 'ARCHIVED', justification_display_status: 'ARCHIVIATA' } : tr
+                                            tr.id === t.id ? { ...tr, ...data.data, justification_display_status: 'ARCHIVIATA' } : tr
                                           ));
                                           setArchivingId(null);
                                           setArchiveNotes('');
@@ -2256,35 +2258,35 @@ export default function ControlliSanzioniPanel() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* v4.5.6: Indicatori colorati grandi SEMPRE visibili */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 rounded-lg p-4 text-center border border-yellow-500/20">
+                    <p className="text-3xl font-bold text-yellow-400">
+                      {giustificazioniManuali.filter(g => g.status === 'INVIATA').length}
+                    </p>
+                    <p className="text-xs text-[#e8fbff]/50 mt-1">Da Valutare</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-[#10b981]/20 to-[#10b981]/5 rounded-lg p-4 text-center border border-[#10b981]/20">
+                    <p className="text-3xl font-bold text-[#10b981]">
+                      {giustificazioniManuali.filter(g => g.status === 'ACCETTATA').length}
+                    </p>
+                    <p className="text-xs text-[#e8fbff]/50 mt-1">Accettate</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-red-500/20 to-red-500/5 rounded-lg p-4 text-center border border-red-500/20">
+                    <p className="text-3xl font-bold text-red-400">
+                      {giustificazioniManuali.filter(g => g.status === 'RIFIUTATA').length}
+                    </p>
+                    <p className="text-xs text-[#e8fbff]/50 mt-1">Rifiutate</p>
+                  </div>
+                </div>
               {giustificazioniManuali.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle className="h-12 w-12 text-[#14b8a6]/30 mx-auto mb-3" />
                   <p className="text-[#e8fbff]/50">Nessuna giustificazione in attesa di revisione</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {/* Stats rapide giustificazioni manuali */}
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="bg-[#0f1729] rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-yellow-400">
-                        {giustificazioniManuali.filter(g => g.status === 'INVIATA').length}
-                      </p>
-                      <p className="text-xs text-[#e8fbff]/50">Da Valutare</p>
-                    </div>
-                    <div className="bg-[#0f1729] rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-[#14b8a6]">
-                        {giustificazioniManuali.filter(g => g.status === 'ACCETTATA').length}
-                      </p>
-                      <p className="text-xs text-[#e8fbff]/50">Accettate</p>
-                    </div>
-                    <div className="bg-[#0f1729] rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-red-400">
-                        {giustificazioniManuali.filter(g => g.status === 'RIFIUTATA').length}
-                      </p>
-                      <p className="text-xs text-[#e8fbff]/50">Rifiutate</p>
-                    </div>
-                  </div>
-
+                <div>
                   {/* Lista giustificazioni manuali */}
                   <div className="space-y-3">
                     {giustificazioniManuali.map((g) => (
@@ -2390,12 +2392,12 @@ export default function ControlliSanzioniPanel() {
                       </div>
                     ))}
                   </div>
-                </div>
+                 </div>
               )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
-
         {/* Tab: Storico Sessioni Mercato */}
         <TabsContent value="storico" className="space-y-4 mt-4">
           <Card className="bg-[#1a2332] border-[#8b5cf6]/30">

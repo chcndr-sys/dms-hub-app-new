@@ -1042,7 +1042,7 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
 // ============================================================================
 // PRESENZE SECTION — Storico presenze giornate di mercato
 // ============================================================================
-function PresenzeSection({ presenze, stats, loading, onNavigateGiustifica }: { presenze: PresenzaData[]; stats: PresenzeStats | null; loading: boolean; onNavigateGiustifica?: () => void }) {
+function PresenzeSection({ presenze, stats, loading, onNavigateGiustifica }: { presenze: PresenzaData[]; stats: PresenzeStats | null; loading: boolean; onNavigateGiustifica?: (p?: PresenzaData) => void }) {
   if (loading) return <LoadingSpinner />;
   
   // Raggruppa presenze per giorno + mercato
@@ -1209,7 +1209,7 @@ function PresenzeSection({ presenze, stats, loading, onNavigateGiustifica }: { p
                     {/* v4.5.5: Banner uscita anticipata con link a giustifica */}
                     {p.ora_uscita && !uscitaOk && (
                       <button
-                        onClick={() => onNavigateGiustifica?.()}
+                        onClick={() => onNavigateGiustifica?.(p)}
                         className="w-full mt-2 flex items-center justify-between px-3 py-1.5 bg-red-500/10 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors"
                       >
                         <span className="text-[10px] text-red-400 font-medium">Uscita anticipata — Da giustificare</span>
@@ -1271,7 +1271,7 @@ function EmptyState({ text }: { text: string }) {
 // ============================================================================
 // GIUSTIFICAZIONI SECTION — Upload certificati medici / giustifiche uscite anticipate
 // ============================================================================
-function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRefresh }: { impresaId: number | null; giustificazioni: GiustificazioneData[]; concessioni: ConcessioneData[]; onRefresh: () => void }) {
+function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRefresh, prefill, onPrefillConsumed }: { impresaId: number | null; giustificazioni: GiustificazioneData[]; concessioni: ConcessioneData[]; onRefresh: () => void; prefill?: { market_name: string; stall_number: string; giorno: string; comune: string } | null; onPrefillConsumed?: () => void }) {
   const [showForm, setShowForm] = useState(false);
   const [sending, setSending] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -1281,9 +1281,11 @@ function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRef
     tipo_giustifica: 'certificato_medico',
     reason: '',
     concessione_idx: '', // indice nella lista concessioni per selezionare comune/mercato
+    posteggio_idx: '', // v4.5.6: indice del posteggio selezionato
   });
 
-  // Estrai lista unica di comuni/mercati dalle concessioni attive (deduplicata per market_name)
+  // v4.5.6: Estrai lista unica di comuni/mercati dalle concessioni attive (deduplicata per market_name)
+  // Ora include market_id per derivare il comune_id corretto
   const comuniMercati = concessioni
     .filter(c => c.stato_calcolato === 'ATTIVA' || c.stato === 'ATTIVA')
     .reduce((acc, c) => {
@@ -1294,10 +1296,56 @@ function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRef
           label: `${c.market_name || 'Mercato N/D'} - ${c.comune_rilascio || 'Comune N/D'}`,
           market_name: c.market_name,
           comune_rilascio: c.comune_rilascio,
+          market_id: (c as any).market_id || null,
         });
       }
       return acc;
-    }, [] as { idx: number; label: string; market_name: string; comune_rilascio: string }[]);
+    }, [] as { idx: number; label: string; market_name: string; comune_rilascio: string; market_id: number | null }[]);
+
+  // v4.5.6: Pre-compilazione dal banner presenze
+  useEffect(() => {
+    if (prefill && comuniMercati.length > 0) {
+      // Trova il mercato corrispondente
+      const mercatoIdx = comuniMercati.findIndex(cm => 
+        cm.market_name === prefill.market_name || cm.comune_rilascio === prefill.comune
+      );
+      if (mercatoIdx >= 0) {
+        const newFormData: any = {
+          ...formData,
+          concessione_idx: String(mercatoIdx),
+          giorno_mercato: prefill.giorno || formData.giorno_mercato,
+          tipo_giustifica: 'uscita_anticipata',
+        };
+        setFormData(newFormData);
+        setShowForm(true);
+        // Trova il posteggio corrispondente dopo che posteggiFiltrati si aggiorna
+        setTimeout(() => {
+          const filteredConc = concessioni.filter(c => 
+            (c.stato_calcolato === 'ATTIVA' || c.stato === 'ATTIVA') && 
+            c.market_name === comuniMercati[mercatoIdx].market_name && 
+            c.comune_rilascio === comuniMercati[mercatoIdx].comune_rilascio
+          );
+          const postIdx = filteredConc.findIndex(c => c.stall_number === prefill.stall_number);
+          if (postIdx >= 0) {
+            setFormData(prev => ({ ...prev, posteggio_idx: String(postIdx) }));
+          }
+        }, 100);
+      } else {
+        setShowForm(true);
+      }
+      onPrefillConsumed?.();
+    }
+  }, [prefill, comuniMercati.length]);
+
+  // v4.5.6: Filtra i posteggi disponibili per il mercato selezionato
+  const selectedMercato = formData.concessione_idx !== '' ? comuniMercati[Number(formData.concessione_idx)] : null;
+  const posteggiFiltrati = selectedMercato 
+    ? concessioni.filter(c => 
+        (c.stato_calcolato === 'ATTIVA' || c.stato === 'ATTIVA') && 
+        c.market_name === selectedMercato.market_name && 
+        c.comune_rilascio === selectedMercato.comune_rilascio
+      )
+    : [];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1315,18 +1363,21 @@ function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRef
     if (!impresaId || !selectedFile) return;
     setSending(true);
     try {
-      // Recupera comune_id dall'utente
-      let comuneId = 1;
-      try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          comuneId = user.comune_id || user.comuneId || 1;
-        }
-      } catch { /* default */ }
-
-      // Recupera info mercato dalla concessione selezionata
+      // v4.5.6: Recupera comune_id dal mercato della concessione selezionata (non più dal localStorage)
       const selectedConc = formData.concessione_idx !== '' ? comuniMercati[Number(formData.concessione_idx)] : null;
+      const selectedPost = formData.posteggio_idx !== '' ? posteggiFiltrati[Number(formData.posteggio_idx)] : null;
+      
+      // Recupera comune_id dal market_id della concessione selezionata via API
+      let comuneId = 1;
+      if (selectedConc?.market_id) {
+        try {
+          const mktRes = await fetch(`${API_BASE_URL}/api/markets/${selectedConc.market_id}`);
+          const mktData = await mktRes.json();
+          const mkt = mktData?.data || mktData;
+          const mktObj = Array.isArray(mkt) ? mkt[0] : mkt;
+          comuneId = mktObj?.comune_id || 1;
+        } catch { /* fallback */ }
+      }
 
       const fd = new FormData();
       fd.append('file', selectedFile);
@@ -1338,6 +1389,10 @@ function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRef
       if (selectedConc) {
         fd.append('market_name', selectedConc.market_name || '');
         fd.append('comune_name', selectedConc.comune_rilascio || '');
+        if (selectedConc.market_id) fd.append('market_id', String(selectedConc.market_id));
+      }
+      if (selectedPost) {
+        fd.append('stall_number', selectedPost.stall_number || '');
       }
 
       const res = await fetch(`${API_BASE_URL}/api/giustificazioni`, {
@@ -1349,7 +1404,7 @@ function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRef
         setShowForm(false);
         setSelectedFile(null);
         setPreviewUrl(null);
-        setFormData({ giorno_mercato: new Date().toISOString().split('T')[0], tipo_giustifica: 'certificato_medico', reason: '', concessione_idx: '' });
+        setFormData({ giorno_mercato: new Date().toISOString().split('T')[0], tipo_giustifica: 'certificato_medico', reason: '', concessione_idx: '', posteggio_idx: '' });
         onRefresh();
       } else {
         alert(json.error || json.message || 'Errore invio giustifica');
@@ -1458,12 +1513,28 @@ function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRef
                 <label className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Comune / Mercato</label>
                 <select
                   value={formData.concessione_idx}
-                  onChange={(e) => setFormData({ ...formData, concessione_idx: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, concessione_idx: e.target.value, posteggio_idx: '' })}
                   className="w-full bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-3 py-2 text-sm text-[#e8fbff] focus:border-[#14b8a6]/50 focus:outline-none mt-1"
                 >
                   <option value="">Seleziona mercato...</option>
                   {comuniMercati.map((cm) => (
                     <option key={cm.idx} value={String(cm.idx)}>{cm.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {/* v4.5.6: Selettore Posteggio (filtrato per mercato selezionato) */}
+            {posteggiFiltrati.length > 0 && (
+              <div>
+                <label className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide">Posteggio</label>
+                <select
+                  value={formData.posteggio_idx}
+                  onChange={(e) => setFormData({ ...formData, posteggio_idx: e.target.value })}
+                  className="w-full bg-[#0b1220] border border-[#14b8a6]/20 rounded-lg px-3 py-2 text-sm text-[#e8fbff] focus:border-[#14b8a6]/50 focus:outline-none mt-1"
+                >
+                  <option value="">Seleziona posteggio...</option>
+                  {posteggiFiltrati.map((p, i) => (
+                    <option key={`post-${i}`} value={String(i)}>Post. {p.stall_number} — {p.settore_merceologico || 'N/D'}</option>
                   ))}
                 </select>
               </div>
@@ -1622,6 +1693,8 @@ function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRef
 export default function AnagraficaPage() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState('impresa');
+  // v4.5.6: Stato per pre-compilare il form giustifica dal banner presenze
+  const [prefillGiustifica, setPrefillGiustifica] = useState<{ market_name: string; stall_number: string; giorno: string; comune: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -1811,9 +1884,14 @@ export default function AnagraficaPage() {
             ? <DomandaSpuntaDetailView domanda={selectedDomanda} onBack={() => setSelectedDomanda(null)} />
             : <DomandeSpuntaSection domande={domande} loading={loading} onSelect={setSelectedDomanda} />
         )}
-        {activeTab === 'presenze' && <PresenzeSection presenze={presenze} stats={presenzeStats} loading={loading} onNavigateGiustifica={() => setActiveTab('giustificazioni')} />}
+        {activeTab === 'presenze' && <PresenzeSection presenze={presenze} stats={presenzeStats} loading={loading} onNavigateGiustifica={(p?: PresenzaData) => {
+          if (p) {
+            setPrefillGiustifica({ market_name: p.market_name, stall_number: p.stall_number, giorno: p.giorno, comune: p.comune });
+          }
+          setActiveTab('giustificazioni');
+        }} />}
         {activeTab === 'collaboratori' && <CollaboratoriSection impresaId={IMPRESA_ID} impresa={impresa} />}
-        {activeTab === 'giustificazioni' && <GiustificazioniSection impresaId={IMPRESA_ID} giustificazioni={giustificazioni} concessioni={concessioni} onRefresh={() => fetchAllData(true)} />}
+        {activeTab === 'giustificazioni' && <GiustificazioniSection impresaId={IMPRESA_ID} giustificazioni={giustificazioni} concessioni={concessioni} onRefresh={() => fetchAllData(true)} prefill={prefillGiustifica} onPrefillConsumed={() => setPrefillGiustifica(null)} />}
 
         {/* Summary indicators */}
         {activeTab === 'impresa' && !loading && impresa && (
