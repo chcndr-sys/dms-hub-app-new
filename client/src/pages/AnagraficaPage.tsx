@@ -1503,7 +1503,7 @@ function GiustificazioniSection({ impresaId, giustificazioni, onRefresh }: { imp
                   <div className="flex items-center gap-2">
                     {g.justification_file_url && (
                       <a
-                        href={g.justification_file_url}
+                        href={g.justification_file_url.startsWith('/') ? `${API_BASE_URL}${g.justification_file_url}` : g.justification_file_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 text-[10px] text-[#14b8a6] hover:text-[#14b8a6]/80"
