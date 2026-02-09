@@ -239,6 +239,29 @@ interface Transgression {
   created_at: string;
 }
 
+// Giustificazioni manuali inviate dalle imprese (certificati medici, ecc.)
+interface GiustificazioneManuale {
+  id: number;
+  impresa_id: number;
+  impresa_nome: string;
+  comune_id: number;
+  comune_name: string;
+  market_id: number | null;
+  market_name: string | null;
+  giorno_mercato: string;
+  tipo_giustifica: string;
+  reason: string;
+  justification_file_url: string | null;
+  file_name: string | null;
+  file_mime: string | null;
+  file_size: number | null;
+  status: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  reviewer_notes: string | null;
+  created_at: string;
+}
+
 export default function ControlliSanzioniPanel() {
   // Hook per impersonificazione - legge comune_id dall'URL
   const { isImpersonating, comuneId: impersonatedComuneId, addComuneIdToUrl } = useImpersonation();
@@ -266,6 +289,7 @@ export default function ControlliSanzioniPanel() {
   const [showRispostaModal, setShowRispostaModal] = useState(false);
   const [transgressions, setTransgressions] = useState<Transgression[]>([]);
   const [transgressionsLoading, setTransgressionsLoading] = useState(false);
+  const [giustificazioniManuali, setGiustificazioniManuali] = useState<GiustificazioneManuale[]>([]);
   
   // Notifiche SUAP per PM
   const [notificheSuap, setNotificheSuap] = useState<NotificaSUAP[]>([]);
@@ -388,6 +412,13 @@ export default function ControlliSanzioniPanel() {
       const transgressionsRes = await fetch(addComuneIdToUrl(`${MIHUB_API}/market-settings/transgressions/pending-justifications`));
       const transgressionsData = await transgressionsRes.json();
       if (transgressionsData.success) setTransgressions(transgressionsData.data || []);
+
+      // Fetch giustificazioni manuali inviate dalle imprese (certificati medici, ecc.)
+      try {
+        const giustManualiRes = await fetch(addComuneIdToUrl(`${MIHUB_API}/giustificazioni/pendenti`));
+        const giustManualiData = await giustManualiRes.json();
+        if (giustManualiData.success) setGiustificazioniManuali(giustManualiData.data || []);
+      } catch (e) { console.error('Errore fetch giustificazioni manuali:', e); }
 
       // Fetch storico sessioni mercato - filtrato per comune se in impersonificazione
       const sessionsRes = await fetch(`${MIHUB_API}/presenze/sessioni?limit=100`); // Prendiamo più dati per filtrare lato frontend
@@ -1202,7 +1233,7 @@ export default function ControlliSanzioniPanel() {
             className="data-[state=active]:bg-[#10b981]/20 data-[state=active]:text-[#10b981]"
           >
             <FileCheck className="h-4 w-4 mr-2" />
-            Giustifiche ({transgressions.length})
+            Giustifiche ({transgressions.length + giustificazioniManuali.length})
           </TabsTrigger>
           <TabsTrigger 
             value="storico" 
@@ -2033,6 +2064,157 @@ export default function ControlliSanzioniPanel() {
                                 <FileText className="h-4 w-4 mr-1" />
                                 Prepara Verbale
                               </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Sezione Giustificazioni Manuali (inviate dalle imprese) */}
+          <Card className="bg-[#1a2332] border-[#14b8a6]/30 mt-4">
+            <CardHeader>
+              <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                <FileText className="h-5 w-5 text-[#14b8a6]" />
+                Certificati e Giustificazioni Imprese
+              </CardTitle>
+              <CardDescription className="text-[#e8fbff]/60">
+                Giustificazioni inviate manualmente dalle imprese (certificati medici, uscite anticipate)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {giustificazioniManuali.length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckCircle className="h-12 w-12 text-[#14b8a6]/30 mx-auto mb-3" />
+                  <p className="text-[#e8fbff]/50">Nessuna giustificazione in attesa di revisione</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Stats rapide giustificazioni manuali */}
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="bg-[#0f1729] rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-yellow-400">
+                        {giustificazioniManuali.filter(g => g.status === 'INVIATA').length}
+                      </p>
+                      <p className="text-xs text-[#e8fbff]/50">Da Valutare</p>
+                    </div>
+                    <div className="bg-[#0f1729] rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-[#14b8a6]">
+                        {giustificazioniManuali.filter(g => g.status === 'ACCETTATA').length}
+                      </p>
+                      <p className="text-xs text-[#e8fbff]/50">Accettate</p>
+                    </div>
+                    <div className="bg-[#0f1729] rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-red-400">
+                        {giustificazioniManuali.filter(g => g.status === 'RIFIUTATA').length}
+                      </p>
+                      <p className="text-xs text-[#e8fbff]/50">Rifiutate</p>
+                    </div>
+                  </div>
+
+                  {/* Lista giustificazioni manuali */}
+                  <div className="space-y-3">
+                    {giustificazioniManuali.map((g) => (
+                      <div 
+                        key={`manual-${g.id}`} 
+                        className="bg-[#0f1729] rounded-lg p-4 border border-[#14b8a6]/20 hover:border-[#14b8a6]/40 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Badge className="bg-[#14b8a6]/20 text-[#14b8a6] border-[#14b8a6]/30">
+                                {g.tipo_giustifica === 'certificato_medico' ? 'Certificato Medico'
+                                  : g.tipo_giustifica === 'uscita_anticipata' ? 'Uscita Anticipata'
+                                  : 'Altro'}
+                              </Badge>
+                              <Badge 
+                                className={`${
+                                  g.status === 'INVIATA'
+                                    ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                                    : g.status === 'ACCETTATA'
+                                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                    : 'bg-red-500/20 text-red-400 border-red-500/30'
+                                }`}
+                              >
+                                {g.status === 'INVIATA' ? 'Da Valutare' : g.status === 'ACCETTATA' ? 'Accettata' : 'Rifiutata'}
+                              </Badge>
+                            </div>
+                            <p className="text-[#e8fbff] font-medium">{g.impresa_nome || 'Impresa N/D'}</p>
+                            <p className="text-[#e8fbff]/50 text-sm">
+                              {g.market_name ? `${g.market_name} - ` : ''}{new Date(g.giorno_mercato).toLocaleDateString('it-IT')}
+                            </p>
+                            {g.reason && (
+                              <p className="text-[#e8fbff]/40 text-xs mt-1 italic">"{g.reason}"</p>
+                            )}
+                            {g.file_name && (
+                              <p className="text-[#e8fbff]/30 text-xs mt-1">📎 {g.file_name}</p>
+                            )}
+                            <p className="text-[#e8fbff]/30 text-xs mt-1">
+                              <Clock className="h-3 w-3 inline mr-1" />
+                              Inviata il {new Date(g.created_at).toLocaleDateString('it-IT')} alle {new Date(g.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 flex-wrap justify-end">
+                            {g.justification_file_url && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/20"
+                                onClick={() => window.open(`https://api.mio-hub.me${g.justification_file_url}`, '_blank')}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Vedi
+                              </Button>
+                            )}
+                            {g.status === 'INVIATA' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`${MIHUB_API}/giustificazioni/${g.id}/review`, {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ action: 'APPROVE', notes: 'Giustificazione accettata' })
+                                      });
+                                      if (res.ok) {
+                                        setGiustificazioniManuali(prev => prev.map(gm => gm.id === g.id ? { ...gm, status: 'ACCETTATA' } : gm));
+                                      }
+                                    } catch (err) {
+                                      console.error('Errore approvazione giustificazione:', err);
+                                    }
+                                  }}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Accetta
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`${MIHUB_API}/giustificazioni/${g.id}/review`, {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ action: 'REJECT', notes: 'Giustificazione rifiutata' })
+                                      });
+                                      if (res.ok) {
+                                        setGiustificazioniManuali(prev => prev.map(gm => gm.id === g.id ? { ...gm, status: 'RIFIUTATA' } : gm));
+                                      }
+                                    } catch (err) {
+                                      console.error('Errore rifiuto giustificazione:', err);
+                                    }
+                                  }}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Rifiuta
+                                </Button>
+                              </>
                             )}
                           </div>
                         </div>
