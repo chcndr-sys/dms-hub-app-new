@@ -426,9 +426,11 @@ function QualificazioniSection({ qualificazioni, loading }: { qualificazioni: Qu
   return (
     <div className="space-y-2 sm:space-y-3">
       {qualificazioni.map((q) => {
-        const isScaduta = q.stato?.toUpperCase() === 'SCADUTA' || 
-          (q.data_scadenza && new Date(q.data_scadenza) < new Date());
-        const statoDisplay = isScaduta ? 'SCADUTA' : (q.stato || 'ATTIVA');
+        // Calcola lo stato dalla data di scadenza (priorità sulle date reali, non sul campo stato DB)
+        const now = new Date();
+        const scadenza = q.data_scadenza ? new Date(q.data_scadenza) : null;
+        const isScaduta = scadenza ? scadenza < now : (q.stato?.toUpperCase() === 'SCADUTA');
+        const statoDisplay = isScaduta ? 'SCADUTA' : 'ATTIVA';
         return (
           <Card key={q.id} className="bg-[#1a2332] border-[#14b8a6]/20 py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
             <CardContent className="p-3 sm:p-4">
@@ -445,7 +447,7 @@ function QualificazioniSection({ qualificazioni, loading }: { qualificazioni: Qu
                       <span className="text-gray-500">Ente:</span> {q.ente_rilascio || '-'}
                     </p>
                     <p className="text-xs sm:text-sm text-gray-400">
-                      <span className="text-gray-500">Rilascio:</span> {formatDate(q.data_rilascio)} \u2014 <span className="text-gray-500">Scadenza:</span> {formatDate(q.data_scadenza)}
+                      <span className="text-gray-500">Rilascio:</span> {formatDate(q.data_rilascio)} &mdash; <span className="text-gray-500">Scadenza:</span> {formatDate(q.data_scadenza)}
                     </p>
                     {q.numero_attestato && (
                       <p className="text-xs sm:text-sm text-gray-400">
@@ -725,15 +727,32 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
 
   useEffect(() => {
     if (!impresaId) { setLoading(false); return; }
-    // Carica collaboratori dal localStorage (dati locali per ora)
-    // In futuro: endpoint /api/imprese/:id/collaboratori
-    try {
-      const stored = localStorage.getItem(`team_impresa_${impresaId}`);
-      if (stored) {
-        setCollaboratori(JSON.parse(stored));
-      } else {
-        // Genera il titolare dall'anagrafica impresa come primo collaboratore
-        if (impresa?.rappresentante_legale_nome && impresa?.rappresentante_legale_cognome) {
+    // Carica collaboratori dall'API DB reale, con fallback localStorage
+    const loadCollaboratori = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/collaboratori?impresa_id=${impresaId}`);
+        const json = await res.json();
+        if (json.success && json.data && json.data.length > 0) {
+          setCollaboratori(json.data.map((c: any) => ({
+            id: String(c.id),
+            nome: c.nome || '',
+            cognome: c.cognome || '',
+            codice_fiscale: c.codice_fiscale || '',
+            ruolo: c.ruolo || 'Collaboratore',
+            telefono: c.telefono || '',
+            autorizzato_presenze: c.autorizzato_presenze ?? false,
+          })));
+          setLoading(false);
+          return;
+        }
+      } catch { /* fallback a localStorage */ }
+
+      // Fallback: localStorage
+      try {
+        const stored = localStorage.getItem(`team_impresa_${impresaId}`);
+        if (stored) {
+          setCollaboratori(JSON.parse(stored));
+        } else if (impresa?.rappresentante_legale_nome && impresa?.rappresentante_legale_cognome) {
           const titolare: Collaboratore = {
             id: 'titolare-1',
             nome: impresa.rappresentante_legale_nome,
@@ -744,22 +763,36 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
             autorizzato_presenze: true,
           };
           setCollaboratori([titolare]);
-          localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify([titolare]));
+          // Salva anche nel DB
+          try {
+            await fetch(`${API_BASE_URL}/api/collaboratori`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ impresa_id: impresaId, ...titolare }),
+            });
+          } catch { /* ignore */ }
         }
-      }
-    } catch { /* ignore */ }
-    setLoading(false);
+      } catch { /* ignore */ }
+      setLoading(false);
+    };
+    loadCollaboratori();
   }, [impresaId, impresa]);
 
-  const toggleAutorizzazione = (id: string) => {
+  const toggleAutorizzazione = async (id: string) => {
+    const collab = collaboratori.find(c => c.id === id);
+    if (!collab) return;
     const updated = collaboratori.map(c => 
       c.id === id ? { ...c, autorizzato_presenze: !c.autorizzato_presenze } : c
     );
     setCollaboratori(updated);
     localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify(updated));
+    // Sync con DB
+    try {
+      await fetch(`${API_BASE_URL}/api/collaboratori/${id}/toggle-presenze`, { method: 'PATCH' });
+    } catch { /* ignore */ }
   };
 
-  const addCollaboratore = () => {
+  const addCollaboratore = async () => {
     const newCollab: Collaboratore = {
       id: `collab-${Date.now()}`,
       nome: '',
@@ -769,6 +802,18 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
       telefono: '',
       autorizzato_presenze: false,
     };
+    // Salva nel DB
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/collaboratori`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ impresa_id: impresaId, ...newCollab }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        newCollab.id = String(json.data.id);
+      }
+    } catch { /* fallback a localStorage */ }
     const updated = [...collaboratori, newCollab];
     setCollaboratori(updated);
     localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify(updated));
@@ -780,13 +825,30 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
     );
     setCollaboratori(updated);
     localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify(updated));
+    // Debounced sync con DB (salva dopo 1s di inattività)
+    clearTimeout((window as any).__collabSaveTimer);
+    (window as any).__collabSaveTimer = setTimeout(async () => {
+      const collab = updated.find(c => c.id === id);
+      if (!collab) return;
+      try {
+        await fetch(`${API_BASE_URL}/api/collaboratori/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(collab),
+        });
+      } catch { /* ignore */ }
+    }, 1000);
   };
 
-  const removeCollaboratore = (id: string) => {
-    if (collaboratori.find(c => c.id === id)?.ruolo === 'Titolare') return; // Non rimuovere il titolare
+  const removeCollaboratore = async (id: string) => {
+    if (collaboratori.find(c => c.id === id)?.ruolo === 'Titolare') return;
     const updated = collaboratori.filter(c => c.id !== id);
     setCollaboratori(updated);
     localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify(updated));
+    // Rimuovi dal DB
+    try {
+      await fetch(`${API_BASE_URL}/api/collaboratori/${id}`, { method: 'DELETE' });
+    } catch { /* ignore */ }
   };
 
   const ruoloColors: Record<string, string> = {
@@ -966,7 +1028,10 @@ export default function AnagraficaPage() {
   const IMPRESA_ID = getImpresaId();
 
   const concessioniAttive = concessioni.filter(c => (c.stato_calcolato || c.stato)?.toUpperCase() === 'ATTIVA').length;
-  const qualificazioniAttive = qualificazioni.filter(q => q.stato?.toUpperCase() === 'ATTIVA' || (!q.stato && q.data_scadenza && new Date(q.data_scadenza) >= new Date())).length;
+  const qualificazioniAttive = qualificazioni.filter(q => {
+    const scadenza = q.data_scadenza ? new Date(q.data_scadenza) : null;
+    return scadenza ? scadenza >= new Date() : q.stato?.toUpperCase() !== 'SCADUTA';
+  }).length;
   const autorizzazioniAttive = autorizzazioni.filter(a => a.stato?.toUpperCase() === 'ATTIVA').length;
 
   const fetchAllData = useCallback(async (showRefresh = false) => {
@@ -975,15 +1040,17 @@ export default function AnagraficaPage() {
     else setLoading(true);
 
     try {
-      const impresaRes = await fetch(`${API_BASE_URL}/api/imprese/${IMPRESA_ID}`);
+      // Usa fields=light per evitare di caricare vetrina_immagine_principale (4.8MB base64)
+      const impresaRes = await fetch(`${API_BASE_URL}/api/imprese/${IMPRESA_ID}?fields=light`);
       const impresaJson = await impresaRes.json();
       if (impresaJson.success) setImpresa(impresaJson.data);
 
       try {
-        // Step 1: Trova il vendor_id associato all'impresa
+        // Step 1: Trova il vendor_id associato all'impresa (Number() per evitare mismatch string/number)
         const vendorsRes = await fetch(`${API_BASE_URL}/api/vendors`);
         const vendorsJson = await vendorsRes.json();
-        const myVendors = (vendorsJson.data || []).filter((v: any) => v.impresa_id === IMPRESA_ID);
+        const impresaIdNum = Number(IMPRESA_ID);
+        const myVendors = (vendorsJson.data || []).filter((v: any) => Number(v.impresa_id) === impresaIdNum);
         
         if (myVendors.length > 0) {
           // Step 2: Carica concessioni per ogni vendor dell'impresa

@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.4.0  
-> **Data:** 9 Febbraio 2026 (v4.4.0 — Implementazione completa Anagrafica Impresa)  
+> **Versione:** 4.4.2  
+> **Data:** 9 Febbraio 2026 (v4.4.2 — Fix Anagrafica Impresa: Concessioni, DURC, Team DB, Impresa Light)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -6792,6 +6792,36 @@ if (el) {
 - [x] Fix scroll ECO Credit: rimosso overflow-hidden, tutta la sezione scrollabile (v1.3.16)
 - [x] Fix score TCC: usa total_earned dal wallet API (dato reale) invece della somma limitata a 50 tx (v1.3.16)
 - [x] Fix contatore transazioni: usa total_transactions dal wallet API (83 reali, non 50 limitate) (v1.3.16)
+
+---
+
+## 🔄 AGGIORNAMENTO SESSIONE 9 FEBBRAIO 2026 — NOTTE (v4.4.2)
+
+> **Data:** 9 Febbraio 2026
+> **Sessione:** Fix Anagrafica Impresa: Concessioni, DURC, Team DB, Impresa Light
+
+### 🚀 FRONTEND (dms-hub-app-new → GitHub → Vercel)
+
+| Commit | Versione | File Modificato | Descrizione |
+|---|---|---|---|
+| `[da inserire]` | v4.4.2 | `client/src/pages/AnagraficaPage.tsx` | **4 FIX CHIRURGICI:** 1) Concessioni trovate (fix tipo `impresa_id`), 2) Stato DURC corretto (calcolo da date), 3) Caricamento impresa veloce (API `?fields=light`), 4) Team connesso a DB reale. |
+
+### 🚀 BACKEND (mihub-backend-rest → GitHub → Hetzner)
+
+| Commit | Versione | File Modificati | Descrizione |
+|---|---|---|---|
+| `8d7d381` | v4.4.2 | `routes/imprese.js`, `routes/collaboratori.js`, `migrations/011_collaboratori_impresa.sql` | **DB + API TEAM, FIX IMPRESA LIGHT:** 1) Creata tabella `collaboratori_impresa` e API `/api/collaboratori`. 2) Aggiunto supporto `?fields=light` a `/api/imprese/:id` per escludere campi vetrina. 3) Fixato stato DURC nel DB. |
+
+### 📋 CHECKLIST MODIFICHE COMPLETATE
+
+- [x] **Backend:** Aggiunto endpoint `/api/collaboratori` con tabella DB.
+- [x] **Backend:** Aggiunto supporto `?fields=light` a `/api/imprese/:id`.
+- [x] **Backend:** Fixato stato DURC nel DB da "SCADUTA" a "ATTIVA".
+- [x] **Backend:** Deployato su Hetzner via Orchestrator.
+- [x] **Frontend:** Fixato caricamento concessioni (confronto `Number(impresa_id)`).
+- [x] **Frontend:** Fixato calcolo stato qualifiche (basato su date reali).
+- [x] **Frontend:** Chiamata a `/api/imprese/:id` ora usa `?fields=light`.
+- [x] **Frontend:** Sezione Team connessa all'API `/api/collaboratori` reale.
 
 ---
 
