@@ -1179,6 +1179,7 @@ function PresenzeSection({ presenze, stats, loading, onNavigateGiustifica }: { p
                       const uscitaColor = p.ora_uscita ? (uscitaOk ? 'text-green-400' : 'text-red-400') : 'text-gray-500';
                       
                       return (
+                    <>
                     <div className="grid grid-cols-3 gap-2 mt-2">
                       <div className={`bg-[#0b1220]/50 rounded-lg p-2 text-center ${p.ora_accesso && !entrataOk ? 'border border-red-500/30' : ''}`}>
                         <div className="flex items-center justify-center gap-1 mb-0.5">
@@ -1215,6 +1216,7 @@ function PresenzeSection({ presenze, stats, loading, onNavigateGiustifica }: { p
                         <ArrowLeft className="w-3 h-3 text-red-400 rotate-180" />
                       </button>
                     )}
+                    </>
                       );
                     })()}
                     
