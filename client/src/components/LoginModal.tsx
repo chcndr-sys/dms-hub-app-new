@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { startLogin } from '@/api/authClient';
+import { getLoginUrl } from '@/const';
 import { 
   X, Shield, Users, Building2, Landmark, Loader2, 
   CreditCard, Key, ChevronLeft, Mail
@@ -49,11 +50,27 @@ export default function LoginModal({ isOpen, onClose, redirectRoute }: LoginModa
   };
 
   const handleGoogleLogin = () => {
-    setError('Google Login - Da configurare');
+    setLoading(true);
+    setError('');
+    try {
+      const loginUrl = getLoginUrl();
+      window.location.href = loginUrl;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore durante il login con Google');
+      setLoading(false);
+    }
   };
 
   const handleAppleLogin = () => {
-    setError('Apple Login - Da configurare');
+    setLoading(true);
+    setError('');
+    try {
+      const loginUrl = getLoginUrl();
+      window.location.href = loginUrl;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore durante il login con Apple');
+      setLoading(false);
+    }
   };
 
   const handleBack = () => {

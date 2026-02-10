@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { startLogin, isAuthenticated, getAuthConfig, type AuthConfig } from '@/api/authClient';
+import { getLoginUrl } from '@/const';
 import { Loader2, Shield, CreditCard, Key, AlertCircle, Users, Building2, Landmark, Mail, Eye, EyeOff } from 'lucide-react';
 
 type UserType = 'citizen' | 'business' | 'pa' | null;
@@ -91,13 +92,27 @@ export default function Login() {
   };
 
   const handleGoogleLogin = async () => {
-    setError('Google Login - Da configurare');
-    // TODO: Implementare Google OAuth
+    setLoading(true);
+    setError('');
+    try {
+      const loginUrl = getLoginUrl();
+      window.location.href = loginUrl;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore durante il login con Google');
+      setLoading(false);
+    }
   };
 
   const handleAppleLogin = async () => {
-    setError('Apple Login - Da configurare');
-    // TODO: Implementare Apple Sign In
+    setLoading(true);
+    setError('');
+    try {
+      const loginUrl = getLoginUrl();
+      window.location.href = loginUrl;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore durante il login con Apple');
+      setLoading(false);
+    }
   };
 
   const handleEmailRegister = async (e: React.FormEvent) => {
