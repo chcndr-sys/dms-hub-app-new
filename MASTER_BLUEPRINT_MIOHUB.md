@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.5.6d  
-> **Data:** 9 Febbraio 2026 (v4.5.6d — Fix Controlli e Sanzioni, Notifiche PM, Giustifiche, Wallet, KPI Dashboard)  
+> **Versione:** 4.6.0 (Firebase Auth)  
+> **Data:** 10 Febbraio 2026 (Integrazione Firebase Authentication)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -20,9 +20,10 @@
 9. [API Endpoints](#api-endpoints)
 10. [SSO SUAP - Modulo SCIA](#sso-suap---modulo-scia)
 11. [Deploy e CI/CD](#deploy-e-cicd)
-12. [Credenziali e Accessi](#credenziali-e-accessi)
-13. [Troubleshooting](#troubleshooting)
-14. [Regole per Agenti AI](#regole-per-agenti-ai)
+12. [Architettura di Autenticazione (v2.0 - Firebase)](#architettura-di-autenticazione-v20---firebase)
+13. [Credenziali e Accessi](#credenziali-e-accessi)
+14. [Troubleshooting](#troubleshooting)
+15. [Regole per Agenti AI](#regole-per-agenti-ai)
 
 ---
 
@@ -42,6 +43,7 @@
 | Layer | Tecnologia |
 |-------|------------|
 | **Frontend** | React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui |
+| **Autenticazione** | Firebase Auth (Google, Apple, Email) + ARPA Toscana (SPID/CIE/CNS) |
 | **Backend** | Node.js + Express + tRPC |
 | **Database** | PostgreSQL (Neon) |
 | **AI/LLM** | Google Gemini API |
@@ -1124,6 +1126,46 @@ curl https://orchestratore.mio-hub.me/api/health
 
 ---
 
+## 🔐 Architettura di Autenticazione (v2.0 - Firebase)
+
+Il sistema ora utilizza un modello di autenticazione ibrido che combina **Firebase Authentication** per i login social (Google, Apple) ed email, con l'integrazione esistente di **ARPA Regione Toscana** per SPID/CIE/CNS.
+
+### Flusso di Autenticazione
+
+1.  **Selezione Profilo**: L'utente sceglie il proprio ruolo (`Cittadino`, `Impresa`, `PA`).
+2.  **Selezione Metodo**: 
+    - Il **Cittadino** può scegliere tra Google, Apple, Email (gestiti da Firebase) o SPID (gestito da ARPA).
+    - **Impresa** e **PA** sono indirizzati al flusso SPID/CIE/CNS di ARPA.
+3.  **Autenticazione Firebase**: Per Google, Apple o Email, il client utilizza il **Firebase SDK** per completare l'autenticazione e ricevere un **ID Token**.
+4.  **Sincronizzazione Backend**: L'ID Token viene inviato all'endpoint backend `POST /api/auth/firebase/sync`. Il backend:
+    - Verifica la validità del token con **Firebase Admin SDK**.
+    - Crea o aggiorna il profilo utente nel database MioHub.
+    - Restituisce un profilo utente unificato con ruoli e permessi MioHub.
+5.  **Sessione Client**: Il client riceve il profilo utente MioHub e lo salva nel `FirebaseAuthContext`, stabilendo la sessione.
+
+### Provider di Autenticazione
+
+| Provider | Tipo | Ruolo | Implementazione | Stato |
+| :--- | :--- | :--- | :--- | :--- |
+| **Google** | Social Login | `citizen` | Firebase SDK (Popup/Redirect) | ✅ **Completato** |
+| **Apple** | Social Login | `citizen` | Firebase SDK (Popup/Redirect) | ✅ **Completato** |
+| **Email/Password** | Credenziali | `citizen` | Firebase SDK | ✅ **Completato** |
+| **SPID/CIE/CNS** | Identità Digitale | `citizen`, `business`, `pa` | ARPA Regione Toscana | ✳️ **Esistente** |
+
+### Componenti Core
+
+La nuova architettura si basa sui seguenti componenti:
+
+| File | Scopo |
+| :--- | :--- |
+| **`client/src/lib/firebase.ts`** | Configura e inizializza il client Firebase. Esporta funzioni per login, logout, registrazione e reset password. |
+| **`client/src/contexts/FirebaseAuthContext.tsx`** | Context React globale che gestisce lo stato utente, ascolta i cambiamenti di stato Firebase e orchestra la sincronizzazione con il backend. |
+| **`client/src/components/LoginModal.tsx`** | Componente UI (v2.0) che integra i metodi di login Firebase e mantiene il flusso SPID esistente. |
+| **`server/firebaseAuthRouter.ts`** | Router Express per il backend che gestisce la verifica dei token e la sincronizzazione degli utenti. |
+| **`api/auth/firebase/sync.ts`** | Serverless function equivalente per il deploy su Vercel, garantendo la compatibilità. |
+
+---
+
 ## 🔐 CREDENZIALI E ACCESSI
 
 ### Variabili d'Ambiente Backend
@@ -1136,6 +1178,13 @@ curl https://orchestratore.mio-hub.me/api/health
 | `SSH_PRIVATE_KEY` | Chiave SSH per Manus |
 | `ZAPIER_WEBHOOK_URL` | Webhook Zapier |
 | `VERCEL_TOKEN` | Token deploy Vercel |
+| `VITE_FIREBASE_API_KEY` | Firebase API Key (client) |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Auth Domain (client) |
+| `VITE_FIREBASE_PROJECT_ID` | Firebase Project ID (client) |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Firebase Storage Bucket (client) |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase Messaging Sender ID (client) |
+| `VITE_FIREBASE_APP_ID` | Firebase App ID (client) |
+| `FIREBASE_SERVICE_ACCOUNT_KEY` | Firebase Service Account Key (backend, JSON) |
 
 ### Accessi Server
 
@@ -7582,5 +7631,79 @@ Il CRON non impostava `notified=true` e `notified_at=NOW()` alla creazione della
 21. **Sanctions notified_at**: L'INSERT delle sanzioni nel CRON DEVE includere `notified=true, notified_at=NOW()` per abilitare il calcolo dello sconto 30%
 22. **KPI Stats tabelle**: L'endpoint `inspections/stats` usa `concessions` (NON `concessioni`), `market_id` (NON `mercato_id`), `business_id` per inspections (NON `impresa_id`)
 23. **Wallet Impresa scroll**: I tab del wallet usano `max-h-[calc(100vh-380px)] overflow-y-auto` per contenere lo scroll — NON rimuovere
+
+---
+
+## 🔄 AGGIORNAMENTO SESSIONE 10 FEBBRAIO 2026 — Integrazione Firebase Authentication (v4.6.0)
+
+> **Data:** 10 Febbraio 2026
+> **Sessione:** Integrazione Firebase Authentication + Configurazione Variabili Vercel
+
+### 🚀 FRONTEND (dms-hub-app-new → GitHub → Vercel)
+
+| Commit | Descrizione | File Modificati |
+|---|---|---|
+| `28332d7` | `feat: integrazione Firebase Authentication (Google/Apple/Email)` | 11 file (2836 inserzioni, 160 cancellazioni) |
+| `e7c8d94` | `docs: aggiornamento Blueprint con architettura Firebase Auth` | 1 file (BLUEPRINT.md aggiornato) |
+
+### 📁 FILE CREATI
+
+| File | Descrizione |
+|---|---|
+| `client/src/lib/firebase.ts` | Configurazione Firebase SDK, provider Google/Apple, funzioni login/logout/register/reset, traduzione errori in italiano |
+| `client/src/contexts/FirebaseAuthContext.tsx` | Context React globale per stato autenticazione, gestione ruoli (citizen/business/pa), sync con backend, fallback locale |
+| `server/firebaseAuthRouter.ts` | Router Express con endpoint: sync, verify, me, logout, login legacy, register, config |
+| `api/auth/firebase/sync.ts` | Serverless function per Vercel equivalente all'endpoint Express |
+
+### 📝 FILE MODIFICATI
+
+| File | Modifica |
+|---|---|
+| `client/src/components/LoginModal.tsx` | Riscritto v2.0: Google/Apple via Firebase (popup+fallback redirect), Email via Firebase, "Password dimenticata?", SPID/CIE/CNS invariati |
+| `client/src/App.tsx` | Aggiunto `FirebaseAuthProvider` wrapper |
+| `server/_core/index.ts` | Registrato `firebaseAuthRouter` su `/api/auth` |
+| `.env.production` | Aggiunte 6 variabili `VITE_FIREBASE_*` |
+| `vercel.json` | Aggiunti rewrite per route Firebase auth |
+| `package.json` / `pnpm-lock.yaml` | Aggiunte dipendenze `firebase` e `firebase-admin` |
+
+### 🔧 CONFIGURAZIONE FIREBASE
+
+| Parametro | Valore |
+|---|---|
+| **Progetto** | dmshub-auth |
+| **Project ID** | dmshub-auth-2975e |
+| **Auth Domain** | dmshub-auth-2975e.firebaseapp.com |
+| **Provider abilitati** | Google, Apple, Email/Password |
+| **Console** | https://console.firebase.google.com/project/dmshub-auth-2975e |
+| **Account** | chcndr@gmail.com |
+
+### ✅ VARIABILI D'AMBIENTE VERCEL — CONFIGURATE
+
+Tutte le variabili sono state aggiunte al progetto Vercel `dms-hub-app-new` per **All Environments**:
+
+| Variabile | Stato |
+|---|---|
+| `VITE_FIREBASE_API_KEY` | ✅ Configurata |
+| `VITE_FIREBASE_AUTH_DOMAIN` | ✅ Configurata |
+| `VITE_FIREBASE_PROJECT_ID` | ✅ Configurata |
+| `VITE_FIREBASE_STORAGE_BUCKET` | ✅ Configurata |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | ✅ Configurata |
+| `VITE_FIREBASE_APP_ID` | ✅ Configurata |
+
+### 🔐 ARCHITETTURA AUTENTICAZIONE — RUOLI E REDIRECT
+
+| Ruolo | Metodi Disponibili | Redirect Dopo Login |
+|---|---|---|
+| **Cittadino** | Google, Apple, Email, SPID | `/wallet` |
+| **Impresa** | SPID, CIE, CNS | `/dashboard-impresa` |
+| **PA / Admin** | SPID + Ruolo assegnato | `/dashboard-pa` |
+
+### ⚠️ NOTE IMPORTANTI PER SESSIONI FUTURE
+
+24. **Firebase Auth**: Il `FirebaseAuthContext` è posizionato sopra tutti gli altri context nell'albero React — NON spostare
+25. **Fallback locale**: Il sistema di fallback permette al login di funzionare anche se il backend `orchestratore.mio-hub.me` non è raggiungibile
+26. **Errori TypeScript**: Il progetto ha 281 errori TypeScript preesistenti (nessuno nei file Firebase) — sono in componenti esistenti come `ComuniPanel.tsx`, `APIDashboardV2.tsx`, ecc.
+27. **Firebase SDK bundle**: Firebase aggiunge circa 200KB al bundle (tree-shaking attivo)
+28. **Domini autorizzati Firebase**: `dms.associates` e `dms-hub-app-new.vercel.app` devono essere nella lista dei domini autorizzati nella console Firebase
 
 ---
