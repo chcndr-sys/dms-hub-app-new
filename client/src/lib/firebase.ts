@@ -29,7 +29,7 @@ import {
 // ============================================
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBQLKp8jQi7Q19tXQtTYpdgivw-WyhocTg",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBQlKp8jQi7Q19tXQtTYpdgivw-WyhocTg",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "dmshub-auth-2975e.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "dmshub-auth-2975e",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "dmshub-auth-2975e.firebasestorage.app",
