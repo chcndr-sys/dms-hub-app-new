@@ -1,145 +1,398 @@
 # 📘 DMS Hub System Blueprint
 
-> **Last Updated:** 27 dicembre 2025
-> **Status:** Verified & Audited
+> **Auto-generated:** 10 febbraio 2026 alle ore 11:42  
+> **Generator:** `scripts/generate_blueprint.cjs`
 
 ---
 
 ## 🎯 System Overview
 
-**DMS Hub** è l'ecosistema digitale centralizzato per la gestione dei mercati rionali, fiere e commercio su aree pubbliche. Il sistema orchestra una rete complessa di attori (Comuni, Operatori, Cittadini, Polizia Locale) attraverso un'architettura a microservizi integrati.
+**DMS Hub** è il sistema centrale per la gestione della Rete Mercati Made in Italy, con:
 
-### Core Capabilities
-*   **Gestione Mercati & GIS**: Mappatura geospaziale precisa di posteggi, aree mercatali e vincoli.
-*   **Wallet Operatori**: Sistema finanziario interno per pagamenti, ricariche e decurtazioni automatiche (PagoPA).
-*   **Multi-Agent Orchestration**: Ecosistema di agenti AI (MIO, Guardian, Manus) per automazione e monitoraggio.
-*   **Integrazioni Esterne**: Connettori attivi con TPER (Mobilità), ARPAE (Meteo/Ambiente), e Gestionale Enti.
-
----
-
-## 🗄️ Database Architecture (57 Tables)
-
-Il database PostgreSQL è strutturato in 6 domini logici principali:
-
-### 1. Core & Auth
-| Table | Description |
-|-------|-------------|
-| `users` | Gestione identità e ruoli (Admin, User, Operator) |
-| `extended_users` | Profili arricchiti con preferenze mobilità e sostenibilità |
-| `api_keys` | Gestione accessi per applicazioni terze |
-
-### 2. Market Management (DMS Core)
-| Table | Description |
-|-------|-------------|
-| `markets` | Anagrafica mercati con configurazioni orari e mobilità |
-| `market_geometry` | Dati GIS (GeoJSON) per planimetrie e aree |
-| `stalls` | Posteggi singoli con stato (free, occupied, reserved) |
-| `bookings` | Prenotazioni posteggi (spunta) con scadenza temporale |
-| `vendors` | Anagrafica operatori commerciali |
-| `vendor_presences` | Registro storico presenze e check-in/out |
-| `concessions` | Titoli autorizzativi a lungo termine |
-
-### 3. Financial & Wallet
-| Table | Description |
-|-------|-------------|
-| `operatore_wallet` | Borsellino elettronico prepagato per ogni impresa |
-| `wallet_transazioni` | Ledger immutabile di ricariche e decurtazioni |
-| `avvisi_pagopa` | Integrazione pagamenti PA (IUV, Ricevute) |
-| `tariffe_posteggio` | Configurazione dinamica prezzi per mercato/tipo |
-
-### 4. Sustainability & Civic
-| Table | Description |
-|-------|-------------|
-| `carbon_credits_config` | Regole calcolo crediti CO2 |
-| `ecocredits` | Token di sostenibilità guadagnati dai cittadini |
-| `civic_reports` | Segnalazioni cittadine geolocalizzate |
-| `mobility_data` | Dati real-time TPER (fermate, linee, occupazione) |
-
-### 5. Multi-Agent System (MIHUB)
-| Table | Description |
-|-------|-------------|
-| `agent_tasks` | Coda lavori asincroni per agenti AI |
-| `agent_brain` | Memoria a lungo termine e contesto condiviso |
-| `system_events` | Event bus per trigger e reazioni automatiche |
-| `guardian_logs` | Audit trail di sicurezza e monitoraggio API |
-
-### 6. Integrations & Sync
-| Table | Description |
-|-------|-------------|
-| `sync_jobs` | Stato sincronizzazioni con gestionali esterni |
-| `webhooks` | Configurazione notifiche push verso sistemi terzi |
-| `external_connections` | Health check servizi esterni (ARPAE, TPER) |
+- **0 endpoint API** (TRPC + REST)
+- **69 tabelle database**
+- **Full Observability** con Guardian monitoring
+- **Multi-agent orchestration** (MIO, Guardian, Zapier, ecc.)
 
 ---
 
-## 🔌 API Architecture (tRPC + REST)
+## 🗄️ Database Schema
 
-Il backend espone **130+ endpoint** organizzati in router tematici:
+### Tables (69)
 
-### `notificheRouter` (Sistema Notifiche v3.47.0)
-*   **Filtri Messaggi**: Aggiunti filtri (Tutti/Inviati/Ricevuti) per PA e Imprese.
-*   **Stato Lettura**: Implementato click per segnare come letto e icone busta aperta/chiusa.
-*   **Nuovo Endpoint**: Aggiunto `PUT /api/notifiche/risposte/:id/letta` per salvare lo stato di lettura.
-*   **Correzione Badge**: Il badge notifiche ora conta solo le risposte non lette.
-
-### `dmsHubRouter` (Core Business Logic)
-*   **Markets**: Import Slot Editor v3, Auto-import GIS, Listing con statistiche real-time.
-*   **Stalls**: Gestione stati posteggi, assegnazione dinamica.
-*   **Bookings**: Flow prenotazione spunta -> Verifica Wallet -> Check-in -> Presenza.
-*   **Vendors**: CRUD operatori, Profilo completo (Documenti, Concessioni, Verbali).
-*   **Inspections**: Flow Polizia Locale (Controllo -> Verbale -> Sanzione).
-
-### `walletRouter` (Financial)
-*   **Operations**: Ricarica, Decurtazione, Saldo, Storico Transazioni.
-*   **PagoPA**: Generazione IUV, Verifica Pagamento, Riconciliazione.
-
-### `integrationsRouter` (External Systems)
-*   **TPER**: Sync fermate e orari real-time.
-*   **Guardian**: Monitoraggio sicurezza e rate limiting.
-*   **MIO Agent**: Interfaccia diretta con l'orchestrazione AI.
+| Variable Name | Table Name |
+|---------------|------------|
+| `users` | `users` |
+| `extendedUsers` | `extended_users` |
+| `markets` | `markets` |
+| `shops` | `shops` |
+| `transactions` | `transactions` |
+| `checkins` | `checkins` |
+| `carbonCreditsConfig` | `carbon_credits_config` |
+| `fundTransactions` | `fund_transactions` |
+| `reimbursements` | `reimbursements` |
+| `civicReports` | `civic_reports` |
+| `products` | `products` |
+| `productTracking` | `product_tracking` |
+| `carbonFootprint` | `carbon_footprint` |
+| `ecocredits` | `ecocredits` |
+| `auditLogs` | `audit_logs` |
+| `systemLogs` | `system_logs` |
+| `userAnalytics` | `user_analytics` |
+| `sustainabilityMetrics` | `sustainability_metrics` |
+| `notifications` | `notifications` |
+| `inspections` | `inspections` |
+| `businessAnalytics` | `business_analytics` |
+| `mobilityData` | `mobility_data` |
+| `marketGeometry` | `market_geometry` |
+| `stalls` | `stalls` |
+| `vendors` | `vendors` |
+| `concessions` | `concessions` |
+| `vendorDocuments` | `vendor_documents` |
+| `bookings` | `bookings` |
+| `vendorPresences` | `vendor_presences` |
+| `inspectionsDetailed` | `inspections_detailed` |
+| `violations` | `violations` |
+| `concessionPayments` | `concession_payments` |
+| `customMarkers` | `custom_markers` |
+| `customAreas` | `custom_areas` |
+| `apiKeys` | `api_keys` |
+| `apiMetrics` | `api_metrics` |
+| `webhooks` | `webhooks` |
+| `webhookLogs` | `webhook_logs` |
+| `externalConnections` | `external_connections` |
+| `mioAgentLogs` | `mio_agent_logs` |
+| `hubLocations` | `hub_locations` |
+| `hubShops` | `hub_shops` |
+| `hubServices` | `hub_services` |
+| `agentTasks` | `agent_tasks` |
+| `agentProjects` | `agent_projects` |
+| `agentBrain` | `agent_brain` |
+| `systemEvents` | `system_events` |
+| `dataBag` | `data_bag` |
+| `agentMessages` | `agent_messages` |
+| `agentContext` | `agent_context` |
+| `operatoreWallet` | `operatore_wallet` |
+| `walletTransazioni` | `wallet_transazioni` |
+| `tariffePosteggio` | `tariffe_posteggio` |
+| `avvisiPagopa` | `avvisi_pagopa` |
+| `syncConfig` | `sync_config` |
+| `syncJobs` | `sync_jobs` |
+| `syncLogs` | `sync_logs` |
+| `autorizzazioni` | `autorizzazioni` |
+| `userRoles` | `user_roles` |
+| `permissions` | `permissions` |
+| `rolePermissions` | `role_permissions` |
+| `userRoleAssignments` | `user_role_assignments` |
+| `userSessions` | `user_sessions` |
+| `accessLogs` | `access_logs` |
+| `securityEvents` | `security_events` |
+| `loginAttempts` | `login_attempts` |
+| `ipBlacklist` | `ip_blacklist` |
+| `complianceCertificates` | `compliance_certificates` |
+| `securityDelegations` | `security_delegations` |
 
 ---
 
-## 💻 Frontend Architecture (React 19 + Vite)
+## 🔌 API Endpoints
 
-L'applicazione client è una Single Page Application (SPA) complessa divisa in moduli:
-
-### Modifiche Recenti (Gennaio 2026)
-*   **Gestione Mercati**:
-    *   Corretto conteggio posteggi (182 -> 160) filtrando per `geometry_geojson`.
-    *   Risolto problema reset lista presenze al cambio mercato.
-    *   Corretta query per mostrare importo corretto nella spunta.
-    *   "Inizia Mercato" ora azzera TUTTE le presenze per test più puliti.
-
-### 1. Dashboard PA (`/dashboard-pa`)
-Il centro di controllo principale per l'amministrazione.
-*   **Tabs**: Overview, Mercati, Operatori, GIS, Wallet, Sostenibilità, Logs.
-*   **Components**:
-    *   `MarketMapComponent`: Render GIS interattivo dei mercati.
-    *   `GestioneMercati`: Pannello operativo per assegnazione posteggi.
-    *   `WalletPanel`: Gestione finanziaria operatori.
-    *   `GuardianLogsSection`: Monitoraggio sicurezza real-time.
-
-### 2. Hub Operatore (`/hub-operatore`)
-Interfaccia mobile-first per gli operatori commerciali.
-*   **Features**: Check-in QR, Visualizzazione Saldo Wallet, Storico Presenze.
-
-### 3. Public & Civic (`/`, `/mappa`, `/civic`)
-Interfacce cittadino per consultazione e partecipazione.
-*   **MapPage**: Mappa pubblica mercati e servizi.
-*   **CivicPage**: Invio segnalazioni e consultazione impatto ambientale.
+### Services (0)
 
 ---
 
-## ⚠️ Discrepancy Report & Action Items
+## 📁 Project Structure
 
-Dall'audit approfondito sono emerse le seguenti discrepanze tra codice e documentazione precedente:
+### Server
 
-1.  **QR Scanner**: Il codice conteneva abbozzi di un QR scanner lato client non pienamente integrato con il flow di check-in del backend.
-    *   *Action*: Rimossa priorità, focus su flow check-in manuale/assistito via Dashboard PA.
-2.  **Sync TPER**: L'integrazione TPER è presente ma richiede configurazione puntuale dei job di sync nel DB (`sync_config`).
-3.  **Slot Editor**: Il sistema supporta l'import da "Slot Editor v3" (formato JSON complesso), essenziale per il popolamento iniziale dei mercati.
+```
+server/
+  📁 _core
+    📄 context.ts
+    📄 cookies.ts
+    📄 dataApi.ts
+    📄 env.ts
+    📄 imageGeneration.ts
+    📄 index.ts
+    📄 llm.ts
+    📄 map.ts
+    📄 notification.ts
+    📄 oauth.ts
+    📄 sdk.ts
+    📄 systemRouter.ts
+    📄 trpc.ts
+    📁 types
+    📄 vite.ts
+    📄 voiceTranscription.ts
+  📁 api
+    📁 github
+  📄 db.ts
+  📄 dmsHubRouter.ts
+  📄 eventBus.ts
+  📄 firebaseAuthRouter.ts
+  📄 guardianRouter.ts
+  📄 index.ts
+  📄 integrationsRouter.ts
+  📁 logs
+  📄 mihubRouter.ts
+  📄 mioAgentRouter.ts
+  📄 routers.ts
+  📁 services
+    📄 apiInventoryService.ts
+    📄 apiLogsService.ts
+    📄 efilPagopaService.ts
+    📄 tperService.ts
+  📄 storage.ts
+  📄 walletRouter.ts
+```
+
+### Client
+
+```
+client/src/
+  📄 App.tsx
+  📁 _core
+    📁 hooks
+  📁 api
+    📄 authClient.ts
+    📄 logsClient.ts
+    📄 orchestratorClient.ts
+    📄 securityClient.ts
+    📄 suap.ts
+  📁 components
+    📄 AIChatBox.tsx
+    📄 APIDashboardV2.tsx
+    📄 BottomNav.tsx
+    📄 ChatWidget.tsx
+    📄 CivicReportsHeatmap.tsx
+    📄 CivicReportsLayer.tsx
+    📄 CivicReportsPanel.tsx
+    📄 ClientiTab.tsx
+    📄 ComuniPanel.tsx
+    📄 ConnessioniV2.tsx
+    📄 ControlliSanzioniPanel.tsx
+    📄 DashboardLayout.tsx
+    📄 DashboardLayoutSkeleton.tsx
+    📄 ErrorBoundary.tsx
+    📄 GISMap.tsx
+    📄 GamingRewardsPanel.tsx
+    📄 GestioneHubMapWrapper.tsx
+    📄 GestioneHubNegozi.tsx
+    📄 GestioneHubPanel.tsx
+    📄 GestioneMercati.tsx
+    📄 GuardianDebugSection.tsx
+    📄 GuardianIntegrations.tsx
+    📄 GuardianLogsSection.tsx
+    📄 HealthDashboard.tsx
+    📄 HeatmapLayer.tsx
+    📄 HomeButtons.tsx
+    📄 HubMapComponent.tsx
+    📄 HubMapTest.tsx
+    📄 HubMarketMapComponent.tsx
+    📄 ImpersonationBanner.tsx
+    📄 ImpreseQualificazioniPanel.tsx
+    📄 Integrazioni.tsx
+    📄 LegacyReportCards.tsx
+    📄 LogDebug.tsx
+    📄 LoginModal.tsx
+    📄 LogsDebugReal.tsx
+    📄 MIOAgent.tsx
+    📄 MIOLogs.tsx
+    📄 ManusDialog.tsx
+    📄 Map.tsx
+    📄 MapModal.tsx
+    📄 MapWithTransportLayer.tsx
+    📄 MappaHubMini.tsx
+    📄 MappaItaliaComponent.tsx
+    📄 MappaItaliaPubblica.tsx
+    📄 MarketMapComponent.tsx
+    📄 MessageContent.tsx
+    📄 MobilityMap.tsx
+    📄 NativeReportComponent.tsx
+    📄 NavigationMode.tsx
+    📄 NearbyPOIPopup.tsx
+    📄 NearbyStopsPanel.tsx
+    📄 NotificationsPanel.tsx
+    📄 NuovoNegozioForm.tsx
+    📄 PanicButton.tsx
+    📄 PresenzeGraduatoriaPanel.tsx
+    📄 ProtectedTab.tsx
+    📄 RouteLayer.tsx
+    📄 SecurityTab.tsx
+    📄 SharedWorkspace.tsx
+    📄 SharedWorkspace_old.tsx
+    📄 ShopModal.tsx
+    📄 StallNumbersOverlay.tsx
+    📄 SuapPanel.tsx
+    📄 SystemBlueprintNavigator.tsx
+    📄 TransportLayerToggle.tsx
+    📄 TransportStopsLayer.tsx
+    📄 WalletPanel.tsx
+    📄 ZoomFontUpdater.tsx
+    📁 bus-hub
+    📁 markets
+    📁 mio
+    📁 multi-agent
+    📁 suap
+    📁 ui
+  📁 config
+    📄 api.ts
+    📄 links.ts
+    📄 realEndpoints.ts
+  📄 const.ts
+  📁 contexts
+    📄 AnimationContext.tsx
+    📄 CivicReportsContext.tsx
+    📄 FirebaseAuthContext.tsx
+    📄 MioContext.tsx
+    📄 PermissionsContext.tsx
+    📄 ThemeContext.tsx
+    📄 TransportContext.tsx
+  📁 hooks
+    📄 useAgentLogs.ts
+    📄 useComposition.ts
+    📄 useConversationPersistence.ts
+    📄 useImpersonation.ts
+    📄 useInternalTraces.ts
+    📄 useMapAnimation.ts
+    📄 useMobile.tsx
+    📄 useNearbyPOIs.ts
+    📄 useOrchestrator.ts
+    📄 usePersistFn.ts
+    📄 useSystemStatus.ts
+  📁 lib
+    📄 DirectMioClient.ts
+    📄 agentHelper.ts
+    📄 firebase.ts
+    📄 geodesic.ts
+    📄 mioOrchestratorClient.ts
+    📄 stallStatus.ts
+    📄 trpc.ts
+    📄 utils.ts
+  📄 main.tsx
+  📁 pages
+    📄 APITokensPage.tsx
+    📄 AnagraficaPage.tsx
+    📄 AppImpresaNotifiche.tsx
+    📄 AuthCallback.tsx
+    📄 CivicPage.tsx
+    📄 ComponentShowcase.tsx
+    📄 CouncilPage.tsx
+    📄 DashboardImpresa.tsx
+    📄 DashboardPA.tsx
+    📄 GuardianDebug.tsx
+    📄 GuardianEndpoints.tsx
+    📄 GuardianLogs.tsx
+    📄 Home.tsx
+    📄 HomePage.tsx
+    📄 HubMapTestPage.tsx
+    📄 HubOperatore.tsx
+    📄 LogDebugPage.tsx
+    📄 Login.tsx
+    📄 MapPage.tsx
+    📄 MappaItaliaPage.tsx
+    📄 MarketGISPage.tsx
+    📄 NotFound.tsx
+    📄 NuovoVerbalePage.tsx
+    📄 PresentazionePage.tsx
+    📄 PresenzePage.tsx
+    📄 RoutePage.tsx
+    📄 VetrinePage.tsx
+    📄 WalletImpresaPage.tsx
+    📄 WalletPaga.tsx
+    📄 WalletPage.tsx
+    📄 WalletStorico.tsx
+    📁 api
+    📄 mio.tsx
+    📁 suap
+  📁 utils
+    📄 api.ts
+    📄 mihubAPI.ts
+```
+
+### Scripts
+
+- `generate_blueprint.cjs`
+- `seed.js`
+- `sync_api_docs.cjs`
+- `test_agents_capabilities.cjs`
 
 ---
 
-**Generated by Manus AI** - Deep Dive Audit Completed
+## 🤖 Agent Library
+
+La cartella `.mio-agents/` contiene la conoscenza condivisa per gli agenti AI:
+
+- **system_prompts.md** - Prompt e personalità degli agenti
+- **tools_definition.json** - Tool disponibili per gli agenti
+- **api_reference_for_agents.md** - Riferimento API semplificato
+
+---
+
+## 🔄 Aggiornamento
+
+Per aggiornare questo blueprint e la documentazione:
+
+```bash
+npm run docs:update
+```
+
+Questo comando esegue:
+1. `sync_api_docs.cjs` - Aggiorna `index.json` con endpoint reali
+2. `generate_blueprint.cjs` - Rigenera questo file e `.mio-agents/`
+
+---
+
+**Generated by Manus AI** 🤖
+
+
+---
+
+## 🔐 Architettura di Autenticazione (v2.0 - Firebase)
+
+Il sistema ora utilizza un modello di autenticazione ibrido che combina **Firebase Authentication** per i login social (Google, Apple) ed email, con l'integrazione esistente di **ARPA Regione Toscana** per SPID/CIE/CNS.
+
+### Flusso di Autenticazione
+
+1.  **Selezione Profilo**: L'utente sceglie il proprio ruolo (`Cittadino`, `Impresa`, `PA`).
+2.  **Selezione Metodo**: 
+    - Il **Cittadino** può scegliere tra Google, Apple, Email (gestiti da Firebase) o SPID (gestito da ARPA).
+    - **Impresa** e **PA** sono indirizzati al flusso SPID/CIE/CNS di ARPA.
+3.  **Autenticazione Firebase**: Per Google, Apple o Email, il client utilizza il **Firebase SDK** per completare l'autenticazione e ricevere un **ID Token**.
+4.  **Sincronizzazione Backend**: L'ID Token viene inviato all'endpoint backend `POST /api/auth/firebase/sync`. Il backend:
+    - Verifica la validità del token con **Firebase Admin SDK**.
+    - Crea o aggiorna il profilo utente nel database MioHub.
+    - Restituisce un profilo utente unificato con ruoli e permessi MioHub.
+5.  **Sessione Client**: Il client riceve il profilo utente MioHub e lo salva nel `FirebaseAuthContext`, stabilendo la sessione.
+
+### Provider di Autenticazione
+
+| Provider | Tipo | Ruolo | Implementazione | Stato |
+| :--- | :--- | :--- | :--- | :--- |
+| **Google** | Social Login | `citizen` | Firebase SDK (Popup/Redirect) | ✅ **Completato** |
+| **Apple** | Social Login | `citizen` | Firebase SDK (Popup/Redirect) | ✅ **Completato** |
+| **Email/Password** | Credenziali | `citizen` | Firebase SDK | ✅ **Completato** |
+| **SPID/CIE/CNS** | Identità Digitale | `citizen`, `business`, `pa` | ARPA Regione Toscana | ✳️ **Esistente** |
+
+### Componenti Core
+
+La nuova architettura si basa sui seguenti componenti:
+
+| File | Scopo |
+| :--- | :--- |
+| **`client/src/lib/firebase.ts`** | Configura e inizializza il client Firebase. Esporta funzioni per login, logout, registrazione e reset password. |
+| **`client/src/contexts/FirebaseAuthContext.tsx`** | Context React globale che gestisce lo stato utente, ascolta i cambiamenti di stato Firebase e orchestra la sincronizzazione con il backend. |
+| **`client/src/components/LoginModal.tsx`** | Componente UI (v2.0) che integra i metodi di login Firebase e mantiene il flusso SPID esistente. |
+| **`server/firebaseAuthRouter.ts`** | Router Express per il backend che gestisce la verifica dei token e la sincronizzazione degli utenti. |
+| **`api/auth/firebase/sync.ts`** | Serverless function equivalente per il deploy su Vercel, garantendo la compatibilità. |
+
+### Variabili d'Ambiente
+
+Le seguenti variabili sono state aggiunte a `.env.production` e devono essere configurate nell'ambiente di deploy (Vercel):
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `FIREBASE_SERVICE_ACCOUNT_KEY` (per il backend, in formato JSON) 
