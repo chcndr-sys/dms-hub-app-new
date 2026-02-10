@@ -169,11 +169,19 @@ Il diagramma seguente illustra l'architettura proposta per far coesistere e comu
 
 Questa sezione documenta l'implementazione del modulo di integrazione con il DMS Legacy. L'approccio è stato aggiornato da **API Proxy** a **Connessione Diretta al Database PostgreSQL** su AWS RDS, per maggiore affidabilità e indipendenza dal backend Heroku.
 
-#### 1. Architettura della Soluzione (v2.0.0)
+#### 1. Architettura: Dialogo Bidirezionale (v3.0.0)
 
-**Connessione:** Diretta al database PostgreSQL del DMS Legacy su AWS RDS (eu-west-1).
-**Sicurezza:** Solo query `SELECT` — blocco hardware su qualsiasi query non-SELECT.
-**Pool:** Max 3 connessioni, timeout 10s, idle 30s.
+L'architettura si basa su un **dialogo bidirezionale** tra MioHub (il cervello gestionale) e il DMS Legacy (il braccio operativo sul campo). Il modulo di integrazione nel nostro backend (`mihub-backend-rest`) gestisce questo dialogo.
+
+- **MioHub → DMS Legacy (Import)**: Inviamo dati elaborati e autorizzazioni.
+- **DMS Legacy → MioHub (Export)**: Riceviamo dati grezzi e operativi dal campo.
+
+La comunicazione avviene tramite **connessione diretta al database PostgreSQL** del DMS Legacy, come concordato, per garantire affidabilità e performance.
+
+| Direzione | Dati | Sorgente | Destinazione | Scopo |
+|---|---|---|---|---|
+| **MioHub → Legacy** | Regolarità impresa, importo wallet, dati concessione, mappa posti liberi | MioHub (Neon DB) | DMS Legacy (RDS DB) | Fornire al sistema di spunta i dati per operare |
+| **Legacy → MioHub** | Presenze, uscite, spazzatura, posti spunta scelti | DMS Legacy (App Tablet) | MioHub (Neon DB) | Ricevere i dati grezzi dal campo per elaborarli |
 
 ```
 ┌─────────────────┐     SELECT only      ┌──────────────────────┐
