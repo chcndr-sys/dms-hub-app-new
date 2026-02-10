@@ -164,6 +164,26 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
           });
           // Salva info utente nel localStorage per accesso rapido
           localStorage.setItem('miohub_firebase_user', JSON.stringify(miohubUser));
+          
+          // BRIDGE: Popola anche le chiavi legacy usate da HomePage e PermissionsContext
+          // Questo garantisce che il sistema di sicurezza ruoli e l'impersonalizzazione funzionino
+          const legacyUser = {
+            id: miohubUser.miohubId || 0,
+            email: miohubUser.email,
+            name: miohubUser.displayName || miohubUser.email,
+            base_role: miohubUser.role === 'pa' ? 'admin' : miohubUser.role,
+            is_super_admin: miohubUser.email === 'chcndr@gmail.com',
+            assigned_roles: miohubUser.permissions ? [{ role_id: miohubUser.role === 'pa' ? 2 : 13, role_code: miohubUser.role }] : [],
+            photoURL: miohubUser.photoURL,
+            provider: miohubUser.provider,
+          };
+          localStorage.setItem('user', JSON.stringify(legacyUser));
+          // Usa il Firebase ID Token come token legacy
+          const idToken = await firebaseUser.getIdToken();
+          localStorage.setItem('token', idToken);
+          localStorage.setItem('auth_token', idToken);
+          // Dispatch storage event per notificare HomePage
+          window.dispatchEvent(new Event('storage'));
         } catch (err) {
           console.error('[FirebaseAuth] Errore sync utente:', err);
           setState({
@@ -183,6 +203,13 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
           isAuthenticated: false,
         });
         localStorage.removeItem('miohub_firebase_user');
+        // BRIDGE: Rimuovi anche le chiavi legacy al logout
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('permissions');
+        // Dispatch storage event per notificare HomePage
+        window.dispatchEvent(new Event('storage'));
       }
     });
 
@@ -263,6 +290,11 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
       await firebaseLogout();
       localStorage.removeItem('miohub_firebase_user');
       localStorage.removeItem('miohub_user_role');
+      // BRIDGE: Rimuovi anche le chiavi legacy
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('permissions');
       // onAuthStateChanged gestirà il reset dello stato
     } catch (error: any) {
       const message = getFirebaseErrorMessage(error);

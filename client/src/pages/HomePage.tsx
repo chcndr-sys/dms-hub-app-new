@@ -10,6 +10,7 @@ import {
   Bell, Wallet, Activity, ClipboardList, Menu, Presentation
 } from 'lucide-react';
 import { geoAPI } from '@/utils/api';
+import { firebaseLogout } from '@/lib/firebase';
 
 interface SearchResult {
   id: string;
@@ -251,10 +252,18 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
+                  onClick={async () => {
+                    // Logout Firebase (se attivo)
+                    try { await firebaseLogout(); } catch(e) { /* ignore */ }
+                    // Pulisci tutti i localStorage di autenticazione
                     localStorage.removeItem('user');
                     localStorage.removeItem('token');
+                    localStorage.removeItem('auth_token');
                     localStorage.removeItem('permissions');
+                    localStorage.removeItem('miohub_firebase_user');
+                    localStorage.removeItem('miohub_user_role');
+                    localStorage.removeItem('miohub_session_token');
+                    localStorage.removeItem('miohub_user_info');
                     setIsAuthenticated(false);
                     window.location.reload();
                   }}
