@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.8.1 (Fix Login Tracking — Schema DB Corretto)  
-> **Data:** 11 Febbraio 2026 (Correzione colonne login_attempts verificate con query diretta al DB Neon)  
+> **Versione:** 4.8.2 (Pulizia architettura — ARPA già su Hetzner, rimosso codice ridondante)  
+> **Data:** 11 Febbraio 2026 (Verificato backend Hetzner via SSH — ARPA già implementato in mihub-backend-rest)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -7837,8 +7837,15 @@ Nella funzione `syncUserWithBackend()`:
 ## INTEGRAZIONE ARPA TOSCANA — SPID/CIE/CNS PER IMPRESE E PA
 
 > **Sessione:** 11 Febbraio 2026  
-> **Obiettivo:** Implementare autenticazione SPID/CIE/CNS per utenti Impresa e PA tramite ARPA Regione Toscana  
-> **Stato:** Backend implementato, in attesa di credenziali ARPA dall'Integration Manager
+> **Obiettivo:** Autenticazione SPID/CIE/CNS per utenti Impresa e PA tramite ARPA Regione Toscana  
+> **Stato:** Backend GIÀ IMPLEMENTATO su Hetzner (`mihub-backend-rest/routes/auth.js`), in attesa di credenziali ARPA
+
+### ⚠️ ATTENZIONE: ARCHITETTURA REALE VERIFICATA VIA SSH
+
+L'integrazione ARPA è **GIÀ implementata** nel backend Hetzner (`/root/mihub-backend-rest/routes/auth.js`, 904 righe).
+NON è in `dms-hub-app-new/server/` (che è solo per dev locale e NON viene deployato in produzione).
+
+Il file `server/arpaAuthRouter.ts` in `dms-hub-app-new` era **ridondante** ed è stato **rimosso** nella v4.8.2.
 
 ### Contesto
 
@@ -7899,35 +7906,44 @@ Il flusso utilizza il protocollo **OAuth 2.0 Authorization Code Grant** con este
        │<─────────────────────│                      │                  │
 ```
 
-### File Implementati
+### File Implementati (REALI)
 
-| File | Tipo | Descrizione |
+| File | Dove | Descrizione |
 |------|------|-------------|
-| `server/arpaAuthRouter.ts` | **NUOVO** | Router Express con 6 endpoint OAuth2 ARPA (login, callback, verify, me, logout, refresh) |
-| `server/_core/index.ts` | **MODIFICATO** | Registrazione `arpaAuthRouter` PRIMA di `firebaseAuthRouter` su `/api/auth` |
-| `client/src/api/authClient.ts` | Esistente | Client OAuth2 frontend — già compatibile, punta a `orchestratore.mio-hub.me` |
-| `client/src/components/LoginModal.tsx` | Esistente | UI con bottoni SPID/CIE/CNS — già implementata |
-| `client/src/pages/AuthCallback.tsx` | Esistente | Pagina callback `/auth/callback` — già implementata |
-| `client/src/pages/Login.tsx` | Esistente | Pagina login standalone — già implementata |
+| `mihub-backend-rest/routes/auth.js` | **Hetzner** | Router Express con 9 endpoint OAuth2 ARPA (904 righe) — GIÀ DEPLOYATO |
+| `mihub-backend-rest/routes/security.js` | **Hetzner** | API security con JOIN login_attempts ↔ users (108K) |
+| `client/src/api/authClient.ts` | **Vercel** | Client OAuth2 frontend — punta a `orchestratore.mio-hub.me` (Hetzner) |
+| `client/src/components/LoginModal.tsx` | **Vercel** | UI con bottoni SPID/CIE/CNS — già implementata |
+| `client/src/pages/AuthCallback.tsx` | **Vercel** | Pagina callback `/auth/callback` — già implementata |
+| `client/src/pages/Login.tsx` | **Vercel** | Pagina login standalone — già implementata |
 
-### Endpoint Backend Implementati (arpaAuthRouter.ts)
+> **RIMOSSO nella v4.8.2:** `server/arpaAuthRouter.ts` e relativa registrazione in `server/_core/index.ts` (erano ridondanti)
+
+### Endpoint Backend Implementati (mihub-backend-rest/routes/auth.js)
 
 | Metodo | Path | Funzione | Stato |
 |--------|------|----------|-------|
-| GET | `/api/auth/login` | Genera URL autorizzazione ARPA con state anti-CSRF | Implementato |
+| GET | `/api/auth/config` | Configurazione ARPA pubblica | Implementato |
+| GET | `/api/auth/login` | Genera URL autorizzazione ARPA con state anti-CSRF + PKCE | Implementato |
 | POST | `/api/auth/callback` | Scambia code→token, chiama UserInfo, crea utente DB, traccia login | Implementato |
 | GET | `/api/auth/verify` | Verifica validità session token JWT | Implementato |
 | GET | `/api/auth/me` | Restituisce info utente corrente | Implementato |
 | POST | `/api/auth/logout` | Invalida sessione, genera URL logout ARPA | Implementato |
 | POST | `/api/auth/refresh` | Rinnova sessione e token ARPA | Implementato |
+| POST | `/api/auth/register` | Registrazione cittadini con email/password | Implementato |
+| POST | `/api/auth/login` | Login cittadini con email/password (POST, diverso dal GET ARPA) | Implementato |
 
-### Compatibilità Route ARPA vs Firebase
+### Dove gira cosa (ARCHITETTURA REALE)
 
-Non ci sono conflitti perché:
-- ARPA usa `GET /login`, Firebase usa `POST /login` (metodi diversi)
-- Firebase usa il prefix `/firebase/*` per i suoi endpoint principali (sync, verify, me, logout)
-- `/config` e `/register` sono solo su Firebase
-- ARPA è registrato PRIMA di Firebase in Express, quindi le sue route hanno priorità
+| Componente | Dove | Repo | Deploy |
+|------------|------|------|--------|
+| Frontend React | **Vercel** | `dms-hub-app-new` | Automatico da GitHub push |
+| Serverless functions (`api/`) | **Vercel** | `dms-hub-app-new` | Automatico da GitHub push |
+| Backend REST API | **Hetzner** | `mihub-backend-rest` | `cd /root/mihub-backend-rest && git pull && pm2 restart` |
+| `server/` directory | **Solo dev locale** | `dms-hub-app-new` | **MAI deployato in produzione** |
+| Database PostgreSQL | **Neon Cloud** | — | Condiviso tra Vercel e Hetzner |
+
+> **REGOLA CRITICA:** Qualsiasi endpoint che deve funzionare in produzione va in `mihub-backend-rest/routes/`, NON in `dms-hub-app-new/server/`. La directory `server/` di dms-hub-app-new è SOLO per sviluppo locale.
 
 ### Endpoint ARPA Toscana (Documento Tecnico v1.13)
 
@@ -7999,13 +8015,13 @@ ARPA richiede che il Service Provider (MIO HUB) conservi per ogni autenticazione
 - `auth_level` — livello di autenticazione (1, 2, 3)
 - `sid` — session ID ARPA
 
-Questi dati sono già loggati nel backend (`console.log` in arpaAuthRouter.ts) e tracciati nella tabella `login_attempts`.
+Questi dati sono già loggati nel backend Hetzner (`mihub-backend-rest/routes/auth.js`) e tracciati nella tabella `login_attempts`.
 
 ### Note per Sessioni Future
 
-34. **Ordine router Express**: `arpaAuthRouter` DEVE essere registrato PRIMA di `firebaseAuthRouter` in `server/_core/index.ts` perché entrambi usano `/api/auth/*`
-35. **Sessioni in-memory**: Le sessioni ARPA sono attualmente in-memory (`activeSessions` Map). Per produzione, migrare a Redis o alla tabella `user_sessions` del DB
-36. **State anti-CSRF**: Gli state OAuth sono in-memory con TTL 5 minuti. Per multi-istanza, usare Redis
+34. **ARCHITETTURA: 2 REPO SEPARATI** — `dms-hub-app-new` (frontend Vercel) e `mihub-backend-rest` (backend Hetzner). La directory `server/` in dms-hub-app-new è SOLO per dev locale, MAI deployata in produzione
+35. **ARPA già implementato su Hetzner** — `routes/auth.js` (904 righe, 9 endpoint). NON serve riscriverlo in `dms-hub-app-new/server/`
+36. **Vercel rewrites** — `/api/auth/:path*` viene proxato a `api.mio-hub.me` (Hetzner). Le chiamate auth dal frontend vanno automaticamente al backend Hetzner
 37. **Scope `professional`**: È lo scope che fornisce `companyName` e `registeredOffice` — senza di esso si ottengono solo dati della persona fisica
 38. **Redirect URI**: La redirect_uri registrata su ARPA DEVE corrispondere esattamente a quella usata nel codice. Qualsiasi differenza (trailing slash, http vs https) causa errore
 39. **Ambiente Staging vs Produzione**: Gli endpoint ARPA sono diversi (trial.auth.toscana.it vs auth.toscana.it). Controllare sempre `ARPA_ENVIRONMENT`
@@ -8013,3 +8029,6 @@ Questi dati sono già loggati nel backend (`console.log` in arpaAuthRouter.ts) e
 41. **CIE su mobile**: Per pre-selezionare CIE su dispositivi mobili, usare il parametro `idp_hint=CIE,CieId` nell'URL di autorizzazione
 42. **Documento tecnico di riferimento**: "ARPA per gli Enti della P.P.A.A." v1.13 del 22/01/2026, scaricabile da https://auth.regione.toscana.it/integrazioni
 43. **Supporto ARPA**: arpa@regione.toscana.it — per problemi tecnici con gli endpoint o la configurazione
+44. **Schema DB login_attempts (VERIFICATO con query diretta)** — Colonne REALI: `id`, `username`, `user_id`, `ip_address`, `user_agent`, `success`, `failure_reason`, `created_at`. Le colonne `user_email` e `user_name` NON ESISTONO — sono alias calcolati dal JOIN con `users` in `security.js` riga 1498
+45. **MAI verificare lo schema DB via API orchestratore** — L'API restituisce campi mappati/rinominati dal JOIN. SEMPRE verificare con query diretta: `SELECT column_name FROM information_schema.columns WHERE table_name = 'login_attempts'`
+46. **Serverless Vercel (`api/auth/firebase/sync.ts`)** — Scrive in `login_attempts` con le colonne reali (`username`, `user_id`, `ip_address`, `user_agent`, `success`, `created_at`). Il campo `username` contiene l'email dell'utente, `user_id` il legacyUserId. Il JOIN dell'orchestratore aggiunge automaticamente `user_email` e `user_name` dalla tabella `users`
