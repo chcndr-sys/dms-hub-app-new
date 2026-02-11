@@ -88,9 +88,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // LOGIN TRACKING: INSERT login_attempts + UPDATE lastSignedIn
     // ============================================
     let loginTracked = false;
-    if (trackLogin === true && legacyUserId && legacyUserId > 0) {
+    console.log(`[Firebase Sync] Tracking check: trackLogin=${trackLogin} (type=${typeof trackLogin}), legacyUserId=${legacyUserId} (type=${typeof legacyUserId}), condition=${trackLogin === true && legacyUserId && legacyUserId > 0}`);
+    
+    // Accetta trackLogin come boolean o stringa "true", e legacyUserId come number o stringa
+    const shouldTrack = (trackLogin === true || trackLogin === 'true') && legacyUserId && Number(legacyUserId) > 0;
+    console.log(`[Firebase Sync] shouldTrack=${shouldTrack}`);
+    
+    if (shouldTrack) {
       try {
         const dbUrl = process.env.DATABASE_URL;
+        console.log(`[Firebase Sync] DATABASE_URL present: ${!!dbUrl}, length: ${dbUrl?.length || 0}`);
         if (dbUrl) {
           const postgres = (await import('postgres')).default;
           const sql = postgres(dbUrl, { ssl: 'require' });
@@ -120,9 +127,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.warn('[Firebase Sync] DATABASE_URL non configurato, login tracking saltato');
         }
       } catch (trackError: any) {
-        console.error('[Firebase Sync] Errore login tracking:', trackError.message);
+        console.error('[Firebase Sync] Errore login tracking:', trackError.message, trackError.stack);
         // Non bloccare il login se il tracking fallisce
       }
+    } else {
+      console.log(`[Firebase Sync] Tracking SKIPPED: trackLogin=${trackLogin}, legacyUserId=${legacyUserId}`);
     }
 
     return res.status(200).json({ success: true, user, loginTracked });
