@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.8.0 (ARPA SPID/CIE Integration Backend)  
-> **Data:** 11 Febbraio 2026 (Implementazione OAuth2-OIDC ARPA Toscana)  
+> **Versione:** 4.8.1 (Fix Login Tracking — Schema DB Corretto)  
+> **Data:** 11 Febbraio 2026 (Correzione colonne login_attempts verificate con query diretta al DB Neon)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -7719,24 +7719,24 @@ Dopo l'integrazione Firebase Auth, il login funziona correttamente (bridge Fireb
 
 ### Analisi Root Cause
 
-#### Tabella `login_attempts` — Schema REALE nel DB Neon (verificato via API orchestratore)
+#### Tabella `login_attempts` — Schema REALE nel DB Neon (⚠️ VERIFICATO CON QUERY DIRETTA AL DB — 11 Feb 2026 sera)
 
 | Colonna | Tipo | Note |
 |---------|------|------|
 | `id` | serial | PK auto-increment |
-| `username` | varchar | nome utente (può essere null) |
-| `user_id` | integer | FK → users.id |
-| `ip_address` | varchar | IP del client |
+| `username` | varchar | nome utente o email (può essere null) |
+| `user_id` | integer | FK → users.id (può essere null) |
+| `ip_address` | varchar | IP del client (NOT NULL) |
 | `user_agent` | text | browser/client info |
-| `success` | boolean | true = login riuscito, false = fallito |
+| `success` | boolean | true = login riuscito, false = fallito (NOT NULL) |
 | `failure_reason` | varchar | motivo fallimento (null se success) |
-| `created_at` | timestamp | data/ora tentativo |
-| `user_email` | varchar | email dell'utente |
-| `user_name` | varchar | nome completo utente |
+| `created_at` | timestamptz | data/ora tentativo (default CURRENT_TIMESTAMP) |
 
-> **ATTENZIONE**: Lo schema Drizzle (`drizzle/schema.ts`) è **disallineato** con la tabella reale.
-> Il Drizzle schema ha `email` (non esiste nel DB), e manca `username`, `user_id`, `user_email`, `user_name`.
-> Le tabelle security sono state create via SQL diretto sull'orchestratore Hetzner, non via Drizzle migrations.
+> **⚠️ CORREZIONE CRITICA (11 Feb 2026 sera)**: Le colonne `user_email` e `user_name` **NON ESISTONO** nel DB.
+> La verifica precedente era stata fatta via API orchestratore che restituiva campi mappati/rinominati.
+> La verifica definitiva è stata fatta con **query diretta** a Neon PostgreSQL (`information_schema.columns`).
+> Lo schema Drizzle ha `email` (che nel DB reale NON esiste — la colonna si chiama `username`).
+> Le colonne reali sono SOLO 8: id, username, user_id, ip_address, user_agent, success, failure_reason, created_at.
 
 #### Tabella `users` — Colonna `lastSignedIn`
 
@@ -7765,10 +7765,14 @@ Il SecurityTab (riga 1709) renderizza `attempt.email_attempted`, ma l'API orches
 
 Aggiungere dopo la verifica del token Firebase:
 - Se il body contiene `trackLogin: true` e `legacyUserId > 0`:
-  1. **INSERT** in `login_attempts` con le colonne reali:
+  1. **INSERT** in `login_attempts` con le colonne reali (⚠️ CORRETTO — vedi sotto):
      ```sql
-     INSERT INTO login_attempts (username, user_id, ip_address, user_agent, success, created_at, user_email, user_name)
-     VALUES ($1, $2, $3, $4, true, NOW(), $5, $6)
+     -- ❌ SBAGLIATO (causava errore: column "user_email" does not exist):
+     -- INSERT INTO login_attempts (username, user_id, ip_address, user_agent, success, created_at, user_email, user_name)
+     -- ✅ CORRETTO (verificato con query diretta al DB):
+     INSERT INTO login_attempts (username, user_id, ip_address, user_agent, success, created_at)
+     VALUES ($1, $2, $3, $4, true, NOW())
+     -- username = email dell'utente, user_id = legacyUserId
      ```
   2. **UPDATE** `users` per aggiornare `lastSignedIn`:
      ```sql
@@ -7813,11 +7817,20 @@ Nella funzione `syncUserWithBackend()`:
 
 ### Note per sessioni future
 
-29. **Colonne login_attempts**: Le colonne reali nel DB sono `username`, `user_id`, `ip_address`, `user_agent`, `success`, `failure_reason`, `created_at`, `user_email`, `user_name` — NON usare lo schema Drizzle che è sbagliato
+29. **⚠️ Colonne login_attempts (CORRETTO 11 Feb sera)**: Le colonne reali nel DB sono SOLO 8: `id`, `username`, `user_id`, `ip_address`, `user_agent`, `success`, `failure_reason`, `created_at`. Le colonne `user_email` e `user_name` **NON ESISTONO** — l'errore era stato causato da una verifica fatta via API orchestratore che restituiva campi mappati/rinominati. La verifica definitiva è stata fatta con **query diretta** al DB Neon (`information_schema.columns`). Per inserire l'email, usare la colonna `username`.
 30. **lastSignedIn**: La colonna nel DB è camelCase con virgolette (`"lastSignedIn"`), l'API la restituisce come `last_signed_in`
-31. **Drizzle schema disallineato**: Le tabelle `login_attempts`, `security_events`, `ip_blacklist` sono state create via SQL diretto, non via Drizzle — lo schema Drizzle per queste tabelle è inaffidabile
+31. **Drizzle schema disallineato**: Lo schema Drizzle ha `email` per login_attempts, ma nel DB la colonna si chiama `username`. Le tabelle security sono state create via SQL diretto. **SEMPRE verificare con query diretta al DB, MAI fidarsi dell'API orchestratore per i nomi colonne**
 32. **URL sync**: La chiamata a `/api/auth/firebase/sync` DEVE usare URL relativo (non `API_BASE`) perché la serverless function è su Vercel, non su Hetzner
 33. **Ordine operazioni in syncUserWithBackend()**: STEP 1 = lookup legacy (orchestratore), STEP 2 = sync + tracking (Vercel), STEP 3 = security event (orchestratore)
+
+**NOTA ARCHITETTURA CRITICA (aggiunta 11 Feb sera):**
+- **Repo `Chcndr/dms-hub-app-new`** = Frontend React + Serverless functions Vercel (`api/` directory)
+- **Repo `Chcndr/mihub-backend-rest`** = Backend REST su Hetzner (`/root/mihub-backend-rest`) — servizio SEPARATO
+- Il `server/` Express in dms-hub-app-new è per **dev locale**, NON è deployato in produzione
+- Vercel fa proxy verso `api.mio-hub.me` (Hetzner) per le API che non ha (security, mihub, guardian, ecc.)
+- Il DB Neon è **condiviso** tra Vercel e Hetzner — stesso database, stesse tabelle
+- Le API `/api/security/*` sono servite dall'orchestratore Hetzner, NON da Vercel
+- Il frontend SecurityTab chiama direttamente `orchestratore.mio-hub.me` per le API security
 
 ---
 

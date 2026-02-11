@@ -6,8 +6,13 @@
  * Se il body contiene trackLogin: true e legacyUserId > 0,
  * inserisce un record in login_attempts e aggiorna lastSignedIn.
  * 
- * Colonne REALI della tabella login_attempts nel DB Neon:
- * id, username, user_id, ip_address, user_agent, success, failure_reason, created_at, user_email, user_name
+ * ⚠️ Colonne REALI della tabella login_attempts nel DB Neon
+ * (verificato con query diretta a information_schema.columns — 11 Feb 2026):
+ * id (serial), username (varchar), user_id (integer), ip_address (varchar NOT NULL),
+ * user_agent (text), success (boolean NOT NULL), failure_reason (varchar), created_at (timestamptz)
+ * 
+ * ❌ NON ESISTONO: user_email, user_name, email
+ * ✅ Per l'email usare la colonna "username"
  * 
  * Colonna users: "lastSignedIn" (camelCase, richiede virgolette doppie nel SQL)
  */
@@ -88,16 +93,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // LOGIN TRACKING: INSERT login_attempts + UPDATE lastSignedIn
     // ============================================
     let loginTracked = false;
-    console.log(`[Firebase Sync] Tracking check: trackLogin=${trackLogin} (type=${typeof trackLogin}), legacyUserId=${legacyUserId} (type=${typeof legacyUserId}), condition=${trackLogin === true && legacyUserId && legacyUserId > 0}`);
     
     // Accetta trackLogin come boolean o stringa "true", e legacyUserId come number o stringa
     const shouldTrack = (trackLogin === true || trackLogin === 'true') && legacyUserId && Number(legacyUserId) > 0;
-    console.log(`[Firebase Sync] shouldTrack=${shouldTrack}`);
     
     if (shouldTrack) {
       try {
         const dbUrl = process.env.DATABASE_URL;
-        console.log(`[Firebase Sync] DATABASE_URL present: ${!!dbUrl}, length: ${dbUrl?.length || 0}`);
         if (dbUrl) {
           const postgres = (await import('postgres')).default;
           const sql = postgres(dbUrl, { ssl: 'require' });
@@ -106,18 +108,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             || req.socket?.remoteAddress 
             || 'unknown';
           const clientUserAgent = (req.headers['user-agent'] as string) || 'unknown';
+          // L'email va nella colonna "username" (è l'unica colonna varchar per identificare l'utente)
           const loginEmail = userEmail || user.email || email || '';
-          const loginName = userName || user.displayName || displayName || '';
 
           // INSERT login_attempt con le colonne REALI del DB
+          // ⚠️ Colonne verificate con query diretta: username, user_id, ip_address, user_agent, success, created_at
+          // ❌ NON usare user_email, user_name — NON ESISTONO nel DB!
           await sql`
-            INSERT INTO login_attempts (username, user_id, ip_address, user_agent, success, created_at, user_email, user_name)
-            VALUES (${loginName}, ${legacyUserId}, ${clientIp}, ${clientUserAgent}, true, NOW(), ${loginEmail}, ${loginName})
+            INSERT INTO login_attempts (username, user_id, ip_address, user_agent, success, created_at)
+            VALUES (${loginEmail}, ${Number(legacyUserId)}, ${clientIp}, ${clientUserAgent}, true, NOW())
           `;
 
           // UPDATE lastSignedIn nella tabella users
           await sql`
-            UPDATE users SET "lastSignedIn" = NOW(), "updatedAt" = NOW() WHERE id = ${legacyUserId}
+            UPDATE users SET "lastSignedIn" = NOW(), "updatedAt" = NOW() WHERE id = ${Number(legacyUserId)}
           `;
 
           await sql.end();
@@ -127,11 +131,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.warn('[Firebase Sync] DATABASE_URL non configurato, login tracking saltato');
         }
       } catch (trackError: any) {
-        console.error('[Firebase Sync] Errore login tracking:', trackError.message, trackError.stack);
+        console.error('[Firebase Sync] Errore login tracking:', trackError.message);
         // Non bloccare il login se il tracking fallisce
       }
-    } else {
-      console.log(`[Firebase Sync] Tracking SKIPPED: trackLogin=${trackLogin}, legacyUserId=${legacyUserId}`);
     }
 
     return res.status(200).json({ success: true, user, loginTracked });
