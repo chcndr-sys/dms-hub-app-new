@@ -1701,6 +1701,26 @@ export const integrations: IntegrationConfig[] = [
     ]
   },
   {
+    id: 'mercaweb',
+    name: 'MercaWeb — Abaco S.p.A.',
+    description: 'Integrazione bidirezionale con MercaWeb (Abaco S.p.A.) per sincronizzazione anagrafiche mercati, ambulanti, piazzole, concessioni e presenze.',
+    baseUrl: 'https://api.mio-hub.me',
+    status: 'active',
+    dataOwner: 'Abaco S.p.A.',
+    notes: 'Integrazione attiva. Import anagrafiche via POST, export presenze via GET. Autenticazione tramite API Key (header X-MercaWeb-API-Key). Logica UPSERT basata su mercaweb_id.',
+    endpoints: [
+      'POST /api/integrations/mercaweb/import/ambulanti',
+      'POST /api/integrations/mercaweb/import/mercati',
+      'POST /api/integrations/mercaweb/import/piazzole',
+      'POST /api/integrations/mercaweb/import/concessioni',
+      'POST /api/integrations/mercaweb/import/spuntisti',
+      'GET  /api/integrations/mercaweb/export/presenze/:marketId',
+      'GET  /api/integrations/mercaweb/export/mapping/:entity',
+      'GET  /api/integrations/mercaweb/health',
+      'GET  /api/integrations/mercaweb/status'
+    ]
+  },
+  {
     id: 'firebase-auth',
     name: 'Firebase Authentication',
     description: 'Sistema di autenticazione ibrido Firebase (Google, Apple, Email/Password) integrato con il backend MioHub per la gestione dei profili utente e dei ruoli.',
