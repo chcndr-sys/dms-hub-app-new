@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.6.0 (Firebase Auth)  
-> **Data:** 10 Febbraio 2026 (Integrazione Firebase Authentication)  
+> **Versione:** 4.7.0 (Firebase Auth + Login Tracking)  
+> **Data:** 11 Febbraio 2026 (Fix Login Tracking + Verifica)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -7748,16 +7748,18 @@ Dopo l'integrazione Firebase Auth, il login funziona correttamente (bridge Fireb
 
 Il SecurityTab (riga 1709) renderizza `attempt.email_attempted`, ma l'API orchestratore restituisce il campo come `user_email`. L'interfaccia `LoginAttempt` nel client ha entrambi i campi (`user_email` e `email_attempted`), ma il rendering usa `email_attempted` che non corrisponde al campo API. Questo causa la visualizzazione dell'IP ma non dell'email nei tentativi di login.
 
-#### Flusso attuale (commit 6ee46df — stabile)
+#### Flusso PRIMA del fix (commit 6ee46df)
 
 1. Login Firebase → `onAuthStateChanged` → `syncUserWithBackend()`
-2. `syncUserWithBackend()` chiama `POST /api/auth/firebase/sync` (Vercel serverless)
-3. `syncUserWithBackend()` chiama `lookupLegacyUser(email)` → orchestratore API
+2. `syncUserWithBackend()` chiama `POST ${API_BASE}/api/auth/firebase/sync` → **va a Hetzner → 404!**
+3. `syncUserWithBackend()` chiama `lookupLegacyUser(email)` → orchestratore API (funziona)
 4. `trackLoginEvent()` crea un `security_event` (tabella `security_events`) — **NON** un `login_attempt`
 5. **Nessun INSERT in `login_attempts`** → tab Accessi non mostra login riusciti
 6. **Nessun UPDATE di `"lastSignedIn"`** → data ferma
 
-### Soluzione — Modifiche (3 file, 1 commit)
+> **Bug critico scoperto**: `API_BASE = https://orchestratore.mio-hub.me` (Hetzner). La serverless function `sync.ts` è su **Vercel**, non su Hetzner. La chiamata andava a Hetzner e riceveva 404, ma l'errore era catturato silenziosamente dal `catch`. Soluzione: usare **URL relativo** `/api/auth/firebase/sync` che, dal client su Vercel, raggiunge correttamente la serverless function.
+
+### Soluzione — Modifiche (3 file, 1 commit: `8968d6c`)
 
 #### File 1: `api/auth/firebase/sync.ts` (Vercel serverless function)
 
@@ -7776,7 +7778,9 @@ Aggiungere dopo la verifica del token Firebase:
 
 #### File 2: `client/src/contexts/FirebaseAuthContext.tsx`
 
-Nella funzione `syncUserWithBackend()`, dopo il lookup dell'utente legacy (STEP 2):
+Nella funzione `syncUserWithBackend()`:
+- **URL cambiato** da `${API_BASE}/api/auth/firebase/sync` (Hetzner→404) a `/api/auth/firebase/sync` (URL relativo→Vercel→200)
+- **Ordine invertito**: STEP 1 = lookup legacy, STEP 2 = sync (prima era il contrario)
 - Passare nel body della chiamata sync: `trackLogin: true`, `legacyUserId`, `userName`, `userEmail`
 - Spostare la chiamata sync DOPO il lookup legacy, così ha i dati dell'utente da passare
 - Questo permette al backend di sapere quale utente ha fatto login e scrivere nel DB
@@ -7792,14 +7796,25 @@ Nella funzione `syncUserWithBackend()`, dopo il lookup dell'utente legacy (STEP 
 |----------|--------|------|----------|
 | `/api/auth/firebase/sync` | POST | Vercel serverless (`api/auth/firebase/sync.ts`) | Aggiungere INSERT `login_attempts` + UPDATE `"lastSignedIn"` |
 
-### Test di verifica
+### Test di verifica — ✅ SUPERATI (11 Feb 2026)
 
-1. Fare logout e login con `chcndr@gmail.com`
-2. Sicurezza → Accessi: deve apparire un record con pallino verde, email, e data di oggi
-3. Sicurezza → Utenti: "Mio" deve mostrare "Ultimo accesso: 11/02/2026"
+1. ✅ Login con `chcndr@gmail.com` via Google → login riuscito
+2. ✅ Sicurezza → Accessi: record con pallino **verde**, email `chcndr@gmail.com`, data 11/02/2026 03:31:50
+3. ✅ Sicurezza → Utenti: "Mio" mostra "Ultimo accesso: 11/02/2026"
+
+### Flusso DOPO il fix (commit 8968d6c)
+
+1. Login Firebase → `onAuthStateChanged` → `syncUserWithBackend()`
+2. STEP 1: `lookupLegacyUser(email)` → orchestratore API → recupera `id`, `impresa_id`, `wallet_balance`, `assigned_roles`
+3. STEP 2: `POST /api/auth/firebase/sync` (URL relativo → Vercel serverless) con `trackLogin: true` + dati utente legacy
+4. Serverless function: verifica token Firebase, INSERT in `login_attempts`, UPDATE `"lastSignedIn"` in `users`
+5. STEP 3: `trackLoginEvent()` → crea `security_event` (complementare, per il log eventi)
+6. STEP 4: costruisce `MioHubUser` con tutti i dati e lo salva nel context
 
 ### Note per sessioni future
 
 29. **Colonne login_attempts**: Le colonne reali nel DB sono `username`, `user_id`, `ip_address`, `user_agent`, `success`, `failure_reason`, `created_at`, `user_email`, `user_name` — NON usare lo schema Drizzle che è sbagliato
 30. **lastSignedIn**: La colonna nel DB è camelCase con virgolette (`"lastSignedIn"`), l'API la restituisce come `last_signed_in`
 31. **Drizzle schema disallineato**: Le tabelle `login_attempts`, `security_events`, `ip_blacklist` sono state create via SQL diretto, non via Drizzle — lo schema Drizzle per queste tabelle è inaffidabile
+32. **URL sync**: La chiamata a `/api/auth/firebase/sync` DEVE usare URL relativo (non `API_BASE`) perché la serverless function è su Vercel, non su Hetzner
+33. **Ordine operazioni in syncUserWithBackend()**: STEP 1 = lookup legacy (orchestratore), STEP 2 = sync + tracking (Vercel), STEP 3 = security event (orchestratore)
