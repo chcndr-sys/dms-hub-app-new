@@ -236,6 +236,232 @@ function APIDashboard() {
           }
         });
 
+        // ============================================
+        // DMS Legacy (Heroku) - Endpoint diretti su Hetzner
+        // ============================================
+        if (!endpointsByCategory['DMS Legacy (Heroku)']) {
+          endpointsByCategory['DMS Legacy (Heroku)'] = [];
+        }
+        const dmsLegacyEndpoints = [
+          {
+            id: 'dms-legacy.health',
+            method: 'GET',
+            path: '/api/integrations/dms-legacy/health',
+            description: 'Health check connessione DMS Legacy Heroku',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'dms-legacy',
+            base_url: 'https://api.mio-hub.me'
+          },
+          {
+            id: 'dms-legacy.markets',
+            method: 'GET',
+            path: '/api/integrations/dms-legacy/markets',
+            description: 'Lista mercati da DMS Legacy (Bologna, Cervia)',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'dms-legacy',
+            base_url: 'https://api.mio-hub.me'
+          },
+          {
+            id: 'dms-legacy.vendors',
+            method: 'GET',
+            path: '/api/integrations/dms-legacy/vendors',
+            description: 'Lista ambulanti/operatori da DMS Legacy',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'dms-legacy',
+            base_url: 'https://api.mio-hub.me'
+          },
+          {
+            id: 'dms-legacy.concessions',
+            method: 'GET',
+            path: '/api/integrations/dms-legacy/concessions',
+            description: 'Lista concessioni da DMS Legacy',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'dms-legacy',
+            base_url: 'https://api.mio-hub.me'
+          },
+          {
+            id: 'dms-legacy.presences',
+            method: 'GET',
+            path: '/api/integrations/dms-legacy/presences/:marketId',
+            description: 'Presenze per mercato da DMS Legacy (usa {"marketId": 1})',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'dms-legacy',
+            base_url: 'https://api.mio-hub.me'
+          },
+          {
+            id: 'dms-legacy.market-sessions',
+            method: 'GET',
+            path: '/api/integrations/dms-legacy/market-sessions/:marketId',
+            description: 'Sessioni mercato da DMS Legacy (usa {"marketId": 1})',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'dms-legacy',
+            base_url: 'https://api.mio-hub.me'
+          },
+          {
+            id: 'dms-legacy.sync',
+            method: 'POST',
+            path: '/api/integrations/dms-legacy/sync',
+            description: 'Avvia sincronizzazione manuale DMS Legacy',
+            risk_level: 'medium',
+            enabled: true,
+            test: { enabled: false },
+            service_id: 'dms-legacy',
+            base_url: 'https://api.mio-hub.me'
+          },
+          {
+            id: 'dms-legacy.cron-sync',
+            method: 'GET',
+            path: '/api/integrations/dms-legacy/cron-sync',
+            description: 'Stato CRON sincronizzazione DMS Legacy',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'dms-legacy',
+            base_url: 'https://api.mio-hub.me'
+          }
+        ];
+        dmsLegacyEndpoints.forEach(ep => {
+          const existingIds = endpointsByCategory['DMS Legacy (Heroku)']?.map((e: any) => e.id) || [];
+          if (!existingIds.includes(ep.id)) {
+            endpointsByCategory['DMS Legacy (Heroku)'].push(ep);
+          }
+        });
+
+        // ============================================
+        // MercaWeb — Abaco S.p.A. - Endpoint su Hetzner
+        // ============================================
+        if (!endpointsByCategory['MercaWeb — Abaco S.p.A.']) {
+          endpointsByCategory['MercaWeb — Abaco S.p.A.'] = [];
+        }
+        const mercawebEndpoints = [
+          {
+            id: 'mercaweb.health',
+            method: 'GET',
+            path: '/api/integrations/mercaweb/health',
+            description: 'Health check connessione MercaWeb',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'mercaweb',
+            base_url: 'https://api.mio-hub.me',
+            requiresApiKey: true
+          },
+          {
+            id: 'mercaweb.status',
+            method: 'GET',
+            path: '/api/integrations/mercaweb/status',
+            description: 'Stato e conteggio record sincronizzati MercaWeb',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'mercaweb',
+            base_url: 'https://api.mio-hub.me',
+            requiresApiKey: true
+          },
+          {
+            id: 'mercaweb.import.ambulanti',
+            method: 'POST',
+            path: '/api/integrations/mercaweb/import/ambulanti',
+            description: 'Import ambulanti da MercaWeb (UPSERT su mercaweb_id)',
+            risk_level: 'medium',
+            enabled: true,
+            test: { enabled: false },
+            service_id: 'mercaweb',
+            base_url: 'https://api.mio-hub.me',
+            requiresApiKey: true
+          },
+          {
+            id: 'mercaweb.import.mercati',
+            method: 'POST',
+            path: '/api/integrations/mercaweb/import/mercati',
+            description: 'Import mercati da MercaWeb (UPSERT su mercaweb_id)',
+            risk_level: 'medium',
+            enabled: true,
+            test: { enabled: false },
+            service_id: 'mercaweb',
+            base_url: 'https://api.mio-hub.me',
+            requiresApiKey: true
+          },
+          {
+            id: 'mercaweb.import.piazzole',
+            method: 'POST',
+            path: '/api/integrations/mercaweb/import/piazzole',
+            description: 'Import piazzole/posteggi da MercaWeb',
+            risk_level: 'medium',
+            enabled: true,
+            test: { enabled: false },
+            service_id: 'mercaweb',
+            base_url: 'https://api.mio-hub.me',
+            requiresApiKey: true
+          },
+          {
+            id: 'mercaweb.import.concessioni',
+            method: 'POST',
+            path: '/api/integrations/mercaweb/import/concessioni',
+            description: 'Import concessioni da MercaWeb',
+            risk_level: 'medium',
+            enabled: true,
+            test: { enabled: false },
+            service_id: 'mercaweb',
+            base_url: 'https://api.mio-hub.me',
+            requiresApiKey: true
+          },
+          {
+            id: 'mercaweb.import.spuntisti',
+            method: 'POST',
+            path: '/api/integrations/mercaweb/import/spuntisti',
+            description: 'Import spuntisti da MercaWeb',
+            risk_level: 'medium',
+            enabled: true,
+            test: { enabled: false },
+            service_id: 'mercaweb',
+            base_url: 'https://api.mio-hub.me',
+            requiresApiKey: true
+          },
+          {
+            id: 'mercaweb.export.presenze',
+            method: 'GET',
+            path: '/api/integrations/mercaweb/export/presenze/:marketId',
+            description: 'Export presenze per mercato verso MercaWeb (usa {"marketId": 1})',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'mercaweb',
+            base_url: 'https://api.mio-hub.me',
+            requiresApiKey: true
+          },
+          {
+            id: 'mercaweb.export.mapping',
+            method: 'GET',
+            path: '/api/integrations/mercaweb/export/mapping/:entity',
+            description: 'Tabella mapping ID MioHub↔MercaWeb (usa {"entity": "imprese"})',
+            risk_level: 'low',
+            enabled: true,
+            test: true,
+            service_id: 'mercaweb',
+            base_url: 'https://api.mio-hub.me',
+            requiresApiKey: true
+          }
+        ];
+        mercawebEndpoints.forEach(ep => {
+          const existingIds = endpointsByCategory['MercaWeb — Abaco S.p.A.']?.map((e: any) => e.id) || [];
+          if (!existingIds.includes(ep.id)) {
+            endpointsByCategory['MercaWeb — Abaco S.p.A.'].push(ep);
+          }
+        });
+
         // Convert to array format
         const categorizedEndpoints = Object.entries(endpointsByCategory).map(([category, endpoints]) => ({
           category,
@@ -734,6 +960,105 @@ function APIDashboard() {
           data = await tplStopsResponse.json();
           break;
           
+        // ============================================
+        // DMS LEGACY (Heroku) - Chiamate REST dirette su Hetzner
+        // ============================================
+        case '/api/integrations/dms-legacy/health':
+        case '/api/integrations/dms-legacy/markets':
+        case '/api/integrations/dms-legacy/vendors':
+        case '/api/integrations/dms-legacy/concessions':
+        case '/api/integrations/dms-legacy/cron-sync': {
+          const dmsRes = await fetch(`https://api.mio-hub.me${endpointPath}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          data = await dmsRes.json();
+          break;
+        }
+        case '/api/integrations/dms-legacy/presences/:marketId': {
+          const dmsMarketId = parsedBody.marketId || 1;
+          const dmsPresRes = await fetch(`https://api.mio-hub.me/api/integrations/dms-legacy/presences/${dmsMarketId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          data = await dmsPresRes.json();
+          break;
+        }
+        case '/api/integrations/dms-legacy/market-sessions/:marketId': {
+          const dmsSessionMarketId = parsedBody.marketId || 1;
+          const dmsSessionRes = await fetch(`https://api.mio-hub.me/api/integrations/dms-legacy/market-sessions/${dmsSessionMarketId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          data = await dmsSessionRes.json();
+          break;
+        }
+        case '/api/integrations/dms-legacy/sync': {
+          const dmsSyncRes = await fetch('https://api.mio-hub.me/api/integrations/dms-legacy/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(parsedBody),
+          });
+          data = await dmsSyncRes.json();
+          break;
+        }
+
+        // ============================================
+        // MERCAWEB — Abaco S.p.A. - Chiamate REST con API Key
+        // ============================================
+        case '/api/integrations/mercaweb/health':
+        case '/api/integrations/mercaweb/status': {
+          const mwGetRes = await fetch(`https://api.mio-hub.me${endpointPath}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-MercaWeb-API-Key': 'mw_d936305213e4b1df05f7694a9cac2aadff25e369979a1ca1'
+            },
+          });
+          data = await mwGetRes.json();
+          break;
+        }
+        case '/api/integrations/mercaweb/export/presenze/:marketId': {
+          const mwMarketId = parsedBody.marketId || 1;
+          const mwPresRes = await fetch(`https://api.mio-hub.me/api/integrations/mercaweb/export/presenze/${mwMarketId}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-MercaWeb-API-Key': 'mw_d936305213e4b1df05f7694a9cac2aadff25e369979a1ca1'
+            },
+          });
+          data = await mwPresRes.json();
+          break;
+        }
+        case '/api/integrations/mercaweb/export/mapping/:entity': {
+          const mwEntity = parsedBody.entity || 'imprese';
+          const mwMapRes = await fetch(`https://api.mio-hub.me/api/integrations/mercaweb/export/mapping/${mwEntity}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-MercaWeb-API-Key': 'mw_d936305213e4b1df05f7694a9cac2aadff25e369979a1ca1'
+            },
+          });
+          data = await mwMapRes.json();
+          break;
+        }
+        case '/api/integrations/mercaweb/import/ambulanti':
+        case '/api/integrations/mercaweb/import/mercati':
+        case '/api/integrations/mercaweb/import/piazzole':
+        case '/api/integrations/mercaweb/import/concessioni':
+        case '/api/integrations/mercaweb/import/spuntisti': {
+          const mwImportRes = await fetch(`https://api.mio-hub.me${endpointPath}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-MercaWeb-API-Key': 'mw_d936305213e4b1df05f7694a9cac2aadff25e369979a1ca1'
+            },
+            body: JSON.stringify(parsedBody),
+          });
+          data = await mwImportRes.json();
+          break;
+        }
+
         default:
           // Chiamata REST diretta per tutti gli endpoint non mappati
           // Usa base_url da api/index.json o fallback a Hetzner
@@ -946,6 +1271,64 @@ function APIDashboard() {
       '/api/imprese/:id': { id: 1 },
       '/api/imprese/:id/qualificazioni': { id: 1 },
       '/api/imprese/:id/rating': { id: 1 },
+
+      // DMS LEGACY (Heroku)
+      '/api/integrations/dms-legacy/presences/:marketId': { marketId: 1 },
+      '/api/integrations/dms-legacy/market-sessions/:marketId': { marketId: 1 },
+      '/api/integrations/dms-legacy/sync': { entities: ['markets', 'vendors', 'concessions'] },
+
+      // MERCAWEB — Abaco S.p.A.
+      '/api/integrations/mercaweb/export/presenze/:marketId': { marketId: 1 },
+      '/api/integrations/mercaweb/export/mapping/:entity': { entity: 'imprese' },
+      '/api/integrations/mercaweb/import/ambulanti': {
+        records: [{
+          mercaweb_id: '9001',
+          ragione_sociale: 'Ditta Test S.r.l.',
+          codice_fiscale: 'TSTTST80A01H501Z',
+          partita_iva: '01234567890',
+          indirizzo: 'Via Roma 1',
+          comune: 'Grosseto',
+          telefono: '0564123456'
+        }]
+      },
+      '/api/integrations/mercaweb/import/mercati': {
+        records: [{
+          mercaweb_id: 'M001',
+          nome: 'Mercato Test',
+          comune: 'Grosseto',
+          indirizzo: 'Piazza Dante',
+          giorno_svolgimento: 'Luned\u00ec',
+          num_posteggi: 50
+        }]
+      },
+      '/api/integrations/mercaweb/import/piazzole': {
+        records: [{
+          mercaweb_id: 'P001',
+          mercato_mercaweb_id: 'M001',
+          numero: '1A',
+          metratura: 12,
+          tipo: 'alimentare'
+        }]
+      },
+      '/api/integrations/mercaweb/import/concessioni': {
+        records: [{
+          mercaweb_id: 'C001',
+          ambulante_mercaweb_id: '9001',
+          piazzola_mercaweb_id: 'P001',
+          data_inizio: '2025-01-01',
+          data_fine: '2030-12-31',
+          tipo: 'ordinaria'
+        }]
+      },
+      '/api/integrations/mercaweb/import/spuntisti': {
+        records: [{
+          mercaweb_id: 'S001',
+          ambulante_mercaweb_id: '9001',
+          mercato_mercaweb_id: 'M001',
+          data: '2025-06-15',
+          piazzola_assegnata: '1A'
+        }]
+      },
     };
     
     // Cerca esempio per endpoint selezionato
