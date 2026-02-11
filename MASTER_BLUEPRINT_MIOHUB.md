@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.8.2 (Pulizia architettura — ARPA già su Hetzner, rimosso codice ridondante)  
-> **Data:** 11 Febbraio 2026 (Verificato backend Hetzner via SSH — ARPA già implementato in mihub-backend-rest)  
+> **Versione:** 4.9.0 (Integrazione MercaWeb — Polizia Municipale Grosseto)  
+> **Data:** 11 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -324,7 +324,7 @@ Tutti gli endpoint sono prefissati con `/api/integrations/dms-legacy/`.
 | 8 | `GET` | `/documents` | Documenti ambulanti | ✅ Testato |
 | 9 | `GET` | `/stats` | Statistiche generali | ✅ Testato |
 
-> **Nota:** Questi endpoint servono anche per l'interoperabilità con **MercaWeb** (software Polizia Municipale Grosseto).
+> **Nota:** Questi endpoint servono anche per l'interoperabilità con **MercaWeb** (software Polizia Municipale Grosseto). Vedi sezione 9.5 per i dettagli completi dell'integrazione MercaWeb.
 
 #### 9.2 SYNC OUT (MioHub → Legacy) — DA IMPLEMENTARE
 
@@ -8032,3 +8032,35 @@ Questi dati sono già loggati nel backend Hetzner (`mihub-backend-rest/routes/au
 44. **Schema DB login_attempts (VERIFICATO con query diretta)** — Colonne REALI: `id`, `username`, `user_id`, `ip_address`, `user_agent`, `success`, `failure_reason`, `created_at`. Le colonne `user_email` e `user_name` NON ESISTONO — sono alias calcolati dal JOIN con `users` in `security.js` riga 1498
 45. **MAI verificare lo schema DB via API orchestratore** — L'API restituisce campi mappati/rinominati dal JOIN. SEMPRE verificare con query diretta: `SELECT column_name FROM information_schema.columns WHERE table_name = 'login_attempts'`
 46. **Serverless Vercel (`api/auth/firebase/sync.ts`)** — Scrive in `login_attempts` con le colonne reali (`username`, `user_id`, `ip_address`, `user_agent`, `success`, `created_at`). Il campo `username` contiene l'email dell'utente, `user_id` il legacyUserId. Il JOIN dell'orchestratore aggiunge automaticamente `user_email` e `user_name` dalla tabella `users`
+## 9.5 Integrazione MercaWeb (Polizia Municipale Grosseto) — ✅ ATTIVA
+
+> **Versione:** 1.0.0  
+> **Data:** 11 Febbraio 2026  
+> **Principio:** Integrazione bidirezionale per sincronizzare le anagrafiche di base e fornire a MercaWeb i dati sulle presenze in un formato compatibile con i loro sistemi (basato su file Excel `Grosseto_Anagrafe_API_DMS_r3.xlsx`).
+
+L'integrazione con MercaWeb, il software in uso alla Polizia Municipale di Grosseto, è gestita da un modulo dedicato (`mercaweb.js`) che espone un set di endpoint sotto il prefisso `/api/integrations/mercaweb/`.
+
+### Flusso Dati
+
+1.  **IMPORT (MercaWeb → MioHub):** MercaWeb invia tramite `POST` le anagrafiche di mercati, ambulanti, piazzole e concessioni. MioHub riceve questi dati, li trasforma nel proprio formato interno e li salva nel database Neon, popolando la colonna `mercaweb_id` per mantenere un riferimento incrociato.
+2.  **EXPORT (MioHub → MercaWeb):**
+    *   Gli endpoint `GET` esistenti dell'integrazione DMS Legacy (sezione 9.1) vengono arricchiti per includere anche il `mercaweb_id` nei dati di risposta. Questo permette a MercaWeb di associare i dati di MioHub ai propri record.
+    *   Un endpoint `GET` specifico (`/export/presenze/:marketId`) fornisce le presenze di una giornata di mercato nel formato esatto richiesto da MercaWeb (14 colonne definite nel file Excel).
+
+### Endpoint MercaWeb Implementati
+
+| # | Metodo | Endpoint | Descrizione | Stato |
+|---|---|---|---|---|
+| 20 | `POST` | `/import/ambulanti` | Riceve e salva anagrafica ambulanti | ✅ Testato |
+| 21 | `POST` | `/import/mercati` | Riceve e salva anagrafica mercati | ✅ Testato |
+| 22 | `POST` | `/import/piazzole` | Riceve e salva anagrafica piazzole | ✅ Testato |
+| 23 | `POST` | `/import/concessioni` | Riceve e salva concessioni | ✅ Testato |
+| 24 | `POST` | `/import/spuntisti` | Riceve dati spuntisti (solo validazione) | ✅ Testato |
+| 25 | `GET` | `/export/presenze/:marketId` | Esporta presenze formato MercaWeb | ✅ Testato |
+| 26 | `GET` | `/export/mapping/:entity` | Fornisce tabella di mapping ID | ✅ Testato |
+| 27 | `GET` | `/health` | Health check del servizio | ✅ Testato |
+| 28 | `GET` | `/status` | Stato dell'integrazione e conteggio record | ✅ Testato |
+
+### Autenticazione
+
+L'accesso agli endpoint MercaWeb è protetto tramite una API Key che deve essere inviata nell'header `X-MercaWeb-API-Key`. La chiave è configurata nella variabile d'ambiente `MERCAWEB_API_KEY` sul server Hetzner.
