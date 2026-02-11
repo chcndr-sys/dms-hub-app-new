@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.7.0 (Firebase Auth + Login Tracking)  
-> **Data:** 11 Febbraio 2026 (Fix Login Tracking + Verifica)  
+> **Versione:** 4.8.0 (ARPA SPID/CIE Integration Backend)  
+> **Data:** 11 Febbraio 2026 (Implementazione OAuth2-OIDC ARPA Toscana)  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -7818,3 +7818,185 @@ Nella funzione `syncUserWithBackend()`:
 31. **Drizzle schema disallineato**: Le tabelle `login_attempts`, `security_events`, `ip_blacklist` sono state create via SQL diretto, non via Drizzle — lo schema Drizzle per queste tabelle è inaffidabile
 32. **URL sync**: La chiamata a `/api/auth/firebase/sync` DEVE usare URL relativo (non `API_BASE`) perché la serverless function è su Vercel, non su Hetzner
 33. **Ordine operazioni in syncUserWithBackend()**: STEP 1 = lookup legacy (orchestratore), STEP 2 = sync + tracking (Vercel), STEP 3 = security event (orchestratore)
+
+---
+
+## INTEGRAZIONE ARPA TOSCANA — SPID/CIE/CNS PER IMPRESE E PA
+
+> **Sessione:** 11 Febbraio 2026  
+> **Obiettivo:** Implementare autenticazione SPID/CIE/CNS per utenti Impresa e PA tramite ARPA Regione Toscana  
+> **Stato:** Backend implementato, in attesa di credenziali ARPA dall'Integration Manager
+
+### Contesto
+
+Il Comune di Grosseto (Ing. Alberto Corsini, Sistemi Informatici) ha fornito il link al portale ARPA per la registrazione:
+- **Portale:** https://auth.regione.toscana.it/
+- **Integration Manager:** https://auth.regione.toscana.it/im-fe/
+- **Contatto tecnico:** dott. Tonino Lavorati, Servizi Informatici del Comune di Grosseto per conto di Netspring s.r.l. (tel. 0564/488708)
+- **Referente:** Ing. Alberto Corsini, Funzionario EQ, alberto.corsini@comune.grosseto.it
+
+### Architettura del Flusso OAuth2-OIDC
+
+Il flusso utilizza il protocollo **OAuth 2.0 Authorization Code Grant** con estensione **OpenID Connect**, dove ARPA funge da Identity Provider federato verso SPID, CIE, CNS ed eIDAS.
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌──────────────┐     ┌──────────┐
+│  Frontend    │     │  Backend Hetzner │     │  ARPA        │     │  SPID/   │
+│  (Vercel)    │     │  (Orchestratore) │     │  Toscana     │     │  CIE/CNS │
+└──────┬───────┘     └────────┬─────────┘     └──────┬───────┘     └────┬─────┘
+       │                      │                      │                  │
+       │ 1. Click "Entra      │                      │                  │
+       │    con SPID/CIE"     │                      │                  │
+       │─────────────────────>│                      │                  │
+       │                      │                      │                  │
+       │ 2. GET /api/auth/    │                      │                  │
+       │    login              │                      │                  │
+       │<─────────────────────│                      │                  │
+       │   {auth_url, state}  │                      │                  │
+       │                      │                      │                  │
+       │ 3. Redirect browser  │                      │                  │
+       │──────────────────────────────────────────-->│                  │
+       │                      │                      │                  │
+       │                      │                      │ 4. Redirect a    │
+       │                      │                      │    IdP scelto    │
+       │                      │                      │────────────────>│
+       │                      │                      │                  │
+       │                      │                      │ 5. Autenticazione│
+       │                      │                      │<────────────────│
+       │                      │                      │                  │
+       │ 6. Redirect con code │                      │                  │
+       │<──────────────────────────────────────────── │                  │
+       │   /auth/callback?    │                      │                  │
+       │   code=xxx&state=yyy │                      │                  │
+       │                      │                      │                  │
+       │ 7. POST /api/auth/   │                      │                  │
+       │    callback           │                      │                  │
+       │─────────────────────>│                      │                  │
+       │                      │ 8. POST /token       │                  │
+       │                      │ (code→access_token)  │                  │
+       │                      │─────────────────────>│                  │
+       │                      │<─────────────────────│                  │
+       │                      │                      │                  │
+       │                      │ 9. GET /userinfo     │                  │
+       │                      │─────────────────────>│                  │
+       │                      │<─────────────────────│                  │
+       │                      │                      │                  │
+       │ 10. {session_token,  │                      │                  │
+       │      user}           │                      │                  │
+       │<─────────────────────│                      │                  │
+```
+
+### File Implementati
+
+| File | Tipo | Descrizione |
+|------|------|-------------|
+| `server/arpaAuthRouter.ts` | **NUOVO** | Router Express con 6 endpoint OAuth2 ARPA (login, callback, verify, me, logout, refresh) |
+| `server/_core/index.ts` | **MODIFICATO** | Registrazione `arpaAuthRouter` PRIMA di `firebaseAuthRouter` su `/api/auth` |
+| `client/src/api/authClient.ts` | Esistente | Client OAuth2 frontend — già compatibile, punta a `orchestratore.mio-hub.me` |
+| `client/src/components/LoginModal.tsx` | Esistente | UI con bottoni SPID/CIE/CNS — già implementata |
+| `client/src/pages/AuthCallback.tsx` | Esistente | Pagina callback `/auth/callback` — già implementata |
+| `client/src/pages/Login.tsx` | Esistente | Pagina login standalone — già implementata |
+
+### Endpoint Backend Implementati (arpaAuthRouter.ts)
+
+| Metodo | Path | Funzione | Stato |
+|--------|------|----------|-------|
+| GET | `/api/auth/login` | Genera URL autorizzazione ARPA con state anti-CSRF | Implementato |
+| POST | `/api/auth/callback` | Scambia code→token, chiama UserInfo, crea utente DB, traccia login | Implementato |
+| GET | `/api/auth/verify` | Verifica validità session token JWT | Implementato |
+| GET | `/api/auth/me` | Restituisce info utente corrente | Implementato |
+| POST | `/api/auth/logout` | Invalida sessione, genera URL logout ARPA | Implementato |
+| POST | `/api/auth/refresh` | Rinnova sessione e token ARPA | Implementato |
+
+### Compatibilità Route ARPA vs Firebase
+
+Non ci sono conflitti perché:
+- ARPA usa `GET /login`, Firebase usa `POST /login` (metodi diversi)
+- Firebase usa il prefix `/firebase/*` per i suoi endpoint principali (sync, verify, me, logout)
+- `/config` e `/register` sono solo su Firebase
+- ARPA è registrato PRIMA di Firebase in Express, quindi le sue route hanno priorità
+
+### Endpoint ARPA Toscana (Documento Tecnico v1.13)
+
+| Endpoint | Staging | Produzione |
+|----------|---------|------------|
+| Authorization | `https://trial.auth.toscana.it/auth-trial/realms/enti/protocol/openid-connect/auth` | `https://auth.toscana.it/auth/realms/enti/protocol/openid-connect/auth` |
+| Token | `https://trial.auth.toscana.it/auth-trial/realms/enti/protocol/openid-connect/token` | `https://auth.toscana.it/auth/realms/enti/protocol/openid-connect/token` |
+| UserInfo | `https://trial.auth.toscana.it/auth-trial/realms/enti/protocol/openid-connect/userinfo` | `https://auth.toscana.it/auth/realms/enti/protocol/openid-connect/userinfo` |
+| Logout | `https://trial.auth.toscana.it/auth-trial/realms/enti/protocol/openid-connect/logout` | `https://auth.toscana.it/auth/realms/enti/protocol/openid-connect/logout` |
+| JWKS | `https://trial.auth.toscana.it/auth-trial/realms/enti/protocol/openid-connect/certs` | `https://auth.toscana.it/auth/realms/enti/protocol/openid-connect/certs` |
+| Introspect | `https://trial.auth.toscana.it/auth-trial/realms/enti/protocol/openid-connect/token/introspect` | `https://auth.toscana.it/auth/realms/enti/protocol/openid-connect/token/introspect` |
+
+### Scope Richiesti
+
+| Scope | Dati forniti | Necessario per |
+|-------|-------------|----------------|
+| `openid` | Obbligatorio per OIDC | Tutti |
+| `default` | spidCode, name, familyName, fiscalNumber | Identificazione base |
+| `profile` | placeOfBirth, dateOfBirth, gender | Anagrafica completa |
+| `email` | email | Comunicazioni |
+| `professional` | companyName, registeredOffice | **CRUCIALE per Imprese** |
+
+### Variabili d'Ambiente da Configurare su Hetzner
+
+| Variabile | Descrizione | Dove ottenerla |
+|-----------|-------------|----------------|
+| `ARPA_CLIENT_ID` | Client ID ARPA | Integration Manager dopo registrazione |
+| `ARPA_CLIENT_SECRET` | Client Secret ARPA | Integration Manager dopo registrazione |
+| `ARPA_REDIRECT_URI` | Redirect URI registrata | Da configurare: `https://orchestratore.mio-hub.me/api/auth/callback` |
+| `ARPA_ENVIRONMENT` | `staging` o `production` | Iniziare con `staging` per test |
+| `ARPA_SESSION_SECRET` | Chiave per firmare JWT sessione | Generare: `openssl rand -hex 32` |
+
+### Procedura per Attivare il Sistema
+
+**PASSO 1 — Registrazione su Integration Manager (Andrea)**
+1. Accedere a https://auth.regione.toscana.it/im-fe/ con SPID/CIE/CNS
+2. Al primo accesso, completare la registrazione
+3. Contattare Tonino Lavorati (0564/488708) per supporto nella configurazione
+
+**PASSO 2 — Configurazione Client su Integration Manager (Andrea)**
+1. Creare una nuova applicazione client per MIO HUB
+2. Impostare `redirect_uri`: `https://orchestratore.mio-hub.me/api/auth/callback`
+3. Selezionare scope: `openid`, `default`, `profile`, `email`, `professional`
+4. Annotare `client_id` e `client_secret` generati
+
+**PASSO 3 — Configurazione Variabili d'Ambiente su Hetzner (Manus)**
+1. Impostare `ARPA_CLIENT_ID`, `ARPA_CLIENT_SECRET`, `ARPA_REDIRECT_URI`
+2. Impostare `ARPA_ENVIRONMENT=staging` per test iniziali
+3. Generare e impostare `ARPA_SESSION_SECRET`
+4. Riavviare il server Hetzner
+
+**PASSO 4 — Test End-to-End (Andrea + Manus)**
+1. Aprire MIO HUB → Login → Impresa o PA
+2. Click "Entra con SPID" → redirect a ARPA → autenticazione → callback
+3. Verificare utente creato nel DB e login tracciato in `login_attempts`
+
+**PASSO 5 — Passaggio in Produzione**
+1. Completare la Tabella dei Requisiti ARPA
+2. Firmare l'Accordo di Servizio con Regione Toscana
+3. Cambiare `ARPA_ENVIRONMENT=production`
+4. Aggiornare `redirect_uri` nel client di produzione
+
+### Monitoraggio Obbligatorio (Documento ARPA v1.13, Sezione 9)
+
+ARPA richiede che il Service Provider (MIO HUB) conservi per ogni autenticazione:
+- `auth_time` — timestamp dell'autenticazione
+- `fiscal_number` — codice fiscale dell'utente
+- `auth_type` — tipo di autenticazione (SPID, CIE, CNS, eIDAS)
+- `auth_level` — livello di autenticazione (1, 2, 3)
+- `sid` — session ID ARPA
+
+Questi dati sono già loggati nel backend (`console.log` in arpaAuthRouter.ts) e tracciati nella tabella `login_attempts`.
+
+### Note per Sessioni Future
+
+34. **Ordine router Express**: `arpaAuthRouter` DEVE essere registrato PRIMA di `firebaseAuthRouter` in `server/_core/index.ts` perché entrambi usano `/api/auth/*`
+35. **Sessioni in-memory**: Le sessioni ARPA sono attualmente in-memory (`activeSessions` Map). Per produzione, migrare a Redis o alla tabella `user_sessions` del DB
+36. **State anti-CSRF**: Gli state OAuth sono in-memory con TTL 5 minuti. Per multi-istanza, usare Redis
+37. **Scope `professional`**: È lo scope che fornisce `companyName` e `registeredOffice` — senza di esso si ottengono solo dati della persona fisica
+38. **Redirect URI**: La redirect_uri registrata su ARPA DEVE corrispondere esattamente a quella usata nel codice. Qualsiasi differenza (trailing slash, http vs https) causa errore
+39. **Ambiente Staging vs Produzione**: Gli endpoint ARPA sono diversi (trial.auth.toscana.it vs auth.toscana.it). Controllare sempre `ARPA_ENVIRONMENT`
+40. **Logout ARPA**: Usare `post_logout_redirect_uri` (NON `redirect_uri` che è deprecato). Richiede `id_token_hint` o `client_id`
+41. **CIE su mobile**: Per pre-selezionare CIE su dispositivi mobili, usare il parametro `idp_hint=CIE,CieId` nell'URL di autorizzazione
+42. **Documento tecnico di riferimento**: "ARPA per gli Enti della P.P.A.A." v1.13 del 22/01/2026, scaricabile da https://auth.regione.toscana.it/integrazioni
+43. **Supporto ARPA**: arpa@regione.toscana.it — per problemi tecnici con gli endpoint o la configurazione

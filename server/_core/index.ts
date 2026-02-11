@@ -7,6 +7,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import firebaseAuthRouter from "../firebaseAuthRouter";
+import arpaAuthRouter from "../arpaAuthRouter";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { addLog } from "../services/apiLogsService";
@@ -135,6 +136,12 @@ async function startServer() {
   });
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  
+  // ARPA Authentication routes (SPID/CIE/CNS per Imprese e PA)
+  // IMPORTANTE: Registrato PRIMA di Firebase perché entrambi usano /api/auth/*
+  // ARPA gestisce: GET /login, POST /callback, GET /verify, GET /me, POST /logout, POST /refresh
+  // Firebase gestisce: POST /firebase/sync, POST /firebase/verify, GET /firebase/me, POST /login (legacy), POST /register, GET /config
+  app.use("/api/auth", arpaAuthRouter);
   
   // Firebase Authentication routes
   app.use("/api/auth", firebaseAuthRouter);
