@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 5.0.0 (Refactoring UI API Dashboard & Documentazione Completa)  
-> **Data:** 11 Febbraio 2026  
+> **Versione:** 5.1.0 (Card PDND + Statistiche Playground Live)  
+> **Data:** 12 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -402,11 +402,16 @@ Nella Dashboard PA → Integrazioni → Tab Connessioni:
 | Elemento | Stato | Descrizione |
 |---|---|---|
 | Card "DMS Legacy (Heroku)" | ✅ Attiva | Mostra stato connessione, ultimo sync, contatori |
-| Card "MercaWeb — Abaco S.p.A." | ✅ Attiva | Mostra stato connessione, Health Check e Stato Sync (conteggio record con `mercaweb_id`) |
+| Card "Pepe GIS / Market Map" | ✅ Attiva | Geometrie posteggi, file editor-v3-full.json |
+| Card "Mobility / TPER" | ✅ Attiva | Fermate bus, tram, parcheggi — dati GTFS reali |
+| Card "MercaWeb — Abaco S.p.A." | ✅ Attiva | Import/export bidirezionale, Health Check e Stato Sync |
+| Card "Firebase Authentication" | ✅ Attiva | Auth ibrido Google/Apple/Email, sync profili MioHub |
+| Card "PDND — Piattaforma Digitale Nazionale Dati" | 🔶 In Preparazione | Interoperabilità PA: ANPR, Registro Imprese, INPS, Agenzia Entrate |
 | Health Check | ✅ Attivo | Verifica connessione DB Legacy in tempo reale |
 | Pulsante "Sincronizza Ora" | ✅ Attivo | Lancia sync manuale on-demand |
 | CRON automatico | ✅ Attivo | Ogni 60 minuti |
 | Contatori dati | ✅ Attivo | Mercati, ambulanti, concessioni, piazzole sincronizzati |
+| **Integrazioni Totali** | **6** | 5 attive + 1 in preparazione (PDND) |
 
 ### 14. Piano di Implementazione
 
@@ -8110,7 +8115,7 @@ Questa sessione si è concentrata su due macro-aree:
 - **[NEW]** Aggiunte categorie "DMS Legacy (Heroku)" e "MercaWeb" nella tab `Integrazioni → API Dashboard`.
 - **[UI/UX]** La lista endpoint nella API Dashboard è ora in un **container scrollabile** con altezza fissa.
 - **[UI/UX]** Aggiunta **barra di ricerca** per filtrare endpoint per nome, categoria o descrizione.
-- **[UI/UX]** Aggiunti **filtri rapidi (pill)** per le 9 categorie principali, con scroll orizzontale.
+- **[UI/UX]** Rimossi filtri pill; tutta la navigazione avviene tramite la barra di ricerca.
 - **[FIX]** Risolto errore CORS "Load failed" durante l'Health Check dalla dashboard.
 - **[TEST]** Implementata la logica per testare gli endpoint MercaWeb e DMS Legacy direttamente dal Playground, con gestione automatica degli header di autenticazione.
 - **[DEPLOY]** Tutte le modifiche sono state committate, pushate su GitHub e deployate su Vercel.
@@ -8123,3 +8128,17 @@ Questa sessione si è concentrata su due macro-aree:
     - Sezione Frontend con la nuova card Connessioni.
     - Questo changelog.
 - **[NEW]** Creato documento `SPECIFICHE_API_MERCAWEB_v1.0.md` completo di esempi cURL e API Key, pronto per essere consegnato ad Abaco S.p.A.
+
+### Sessione 12 Febbraio 2026 (v5.1.0)
+
+#### 🚀 FRONTEND (dms-hub-app-new → Vercel)
+- **[NEW]** Aggiunta card **"PDND — Piattaforma Digitale Nazionale Dati"** nella tab Connessioni con stato "In Preparazione".
+- **[PDND]** Endpoint predefiniti: voucher JWT, ANPR residenza, visura camerale, DURC, regolarità fiscale.
+- **[FIX]** Indicatori **Statistiche Utilizzo** ora collegati alle chiamate reali del Playground.
+- **[STATS]** Contatore richieste, tempo medio, success rate e errori si aggiornano in tempo reale ad ogni test.
+- **[STATS]** Combinazione dati: `apiStats` dal DB Neon + `playgroundStats` dalla sessione corrente.
+- **[COUNT]** Integrazioni Totali aggiornate a **6** (5 attive + 1 in preparazione).
+
+#### 📝 DOCUMENTAZIONE
+- **[UPDATE]** Blueprint aggiornato a v5.1.0 con tutte le card Connessioni documentate.
+- **[UPDATE]** Sezione 13 Tab Connessioni ora elenca tutte e 6 le integrazioni.
