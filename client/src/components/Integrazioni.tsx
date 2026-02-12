@@ -35,7 +35,8 @@ import {
   Cloud,
   Building2,
   Server,
-  AlertTriangle
+  AlertTriangle,
+  Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -128,6 +129,7 @@ function APIDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiEndpoints, setApiEndpoints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [endpointSearch, setEndpointSearch] = useState('');
   const [backendStats, setBackendStats] = useState<{
     active: number;
     backup: number;
@@ -1404,60 +1406,132 @@ function APIDashboard() {
       {/* Lista Endpoint */}
       <div className="space-y-4">
         <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-[#e8fbff] flex items-center gap-2">
               <Code className="h-5 w-5 text-[#14b8a6]" />
               Endpoint Disponibili
+              <Badge className="bg-[#14b8a6]/20 text-[#14b8a6] border-[#14b8a6]/30 border ml-2">
+                {apiEndpoints.reduce((acc, cat) => acc + cat.endpoints.length, 0)}
+              </Badge>
             </CardTitle>
+            {/* Barra di ricerca */}
+            <div className="relative mt-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#e8fbff]/40" />
+              <Input
+                placeholder="Cerca endpoint, categoria o descrizione..."
+                value={endpointSearch}
+                onChange={(e) => setEndpointSearch(e.target.value)}
+                className="pl-10 bg-[#0a1628] border-[#14b8a6]/20 text-[#e8fbff] placeholder:text-[#e8fbff]/30 focus:border-[#14b8a6]/50"
+              />
+              {endpointSearch && (
+                <button
+                  onClick={() => setEndpointSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#e8fbff]/40 hover:text-[#e8fbff]/70 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            {/* Filtri rapidi per categoria */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {apiEndpoints.map((cat, idx) => {
+                const isActive = endpointSearch.toLowerCase() === cat.category.toLowerCase();
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setEndpointSearch(isActive ? '' : cat.category)}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                      isActive
+                        ? 'bg-[#14b8a6] text-[#0a1628]'
+                        : 'bg-[#0a1628] text-[#e8fbff]/50 border border-[#14b8a6]/20 hover:border-[#14b8a6]/40 hover:text-[#e8fbff]/70'
+                    }`}
+                  >
+                    {cat.category} ({cat.endpoints.length})
+                  </button>
+                );
+              })}
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-0">
             {loading && (
               <div className="text-center py-4 text-[#e8fbff]/60 text-sm">
                 Caricamento endpoint da MIO-hub...
               </div>
             )}
-            {apiEndpoints.map((category, idx) => (
-              <div key={idx} className="space-y-2">
-                <h3 className="text-sm font-semibold text-[#14b8a6]">{category.category}</h3>
-                {category.endpoints.map((endpoint, eidx) => (
-                  <div
-                    key={eidx}
-                    className="flex items-center gap-2 p-3 bg-[#0a1628] rounded-lg border border-[#14b8a6]/20 hover:border-[#14b8a6]/40 transition-colors cursor-pointer"
-                    onClick={() => handleTestEndpoint(endpoint.path)}
-                  >
-                    <Badge className={`${getMethodColor(endpoint.method)} border`}>
-                      {endpoint.method}
-                    </Badge>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-xs font-mono text-[#e8fbff]/80 truncate">{endpoint.path}</p>
-                        {endpoint.test?.enabled === false ? (
-                          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 border text-[10px]">
-                            Manual Test
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border text-[10px]">
-                            Auto Test
-                          </Badge>
-                        )}
+            {/* Container scrollabile */}
+            <div className="max-h-[600px] overflow-y-auto pr-1 space-y-4 scrollbar-thin scrollbar-thumb-[#14b8a6]/30 scrollbar-track-transparent">
+              {apiEndpoints
+                .map((category) => {
+                  const searchLower = endpointSearch.toLowerCase();
+                  // Filtra: se la ricerca matcha la categoria, mostra tutti gli endpoint
+                  const categoryMatch = category.category.toLowerCase().includes(searchLower);
+                  const filteredEndpoints = categoryMatch
+                    ? category.endpoints
+                    : category.endpoints.filter((ep: any) =>
+                        ep.path.toLowerCase().includes(searchLower) ||
+                        (ep.description || '').toLowerCase().includes(searchLower)
+                      );
+                  if (filteredEndpoints.length === 0) return null;
+                  return { ...category, endpoints: filteredEndpoints };
+                })
+                .filter(Boolean)
+                .map((category: any, idx: number) => (
+                  <div key={idx} className="space-y-2">
+                    <h3 className="text-sm font-semibold text-[#14b8a6] sticky top-0 bg-[#1a2332] py-1 z-10">{category.category}</h3>
+                    {category.endpoints.map((endpoint: any, eidx: number) => (
+                      <div
+                        key={eidx}
+                        className="flex items-center gap-2 p-3 bg-[#0a1628] rounded-lg border border-[#14b8a6]/20 hover:border-[#14b8a6]/40 transition-colors cursor-pointer"
+                        onClick={() => handleTestEndpoint(endpoint.path)}
+                      >
+                        <Badge className={`${getMethodColor(endpoint.method)} border`}>
+                          {endpoint.method}
+                        </Badge>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-xs font-mono text-[#e8fbff]/80 truncate">{endpoint.path}</p>
+                            {endpoint.test?.enabled === false ? (
+                              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 border text-[10px]">
+                                Manual Test
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border text-[10px]">
+                                Auto Test
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-[#e8fbff]/50">{endpoint.description}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-[#14b8a6] hover:bg-[#14b8a6]/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTestEndpoint(endpoint.path);
+                          }}
+                        >
+                          <Play className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <p className="text-xs text-[#e8fbff]/50">{endpoint.description}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-[#14b8a6] hover:bg-[#14b8a6]/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTestEndpoint(endpoint.path);
-                      }}
-                    >
-                      <Play className="h-4 w-4" />
-                    </Button>
+                    ))}
                   </div>
                 ))}
-              </div>
-            ))}
+              {/* Messaggio nessun risultato */}
+              {endpointSearch && apiEndpoints.every((cat) => {
+                const searchLower = endpointSearch.toLowerCase();
+                const categoryMatch = cat.category.toLowerCase().includes(searchLower);
+                return !categoryMatch && cat.endpoints.every((ep: any) =>
+                  !ep.path.toLowerCase().includes(searchLower) &&
+                  !(ep.description || '').toLowerCase().includes(searchLower)
+                );
+              }) && (
+                <div className="text-center py-8 text-[#e8fbff]/40">
+                  <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Nessun endpoint trovato per "{endpointSearch}"</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
