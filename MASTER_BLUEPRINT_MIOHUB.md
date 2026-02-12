@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 4.9.0 (Integrazione MercaWeb — Polizia Municipale Grosseto)  
+> **Versione:** 5.0.0 (Refactoring UI API Dashboard & Documentazione Completa)  
 > **Data:** 11 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -402,6 +402,7 @@ Nella Dashboard PA → Integrazioni → Tab Connessioni:
 | Elemento | Stato | Descrizione |
 |---|---|---|
 | Card "DMS Legacy (Heroku)" | ✅ Attiva | Mostra stato connessione, ultimo sync, contatori |
+| Card "MercaWeb — Abaco S.p.A." | ✅ Attiva | Mostra stato connessione, Health Check e Stato Sync (conteggio record con `mercaweb_id`) |
 | Health Check | ✅ Attivo | Verifica connessione DB Legacy in tempo reale |
 | Pulsante "Sincronizza Ora" | ✅ Attivo | Lancia sync manuale on-demand |
 | CRON automatico | ✅ Attivo | Ogni 60 minuti |
@@ -420,11 +421,11 @@ Nella Dashboard PA → Integrazioni → Tab Connessioni:
 
 > **Nota importante:** La Fase 6 (connessione reale a Heroku) richiede il coordinamento con Marco Malaguti (Lapsy srl) per verificare che i dati arrivino correttamente all'app di spunta.
 
-### 15. Interoperabilità con MercaWeb (Polizia Municipale Grosseto)
+### 15. Interoperabilità con MercaWeb (Abaco S.p.A.)
 
-Gli endpoint EXPORT esistenti (sezione 9.1) servono anche per l'interoperabilità con **MercaWeb**, il software della Polizia Municipale in uso a Grosseto. Questi endpoint restituiscono i dati in formato JSON standard e possono essere consumati da qualsiasi sistema esterno autorizzato.
+L'integrazione con MercaWeb è ora **completamente implementata** e documentata nella sezione 9.5. Il modulo dedicato (`mercaweb.js`) espone 9 endpoint per l'import/export bidirezionale delle anagrafiche e delle presenze. L'autenticazione avviene tramite API Key (`X-MercaWeb-API-Key`). La card dedicata nella tab Connessioni della dashboard consente di monitorare lo stato della connessione e testare gli endpoint direttamente dal Playground.
 
-(Per l'inventario completo colonna per colonna, fare riferimento ai file `MAPPATURA_LEGACY_MIOHUB_v2.md`, `INVENTARIO_DATI_DMS_LEGACY.md` e `INVENTARIO_DATI_MIOHUB.md`)
+Per le specifiche tecniche complete da consegnare ad Abaco S.p.A., fare riferimento al documento `SPECIFICHE_API_MERCAWEB_v1.0.md`.
 
 ---
 
@@ -685,12 +686,24 @@ POST /api/guardian/debug/testEndpoint
 
 ## 🔌 API ENDPOINTS
 
-### Endpoint Index (477 endpoint totali)
+### Endpoint Index (796 endpoint totali)
 
 Gli endpoint sono documentati in:
 ```
 /home/ubuntu/dms-hub-app-new/client/public/api-index.json
 ```
+
+### API Dashboard (Frontend)
+
+La sezione `Integrazioni → API Dashboard` del frontend Vercel è stata potenziata per migliorare l'usabilità e l'esperienza di test:
+
+| Funzionalità | Descrizione |
+|---|---|
+| **Container Scrollabile** | La lista degli endpoint è ora contenuta in un box con altezza fissa (`max-h-[600px]`) e scroll verticale, evitando che la pagina diventi eccessivamente lunga. |
+| **Barra di Ricerca** | È stata aggiunta una barra di ricerca che permette di filtrare in tempo reale gli endpoint per categoria, path o descrizione. |
+| **Filtri Rapidi (Pill)** | Sono presenti dei filtri rapidi (pill/chip) per le 9 categorie principali (DmsHub, DMS Legacy, MercaWeb, Wallet, Imprese, Guardian, SUAP, Security, Comuni PA), che permettono di isolare rapidamente un gruppo di endpoint. Un click attiva il filtro, un secondo click lo rimuove. |
+| **Test Endpoint (Playground)** | Sono state aggiunte le categorie **DMS Legacy (Heroku)** e **MercaWeb — Abaco S.p.A.** alla lista degli endpoint testabili. Cliccando sul pulsante ▶, viene eseguita una chiamata reale all'endpoint e la risposta JSON viene mostrata nel pannello API Playground a destra. |
+| **Gestione API Key** | Il Playground gestisce automaticamente l'invio degli header di autenticazione necessari, come `X-MercaWeb-API-Key` per gli endpoint MercaWeb. |
 
 ### Categorie Principali
 
@@ -705,6 +718,8 @@ Gli endpoint sono documentati in:
 | **Imprese** | `/api/imprese/*` | qualificazioni, rating |
 | **SUAP** | `/api/suap/*` | pratiche, stats, evaluate |
 | **TCC v2** | `/api/tcc/v2/*` | wallet-impresa, qualifiche, settlement |
+| **DMS Legacy** | `/api/integrations/dms-legacy/*` | markets, vendors, concessions, presences, sync |
+| **MercaWeb** | `/api/integrations/mercaweb/*` | import/ambulanti, import/mercati, export/presenze, health |
 
 ---
 
@@ -8064,3 +8079,47 @@ L'integrazione con MercaWeb, il software in uso alla Polizia Municipale di Gross
 ### Autenticazione
 
 L'accesso agli endpoint MercaWeb è protetto tramite una API Key che deve essere inviata nell'header `X-MercaWeb-API-Key`. La chiave è configurata nella variabile d'ambiente `MERCAWEB_API_KEY` sul server Hetzner.
+
+
+---
+
+## 🔄 AGGIORNAMENTO SESSIONE 11-12 FEBBRAIO 2026 — Integrazione MercaWeb & Refactoring UI (v5.0.0)
+
+### Riepilogo Modifiche
+
+Questa sessione si è concentrata su due macro-aree:
+1.  **Integrazione MercaWeb:** Implementazione completa del backend per la sincronizzazione con il software MercaWeb (Abaco S.p.A.) in uso a Grosseto.
+2.  **Refactoring UI Dashboard:** Miglioramento significativo dell'usabilità della sezione Integrazioni e API nel frontend Vercel.
+
+### ✅ CHECKLIST MODIFICHE COMPLETATE
+
+#### 🚀 BACKEND (mihub-backend-rest → Hetzner)
+
+- **[DB]** Aggiunta colonna `mercaweb_id` (VARCHAR) a 4 tabelle Neon: `markets`, `stalls`, `imprese`, `concessions`.
+- **[NEW]** Creato file `routes/mercaweb.js` con 9 endpoint per import/export dati MercaWeb.
+- **[NEW]** Creato file `routes/mercaweb-transformer.js` con funzioni di trasformazione bidirezionale.
+- **[EDIT]** Modificato `dms-legacy-transformer.js` per includere `mercaweb_id` negli export GET.
+- **[EDIT]** Modificato `index.js` per registrare la nuova route `/api/integrations/mercaweb`.
+- **[AUTH]** Generata e configurata API Key `MERCAWEB_API_KEY` nel file `.env`.
+- **[CORS]** Aggiornata la configurazione CORS per accettare l'header `X-MercaWeb-API-Key` dal dominio Vercel.
+- **[DEPLOY]** Tutte le modifiche sono state deployate su Hetzner e il servizio PM2 è stato riavviato.
+
+#### 🚀 FRONTEND (dms-hub-app-new → Vercel)
+
+- **[NEW]** Aggiunta card "MercaWeb — Abaco S.p.A." nella tab `Integrazioni → Connessioni`.
+- **[NEW]** Aggiunte categorie "DMS Legacy (Heroku)" e "MercaWeb" nella tab `Integrazioni → API Dashboard`.
+- **[UI/UX]** La lista endpoint nella API Dashboard è ora in un **container scrollabile** con altezza fissa.
+- **[UI/UX]** Aggiunta **barra di ricerca** per filtrare endpoint per nome, categoria o descrizione.
+- **[UI/UX]** Aggiunti **filtri rapidi (pill)** per le 9 categorie principali, con scroll orizzontale.
+- **[FIX]** Risolto errore CORS "Load failed" durante l'Health Check dalla dashboard.
+- **[TEST]** Implementata la logica per testare gli endpoint MercaWeb e DMS Legacy direttamente dal Playground, con gestione automatica degli header di autenticazione.
+- **[DEPLOY]** Tutte le modifiche sono state committate, pushate su GitHub e deployate su Vercel.
+
+### 📝 DOCUMENTAZIONE
+
+- **[UPDATE]** Aggiornato `MASTER_BLUEPRINT_MIOHUB.md` con:
+    - Sezione 9.5 (Integrazione MercaWeb) dettagliata.
+    - Sezione API Endpoints con le nuove funzionalità della API Dashboard.
+    - Sezione Frontend con la nuova card Connessioni.
+    - Questo changelog.
+- **[NEW]** Creato documento `SPECIFICHE_API_MERCAWEB_v1.0.md` completo di esempi cURL e API Key, pronto per essere consegnato ad Abaco S.p.A.
