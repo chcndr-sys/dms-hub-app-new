@@ -1737,5 +1737,21 @@ export const integrations: IntegrationConfig[] = [
       '/api/auth/register',
       '/api/auth/config'
     ]
+  },
+  {
+    id: 'pdnd',
+    name: 'PDND — Piattaforma Digitale Nazionale Dati',
+    description: 'Interoperabilità con la Piattaforma Digitale Nazionale Dati (PDND) di AgID/PagoPA per lo scambio sicuro di dati tra PA tramite e-service e voucher.',
+    baseUrl: 'https://api.pdnd.pagopa.it',
+    status: 'in_preparation',
+    dataOwner: 'AgID / PagoPA',
+    notes: 'In preparazione. Richiede accreditamento su PDND Interop, generazione keypair, registrazione e-service. Permetterà interrogazione ANPR, Registro Imprese, INPS per verifica automatica requisiti SCIA e regolarità imprese.',
+    endpoints: [
+      '/api/pdnd/voucher — Richiesta voucher JWT',
+      '/api/pdnd/anpr/residenza — Verifica residenza (ANPR)',
+      '/api/pdnd/imprese/visura — Visura camerale (Registro Imprese)',
+      '/api/pdnd/inps/regolarita — Verifica regolarità contributiva (DURC)',
+      '/api/pdnd/agenzia-entrate/regolarita-fiscale — Regolarità fiscale'
+    ]
   }
 ];

@@ -130,6 +130,12 @@ function APIDashboard() {
   const [apiEndpoints, setApiEndpoints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [endpointSearch, setEndpointSearch] = useState('');
+  const [playgroundStats, setPlaygroundStats] = useState<{
+    requestsToday: number;
+    totalResponseTime: number;
+    successCount: number;
+    errorCount: number;
+  }>({ requestsToday: 0, totalResponseTime: 0, successCount: 0, errorCount: 0 });
   const [backendStats, setBackendStats] = useState<{
     active: number;
     backup: number;
@@ -1143,6 +1149,14 @@ function APIDashboard() {
         data
       });
       
+      // Aggiorna statistiche Playground
+      setPlaygroundStats(prev => ({
+        requestsToday: prev.requestsToday + 1,
+        totalResponseTime: prev.totalResponseTime + (endTime - startTime),
+        successCount: prev.successCount + 1,
+        errorCount: prev.errorCount
+      }));
+      
       // Log del test su Guardian
       try {
         await utils.client.guardian.logApiCall.mutate({
@@ -1166,6 +1180,14 @@ function APIDashboard() {
         time,
         data: { success: false, error: error.message || 'Errore sconosciuto' }
       });
+      
+      // Aggiorna statistiche Playground
+      setPlaygroundStats(prev => ({
+        requestsToday: prev.requestsToday + 1,
+        totalResponseTime: prev.totalResponseTime + (endTime - startTime),
+        successCount: prev.successCount,
+        errorCount: prev.errorCount + 1
+      }));
       
       // Log dell'errore su Guardian
       try {
@@ -1617,20 +1639,20 @@ function APIDashboard() {
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-[#0a1628] p-4 rounded-lg border border-[#14b8a6]/20">
-                <p className="text-[#e8fbff]/60 text-sm">Richieste Oggi</p>
-                <p className="text-2xl font-bold text-[#14b8a6]">{apiStats?.requestsToday?.toLocaleString() || 0}</p>
+                <p className="text-[#e8fbff]/60 text-sm">Richieste (Sessione)</p>
+                <p className="text-2xl font-bold text-[#14b8a6]">{((apiStats?.requestsToday || 0) + playgroundStats.requestsToday).toLocaleString()}</p>
               </div>
               <div className="bg-[#0a1628] p-4 rounded-lg border border-[#14b8a6]/20">
                 <p className="text-[#e8fbff]/60 text-sm">Tempo Medio</p>
-                <p className="text-2xl font-bold text-[#14b8a6]">{apiStats?.avgResponseTime || 0}ms</p>
+                <p className="text-2xl font-bold text-[#14b8a6]">{playgroundStats.requestsToday > 0 ? Math.round(playgroundStats.totalResponseTime / playgroundStats.requestsToday) : (apiStats?.avgResponseTime || 0)}ms</p>
               </div>
               <div className="bg-[#0a1628] p-4 rounded-lg border border-green-500/20">
                 <p className="text-[#e8fbff]/60 text-sm">Success Rate</p>
-                <p className="text-2xl font-bold text-green-400">{apiStats?.successRate || 0}%</p>
+                <p className="text-2xl font-bold text-green-400">{playgroundStats.requestsToday > 0 ? ((playgroundStats.successCount / playgroundStats.requestsToday) * 100).toFixed(1) : (apiStats?.successRate || 0)}%</p>
               </div>
               <div className="bg-[#0a1628] p-4 rounded-lg border border-red-500/20">
                 <p className="text-[#e8fbff]/60 text-sm">Errori</p>
-                <p className="text-2xl font-bold text-red-400">{apiStats?.errors || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{(apiStats?.errors || 0) + playgroundStats.errorCount}</p>
               </div>
             </div>
           </CardContent>
