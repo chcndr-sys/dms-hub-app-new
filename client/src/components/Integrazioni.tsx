@@ -1432,49 +1432,7 @@ function APIDashboard() {
                 </button>
               )}
             </div>
-            {/* Filtri rapidi per categoria - solo le principali */}
-            <div className="flex gap-1.5 mt-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-[#14b8a6]/20 scrollbar-track-transparent">
-              {(() => {
-                const mainCategories = ['DmsHub', 'DMS Legacy (Heroku)', 'MercaWeb \u2014 Abaco S.p.A.', 'Wallet', 'Imprese', 'Guardian', 'SUAP & PDND', 'Security', 'Comuni PA'];
-                const mainCats = apiEndpoints.filter(cat => mainCategories.includes(cat.category));
-                const otherCount = apiEndpoints.filter(cat => !mainCategories.includes(cat.category)).reduce((acc: number, cat: any) => acc + cat.endpoints.length, 0);
-                return (
-                  <>
-                    <button
-                      onClick={() => setEndpointSearch('')}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
-                        !endpointSearch
-                          ? 'bg-[#14b8a6] text-[#0a1628]'
-                          : 'bg-[#0a1628] text-[#e8fbff]/50 border border-[#14b8a6]/20 hover:border-[#14b8a6]/40'
-                      }`}
-                    >
-                      Tutti ({apiEndpoints.reduce((acc: number, cat: any) => acc + cat.endpoints.length, 0)})
-                    </button>
-                    {mainCats.map((cat: any, idx: number) => {
-                      const isActive = endpointSearch.toLowerCase() === cat.category.toLowerCase();
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => setEndpointSearch(isActive ? '' : cat.category)}
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
-                            isActive
-                              ? 'bg-[#14b8a6] text-[#0a1628]'
-                              : 'bg-[#0a1628] text-[#e8fbff]/50 border border-[#14b8a6]/20 hover:border-[#14b8a6]/40 hover:text-[#e8fbff]/70'
-                          }`}
-                        >
-                          {cat.category} ({cat.endpoints.length})
-                        </button>
-                      );
-                    })}
-                    {otherCount > 0 && (
-                      <span className="px-2 py-0.5 text-[10px] text-[#e8fbff]/30 flex-shrink-0">
-                        +{apiEndpoints.length - mainCats.length} altre categorie ({otherCount} ep.) \u2014 usa la ricerca
-                      </span>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
+
           </CardHeader>
           <CardContent className="pt-0">
             {loading && (
