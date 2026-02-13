@@ -2159,6 +2159,46 @@ export function getAPIInventory(): APIEndpoint[] {
     },
 
     // ============================================================================
+    // SUAP NOTIFICHE PM + TEST MERCATO RIFIUTI (v4.6.1)
+    // ============================================================================
+    {
+      id: 'suap.notifichePM',
+      method: 'GET',
+      path: '/api/suap/notifiche-pm',
+      description: 'Notifiche SUAP per Polizia Municipale',
+      category: 'suap',
+      status: 'active',
+      version: '4.6.1',
+      requiresAuth: false,
+      documentation: 'Raccoglie notifiche da domande_spunta e concessions filtrate per comune_id. Restituisce tipo_pratica, stato, impresa, comune.',
+      testParams: { comune_id: 14, limit: 10 },
+    },
+    {
+      id: 'testMercato.registraRifiuti',
+      method: 'POST',
+      path: '/api/test-mercato/registra-rifiuti',
+      description: 'Registra orario deposito rifiuti per tutte le presenze attive',
+      category: 'wallet',
+      status: 'active',
+      version: '4.6.1',
+      requiresAuth: false,
+      documentation: 'Registra l\'orario di deposito rifiuti per tutte le presenze attive del mercato nella data odierna. Simile al meccanismo chiudi-mercato.',
+      testParams: { market_id: 1 },
+    },
+    {
+      id: 'presenze.sessioni',
+      method: 'GET',
+      path: '/api/presenze/sessioni',
+      description: 'Storico sessioni mercato con dettagli',
+      category: 'wallet',
+      status: 'active',
+      version: '4.6.1',
+      requiresAuth: false,
+      documentation: 'Ritorna lo storico delle sessioni di mercato con filtro per comune_id. Limite default 1000 (rimosso limite 100 precedente).',
+      testParams: { comune_id: 14, limit: 50 },
+    },
+
+    // ============================================================================
     // VERBALI - Sistema Verbali Professionali PM (L. 689/81)
     // ============================================================================
     {

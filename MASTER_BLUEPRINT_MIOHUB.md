@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 5.2.0 (Piano d'azione DMS Legacy definito)  
-> **Data:** 12 Febbraio 2026  
+> **Versione:** 5.3.0 (Diagnosi e fix 13 issue + deposito rifiuti + graduatoria spunta)  
+> **Data:** 13 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
@@ -28,6 +28,21 @@
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 13 Febbraio 2026 — Sera (v5.3.0)
+- ✅ **Diagnosi e fix 8 issue (Round 2):** Wallet Grosseto, notifiche SUAP, watchlist errata, storico limite 100, posteggi +1, deposito rifiuti, graduatoria spunta.
+- ✅ **Nuovo endpoint `GET /api/suap/notifiche-pm`:** Aggrega notifiche da domande_spunta, concessions e autorizzazioni per il tab Notifiche PM.
+- ✅ **Nuovo endpoint `POST /api/test-mercato/registra-rifiuti`:** Registra orario deposito spazzatura per tutti i presenti.
+- ✅ **Nuovo sottotab "Graduatoria Spunta"** nel pannello Pratiche SUAP con tabella graduatoria.
+- ✅ **Nuovo pulsante "♻️ Registra Deposito Rifiuti"** in Gestione Mercati.
+- ✅ **3 nuovi endpoint registrati nel Guardian** per monitoraggio e test.
+
+### Sessione 13 Febbraio 2026 — Pomeriggio (v4.6.0)
+- ✅ **Diagnosi e fix 5 bug critici + 1 bonus:** Notifiche PM target_id hardcoded, wallet mittente_id hardcoded, watchlist cross-comune, storico sessioni senza comune_id, punteggio spuntisti.
+- ✅ **ALTER TABLE `pm_watchlist`:** Aggiunta colonna `comune_id` con filtro diretto per isolamento per comune.
+- ✅ **Fix crash loop pre-esistente:** Corretto riferimento a tabella `concessioni` (inesistente) → `concessions` in watchlist.js.
+- ✅ **4 file backend modificati** per INSERT `comune_id` nella watchlist (inspections.js, sanctions.js, verbali.js, watchlist.js).
+- ✅ **2 file frontend modificati** per filtri dinamici (WalletPanel.tsx, ControlliSanzioniPanel.tsx).
 
 ### Sessione 12 Febbraio 2026 (v5.2.0)
 - ✅ **Analisi Definitiva DMS Legacy:** Aggiunta sezione con stato attuale, problemi bloccanti e piano d'azione chirurgico in 6 step.
@@ -700,7 +715,7 @@ POST /api/guardian/debug/testEndpoint
 
 ## 🔌 API ENDPOINTS
 
-### Endpoint Index (796 endpoint totali)
+### Endpoint Index (799 endpoint totali)
 
 Gli endpoint sono documentati in:
 ```
@@ -730,7 +745,8 @@ La sezione `Integrazioni → API Dashboard` del frontend Vercel è stata potenzi
 | **Health** | `/api/health/*` | full, history, alerts |
 | **GIS** | `/api/gis/*` | market-map |
 | **Imprese** | `/api/imprese/*` | qualificazioni, rating |
-| **SUAP** | `/api/suap/*` | pratiche, stats, evaluate |
+| **SUAP** | `/api/suap/*` | pratiche, stats, evaluate, notifiche-pm |
+| **Test Mercato** | `/api/test-mercato/*` | inizia-mercato, avvia-spunta, assegna-posteggio, chiudi-spunta, registra-rifiuti, chiudi-mercato |
 | **TCC v2** | `/api/tcc/v2/*` | wallet-impresa, qualifiche, settlement |
 | **DMS Legacy** | `/api/integrations/dms-legacy/*` | markets, vendors, concessions, presences, sync |
 | **MercaWeb** | `/api/integrations/mercaweb/*` | import/ambulanti, import/mercati, export/presenze, health |
@@ -959,6 +975,11 @@ Il modulo **SSO SUAP** (Sportello Unico Attività Produttive) gestisce le pratic
 | `/api/suap/pratiche/:id` | GET | Dettaglio pratica con timeline e checks |
 | `/api/suap/pratiche/:id/evaluate` | POST | Esegui valutazione automatica |
 | `/api/suap/stats` | GET | Statistiche dashboard |
+| `/api/suap/notifiche-pm` | GET | Notifiche SUAP per PM (domande spunta + concessioni + autorizzazioni) — **v5.3.0** |
+
+### Sottotab Graduatoria Spunta (v5.3.0)
+
+All'interno del tab **Pratiche SUAP** nel pannello Controlli/Sanzioni è stato aggiunto un sottotab **"Graduatoria Spunta"** che mostra la graduatoria degli spuntisti per il mercato del comune corrente. I dati vengono caricati dall'endpoint esistente `GET /api/presenze/graduatoria?market_id={id}` e mostrano per ogni spuntista: posizione in graduatoria, nome impresa, codice fiscale, presenze totali, assenze non giustificate e punteggio.
 
 ### Form SCIA - Sezioni
 
@@ -4185,7 +4206,17 @@ Il pulsante "Chiudi Spunta" appare nella barra quando la modalità spunta è att
 2. Libera i posteggi riservati non assegnati
 3. Rimuove `spuntista_nome` dai posteggi
 
-#### 4.5 Flusso Completo Spunta
+#### 4.5 Funzione Registra Deposito Rifiuti (v5.3.0)
+
+Il pulsante **"♻️ Registra Deposito Rifiuti"** appare nella barra dei pulsanti di gestione mercato, subito prima di "Chiudi Mercato". Chiama `POST /api/test-mercato/registra-rifiuti` che:
+
+1. Riceve `market_id` nel body della richiesta
+2. Aggiorna `orario_deposito_rifiuti = NOW()` per tutte le presenze del giorno corrente nel mercato specificato
+3. Restituisce il numero di presenze aggiornate
+
+Il pulsante è indipendente dalla chiusura del mercato e può essere premuto in qualsiasi momento durante la giornata di mercato. Il meccanismo è analogo a quello del pulsante "Chiudi Mercato" che registra l'orario di uscita.
+
+#### 4.6 Flusso Completo Spunta
 
 ```mermaid
 sequenceDiagram
@@ -8061,6 +8092,12 @@ Questi dati sono già loggati nel backend Hetzner (`mihub-backend-rest/routes/au
 44. **Schema DB login_attempts (VERIFICATO con query diretta)** — Colonne REALI: `id`, `username`, `user_id`, `ip_address`, `user_agent`, `success`, `failure_reason`, `created_at`. Le colonne `user_email` e `user_name` NON ESISTONO — sono alias calcolati dal JOIN con `users` in `security.js` riga 1498
 45. **MAI verificare lo schema DB via API orchestratore** — L'API restituisce campi mappati/rinominati dal JOIN. SEMPRE verificare con query diretta: `SELECT column_name FROM information_schema.columns WHERE table_name = 'login_attempts'`
 46. **Serverless Vercel (`api/auth/firebase/sync.ts`)** — Scrive in `login_attempts` con le colonne reali (`username`, `user_id`, `ip_address`, `user_agent`, `success`, `created_at`). Il campo `username` contiene l'email dell'utente, `user_id` il legacyUserId. Il JOIN dell'orchestratore aggiunge automaticamente `user_email` e `user_name` dalla tabella `users`
+47. **pm_watchlist ha colonna `comune_id`** (aggiunta v4.6.0) — TUTTE le INSERT nella watchlist DEVONO includere `comune_id` per l'isolamento per comune. File coinvolti: `inspections.js`, `sanctions.js`, `verbali.js`, `watchlist.js`. La query stats in `inspections.js` filtra direttamente su `pm_watchlist.comune_id`
+48. **Tabella `domande_spunta` usa `mercato_id`** (NON `market_id`) — A differenza di altre tabelle che usano `market_id`, questa tabella usa la convenzione italiana `mercato_id`. SEMPRE verificare i nomi colonna con query diretta prima di scrivere query
+49. **Punteggio spuntisti incrementato in `avvia-spunta`** (v4.6.0) — Il punteggio graduatoria viene incrementato alla registrazione della presenza (avvia-spunta), NON all'assegnazione del posteggio. Questo garantisce che anche gli spuntisti che non ricevono un posteggio accumulino punti per la presenza
+50. **Deposito rifiuti è indipendente dalla chiusura** — L'endpoint `POST /api/test-mercato/registra-rifiuti` può essere chiamato in qualsiasi momento durante la giornata di mercato, prima o dopo la chiusura. Aggiorna `orario_deposito_rifiuti` per tutte le presenze del giorno
+51. **Storico sessioni: limite rimosso** (v5.3.0) — Il frontend non passa più `limit=100`. Il backend ha un default di 1000 record. Se servono più di 1000 sessioni, implementare paginazione lato frontend
+52. **Conteggio posteggi occupati: escludere null** — In `ControlliSanzioniPanel.tsx`, il calcolo `new Set(sessionDetails.map(d => d.stall_number)).size` DEVE usare `.filter(Boolean)` per escludere gli spuntisti senza posteggio dal conteggio
 ## 9.5 Integrazione MercaWeb (Polizia Municipale Grosseto) — ✅ ATTIVA
 
 > **Versione:** 1.0.0  
@@ -8152,6 +8189,74 @@ Questa sessione si è concentrata su due macro-aree:
 - **[UPDATE]** Blueprint aggiornato a v5.1.0 con tutte le card Connessioni documentate.
 - **[UPDATE]** Sezione 13 Tab Connessioni ora elenca tutte e 6 le integrazioni.
 
+
+---
+
+## 🔄 AGGIORNAMENTO SESSIONE 13 FEBBRAIO 2026 — POMERIGGIO (v4.6.0)
+
+> **Data:** 13 Febbraio 2026
+> **Sessione:** Diagnosi e fix chirurgico di 5 bug critici di isolamento per comune + 1 bug bonus (crash loop)
+
+Questa sessione ha identificato e risolto 5 bug critici che impedivano il corretto isolamento dei dati per comune nell'impersonificazione, più un bug pre-esistente che causava crash loop del backend.
+
+### ✅ CHECKLIST MODIFICHE COMPLETATE
+
+#### 🚀 BACKEND (mihub-backend-rest → Hetzner)
+
+| Commit | File | Bug | Descrizione |
+|---|---|---|---|
+| `fix: 5 bug isolamento comune` | `routes/concessions.js` | Bug 1 | Fix `target_id` hardcoded a `1` nella funzione `inviaNotificaPM` → ora usa `$1` (comune_id) |
+| | `routes/inspections.js` | Bug 3 | Aggiunto `comune_id` alla INSERT in `pm_watchlist` + filtro diretto nella query stats |
+| | `routes/sanctions.js` | Bug 3 | Aggiunto `comune_id` alla INSERT in `pm_watchlist` |
+| | `routes/verbali.js` | Bug 3 | Aggiunto `comune_id` alla INSERT in `pm_watchlist` |
+| | `routes/watchlist.js` | Bug 3+Bonus | Aggiunto `comune_id` alla INSERT + fix crash `concessioni` → `concessions` |
+| | `routes/test-mercato.js` | Bug 5 | Punteggio spuntisti incrementato in `avvia-spunta` (non solo in `assegna-posteggio`) |
+
+#### 🚀 FRONTEND (dms-hub-app-new → Vercel)
+
+| Commit | File | Bug | Descrizione |
+|---|---|---|---|
+| `fix: 5 bug isolamento comune` | `WalletPanel.tsx` | Bug 2 | Fix `mittente_id` hardcoded a `1` → ora usa `comuneId` dinamico da `getImpersonationParams()` |
+| | `ControlliSanzioniPanel.tsx` | Bug 4 | Aggiunto `addComuneIdToUrl()` alla fetch sessioni + rimosso filtro lato client |
+
+#### 🚀 DATABASE (Neon)
+
+- **[ALTER]** `ALTER TABLE pm_watchlist ADD COLUMN comune_id INTEGER`
+- **[UPDATE]** Popolati 32 record esistenti con il `comune_id` corretto derivato da `market_transgressions → markets → comune_id`
+
+---
+
+## 🔄 AGGIORNAMENTO SESSIONE 13 FEBBRAIO 2026 — SERA (v5.3.0)
+
+> **Data:** 13 Febbraio 2026
+> **Sessione:** Diagnosi e fix di 8 issue segnalate dall'utente, implementazione deposito rifiuti e graduatoria spunta.
+
+Questa sessione ha affrontato 8 punti critici segnalati, che spaziavano da bug visivi a problemi di logica di business e implementazione di nuove funzionalità.
+
+### ✅ CHECKLIST MODIFICHE COMPLETATE
+
+#### 🚀 BACKEND (mihub-backend-rest → Hetzner)
+
+| File | Tipo | Descrizione |
+|---|---|---|
+| `routes/suap.js` | NEW | Endpoint `GET /api/suap/notifiche-pm` — aggrega notifiche da domande_spunta, concessions e autorizzazioni |
+| `routes/test-mercato.js` | NEW | Endpoint `POST /api/test-mercato/registra-rifiuti` — registra orario deposito spazzatura |
+| `routes/presenze.js` | EDIT | Aumentato limite default da 50 a 1000 per `GET /sessioni` |
+| `routes/suap.js` | FIX | Corretto `ds.market_id` → `ds.mercato_id` |
+
+#### 🚀 FRONTEND (dms-hub-app-new → Vercel)
+
+| File | Tipo | Descrizione |
+|---|---|---|
+| `ControlliSanzioniPanel.tsx` | FIX | Posteggi occupati: aggiunto `.filter(Boolean)` per escludere null |
+| `ControlliSanzioniPanel.tsx` | FIX | Rimosso `limit=100` hardcoded dallo storico sessioni |
+| `ControlliSanzioniPanel.tsx` | NEW | Sottotab "Graduatoria Spunta" nel pannello Pratiche SUAP |
+| `GestioneMercati.tsx` | NEW | Pulsante "♻️ Registra Deposito Rifiuti" |
+| `apiInventoryService.ts` | NEW | 3 nuovi endpoint registrati nel Guardian |
+
+#### 🚀 DATABASE (Neon)
+
+- **[FIX]** `UPDATE pm_watchlist SET comune_id = 8 WHERE id = 3` — sanzione Modena erroneamente assegnata a Cervia
 
 ---
 
