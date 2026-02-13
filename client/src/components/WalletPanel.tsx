@@ -2235,8 +2235,8 @@ export default function WalletPanel() {
         <div className="space-y-6">
           <NotificationManager
             mittenteTipo="TRIBUTI"
-            mittenteId={1}
-            mittenteNome="Ufficio Tributi Comune di Grosseto"
+            mittenteId={getImpersonationParams().comuneId ? parseInt(getImpersonationParams().comuneId!) : 1}
+            mittenteNome={`Ufficio Tributi Comune di ${getImpersonationParams().comuneNome || 'Grosseto'}`}
             onNotificheUpdate={loadNotificheCount}
             comuneId={getImpersonationParams().comuneId ? parseInt(getImpersonationParams().comuneId!) : undefined}
           />
