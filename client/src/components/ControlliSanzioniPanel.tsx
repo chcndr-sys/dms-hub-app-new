@@ -20,7 +20,7 @@ import {
   ChevronRight, RefreshCw, Building2, Store, Truck,
   ClipboardCheck, AlertCircle, Calendar, User, Download,
   FileCheck, Briefcase, X, MessageSquare, ExternalLink,
-  Navigation, MapPin, Info
+  Navigation, MapPin, Info, Trophy
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -313,6 +313,11 @@ export default function ControlliSanzioniPanel() {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [storicoDateFilter, setStoricoDateFilter] = useState<string>('');
   
+  // Graduatoria spuntisti SUAP
+  const [graduatoriaSpunta, setGraduatoriaSpunta] = useState<any[]>([]);
+  const [graduatoriaLoading, setGraduatoriaLoading] = useState(false);
+  const [suapSubTab, setSuapSubTab] = useState<string>('domande');
+  
   // Modal dettaglio watchlist
   const [selectedWatchlistItem, setSelectedWatchlistItem] = useState<WatchlistItem | null>(null);
   const [showWatchlistModal, setShowWatchlistModal] = useState(false);
@@ -430,8 +435,8 @@ export default function ControlliSanzioniPanel() {
         if (giustManualiData.success) setGiustificazioniManuali(giustManualiData.data || []);
       } catch (e) { console.error('Errore fetch giustificazioni manuali:', e); }
 
-      // Fetch storico sessioni mercato - v4.6.0: filtrato lato backend con comune_id
-      const sessionsRes = await fetch(addComuneIdToUrl(`${MIHUB_API}/presenze/sessioni?limit=100`));
+      // Fetch storico sessioni mercato - v4.6.0: filtrato lato backend con comune_id (senza limite)
+      const sessionsRes = await fetch(addComuneIdToUrl(`${MIHUB_API}/presenze/sessioni`));
       const sessionsData = await sessionsRes.json();
       if (sessionsData.success) {
         setMarketSessions(sessionsData.data || []);
@@ -603,6 +608,35 @@ export default function ControlliSanzioniPanel() {
         const allNotifiche = [...notificheFromDomande, ...notificheFromConcessioni, ...notificheFromAutorizzazioni]
           .sort((a, b) => new Date(b.data_cambio_stato || '').getTime() - new Date(a.data_cambio_stato || '').getTime());
         setNotificheSuap(allNotifiche);
+      }
+
+      // Fetch graduatoria spuntisti per tutti i mercati del comune
+      try {
+        setGraduatoriaLoading(true);
+        // Prendi i mercati dal comune per fetchare la graduatoria
+        const marketsRes = await fetch(addComuneIdToUrl(`${MIHUB_API}/presenze/sessioni`));
+        const marketsData = await marketsRes.json();
+        if (marketsData.success && marketsData.data?.length > 0) {
+          // Prendi i market_id unici dalle sessioni
+          const marketIds = [...new Set((marketsData.data || []).map((s: any) => s.market_id))];
+          let allGraduatoria: any[] = [];
+          for (const mId of marketIds) {
+            try {
+              const gradRes = await fetch(`${MIHUB_API}/presenze/graduatoria/mercato/${mId}?tipo=SPUNTA`);
+              const gradData = await gradRes.json();
+              if (gradData.success && gradData.data) {
+                allGraduatoria = [...allGraduatoria, ...gradData.data];
+              }
+            } catch (gradErr) {
+              console.log(`[ControlliSanzioni] Errore fetch graduatoria mercato ${mId}:`, gradErr);
+            }
+          }
+          setGraduatoriaSpunta(allGraduatoria);
+        }
+      } catch (gradErr) {
+        console.log('[ControlliSanzioni] Errore fetch graduatoria:', gradErr);
+      } finally {
+        setGraduatoriaLoading(false);
       }
 
     } catch (err) {
@@ -2159,6 +2193,96 @@ export default function ControlliSanzioniPanel() {
               )}
             </CardContent>
           </Card>
+
+          {/* Sottotab Graduatoria Spunta */}
+          <Card className="bg-[#1a2332] border-[#f59e0b]/30">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-[#f59e0b]" />
+                  Graduatoria Spuntisti
+                </CardTitle>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={fetchAllData}
+                  className="border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/10"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Aggiorna
+                </Button>
+              </div>
+              <CardDescription className="text-[#e8fbff]/60">
+                Graduatoria presenze spuntisti - punteggio e posizione per l'anno corrente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {graduatoriaLoading ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="h-8 w-8 text-[#f59e0b]/50 mx-auto mb-3 animate-spin" />
+                  <p className="text-[#e8fbff]/50">Caricamento graduatoria...</p>
+                </div>
+              ) : graduatoriaSpunta.length === 0 ? (
+                <div className="text-center py-12">
+                  <Trophy className="h-16 w-16 text-[#f59e0b]/30 mx-auto mb-4" />
+                  <p className="text-[#e8fbff]/50 text-lg">Nessuno spuntista in graduatoria</p>
+                  <p className="text-[#e8fbff]/30 text-sm mt-2">La graduatoria si popola quando gli spuntisti registrano presenze</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#f59e0b]/20">
+                        <th className="text-center p-3 text-[#e8fbff]/60 text-xs font-medium">POS.</th>
+                        <th className="text-left p-3 text-[#e8fbff]/60 text-xs font-medium">IMPRESA</th>
+                        <th className="text-center p-3 text-[#e8fbff]/60 text-xs font-medium">PRESENZE</th>
+                        <th className="text-center p-3 text-[#e8fbff]/60 text-xs font-medium">PUNTEGGIO</th>
+                        <th className="text-center p-3 text-[#e8fbff]/60 text-xs font-medium">POSTEGGIO</th>
+                        <th className="text-center p-3 text-[#e8fbff]/60 text-xs font-medium">WALLET</th>
+                        <th className="text-center p-3 text-[#e8fbff]/60 text-xs font-medium">ANNO</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {graduatoriaSpunta
+                        .sort((a, b) => (b.punteggio || 0) - (a.punteggio || 0))
+                        .map((spuntista, idx) => (
+                        <tr key={spuntista.id || idx} className="border-b border-[#f59e0b]/10 hover:bg-[#0b1220]/50">
+                          <td className="p-3 text-center">
+                            <span className={`text-sm font-bold ${
+                              idx === 0 ? 'text-[#f59e0b]' : idx === 1 ? 'text-[#94a3b8]' : idx === 2 ? 'text-[#cd7f32]' : 'text-[#e8fbff]/70'
+                            }`}>
+                              {idx + 1}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <p className="text-[#e8fbff] text-sm font-medium">{spuntista.impresa_nome || 'N/D'}</p>
+                            <p className="text-[#e8fbff]/50 text-xs">{spuntista.impresa_piva || spuntista.codice_fiscale || ''}</p>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="text-[#3b82f6] text-sm font-medium">{spuntista.presenze_totali || 0}</span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="text-[#f59e0b] text-sm font-bold">{spuntista.punteggio || 0}</span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="text-[#e8fbff]/70 text-sm">{spuntista.stall_number || '-'}</span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className={`text-sm font-medium ${parseFloat(String(spuntista.wallet_balance || 0)) < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                              {spuntista.wallet_balance != null ? `\u20ac ${parseFloat(String(spuntista.wallet_balance)).toFixed(2)}` : '-'}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="text-[#e8fbff]/60 text-sm">{spuntista.anno || new Date().getFullYear()}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Tab: Notifiche PM - Usa NotificationManager come SUAP e Wallet */}
@@ -2694,8 +2818,8 @@ export default function ControlliSanzioniPanel() {
                     // Calcola statistiche dai dettagli
                     const usciteRegistrate = sessionDetails.filter(d => d.ora_uscita).length;
                     const totaleIncassato = sessionDetails.reduce((sum, d) => sum + parseFloat(d.importo_addebitato || '0'), 0);
-                    // Calcola posteggi unici (non duplicati)
-                    const posteggiUnici = new Set(sessionDetails.map(d => d.stall_number)).size;
+                    // Calcola posteggi unici (non duplicati) - escludi null/undefined per spuntisti senza posteggio
+                    const posteggiUnici = new Set(sessionDetails.map(d => d.stall_number).filter(Boolean)).size;
                     
                     // Trova prima entrata e ultima uscita dai dettagli
                     const orariAccesso = sessionDetails.filter(d => d.ora_accesso).map(d => d.ora_accesso).sort();
@@ -2812,8 +2936,8 @@ export default function ControlliSanzioniPanel() {
                     const totaleCalcolato = sessionDetails.reduce((sum, d) => sum + parseFloat(d.importo_addebitato || '0'), 0);
                     const concessionariCount = sessionDetails.filter(d => d.tipo_presenza === 'CONCESSION' || !d.tipo_presenza).length;
                     const spuntistiCount = sessionDetails.filter(d => d.tipo_presenza === 'SPUNTA').length;
-                    // Calcola posteggi unici (non duplicati)
-                    const posteggiUnici = new Set(sessionDetails.map(d => d.stall_number)).size;
+                    // Calcola posteggi unici (non duplicati) - escludi null/undefined per spuntisti senza posteggio
+                    const posteggiUnici = new Set(sessionDetails.map(d => d.stall_number).filter(Boolean)).size;
                     return (
                       <div className="grid grid-cols-5 gap-3 mb-4">
                         <div className="bg-[#0d1520] p-3 rounded-lg text-center">

@@ -2286,6 +2286,41 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
             {isAnimating ? '⏹ STOP' : `✓ Conferma Assegnazione (${reservedCount} posteggi)`}
           </Button>
           
+          {/* Pulsante Registra Deposito Rifiuti - registra orario deposito spazzatura per TUTTI */}
+          <Button
+            className="w-full mt-2 font-semibold py-2 border-2 bg-[#22c55e] hover:bg-[#22c55e]/80 border-[#22c55e]/50 text-white"
+            onClick={async () => {
+              const confirmed = window.confirm(
+                `Registrare il deposito rifiuti?\n\n` +
+                `Questa azione registrerà l'orario di deposito spazzatura per tutte le presenze del giorno.`
+              );
+              
+              if (!confirmed) return;
+              
+              try {
+                const response = await fetch(`${API_BASE_URL}/api/test-mercato/registra-rifiuti`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ market_id: marketId }),
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                  toast.success(`♻️ ${data.message}`);
+                } else {
+                  toast.error(data.error || 'Errore durante la registrazione rifiuti');
+                }
+                
+                await fetchData();
+              } catch (error) {
+                console.error('Errore registrazione rifiuti:', error);
+                toast.error('Errore durante la registrazione deposito rifiuti');
+              }
+            }}
+          >
+            ♻️ Registra Deposito Rifiuti
+          </Button>
+          
           {/* Pulsante Chiudi Mercato - registra uscita per TUTTI e libera TUTTI i posteggi */}
           <Button
             className="w-full mt-2 font-semibold py-2 border-2 bg-[#ef4444] hover:bg-[#ef4444]/80 border-[#ef4444]/50 text-white"
