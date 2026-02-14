@@ -1368,8 +1368,9 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   const [selectedCompanyForModal, setSelectedCompanyForModal] = useState<CompanyRow | null>(null);
   const [showConcessionDetailModal, setShowConcessionDetailModal] = useState(false);
   const [selectedConcessionForModal, setSelectedConcessionForModal] = useState<any>(null);
-  const [sidebarView, setSidebarView] = useState<'impresa' | 'concessione'>('impresa');
+  const [sidebarView, setSidebarView] = useState<'impresa' | 'concessione' | 'domanda_spunta'>('impresa');
   const [sidebarConcessionData, setSidebarConcessionData] = useState<any>(null);
+  const [sidebarDomandaSpuntaData, setSidebarDomandaSpuntaData] = useState<any>(null);
   const [sidebarCompanyData, setSidebarCompanyData] = useState<any>(null);
   const [sidebarCompanyLoading, setSidebarCompanyLoading] = useState(false);
   const listContainerRef = React.useRef<HTMLDivElement>(null);
@@ -1411,11 +1412,40 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
     }
   }, [selectedStallId, stalls]);
 
+  // Carica dati domanda spunta quando viene selezionato un posteggio con spuntista
+  useEffect(() => {
+    const loadDomandaSpuntaData = async () => {
+      const stall = stalls.find(s => s.id === selectedStallId);
+      if (stall?.spuntista_impresa_id) {
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/api/domande-spunta?impresa_id=${stall.spuntista_impresa_id}&mercato_id=${marketId}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            const domande = data.data || data;
+            const domandaApprovata = Array.isArray(domande)
+              ? domande.find((d: any) => d.stato === 'APPROVATA') || domande[0]
+              : domande;
+            setSidebarDomandaSpuntaData(domandaApprovata || null);
+          }
+        } catch (error) {
+          console.error('Error loading domanda spunta:', error);
+        }
+      } else {
+        setSidebarDomandaSpuntaData(null);
+      }
+    };
+    if (selectedStallId) {
+      loadDomandaSpuntaData();
+    }
+  }, [selectedStallId, stalls]);
+
   // Carica dati impresa quando viene selezionato un posteggio
   useEffect(() => {
     const loadCompanyData = async () => {
       const stall = stalls.find(s => s.id === selectedStallId);
-      const companyId = stall?.impresa_id || stall?.vendor_id || concessionsByStallId[stall?.number || '']?.companyId;
+      const companyId = stall?.impresa_id || stall?.vendor_id || stall?.spuntista_impresa_id || concessionsByStallId[stall?.number || '']?.companyId;
       
       if (companyId) {
         setSidebarCompanyLoading(true);
@@ -3014,7 +3044,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 Seleziona un posteggio dalla lista o dalla mappa per visualizzare i dettagli dell'impresa
               </p>
             </div>
-          ) : !selectedStall.vendor_business_name && !concessionsByStallId[selectedStall.number] ? (
+          ) : !selectedStall.vendor_business_name && !concessionsByStallId[selectedStall.number] && !selectedStall.spuntista_impresa_id ? (
             <div className="h-full flex flex-col">
               <div className="flex items-center justify-between p-4 border-b border-[#14b8a6]/20">
                 <h3 className="text-sm font-semibold text-[#e8fbff]">
@@ -3064,6 +3094,24 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     className={`flex-1 py-2 px-4 text-sm font-medium transition-colors ${sidebarView === 'concessione' ? 'text-[#8b5cf6] border-b-2 border-[#8b5cf6] bg-[#8b5cf6]/10' : 'text-[#e8fbff]/50 hover:text-[#e8fbff]'}`}
                   >
                     <FileText className="h-4 w-4 inline mr-2" />Vista Concessione
+                  </button>
+                </div>
+              )}
+
+              {/* Tab switcher Vista Impresa / Vista Domanda Spunta — per spuntisti */}
+              {!selectedStall.concession_id && selectedStall.spuntista_impresa_id && (
+                <div className="flex border-b border-[#f59e0b]/20">
+                  <button
+                    onClick={() => setSidebarView('impresa')}
+                    className={`flex-1 py-2 px-4 text-sm font-medium transition-colors ${sidebarView === 'impresa' ? 'text-[#14b8a6] border-b-2 border-[#14b8a6] bg-[#14b8a6]/10' : 'text-[#e8fbff]/50 hover:text-[#e8fbff]'}`}
+                  >
+                    <Building2 className="h-4 w-4 inline mr-2" />Vista Impresa
+                  </button>
+                  <button
+                    onClick={() => setSidebarView('domanda_spunta')}
+                    className={`flex-1 py-2 px-4 text-sm font-medium transition-colors ${sidebarView === 'domanda_spunta' ? 'text-[#f59e0b] border-b-2 border-[#f59e0b] bg-[#f59e0b]/10' : 'text-[#e8fbff]/50 hover:text-[#e8fbff]'}`}
+                  >
+                    <FileText className="h-4 w-4 inline mr-2" />Vista Domanda Spunta
                   </button>
                 </div>
               )}
@@ -3298,6 +3346,129 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                 <div className="flex-1 flex items-center justify-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8b5cf6]"></div>
                 </div>
+              )}
+
+              {/* Contenuto Vista Domanda Spunta — per spuntisti */}
+              {sidebarView === 'domanda_spunta' && selectedStall.spuntista_impresa_id && (
+                sidebarDomandaSpuntaData ? (
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {/* Dati Domanda */}
+                  <div className="bg-[#0d1829] rounded-lg p-3 border border-[#f59e0b]/20">
+                    <h4 className="text-[#f59e0b] font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <FileText className="h-4 w-4" /> Dati Domanda
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">N. Domanda</span>
+                        <p className="text-[#e8fbff] text-sm">#{sidebarDomandaSpuntaData.id || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Stato</span>
+                        <p><Badge className={`text-xs ${sidebarDomandaSpuntaData.stato === 'APPROVATA' ? 'bg-green-500/20 text-green-400' : sidebarDomandaSpuntaData.stato === 'RIFIUTATA' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>{sidebarDomandaSpuntaData.stato || '-'}</Badge></p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Data Richiesta</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.data_richiesta ? new Date(sidebarDomandaSpuntaData.data_richiesta).toLocaleDateString('it-IT') : '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Settore Richiesto</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.settore_richiesto || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Giorno</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.giorno_settimana || sidebarDomandaSpuntaData.market_days || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Note</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.note || 'Nessuna'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Richiedente */}
+                  <div className="bg-[#0d1829] rounded-lg p-3 border border-[#f59e0b]/20">
+                    <h4 className="text-[#f59e0b] font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4" /> Richiedente
+                    </h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Ragione Sociale</span>
+                        <p className="text-[#e8fbff] font-semibold text-sm">{sidebarDomandaSpuntaData.company_name || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Partita IVA</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.company_piva || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Codice Fiscale</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.company_cf || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Nome</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.rappresentante_legale_nome || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Cognome</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.rappresentante_legale_cognome || '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Autorizzazione */}
+                  <div className="bg-[#0d1829] rounded-lg p-3 border border-[#f59e0b]/20">
+                    <h4 className="text-[#f59e0b] font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <FileText className="h-4 w-4" /> Autorizzazione
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Numero</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.numero_autorizzazione || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Tipo</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.autorizzazione_tipo === 'A' ? 'Tipo A - Posteggio' : sidebarDomandaSpuntaData.autorizzazione_tipo === 'B' ? 'Tipo B - Itinerante' : '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Ente Rilascio</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.autorizzazione_ente || '-'}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Data Rilascio</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.autorizzazione_data ? new Date(sidebarDomandaSpuntaData.autorizzazione_data).toLocaleDateString('it-IT') : '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Presenze e Wallet */}
+                  <div className="bg-[#0d1829] rounded-lg p-3 border border-[#f59e0b]/20">
+                    <h4 className="text-[#f59e0b] font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <Wallet className="h-4 w-4" /> Presenze e Wallet
+                    </h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Presenze</span>
+                        <p className="text-[#e8fbff] text-sm">{sidebarDomandaSpuntaData.numero_presenze || 0}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Saldo Wallet</span>
+                        <p className={`font-semibold text-sm ${parseFloat(sidebarDomandaSpuntaData.wallet_balance || '0') >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          € {parseFloat(sidebarDomandaSpuntaData.wallet_balance || '0').toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-[#e8fbff]/50 uppercase">Stato Wallet</span>
+                        <p className={`text-sm ${sidebarDomandaSpuntaData.wallet_id ? 'text-green-400' : 'text-red-400'}`}>
+                          {sidebarDomandaSpuntaData.wallet_id ? '✓ Attivo' : '✗ Non creato'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f59e0b]"></div>
+                </div>
+                )
               )}
 
               {/* Pulsanti per posteggi senza concessione */}
