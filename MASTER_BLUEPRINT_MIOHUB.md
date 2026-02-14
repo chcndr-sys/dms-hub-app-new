@@ -1,8 +1,8 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 5.3.0 (Diagnosi e fix 13 issue + deposito rifiuti + graduatoria spunta)  
-> **Data:** 13 Febbraio 2026  
-> **Autore:** Sistema documentato da Manus AI  
+> **Versione:** 6.0.0 (Inventario completo DB + Backend allineato alla realta)
+> **Data:** 14 Febbraio 2026
+> **Autore:** Sistema documentato da Manus AI + Claude Code
 > **Stato:** PRODUZIONE
 
 ---
@@ -28,6 +28,15 @@
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 14 Febbraio 2026 (v6.0.0)
+- **Inventario completo Database Neon:** 149 tabelle, 2.021 colonne, 372.143 righe, 409 indici, 9 trigger, 37 funzioni — dati reali verificati via psql da Manus.
+- **Inventario completo Backend Hetzner:** 82 file route, 70 endpoint montati in index.js, 31 variabili ambiente categorizzate, PM2 status verificato.
+- **Aggiornamento sezione Database:** Da 81 tabelle generiche a 149 tabelle reali con conteggio righe aggiornato al 14 Feb 2026.
+- **Aggiornamento sezione API Endpoints:** 70 endpoint montati reali con path e file sorgente.
+- **Aggiornamento sezione Variabili Ambiente:** 31 variabili reali categorizzate (DB, Auth, API Keys, Server, Features).
+- **Nuova sezione Trigger e Funzioni DB:** 9 trigger BEFORE UPDATE + 37 funzioni (pgcrypto + update_updated_at).
+- **File di riferimento:** `DATABASE_INVENTORY_COMPLETO.md` (3.937 righe, 182KB) con dettaglio colonne per ogni tabella.
 
 ### Sessione 13 Febbraio 2026 — Sera (v5.3.0)
 - ✅ **Diagnosi e fix 8 issue (Round 2):** Wallet Grosseto, notifiche SUAP, watchlist errata, storico limite 100, posteggi +1, deposito rifiuti, graduatoria spunta.
@@ -688,22 +697,133 @@ POST /api/guardian/debug/testEndpoint
 ### Database Neon (PostgreSQL)
 
 **Connection String:** Vedi variabile `DATABASE_URL` o `NEON_POSTGRES_URL`
+**Host:** `ep-bold-silence-adftsojg-pooler.c-2.us-east-1.aws.neon.tech`
+**Database:** `neondb` | **User:** `neondb_owner` | **SSL:** require
 
-### Tabelle Principali (Dati Reali - 2 Gennaio 2026)
+### Riepilogo Database (Dati Reali - 14 Febbraio 2026)
 
-| Tabella | Descrizione | Records |
-|---------|-------------|-----------------||
-| `markets` | Mercati | **2** |
-| `stalls` | Posteggi | **564** |
-| `imprese` | Imprese | **13** |
-| `vendors` | Operatori | **11** |
-| `concessions` | Concessioni | **34** |
-| `agent_messages` | Chat agenti | ~500 |
-| `mio_agent_logs` | Log API | ~1500 |
-| `suap_pratiche` | Pratiche SUAP | **9** |
-| `suap_eventi` | Eventi SUAP | variabile |
+| Metrica | Valore |
+|---------|--------|
+| **Tabelle totali** | 149 |
+| **Colonne totali** | 2.021 |
+| **Righe totali (stima)** | 372.143 |
+| **Indici totali** | 409 |
+| **Trigger** | 9 |
+| **Funzioni** | 37 |
+| **Tabelle con dati** | ~60 |
+| **Tabelle vuote (predisposte)** | ~89 |
 
-**Totale tabelle nel database:** 81
+> **Dettaglio completo:** Vedi `DATABASE_INVENTORY_COMPLETO.md` per colonne, tipi, indici di ogni tabella.
+
+### Tabelle Principali con Dati (Top 60 — 14 Febbraio 2026)
+
+| # | Tabella | Righe | Descrizione |
+|---|---------|-------|-------------|
+| 1 | `mio_agent_logs` | 326.543 | Log chiamate API MIO Agent |
+| 2 | `gtfs_stops` | 23.930 | Fermate trasporto pubblico (GTFS) |
+| 3 | `mobility_data` | 9.554 | Dati mobilita cittadini |
+| 4 | `agent_messages` | 3.850 | Messaggi chat agenti AI |
+| 5 | `cultural_pois` | 1.127 | Punti di Interesse culturali |
+| 6 | `wallet_transactions` | 1.058 | Transazioni wallet TCC |
+| 7 | `notifiche_destinatari` | 938 | Destinatari notifiche |
+| 8 | `stalls` | 583 | Posteggi mercato |
+| 9 | `market_session_details` | 500 | Dettagli sessioni mercato |
+| 10 | `agent_conversations` | 415 | Conversazioni agenti AI |
+| 11 | `market_sessions` | 394 | Sessioni mercato |
+| 12 | `security_events` | 364 | Eventi sicurezza |
+| 13 | `notifiche` | 337 | Notifiche sistema |
+| 14 | `role_permissions` | 285 | Permessi per ruolo |
+| 15 | `login_attempts` | 270 | Tentativi di login |
+| 16 | `suap_checks` | 232 | Controlli SCIA/SUAP |
+| 17 | `wallet_history` | 132 | Storico movimenti wallet |
+| 18 | `province` | 107 | Anagrafica province italiane |
+| 19 | `transactions` | 106 | Transazioni generiche |
+| 20 | `permissions` | 102 | Definizioni permessi |
+| 21 | `settori_comune` | 94 | Settori merceologici per comune |
+| 22 | `wallets` | 89 | Wallet TCC imprese |
+| 23 | `hub_locations` | 79 | Localizzazioni HUB |
+| 24 | `wallet_scadenze` | 68 | Scadenze canone wallet |
+| 25 | `user_sessions` | 66 | Sessioni utente attive |
+| 26 | `graduatoria_presenze` | 52 | Graduatoria presenze spunta |
+| 27 | `vendor_presences` | 52 | Presenze operatori al mercato |
+| 28 | `spend_qr_tokens` | 49 | Token QR per spesa TCC |
+| 29 | `suap_eventi` | 48 | Eventi workflow SUAP |
+| 30 | `qualificazioni` | 42 | Qualificazioni imprese (DURC, HACCP...) |
+| 31 | `gtfs_routes` | 37 | Linee trasporto pubblico |
+| 32 | `civic_reports` | 36 | Segnalazioni civiche cittadini |
+| 33 | `sanctions` | 36 | Sanzioni a operatori |
+| 34 | `imprese` | 34 | Anagrafica imprese |
+| 35 | `pm_watchlist` | 32 | Watchlist Polizia Municipale |
+| 36 | `market_transgressions` | 31 | Trasgressioni al mercato |
+| 37 | `concessions` | 30 | Concessioni posteggio |
+| 38 | `domande_spunta` | 29 | Domande per spunta giornaliera |
+| 39 | `suap_pratiche` | 28 | Pratiche SCIA/SUAP |
+| 40 | `fund_transactions` | 24 | Transazioni fondi |
+| 41 | `servizi_associazioni` | 24 | Servizi delle associazioni |
+| 42 | `suap_decisioni` | 22 | Decisioni pratiche SUAP |
+| 43 | `operator_daily_wallet` | 21 | Wallet giornaliero operatore |
+| 44 | `infraction_types` | 20 | Tipi di infrazione |
+| 45 | `regioni` | 20 | Anagrafica regioni italiane |
+| 46 | `regolarita_imprese` | 20 | Stato regolarita imprese |
+| 47 | `cultural_visits` | 18 | Visite ai POI culturali |
+| 48 | `operator_transactions` | 16 | Transazioni operatore |
+| 49 | `user_roles` | 14 | Ruoli utente sistema |
+| 50 | `vendors` | 14 | Operatori ambulanti |
+| 51 | `mobility_checkins` | 13 | Check-in mobilita sostenibile |
+| 52 | `formazione_iscrizioni` | 10 | Iscrizioni corsi formazione |
+| 53 | `richieste_servizi` | 10 | Richieste servizi associazioni |
+| 54 | `comuni` | 9 | Anagrafica comuni attivi |
+| 55 | `gaming_rewards_config` | 9 | Configurazione gaming/rewards |
+| 56 | `hub_shops` | 9 | Negozi nei HUB |
+| 57 | `agents` | 8 | Agenti AI registrati |
+| 58 | `bandi_catalogo` | 8 | Catalogo bandi disponibili |
+| 59 | `users` | 8 | Utenti sistema |
+| 60 | `markets` | 3 | Mercati ambulanti |
+
+### Tabelle Vuote / Predisposte (89 tabelle)
+
+Le seguenti tabelle sono create e pronte ma ancora senza dati: `agent_brain`, `agent_context`, `agent_projects`, `agent_tasks`, `api_keys`, `api_metrics`, `audit_logs`, `bookings`, `business_analytics`, `carbon_footprint`, `challenge_participations`, `chat_messages_old`, `checkins`, `compliance_certificates`, `comune_contratti`, `comune_fatture`, `concession_payments`, `custom_areas`, `custom_markers`, `data_bag`, `dima_mappe`, `dms_durc_snapshots`, `ecocredits`, `enterprise_employees`, `enterprise_qualifications`, `external_connections`, `hub_services`, `inspections_detailed`, `ip_blacklist`, `market_tariffs`, `notifications`, `product_tracking`, `products`, `reimbursements`, `security_delegations`, `suap_azioni`, `suap_documenti`, `suap_regole`, `sustainability_metrics`, `system_events`, `system_logs`, `user_analytics`, `vendor_documents`, `violations`, `wallet_balance_snapshots`, `webhook_logs`, `webhooks`, `zapier_webhook_logs`.
+
+### Tabelle Backup (da ignorare)
+
+| Tabella | Note |
+|---------|------|
+| `agent_logs_backup_20251204_174125` | 360 righe — backup migrazione dicembre 2025 |
+| `agent_messages_backup_20251204_174125` | 745 righe — backup migrazione dicembre 2025 |
+| `carbon_credits_config_backup_20260203` | 1 riga — backup 3 febbraio 2026 |
+| `carbon_credits_rules_backup_20260203` | 3 righe — backup 3 febbraio 2026 |
+| `civic_config_backup_20260203` | 5 righe — backup 3 febbraio 2026 |
+
+### Views Materializzate
+
+| View | Righe | Descrizione |
+|------|-------|-------------|
+| `v_enterprise_compliance` | 14 | Compliance imprese aggregata |
+| `v_tcc_circulation_by_comune` | 2 | Circolazione TCC per comune |
+| `v_top_merchants_by_comune` | 2 | Top commercianti per comune |
+| `v_fund_stats_by_comune` | 1 | Statistiche fondi per comune |
+| `v_burn_rate_by_comune` | 0 | Tasso bruciatura TCC per comune |
+
+### Trigger Database
+
+| Trigger | Tabella | Timing | Evento |
+|---------|---------|--------|--------|
+| `update_qualification_types_updated_at` | `qualification_types` | BEFORE | UPDATE |
+| `update_enterprise_employees_updated_at` | `enterprise_employees` | BEFORE | UPDATE |
+| `update_enterprise_qualifications_updated_at` | `enterprise_qualifications` | BEFORE | UPDATE |
+| `update_imprese_updated_at` | `imprese` | BEFORE | UPDATE |
+| `update_qualificazioni_updated_at` | `qualificazioni` | BEFORE | UPDATE |
+| `update_markets_updated_at` | `markets` | BEFORE | UPDATE |
+| `update_stalls_updated_at` | `stalls` | BEFORE | UPDATE |
+| `update_vendors_updated_at` | `vendors` | BEFORE | UPDATE |
+| `update_concessions_updated_at` | `concessions` | BEFORE | UPDATE |
+
+> Tutti i trigger chiamano la funzione `update_updated_at_column()` per aggiornare automaticamente il campo `updated_at`.
+
+### Funzioni Database
+
+- **pgcrypto extension:** `digest`, `hmac`, `crypt`, `gen_salt`, `encrypt`, `decrypt`, `encrypt_iv`, `decrypt_iv`, `gen_random_bytes`, `gen_random_uuid`, `pgp_sym_encrypt`, `pgp_sym_decrypt`, `pgp_pub_encrypt`, `pgp_pub_decrypt`, `pgp_key_id`, `armor`, `dearmor`, `pgp_armor_headers`
+- **Custom:** `update_updated_at_column()` — usata da tutti i 9 trigger
 
 ### Storage S3
 
@@ -715,24 +835,103 @@ POST /api/guardian/debug/testEndpoint
 
 ## 🔌 API ENDPOINTS
 
-### Endpoint Index (799 endpoint totali)
+### Backend Hetzner: mihub-backend-rest v1.1.0
 
-Gli endpoint sono documentati in:
-```
-/home/ubuntu/dms-hub-app-new/client/public/api-index.json
-```
+- **82 file route** in `/root/mihub-backend-rest/routes/`
+- **70 endpoint montati** in `index.js`
+- **10 file service/transformer** importati indirettamente
+- **PM2:** `mihub-backend` online, cluster mode, pid 711337, 168MB RAM
+
+### Endpoint Montati in index.js (70 — Dati Reali 14 Feb 2026)
+
+| # | Path | File Route | Categoria |
+|---|------|-----------|-----------|
+| 1 | `/api/logs` | `logs.js` | Logging |
+| 2 | `/api/mihub` | `mihub.js` | MIO Hub core |
+| 3 | `/api/mihub` | `orchestrator.js` | Orchestratore AI |
+| 4 | `/api/mihub` | `orchestratorMock.js` | Orchestratore mock |
+| 5 | `/api/guardian` | `guardian.js` | Guardian monitoring |
+| 6 | `/api/mihub` | `guardianSync.js` | Guardian sync |
+| 7 | `/admin` | `admin.js` | Admin panel |
+| 8 | `/api/admin/secrets` | `adminSecrets.js` | Admin secrets |
+| 9 | `/api/secrets` | `apiSecrets.js` | API secrets |
+| 10 | `/api/gis` | `gis.js` | GIS / mappe |
+| 11 | `/api/markets` | `markets.js` | Mercati |
+| 12 | `/api/stalls` | `stalls.js` | Posteggi |
+| 13 | `/api/vendors` | `vendors.js` | Operatori |
+| 14 | `/api/concessions` | `concessions.js` | Concessioni |
+| 15 | `/api/autorizzazioni` | `autorizzazioni.js` | Autorizzazioni |
+| 16 | `/api/domande-spunta` | `domande-spunta.js` | Domande spunta |
+| 17 | `/api/imprese` | `imprese.js` | Imprese |
+| 18 | `/api/suap` | `suap.js` | SUAP pratiche |
+| 19 | `/api/qualificazioni` | `qualificazioni.js` | Qualificazioni |
+| 20 | `/api/regioni` | `regioni.js` | Regioni/territori |
+| 21 | `/api/documents` | `documents.js` | Documenti |
+| 22 | `/api/comuni` | `comuni.js` | Comuni |
+| 23 | `/api/ipa` | `ipa.js` | IndicePA import |
+| 24 | `/api/tariffs` | `tariffs.js` | Tariffe |
+| 25 | `/api/wallets` | `wallets.js` | Wallet TCC |
+| 26 | `/api/wallet-history` | `wallet-history.js` | Storico wallet |
+| 27 | `/api/wallet-scadenze` | `wallet-scadenze.js` | Scadenze canone |
+| 28 | `/api/canone-unico` | `canone-unico.js` | Canone unico |
+| 29 | `/api/presenze` | `presenze.js` | Presenze mercato |
+| 30 | `/api` | `presenze.js` | Graduatoria |
+| 31 | `/api/collaboratori` | `collaboratori.js` | Collaboratori impresa |
+| 32 | `/api/giustificazioni` | `giustificazioni.js` | Giustificazioni uscite |
+| 33 | `/api/test-mercato` | `test-mercato.js` | Test mercato simulazione |
+| 34 | `/api/market-settings` | `market-settings.js` | Impostazioni mercato |
+| 35 | `/api/hub` | `hub.js` | Hub locations |
+| 36 | `/api/routing` | `routing.js` | Routing/navigazione |
+| 37 | `/api/dmsHub` | `dmsHub.js` | DMS Hub connector |
+| 38 | `/api/abacus/github` | `abacusGithub.js` | Abacus GitHub |
+| 39 | `/api/mio` | `mioAgent.js` | MIO Agent AI |
+| 40 | `/api/hooks` | `webhooks.js` | Webhooks |
+| 41 | `/webhook` | `webhook.js` | Deploy webhook |
+| 42 | `/api/abacus/sql` | `abacusSql.js` | Abacus SQL query |
+| 43 | `/api/admin` | `adminMigrate.js` | Admin migrazioni |
+| 44 | `/api/admin` | `migratePDND.js` | Migrazione PDND |
+| 45 | `/api/admin` | `adminDeploy.js` | Admin deploy |
+| 46 | `/api/mihub/chats` | `chats.js` | Chat MIO |
+| 47 | `/api/system` | `system.js` | System management |
+| 48 | `/api/health` | `health-monitor.js` | Health monitor |
+| 49 | `/api/workspace` | `workspace.js` | Workspace snapshots |
+| 50 | `/api/dashboard/integrations` | `integrations.js` | Dashboard integrazioni |
+| 51 | `/api/stats` | `stats.js` | Statistiche |
+| 52 | `/api/stats/qualificazione` | `stats-qualificazione.js` | Stats qualificazione |
+| 53 | `/api/formazione` | `formazione.js` | Formazione enti |
+| 54 | `/api/bandi` | `bandi.js` | Bandi/finanziamenti |
+| 55 | `/api/notifiche` | `notifiche.js` | Notifiche |
+| 56 | `/api/security` | `security.js` | Security |
+| 57 | `/api/auth` | `auth.js` | Autenticazione |
+| 58 | `/api/citizens` | `citizens.js` | Cittadini |
+| 59 | `/api/tcc` | `tcc.js` | TCC v1 |
+| 60 | `/api/tcc/v2` | `tcc-v2.js` | TCC v2 wallet-impresa |
+| 61 | `/api/public` | `public-search.js` | Ricerca pubblica |
+| 62 | `/api/inspections` | `inspections.js` | Ispezioni |
+| 63 | `/api/sanctions` | `sanctions.js` | Sanzioni |
+| 64 | `/api/watchlist` | `watchlist.js` | Watchlist PM |
+| 65 | `/api/verbali` | `verbali.js` | Verbali |
+| 66 | `/api/civic-reports` | `civic-reports.js` | Segnalazioni civiche |
+| 67 | `/api/gtfs` | `gtfs.js` | GTFS trasporto pubblico |
+| 68 | `/api/gaming-rewards` | `gaming-rewards.js` | Gaming & rewards |
+| 69 | `/api/integrations/dms-legacy` | `dms-legacy.js` | DMS Legacy Heroku |
+| 70 | `/api/integrations/mercaweb` | `mercaweb.js` | MercaWeb Abaco |
+
+### File Service/Transformer (non montati direttamente)
+
+`dms-legacy-service.js`, `dms-legacy-transformer.js`, `internalTraces.js`, `mercaweb-transformer.js`, `monitoring-debug.js`, `monitoring-logs.js`, `panic.js`, `system-logs.js`, `toolsManus.js`, `verbali_invia_new.js`
 
 ### API Dashboard (Frontend)
 
-La sezione `Integrazioni → API Dashboard` del frontend Vercel è stata potenziata per migliorare l'usabilità e l'esperienza di test:
+La sezione `Integrazioni -> API Dashboard` del frontend Vercel include:
 
 | Funzionalità | Descrizione |
 |---|---|
-| **Container Scrollabile** | La lista degli endpoint è ora contenuta in un box con altezza fissa (`max-h-[600px]`) e scroll verticale, evitando che la pagina diventi eccessivamente lunga. |
-| **Barra di Ricerca** | È stata aggiunta una barra di ricerca che permette di filtrare in tempo reale gli endpoint per categoria, path o descrizione. |
-| **Filtri Rapidi (Pill)** | Sono presenti dei filtri rapidi (pill/chip) per le 9 categorie principali (DmsHub, DMS Legacy, MercaWeb, Wallet, Imprese, Guardian, SUAP, Security, Comuni PA), che permettono di isolare rapidamente un gruppo di endpoint. Un click attiva il filtro, un secondo click lo rimuove. |
-| **Test Endpoint (Playground)** | Sono state aggiunte le categorie **DMS Legacy (Heroku)** e **MercaWeb — Abaco S.p.A.** alla lista degli endpoint testabili. Cliccando sul pulsante ▶, viene eseguita una chiamata reale all'endpoint e la risposta JSON viene mostrata nel pannello API Playground a destra. |
-| **Gestione API Key** | Il Playground gestisce automaticamente l'invio degli header di autenticazione necessari, come `X-MercaWeb-API-Key` per gli endpoint MercaWeb. |
+| **Container Scrollabile** | Box con altezza fissa (`max-h-[600px]`) e scroll verticale |
+| **Barra di Ricerca** | Filtro in tempo reale per categoria, path o descrizione |
+| **Filtri Rapidi (Pill)** | 9 categorie: DmsHub, DMS Legacy, MercaWeb, Wallet, Imprese, Guardian, SUAP, Security, Comuni PA |
+| **Test Endpoint (Playground)** | Chiamata reale con risposta JSON nel pannello API Playground |
+| **Gestione API Key** | Header automatici (`X-MercaWeb-API-Key` per MercaWeb) |
 
 ### Categorie Principali
 
@@ -1218,16 +1417,80 @@ La nuova architettura si basa sui seguenti componenti:
 
 ## 🔐 CREDENZIALI E ACCESSI
 
-### Variabili d'Ambiente Backend
+### Variabili d'Ambiente Backend Hetzner (31 — Dati Reali 14 Feb 2026)
+
+> Variabili lette direttamente dal file `.env` su Hetzner. Solo nomi, senza valori.
+
+**DATABASE (6)**
 
 | Variabile | Descrizione |
 |-----------|-------------|
-| `DATABASE_URL` | Connection string Neon |
-| `GEMINI_API_KEY` | API key Google Gemini |
+| `DATABASE_URL` | Connection string principale Neon |
+| `NEON_POSTGRES_URL` | URL Neon alternativa |
+| `POSTGRES_URL` | URL PostgreSQL generica |
+| `DB_HOST` | Host database |
+| `DB_NAME` | Nome database |
+| `DB_PASSWORD` | Password database |
+| `DB_PORT` | Porta database |
+| `DB_SSL` | Flag SSL |
+| `DB_USER` | Utente database |
+
+**AUTH/SECURITY (2)**
+
+| Variabile | Descrizione |
+|-----------|-------------|
+| `JWT_SECRET` | Secret per token JWT |
+| `MIOHUB_SECRETS_KEY` | Chiave crittografia secrets |
+
+**API KEYS (5)**
+
+| Variabile | Descrizione |
+|-----------|-------------|
+| `GEMINI_API_KEY` | API key Google Gemini (AI) |
+| `MANUS_API_KEY` | API key Manus AI |
+| `MERCAWEB_API_KEY` | API key MercaWeb (Abaco) |
+| `ZAPIER_API_KEY` | API key Zapier |
+| `ZAPIER_NLA_API_KEY` | API key Zapier NLA |
+
+**GITHUB (3)**
+
+| Variabile | Descrizione |
+|-----------|-------------|
+| `GITHUB_PAT_DMS` | PAT per repo DMS |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | PAT personale |
 | `GITHUB_TOKEN` | Token GitHub per GPT Dev |
-| `SSH_PRIVATE_KEY` | Chiave SSH per Manus |
-| `ZAPIER_WEBHOOK_URL` | Webhook Zapier |
-| `VERCEL_TOKEN` | Token deploy Vercel |
+
+**SERVER (6)**
+
+| Variabile | Descrizione |
+|-----------|-------------|
+| `BASE_URL` | URL base backend |
+| `CORS_ORIGINS` | Origini CORS permesse |
+| `LOG_FILE` | Path file log |
+| `MIO_HUB_BASE` | URL base MIO Hub |
+| `NODE_ENV` | Ambiente (production) |
+| `PORT` | Porta server |
+
+**FEATURES (4)**
+
+| Variabile | Descrizione |
+|-----------|-------------|
+| `ENABLE_AGENT_LOGS` | Abilita log agenti AI |
+| `ENABLE_GUARDIAN_LOOP` | Abilita loop Guardian |
+| `ENABLE_MIO_CHAT` | Abilita chat MIO |
+| `ENABLE_SECRETS_SYNC` | Abilita sync secrets |
+| `ORCHESTRATOR_ENABLED` | Abilita orchestratore |
+
+**GITHUB REPO (1)**
+
+| Variabile | Descrizione |
+|-----------|-------------|
+| `BLUEPRINT_REPO` | Repo GitHub per blueprint sync |
+
+### Variabili d'Ambiente Frontend (Vercel)
+
+| Variabile | Descrizione |
+|-----------|-------------|
 | `VITE_FIREBASE_API_KEY` | Firebase API Key (client) |
 | `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Auth Domain (client) |
 | `VITE_FIREBASE_PROJECT_ID` | Firebase Project ID (client) |
@@ -1321,7 +1584,7 @@ fi
 
 ---
 
-## 📊 STATO ATTUALE SISTEMA
+## 📊 STATO ATTUALE SISTEMA (14 Febbraio 2026)
 
 ### Servizi Online ✅
 
@@ -1332,14 +1595,31 @@ fi
 | Database | Neon PostgreSQL | ✅ Online |
 | MIO Agent | /api/mihub/orchestrator | ✅ Funzionante |
 | Guardian | /api/guardian/* | ✅ Funzionante |
+| PM2 | mihub-backend v1.1.0 cluster | ✅ Online (pid 711337, 168MB RAM) |
 
-### Statistiche
+### Statistiche (Dati Reali 14 Feb 2026)
 
-- **Endpoint totali:** 153
-- **Mercati nel DB:** 2
-- **Log totali:** ~1500
-- **Agenti attivi:** 5 (MIO, GPT Dev, Manus, Abacus, Zapier)
-- **Secrets configurati:** 10/10
+- **Tabelle nel DB:** 149 (60 con dati, 89 predisposte)
+- **Righe totali:** 372.143
+- **Endpoint montati:** 70 (su 82 file route)
+- **Mercati nel DB:** 3
+- **Imprese:** 34
+- **Posteggi:** 583
+- **Concessioni:** 30
+- **POI culturali:** 1.127
+- **Fermate GTFS:** 23.930
+- **Log MIO Agent:** 326.543
+- **Agenti AI registrati:** 8
+- **Secrets configurati:** 10
+- **Variabili ambiente:** 31 (backend) + 6 (frontend)
+- **Indici DB:** 409
+- **Trigger DB:** 9
+- **Funzioni DB:** 37
+
+### Problemi Noti
+
+- **Connection timeout sporadici:** su `security.js` verso Neon pooler (Neon cold-start su free tier)
+- **PM2 restart count:** 21 restart (autoheal funzionante)
 
 ---
 
