@@ -342,7 +342,7 @@ export function MarketMapComponent({
           </LayersControl>
           
           {/* Componente per aggiornare font size dinamicamente con zoom */}
-          <ZoomFontUpdater minZoom={18} baseFontSize={8} scaleFactor={1.5} />
+          <ZoomFontUpdater minZoom={17} baseFontSize={8} scaleFactor={1.5} />
           
           {/* Controller per centrare mappa programmaticamente (cambio vista Italia/Mercato) */}
           <MapCenterController 

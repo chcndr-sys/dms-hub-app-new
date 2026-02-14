@@ -2481,7 +2481,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               refreshKey={mapRefreshKey}
               mapData={mapData as any}  // Passa sempre mapData così i posteggi sono visibili durante l'animazione
               center={viewMode === 'mercato' ? marketCenter : [42.5, 12.5] as [number, number]}
-              zoom={viewMode === 'mercato' ? 18 : 6}
+              zoom={viewMode === 'mercato' ? 17 : 6}
               height="100%"
               isSpuntaMode={isSpuntaMode}
               isOccupaMode={isOccupaMode}
@@ -2641,10 +2641,10 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                       
                       return (
                         <TableRow 
-                          key={spuntista.id}
-                          className={`cursor-pointer hover:bg-[#14b8a6]/10 border-[#14b8a6]/10 ${selectedSpuntistaForDetail?.id === spuntista.id ? 'bg-[#14b8a6]/20' : ''}`}
+                          key={spuntista.impresa_id || index}
+                          className={`cursor-pointer hover:bg-[#14b8a6]/10 border-[#14b8a6]/10 ${selectedSpuntistaForDetail?.impresa_id === spuntista.impresa_id ? 'bg-[#14b8a6]/20' : ''}`}
                           onClick={() => {
-                            if (selectedSpuntistaForDetail?.id === spuntista.id) {
+                            if (selectedSpuntistaForDetail?.impresa_id === spuntista.impresa_id) {
                               // Deseleziona
                               setSelectedSpuntistaForDetail(null);
                               setSidebarCompanyData(null);
@@ -3123,7 +3123,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               <div className="flex items-center justify-between p-4 border-b border-[#f59e0b]/20 bg-[#f59e0b]/5">
                 <div>
                   <h3 className="text-sm font-semibold text-[#e8fbff]">
-                    {selectedSpuntistaForDetail.impresa_name || selectedSpuntistaForDetail.ragione_sociale || 'Spuntista'}
+                    {selectedSpuntistaForDetail.impresa_nome || selectedSpuntistaForDetail.impresa_name || selectedSpuntistaForDetail.ragione_sociale || 'Spuntista'}
                   </h3>
                   <Badge className="bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/30 text-xs mt-1">
                     Spuntista
