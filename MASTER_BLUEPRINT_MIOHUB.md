@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 6.2.0 (Security Hardening + GDPR + WCAG + Dossier Tecnico + TCC Security Anti-Frode)
+> **Versione:** 6.3.0 (PII Crypto + GDPR Router + CI/CD + SBOM + Test Suite 36)
 > **Data:** 15 Febbraio 2026
 > **Autore:** Sistema documentato da Manus AI + Claude Code
 > **Stato:** PRODUZIONE
@@ -28,6 +28,26 @@
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 15 Febbraio 2026 — Sera (v6.3.0) — PII Crypto + GDPR Router + CI/CD + Test Suite
+- **[NEW] `server/lib/piiCrypto.ts`:** Utility cifratura AES-256-GCM per dati PII (CF, PIVA, IBAN) — encryptPII, decryptPII, hashPII (SHA-256 deterministic per ricerca), isEncrypted (detect legacy plaintext).
+- **[NEW] `server/gdprRouter.ts`:** Router tRPC GDPR con 5 procedure — exportMyData (Art. 20, raccoglie da 12 tabelle), deleteMyAccount (Art. 17, anonimizzazione completa + audit log + compliance certificate), retentionStatus, runRetentionCleanup (metriche 90gg, log 365gg, tentativi 90gg), myConsents.
+- **[NEW] `.github/workflows/ci.yml`:** CI/CD Pipeline GitHub Actions — TypeScript check, test, build, security audit + SBOM generation su master.
+- **[NEW] `sbom.json`:** Software Bill of Materials in formato CycloneDX JSON (5.4MB).
+- **[NEW] Test Suite completa (36 test, 7 file):**
+  - `server/lib/piiCrypto.test.ts` (9 test) — encrypt/decrypt roundtrip, random IV, legacy passthrough, special chars, hash determinism.
+  - `server/lib/tccSecurity.test.ts` (9 test) — QR signature HMAC-SHA256, GPS Haversine, plausibility check.
+  - `server/_core/trpc.test.ts` (4 test) — router/publicProcedure/protectedProcedure/adminProcedure exports.
+  - `server/_core/cookies.test.ts` (5 test) — cookie utilities.
+  - `server/_core/env.test.ts` (5 test) — env validation.
+  - `server/routers.test.ts` (1 test) — verifica tutti i router registrati incluso GDPR.
+  - `server/schema.test.ts` (3 test) — tabelle core DB, audit, product tracking.
+- **[UPDATE] `server/routers.ts`:** Registrato gdprRouter nel router principale.
+- **[UPDATE] `vitest.config.ts`:** Aggiunti path aliases @shared e @ per risolvere import nei test.
+- **[UPDATE] `client/src/components/NativeReportComponent.tsx`:** v6.3 — 7 nuovi item conformita (PII crypto, GDPR export/delete, retention, CI/CD, SBOM, test suite), router count 20, endpoints 124.
+- **[UPDATE] `DOSSIER_TECNICO_SISTEMA.md` + `.html` + `client/public/dossier/index.html`:** Aggiornati item roadmap 1.10, 3.6, 3.7, 4.9 a "Fatto", GDPR compliance aggiornata.
+- **[UPDATE] `MASTER_BLUEPRINT_MIOHUB.md`:** v6.3.0 con changelog completo sessione sera.
+- **Totale modifiche:** +1200 righe su 15 file (7 nuovi, 8 modificati).
 
 ### Sessione 15 Febbraio 2026 — Pomeriggio (v6.1.0) — TCC Security & Anti-Frode
 - **[NEW] Sistema Anti-Frode TCC completo:** 6 nuove tabelle DB, 2 nuovi enum, 1 nuovo router tRPC con 10 procedure, utility crittografiche HMAC-SHA256.

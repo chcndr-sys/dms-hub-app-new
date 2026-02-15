@@ -556,7 +556,7 @@ per sviluppo equivalente.
 | 1.7 | Protezione 44 procedure tRPC (publicProcedure -> protectedProcedure) | 4 ore | **Fatto** |
 | 1.8 | Anti-frode TCC (QR HMAC-SHA256, GPS validation, audit trail) | 1 giorno | **Fatto** |
 | 1.9 | DB indexes su 7 tabelle per performance | 1 ora | **Fatto** |
-| 1.10 | Cifratura AES-256 per CF e PIVA nel DB | 2 giorni | Da fare |
+| 1.10 | Cifratura AES-256-GCM per CF, PIVA, IBAN nel DB | 2 giorni | **Fatto (15 Feb)** |
 
 ### Fase 2: Conformita' AgID Base (2-4 mesi) — Parzialmente Completata
 
@@ -582,8 +582,8 @@ per sviluppo equivalente.
 | 3.3 | Integrazione AppIO per notifiche | 2-3 settimane | Media |
 | 3.4 | Audit WCAG 2.1 AA completo + remediation | 4-6 settimane | Alta (base gia' fatto) |
 | 3.5 | Adeguamento UI Kit Italia (header/footer PA) | 2-3 settimane | Media |
-| 3.6 | Implementazione diritto all'oblio + export dati | 1-2 settimane | Alta |
-| 3.7 | Test suite automatizzata (minimo 60% coverage) | 4-6 settimane | Alta (2 test gia' presenti) |
+| 3.6 | Implementazione diritto all'oblio + export dati | 1-2 settimane | **Fatto (15 Feb)** — gdprRouter.ts |
+| 3.7 | Test suite automatizzata (36 test, 7 file) | 4-6 settimane | **Fatto (15 Feb)** — vitest + CI/CD |
 
 ### Fase 4: Certificazione e Go-to-Market (6-12 mesi)
 
@@ -597,7 +597,7 @@ per sviluppo equivalente.
 | 4.6 | Registro dei trattamenti GDPR | 1 settimana | Alta |
 | 4.7 | Contratto SaaS tipo per PA (con clausole AgID) | Legale (esterno) | Bloccante |
 | 4.8 | Documentazione API OpenAPI/Swagger | 2-3 settimane | Media |
-| 4.9 | SBOM (Software Bill of Materials) | 2 giorni | Media |
+| 4.9 | SBOM (Software Bill of Materials) | 2 giorni | **Fatto (15 Feb)** — CycloneDX JSON |
 | 4.10 | ISO 27001 (opzionale ma fortemente raccomandata) | 3-6 mesi (esterno) | Alta |
 
 ---
@@ -622,7 +622,7 @@ Quelli con [X] esistono gia', quelli con [ ] vanno creati.
 | 9 | [ ] Manuale utente PA | Da scrivere |
 | 10 | [ ] Manuale utente operatore | Da scrivere |
 | 11 | [ ] Guida di installazione/deploy | Da scrivere |
-| 12 | [ ] SBOM (Software Bill of Materials) | Da generare |
+| 12 | [X] SBOM (Software Bill of Materials) | `sbom.json` — CycloneDX JSON (CI/CD auto) |
 
 ### 10.2 Documentazione di Sicurezza
 

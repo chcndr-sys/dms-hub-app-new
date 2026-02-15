@@ -478,8 +478,10 @@
               <tr><td>Informativa privacy</td><td><span class="badge badge-ok">Implementato (/privacy)</span></td></tr>
               <tr><td>Cookie banner</td><td><span class="badge badge-ok">Implementato (CookieConsentBanner)</span></td></tr>
               <tr><td>DPIA</td><td><span class="badge badge-missing">Da redigere</span></td></tr>
-              <tr><td>Diritto all'oblio</td><td><span class="badge badge-partial">Schema OK, manca UI cancellazione</span></td></tr>
-              <tr><td>Cifratura PII</td><td><span class="badge badge-partial">HTTPS + cookie sicuri, PII DB da cifrare</span></td></tr>
+              <tr><td>Diritto all'oblio (Art. 17)</td><td><span class="badge badge-ok">Implementato (gdprRouter.deleteMyAccount + anonimizzazione)</span></td></tr>
+              <tr><td>Portabilita' dati (Art. 20)</td><td><span class="badge badge-ok">Implementato (gdprRouter.exportMyData JSON)</span></td></tr>
+              <tr><td>Cifratura PII</td><td><span class="badge badge-ok">Implementato (AES-256-GCM per CF/PIVA/IBAN)</span></td></tr>
+              <tr><td>Data Retention Policy</td><td><span class="badge badge-ok">Implementato (cleanup automatico metriche 90gg, log 365gg)</span></td></tr>
               <tr><td>Privacy by design</td><td><span class="badge badge-ok">Implementato (geo anonimizzata, cookie consent, auth protetto)</span></td></tr>
             </tbody>
           </table>
@@ -556,7 +558,11 @@
               <tr><td>Graceful shutdown</td><td>2 ore</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
               <tr><td>Protezione procedure tRPC (44 procedure)</td><td>4 ore</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
               <tr><td>Anti-frode TCC (QR HMAC-SHA256, GPS, rate limit)</td><td>1 giorno</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
-              <tr><td>Cifratura AES-256 per CF/PIVA nel DB</td><td>2 giorni</td><td><span class="badge badge-missing">Da fare</span></td></tr>
+              <tr><td>Cifratura AES-256 per CF/PIVA nel DB</td><td>2 giorni</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
+              <tr><td>GDPR Router (export dati + oblio + retention)</td><td>1 giorno</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
+              <tr><td>CI/CD Pipeline (GitHub Actions)</td><td>4 ore</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
+              <tr><td>SBOM (CycloneDX JSON)</td><td>2 ore</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
+              <tr><td>Test Suite (36 test, 7 file)</td><td>1 giorno</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -582,7 +588,7 @@
               <tr><td>Adesione PDND + e-Service</td><td>4-6 settimane</td><td><span class="badge badge-blocked">Bloccante</span></td></tr>
               <tr><td>Integrazione ANPR via PDND</td><td>2-3 settimane</td><td><span class="badge badge-missing">Alta</span></td></tr>
               <tr><td>Audit WCAG 2.1 AA completo + remediation</td><td>4-6 settimane</td><td><span class="badge badge-partial">Base fatto, audit formale da fare</span></td></tr>
-              <tr><td>Test suite (60% coverage)</td><td>4-6 settimane</td><td><span class="badge badge-partial">2 test unitari, coverage da aumentare</span></td></tr>
+              <tr><td>Test suite (60% coverage)</td><td>4-6 settimane</td><td><span class="badge badge-partial">36 test su 7 file + CI/CD, coverage da aumentare</span></td></tr>
             </tbody>
           </table>
         </div>
