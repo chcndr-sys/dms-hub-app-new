@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, router } from "./_core/trpc";
+import { protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { 
   agentTasks, 
@@ -22,7 +22,7 @@ export const mihubRouter = router({
   // AGENT TASKS
   // ============================================================================
   
-  createTask: publicProcedure
+  createTask: protectedProcedure
     .input(z.object({
       agentAssigned: z.string().optional(),
       taskType: z.string(),
@@ -57,7 +57,7 @@ export const mihubRouter = router({
       return task;
     }),
 
-  getTasks: publicProcedure
+  getTasks: protectedProcedure
     .input(z.object({
       agentAssigned: z.string().optional(),
       status: z.string().optional(),
@@ -85,7 +85,7 @@ export const mihubRouter = router({
       }));
     }),
 
-  updateTaskStatus: publicProcedure
+  updateTaskStatus: protectedProcedure
     .input(z.object({
       taskId: z.string(),
       status: z.enum(["pending", "in_progress", "completed", "failed"]),
@@ -133,7 +133,7 @@ export const mihubRouter = router({
   // AGENT MESSAGES (Chat Multi-Agente)
   // ============================================================================
 
-  sendMessage: publicProcedure
+  sendMessage: protectedProcedure
     .input(z.object({
       conversationId: z.string(),
       sender: z.string(),
@@ -172,7 +172,7 @@ export const mihubRouter = router({
       return message;
     }),
 
-  getMessages: publicProcedure
+  getMessages: protectedProcedure
     .input(z.object({
       conversationId: z.string(),
       limit: z.number().default(100),
@@ -197,7 +197,7 @@ export const mihubRouter = router({
       }));
     }),
 
-  markMessageAsRead: publicProcedure
+  markMessageAsRead: protectedProcedure
     .input(z.object({
       messageId: z.string(),
       agent: z.string(),
@@ -232,7 +232,7 @@ export const mihubRouter = router({
   // DATA BAG (Storage Condiviso)
   // ============================================================================
 
-  setBagValue: publicProcedure
+  setBagValue: protectedProcedure
     .input(z.object({
       key: z.string(),
       value: z.any(),
@@ -271,7 +271,7 @@ export const mihubRouter = router({
       return { success: true };
     }),
 
-  getBagValue: publicProcedure
+  getBagValue: protectedProcedure
     .input(z.object({
       key: z.string(),
     }))
@@ -313,7 +313,7 @@ export const mihubRouter = router({
       };
     }),
 
-  deleteBagValue: publicProcedure
+  deleteBagValue: protectedProcedure
     .input(z.object({
       key: z.string(),
     }))
@@ -329,7 +329,7 @@ export const mihubRouter = router({
   // AGENT BRAIN (Memoria e Decisioni)
   // ============================================================================
 
-  saveBrainMemory: publicProcedure
+  saveBrainMemory: protectedProcedure
     .input(z.object({
       agent: z.string(),
       memoryType: z.enum(["decision", "context", "learning", "history"]),
@@ -354,7 +354,7 @@ export const mihubRouter = router({
       return { success: true };
     }),
 
-  getBrainMemory: publicProcedure
+  getBrainMemory: protectedProcedure
     .input(z.object({
       agent: z.string(),
       memoryType: z.string().optional(),

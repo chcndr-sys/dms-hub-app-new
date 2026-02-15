@@ -1,4 +1,4 @@
-import { publicProcedure, router } from "./_core/trpc";
+import { protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 
 /**
@@ -9,7 +9,7 @@ import * as db from "./db";
  */
 export const mioAgentRouter = router({
   // Test connessione database e diagnostica
-  testDatabase: publicProcedure.query(async () => {
+  testDatabase: protectedProcedure.query(async () => {
     try {
       const result = await db.testDatabaseConnection();
       return result;
@@ -20,7 +20,7 @@ export const mioAgentRouter = router({
   }),
 
   // Inizializza lo schema del database (crea tabella se non esiste)
-  initSchema: publicProcedure.mutation(async () => {
+  initSchema: protectedProcedure.mutation(async () => {
     try {
       const result = await db.initMioAgentLogsTable();
       return result;
@@ -31,7 +31,7 @@ export const mioAgentRouter = router({
   }),
 
   // Recupera tutti i log dal database
-  getLogs: publicProcedure.query(async () => {
+  getLogs: protectedProcedure.query(async () => {
     try {
       const logs = await db.getMioAgentLogs();
       
@@ -57,7 +57,7 @@ export const mioAgentRouter = router({
   }),
 
   // Crea un nuovo log nel database
-  createLog: publicProcedure
+  createLog: protectedProcedure
     .input((val: unknown) => {
       if (
         typeof val === "object" &&
@@ -103,7 +103,7 @@ export const mioAgentRouter = router({
     }),
 
   // Recupera un singolo log per ID
-  getLogById: publicProcedure
+  getLogById: protectedProcedure
     .input((val: unknown) => {
       if (typeof val === "number") return val;
       throw new Error("Input must be a number (log ID)");

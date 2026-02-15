@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import * as schema from "../drizzle/schema";
@@ -22,7 +22,7 @@ export const integrationsRouter = router({
   
   apiKeys: router({
     // Lista tutte le API keys
-    list: publicProcedure.query(async () => {
+    list: adminProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
       
@@ -30,7 +30,7 @@ export const integrationsRouter = router({
     }),
     
     // Crea nuova API key
-    create: publicProcedure
+    create: adminProcedure
       .input(z.object({
         name: z.string(),
         environment: z.enum(["production", "development", "staging"]).default("production"),
@@ -59,7 +59,7 @@ export const integrationsRouter = router({
       }),
     
     // Rigenera API key
-    regenerate: publicProcedure
+    regenerate: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -81,7 +81,7 @@ export const integrationsRouter = router({
       }),
     
     // Elimina API key
-    delete: publicProcedure
+    delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -93,7 +93,7 @@ export const integrationsRouter = router({
       }),
     
     // Aggiorna status API key
-    updateStatus: publicProcedure
+    updateStatus: adminProcedure
       .input(z.object({
         id: z.number(),
         status: z.enum(["active", "inactive", "revoked"]),
@@ -116,7 +116,7 @@ export const integrationsRouter = router({
   
   apiStats: router({
     // Statistiche oggi
-    today: publicProcedure.query(async () => {
+    today: adminProcedure.query(async () => {
       const db = await getDb();
       if (!db) return { requestsToday: 0, avgResponseTime: 0, successRate: 0, errors: 0 };
       
@@ -146,7 +146,7 @@ export const integrationsRouter = router({
     }),
     
     // Statistiche per endpoint (top 10)
-    byEndpoint: publicProcedure.query(async () => {
+    byEndpoint: adminProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
       
@@ -172,7 +172,7 @@ export const integrationsRouter = router({
   
   webhooks: router({
     // Lista webhook
-    list: publicProcedure.query(async () => {
+    list: adminProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
       
@@ -180,7 +180,7 @@ export const integrationsRouter = router({
     }),
     
     // Crea webhook
-    create: publicProcedure
+    create: adminProcedure
       .input(z.object({
         name: z.string(),
         url: z.string().url(),
@@ -206,7 +206,7 @@ export const integrationsRouter = router({
       }),
     
     // Elimina webhook
-    delete: publicProcedure
+    delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -218,7 +218,7 @@ export const integrationsRouter = router({
       }),
     
     // Test webhook (trigger manuale)
-    test: publicProcedure
+    test: adminProcedure
       .input(z.object({
         id: z.number(),
         testPayload: z.record(z.string(), z.any()).optional(),
@@ -280,7 +280,7 @@ export const integrationsRouter = router({
       }),
     
     // Log webhook
-    logs: publicProcedure
+    logs: adminProcedure
       .input(z.object({ webhookId: z.number(), limit: z.number().default(50) }))
       .query(async ({ input }) => {
         const db = await getDb();
@@ -300,7 +300,7 @@ export const integrationsRouter = router({
   
   connections: router({
     // Lista connessioni
-    list: publicProcedure.query(async () => {
+    list: adminProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
       
@@ -308,7 +308,7 @@ export const integrationsRouter = router({
     }),
     
     // Aggiorna connessione
-    update: publicProcedure
+    update: adminProcedure
       .input(z.object({
         id: z.number(),
         config: z.record(z.string(), z.any()),

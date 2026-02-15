@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "../shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { dmsHubRouter } from "./dmsHubRouter";
 import { integrationsRouter } from "./integrationsRouter";
 import { mioAgentRouter } from "./mioAgentRouter";
@@ -25,71 +25,71 @@ export const appRouter = router({
     }),
   }),
 
-  // Dashboard PA Analytics
+  // Dashboard PA Analytics (richiede autenticazione)
   analytics: router({
-    overview: publicProcedure.query(async () => {
+    overview: protectedProcedure.query(async () => {
       const { getOverviewStats } = await import("./db");
       return await getOverviewStats();
     }),
-    markets: publicProcedure.query(async () => {
+    markets: protectedProcedure.query(async () => {
       const { getMarkets } = await import("./db");
       return await getMarkets();
     }),
-    shops: publicProcedure.query(async () => {
+    shops: protectedProcedure.query(async () => {
       const { getShops } = await import("./db");
       return await getShops();
     }),
-    transactions: publicProcedure.query(async () => {
+    transactions: protectedProcedure.query(async () => {
       const { getTransactions } = await import("./db");
       return await getTransactions();
     }),
-    checkins: publicProcedure.query(async () => {
+    checkins: protectedProcedure.query(async () => {
       const { getCheckins } = await import("./db");
       return await getCheckins();
     }),
-    products: publicProcedure.query(async () => {
+    products: protectedProcedure.query(async () => {
       const { getProducts } = await import("./db");
       return await getProducts();
     }),
-    productTracking: publicProcedure.query(async () => {
+    productTracking: protectedProcedure.query(async () => {
       const { getProductTracking } = await import("./db");
       return await getProductTracking();
     }),
   }),
 
-  // Carbon Credits Management
+  // Carbon Credits Management (richiede autenticazione)
   carbonCredits: router({
-    config: publicProcedure.query(async () => {
+    config: protectedProcedure.query(async () => {
       const { getCarbonCreditsConfig } = await import("./db");
       return await getCarbonCreditsConfig();
     }),
-    fundTransactions: publicProcedure.query(async () => {
+    fundTransactions: protectedProcedure.query(async () => {
       const { getFundTransactions } = await import("./db");
       return await getFundTransactions();
     }),
-    reimbursements: publicProcedure.query(async () => {
+    reimbursements: protectedProcedure.query(async () => {
       const { getReimbursements } = await import("./db");
       return await getReimbursements();
     }),
   }),
 
-  // System Logs
+  // System Logs (richiede admin)
   logs: router({
-    system: publicProcedure.query(async () => {
+    system: adminProcedure.query(async () => {
       const { getSystemLogs } = await import("./db");
       return await getSystemLogs();
     }),
   }),
 
-  // User Analytics
+  // User Analytics (richiede autenticazione)
   users: router({
-    analytics: publicProcedure.query(async () => {
+    analytics: protectedProcedure.query(async () => {
       const { getUserAnalytics } = await import("./db");
       return await getUserAnalytics();
     }),
   }),
 
-  // Sustainability Metrics
+  // Sustainability Metrics (dati pubblici)
   sustainability: router({
     metrics: publicProcedure.query(async () => {
       const { getSustainabilityMetrics } = await import("./db");
@@ -97,25 +97,25 @@ export const appRouter = router({
     }),
   }),
 
-  // Business Management
+  // Business Management (richiede autenticazione)
   businesses: router({
-    list: publicProcedure.query(async () => {
+    list: protectedProcedure.query(async () => {
       const { getBusinessAnalytics } = await import("./db");
       return await getBusinessAnalytics();
     }),
   }),
 
-  // Inspections & Violations
+  // Inspections & Violations (richiede autenticazione)
   inspections: router({
-    list: publicProcedure.query(async () => {
+    list: protectedProcedure.query(async () => {
       const { getInspections } = await import("./db");
       return await getInspections();
     }),
   }),
 
-  // Notifications
+  // Notifications (richiede autenticazione)
   notifications: router({
-    list: publicProcedure.query(async () => {
+    list: protectedProcedure.query(async () => {
       const { getNotifications } = await import("./db");
       return await getNotifications();
     }),
@@ -151,8 +151,8 @@ export const appRouter = router({
         return await getTPERStops();
       }),
       
-      // GET /api/integrations/tper/sync - Sincronizza dati TPER
-      sync: publicProcedure.mutation(async () => {
+      // GET /api/integrations/tper/sync - Sincronizza dati TPER (solo admin)
+      sync: adminProcedure.mutation(async () => {
         try {
           const { syncTPERData, updateTPERRealtimeData } = await import("./services/tperService");
           const { getDb } = await import("./db");

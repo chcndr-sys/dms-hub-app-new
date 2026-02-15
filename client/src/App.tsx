@@ -46,6 +46,10 @@ import NuovoVerbalePage from "./pages/NuovoVerbalePage";
 // v3.85.3 - Wallet mobile pages
 import WalletPaga from "./pages/WalletPaga";
 import WalletStorico from "./pages/WalletStorico";
+// GDPR & Compliance pages
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import AccessibilityPage from "./pages/AccessibilityPage";
+import CookieConsentBanner from "./components/CookieConsentBanner";
 
 function Router() {
   return (
@@ -86,6 +90,9 @@ function Router() {
       <Route path="/presentazione" component={PresentazionePage} />
       {/* v3.80.0 - Verbali PM Professionali */}
       <Route path="/pm/nuovo-verbale" component={NuovoVerbalePage} />
+      {/* GDPR & Compliance */}
+      <Route path="/privacy" component={PrivacyPolicyPage} />
+      <Route path="/accessibilita" component={AccessibilityPage} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -108,6 +115,7 @@ function App() {
                     <Toaster />
                     <Router />
                     <ChatWidget userRole="client" />
+                    <CookieConsentBanner />
                   </TooltipProvider>
                 </TransportProvider>
               </PermissionsProvider>

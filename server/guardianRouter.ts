@@ -10,7 +10,7 @@
  */
 
 import { z } from 'zod';
-import { publicProcedure, router } from './_core/trpc';
+import { adminProcedure, router } from './_core/trpc';
 import { 
   getAPIInventory, 
   getAPIsByCategory, 
@@ -33,7 +33,7 @@ export const guardianRouter = router({
   // ============================================================================
   // GET /api/guardian/integrations - Inventario API completo
   // ============================================================================
-  integrations: publicProcedure.query(async () => {
+  integrations: adminProcedure.query(async () => {
     const inventory = getAPIInventory();
     const stats = getAPIStats() as any;
     
@@ -65,7 +65,7 @@ export const guardianRouter = router({
   // ============================================================================
   // GET /api/guardian/logs - Log centralizzati del sistema
   // ============================================================================
-  logs: publicProcedure
+  logs: adminProcedure
     .input(z.object({
       level: z.enum(['info', 'warn', 'error', 'debug']).optional(),
       app: z.enum(['DMS_HUB', 'MIHUB', 'MIO_AGENT', 'GUARDIAN']).optional(),
@@ -86,7 +86,7 @@ export const guardianRouter = router({
   // ============================================================================
   // POST /api/guardian/debug/testEndpoint - Proxy per testare endpoint API
   // ============================================================================
-  testEndpoint: publicProcedure
+  testEndpoint: adminProcedure
     .input(z.object({
       endpoint: z.string(),
       method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']),
@@ -171,7 +171,7 @@ export const guardianRouter = router({
   // ============================================================================
   // POST /api/guardian/logApiCall - Logga una chiamata API
   // ============================================================================
-  logApiCall: publicProcedure
+  logApiCall: adminProcedure
     .input(z.object({
       endpoint: z.string(),
       method: z.string(),
@@ -202,7 +202,7 @@ export const guardianRouter = router({
   // ============================================================================
   // POST /api/guardian/logs/init - Inizializza log di demo
   // ============================================================================
-  initDemoLogs: publicProcedure.mutation(async () => {
+  initDemoLogs: adminProcedure.mutation(async () => {
     initDemoLogs();
     
     return {
@@ -213,7 +213,7 @@ export const guardianRouter = router({
   // ============================================================================
   // GET /api/guardian/stats - Statistiche complete del sistema
   // ============================================================================
-  stats: publicProcedure.query(async () => {
+  stats: adminProcedure.query(async () => {
     const apiStats = getAPIStats();
     const logStats = getLogStats();
     
