@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DMS Hub - Dossier Tecnico di Sistema</title>
+<style>
+  :root {
+    --bg-deep: #0b1220;
+    --bg-card: #1a2332;
+    --bg-hover: #1e2d40;
+    --border: #1e293b;
+    --border-light: #2d3f55;
+    --teal: #14b8a6;
+    --teal-dark: #0d9488;
+    --cyan: #06b6d4;
+    --purple: #a855f7;
+    --amber: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --text: #e8fbff;
+    --text-dim: rgba(232,251,255,.6);
+    --text-muted: rgba(232,251,255,.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif; background: var(--bg-deep); color: var(--text); line-height: 1.6; }
+
+  /* LAYOUT */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 280px; background: var(--bg-card); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto; z-index: 50; display: flex; flex-direction: column; }
+  .main { margin-left: 280px; flex: 1; min-height: 100vh; }
+  .content { max-width: 1100px; margin: 0 auto; padding: 40px 48px 80px; }
+
+  /* SIDEBAR */
+  .sidebar-header { padding: 24px 20px; border-bottom: 1px solid var(--border); }
+  .sidebar-header h1 { font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .sidebar-header .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 8px var(--teal); }
+  .sidebar-header p { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .sidebar-nav { flex: 1; padding: 12px; }
+  .nav-section { margin-bottom: 16px; }
+  .nav-section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); padding: 8px 12px 4px; font-weight: 600; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: all .15s; font-size: 13px; color: var(--text-dim); font-weight: 500; }
+  .nav-item:hover { background: rgba(232,251,255,.05); color: var(--text); }
+  .nav-item.active { background: rgba(20,184,166,.1); color: var(--teal); }
+  .nav-item .icon { width: 18px; height: 18px; opacity: .6; }
+  .nav-item.active .icon { opacity: 1; }
+  .nav-item .badge-count { margin-left: auto; font-size: 10px; background: rgba(232,251,255,.08); padding: 2px 7px; border-radius: 10px; }
+  .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+  .btn-print { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--teal); background: transparent; color: var(--teal); font-weight: 600; font-size: 13px; cursor: pointer; transition: all .15s; }
+  .btn-print:hover { background: rgba(20,184,166,.1); }
+
+  /* SECTIONS */
+  .section { display: none; animation: fadeIn .3s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-header { margin-bottom: 32px; }
+  .section-header h2 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+  .section-header h2 .accent { color: var(--teal); }
+  .section-header p { color: var(--text-dim); font-size: 15px; }
+
+  /* CARDS */
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; transition: border-color .2s; }
+  .card:hover { border-color: var(--border-light); }
+  .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+
+  /* STAT CARDS */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+  .stat .value { font-size: 28px; font-weight: 700; color: var(--teal); display: block; }
+  .stat .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+
+  /* TABLES */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { background: rgba(20,184,166,.1); color: var(--teal); text-align: left; padding: 10px 14px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+  thead th:first-child { border-radius: 8px 0 0 0; }
+  thead th:last-child { border-radius: 0 8px 0 0; }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid rgba(30,41,59,.6); }
+  tbody tr:hover { background: rgba(232,251,255,.02); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-ok { background: rgba(16,185,129,.15); color: #34d399; }
+  .badge-partial { background: rgba(245,158,11,.15); color: #fbbf24; }
+  .badge-missing { background: rgba(239,68,68,.15); color: #f87171; }
+  .badge-critical { background: rgba(239,68,68,.3); color: #fca5a5; }
+  .badge-blocked { background: rgba(239,68,68,.25); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+
+  /* SCORE BAR */
+  .score-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+  .score-label { width: 160px; font-size: 13px; color: var(--text-dim); }
+  .score-bar { flex: 1; height: 8px; background: rgba(232,251,255,.06); border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
+  .score-value { width: 40px; text-align: right; font-size: 13px; font-weight: 600; }
+
+  /* CHECKLIST */
+  .checklist { list-style: none; }
+  .checklist li { padding: 8px 0; border-bottom: 1px solid rgba(30,41,59,.4); display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .checklist li:last-child { border-bottom: none; }
+  .check-ok { color: #34d399; font-size: 16px; }
+  .check-no { color: #f87171; font-size: 16px; }
+
+  /* CALLOUT */
+  .callout { border-left: 3px solid var(--teal); background: rgba(20,184,166,.05); padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; }
+  .callout.warning { border-left-color: var(--amber); background: rgba(245,158,11,.05); }
+  .callout.danger { border-left-color: var(--red); background: rgba(239,68,68,.05); }
+  .callout strong { color: var(--teal); }
+  .callout.warning strong { color: var(--amber); }
+  .callout.danger strong { color: var(--red); }
+
+  /* SUMMARY BOX */
+  .summary-box { border: 1px solid var(--teal); border-radius: 12px; padding: 20px 24px; background: rgba(20,184,166,.04); margin: 20px 0; }
+
+  /* PRE */
+  pre { background: rgba(0,0,0,.3); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'SF Mono', 'Menlo', monospace; font-size: 11px; overflow-x: auto; line-height: 1.5; color: var(--text-dim); margin: 12px 0; }
+
+  /* PILLS */
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .pill { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); color: var(--text-dim); cursor: default; }
+  .pill.teal { border-color: var(--teal); color: var(--teal); background: rgba(20,184,166,.08); }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    .sidebar { width: 100%; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
+    .main { margin-left: 0; }
+    .content { padding: 24px 16px 60px; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .sidebar-nav { display: flex; overflow-x: auto; padding: 8px; gap: 4px; }
+    .nav-section { margin: 0; display: contents; }
+    .nav-section-title { display: none; }
+    .nav-item { white-space: nowrap; font-size: 12px; padding: 8px 12px; }
+    .app { flex-direction: column; }
+  }
+
+  /* PRINT */
+  @media print {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    body { background: #fff; color: #111; }
+    .card { border: 1px solid #ddd; }
+    .badge-ok { background: #d1fae5; color: #065f46; }
+    thead th { background: #f0fdfa; color: #0d9488; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1><span class="dot"></span> Dossier Tecnico</h1>
+      <p>DMS Hub v1.0 &middot; Febbraio 2026</p>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Panoramica</div>
+        <div class="nav-item active" onclick="showSection('summary')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Executive Summary
+        </div>
+        <div class="nav-item" onclick="showSection('scheda')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Scheda Prodotto
+        </div>
+        <div class="nav-item" onclick="showSection('architettura')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6" y2="6"/><line x1="6" y1="18" x2="6" y2="18"/></svg>
+          Architettura
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Analisi</div>
+        <div class="nav-item" onclick="showSection('moduli')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Moduli <span class="badge-count">24</span>
+        </div>
+        <div class="nav-item" onclick="showSection('integrazioni')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Integrazioni PA
+        </div>
+        <div class="nav-item" onclick="showSection('sicurezza')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Sicurezza <span class="badge-count">5.7</span>
+        </div>
+        <div class="nav-item" onclick="showSection('conformita')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Conformita'
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Valutazione</div>
+        <div class="nav-item" onclick="showSection('valutazione')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Valutazione Economica
+        </div>
+        <div class="nav-item" onclick="showSection('roadmap')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Roadmap
+        </div>
+        <div class="nav-item" onclick="showSection('biblioteca')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Biblioteca <span class="badge-count">42</span>
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-print" onclick="window.print()">Esporta PDF</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="content">
+
+      <!-- ===== SUMMARY ===== -->
+      <div id="section-summary" class="section active">
+        <div class="section-header">
+          <h2><span class="accent">Executive</span> Summary</h2>
+          <p>Panoramica del sistema DMS Hub per valutazione, vendita e certificazione.</p>
+        </div>
+        <div class="stat-grid">
+          <div class="stat"><span class="value">218K</span><span class="label">Righe Totali</span></div>
+          <div class="stat"><span class="value">114K</span><span class="label">Codice Attivo</span></div>
+          <div class="stat"><span class="value">69</span><span class="label">Tabelle DB</span></div>
+          <div class="stat"><span class="value">~140</span><span class="label">API tRPC</span></div>
+          <div class="stat"><span class="value">33</span><span class="label">Pagine</span></div>
+          <div class="stat"><span class="value">139</span><span class="label">Componenti</span></div>
+          <div class="stat"><span class="value">8K</span><span class="label">Target Mercati</span></div>
+          <div class="stat"><span class="value">42</span><span class="label">PDF Strategici</span></div>
+        </div>
+        <div class="card">
+          <h3>Proposta di Valore</h3>
+          <div class="card-grid">
+            <div style="display:flex;align-items:start;gap:12px"><div style="width:36px;height:36px;border-radius:8px;background:rgba(20,184,166,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--teal)">&#9733;</div><div><strong style="color:var(--text)">Unica App</strong><br><span style="font-size:13px;color:var(--text-dim)">Una piattaforma per PA, operatori e cittadini con RBAC granulare</span></div></div>
+            <div style="display:flex;align-items:start;gap:12px"><div style="width:36px;height:36px;border-radius:8px;background:rgba(6,182,212,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--cyan)">&#8364;</div><div><strong style="color:var(--text)">PagoPA Nativo</strong><br><span style="font-size:13px;color:var(--text-dim)">Pagamenti pubblici integrati nel flusso operativo via E-FIL</span></div></div>
+            <div style="display:flex;align-items:start;gap:12px"><div style="width:36px;height:36px;border-radius:8px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--green)">&#9775;</div><div><strong style="color:var(--text)">Gamification TCC</strong><br><span style="font-size:13px;color:var(--text-dim)">Token Carbon Credit per sostenibilita' e engagement cittadini</span></div></div>
+            <div style="display:flex;align-items:start;gap:12px"><div style="width:36px;height:36px;border-radius:8px;background:rgba(168,85,247,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--purple)">&#9881;</div><div><strong style="color:var(--text)">Multi-Agente AI</strong><br><span style="font-size:13px;color:var(--text-dim)">MIO/Manus/Abacus/GPT-Dev per assistenza e automazione</span></div></div>
+            <div style="display:flex;align-items:start;gap:12px"><div style="width:36px;height:36px;border-radius:8px;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--amber)">&#9672;</div><div><strong style="color:var(--text)">Gemello Digitale</strong><br><span style="font-size:13px;color:var(--text-dim)">Mappe GIS interattive con 8 componenti di visualizzazione</span></div></div>
+            <div style="display:flex;align-items:start;gap:12px"><div style="width:36px;height:36px;border-radius:8px;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--red)">&#9951;</div><div><strong style="color:var(--text)">Nessun Competitor</strong><br><span style="font-size:13px;color:var(--text-dim)">Unica piattaforma SaaS end-to-end per mercati ambulanti in Italia</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SCHEDA ===== -->
+      <div id="section-scheda" class="section">
+        <div class="section-header">
+          <h2><span class="accent">Scheda</span> Identificativa</h2>
+          <p>Identita' del prodotto e posizionamento di mercato.</p>
+        </div>
+        <div class="card">
+          <table>
+            <tbody>
+              <tr><td style="width:40%;color:var(--text-muted)"><strong>Nome prodotto</strong></td><td>DMS Hub (Digital Market System Hub)</td></tr>
+              <tr><td style="color:var(--text-muted)"><strong>Tipo</strong></td><td>SaaS / Piattaforma Web Multi-Tenant</td></tr>
+              <tr><td style="color:var(--text-muted)"><strong>Dominio</strong></td><td>PA locale - Commercio su Aree Pubbliche</td></tr>
+              <tr><td style="color:var(--text-muted)"><strong>Normativa</strong></td><td>D.Lgs. 114/98, L. 689/81, CAD (D.Lgs. 82/2005)</td></tr>
+              <tr><td style="color:var(--text-muted)"><strong>Utenti target</strong></td><td>Comuni italiani, operatori ambulanti, cittadini</td></tr>
+              <tr><td style="color:var(--text-muted)"><strong>Mercato</strong></td><td>~8.000 mercati ambulanti in Italia</td></tr>
+              <tr><td style="color:var(--text-muted)"><strong>Licensing</strong></td><td>SaaS per comune</td></tr>
+              <tr><td style="color:var(--text-muted)"><strong>Stato</strong></td><td><span class="badge badge-partial">Pilota Grosseto</span></td></tr>
+              <tr><td style="color:var(--text-muted)"><strong>Inizio sviluppo</strong></td><td>2024</td></tr>
+              <tr><td style="color:var(--text-muted)"><strong>Infrastruttura</strong></td><td>~20-50 EUR/mese</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Stack Tecnologico</h3>
+          <div class="pills">
+            <span class="pill teal">React 19</span><span class="pill teal">Vite 7</span><span class="pill teal">Tailwind 4</span>
+            <span class="pill teal">tRPC 11</span><span class="pill teal">Drizzle 0.44</span><span class="pill teal">PostgreSQL</span>
+            <span class="pill">Wouter</span><span class="pill">shadcn/ui</span><span class="pill">Leaflet</span>
+            <span class="pill">Express 4</span><span class="pill">Firebase Auth</span><span class="pill">Node 18+</span>
+          </div>
+          <div class="callout"><strong>Tutte le dipendenze core sono open source</strong> (MIT/Apache/BSD). Nessun lock-in proprietario.</div>
+        </div>
+      </div>
+
+      <!-- ===== ARCHITETTURA ===== -->
+      <div id="section-architettura" class="section">
+        <div class="section-header">
+          <h2><span class="accent">Architettura</span> di Sistema</h2>
+          <p>Diagramma e infrastruttura di deploy.</p>
+        </div>
+        <div class="card">
+          <h3>Diagramma</h3>
+          <pre>
+                     +-------------------------+
+                     |      UTENTE FINALE      |
+                     |  (Browser / Mobile PWA) |
+                     +-----------+-------------+
+                                 | HTTPS
+              +------------------+------------------+
+              |                  |                   |
+    +---------+---------+ +------+------+ +---------+---------+
+    |   VERCEL (CDN)    | |  FIREBASE   | |  HETZNER VPS      |
+    |   Frontend React  | |  Auth       | |  Backend tRPC     |
+    |   ~114K LOC       | |  Google     | |  Express + PM2    |
+    +-------------------+ |  Apple      | |  ~11K LOC         |
+                          |  Email/Pwd  | +--------+----------+
+                          |  (SPID*)    |          |
+                          +------+------+          |
+                                 |                  |
+              +------------------+------------------+
+              |                  |                   |
+    +---------+---------+ +------+------+ +---------+---------+
+    |   NEON DB (EU)    | |  E-FIL      | |  ORCHESTRATORE    |
+    |   PostgreSQL      | |  PagoPA     | |  Multi-Agente     |
+    |   69 tabelle      | |  SOAP API   | |  MIO/Manus/GPT    |
+    +-------------------+ +-------------+ +-------------------+
+
+  * SPID via intermediario OAuth, NON integrazione diretta AgID</pre>
+        </div>
+        <div class="card">
+          <h3>Infrastruttura di Deploy</h3>
+          <table>
+            <thead><tr><th>Componente</th><th>Provider</th><th>Localita'</th><th>SLA</th><th>Costo</th></tr></thead>
+            <tbody>
+              <tr><td>Frontend</td><td>Vercel</td><td>Edge globale</td><td>99.99%</td><td>Free / Pro</td></tr>
+              <tr><td>Backend</td><td>Hetzner VPS</td><td>Germania (EU)</td><td>99.9%</td><td>~20 EUR/mese</td></tr>
+              <tr><td>Database</td><td>Neon PostgreSQL</td><td>EU</td><td>99.95%</td><td>Free / Pro</td></tr>
+              <tr><td>Auth</td><td>Firebase</td><td>Google Cloud</td><td>99.95%</td><td>Free tier</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== MODULI ===== -->
+      <div id="section-moduli" class="section">
+        <div class="section-header">
+          <h2><span class="accent">24 Moduli</span> del Sistema</h2>
+          <p>Inventario funzionale completo con stato e dimensioni.</p>
+        </div>
+        <div class="card" style="overflow-x:auto">
+          <table>
+            <thead><tr><th>#</th><th>Modulo</th><th>Stato</th><th>LOC</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Autenticazione (Firebase + OAuth)</td><td><span class="badge badge-ok">Produzione</span></td><td>~2.500</td></tr>
+              <tr><td>2</td><td>RBAC e Sicurezza (11 tabelle)</td><td><span class="badge badge-ok">Produzione</span></td><td>~3.000</td></tr>
+              <tr><td>3</td><td>Gestione Mercati + Mappa GIS</td><td><span class="badge badge-ok">Produzione</span></td><td>~12.000</td></tr>
+              <tr><td>4</td><td>Posteggi e Stati Real-Time</td><td><span class="badge badge-ok">Produzione</span></td><td>~3.000</td></tr>
+              <tr><td>5</td><td>Operatori/Imprese (CRUD + Docs)</td><td><span class="badge badge-ok">Produzione</span></td><td>~5.000</td></tr>
+              <tr><td>6</td><td>Concessioni (Ciclo di vita)</td><td><span class="badge badge-ok">Produzione</span></td><td>~4.000</td></tr>
+              <tr><td>7</td><td>Prenotazioni (30min scadenza)</td><td><span class="badge badge-ok">Produzione</span></td><td>~1.500</td></tr>
+              <tr><td>8</td><td>Presenze (Check-in/out GPS)</td><td><span class="badge badge-ok">Produzione</span></td><td>~2.000</td></tr>
+              <tr><td>9</td><td>Wallet Operatori (Borsellino)</td><td><span class="badge badge-ok">Produzione</span></td><td>~4.000</td></tr>
+              <tr><td>10</td><td>PagoPA / E-FIL (5 SOAP WS)</td><td><span class="badge badge-partial">Mock attivo</span></td><td>~1.500</td></tr>
+              <tr><td>11</td><td>Controlli e Sanzioni</td><td><span class="badge badge-ok">Produzione</span></td><td>~3.500</td></tr>
+              <tr><td>12</td><td>SUAP (Pratiche + SCIA)</td><td><span class="badge badge-partial">Parziale</span></td><td>~4.000</td></tr>
+              <tr><td>13</td><td>HUB Urbani (Locations + Negozi)</td><td><span class="badge badge-ok">Produzione</span></td><td>~3.000</td></tr>
+              <tr><td>14</td><td>Gamification TCC</td><td><span class="badge badge-ok">Produzione</span></td><td>~3.000</td></tr>
+              <tr><td>15</td><td>Segnalazioni Civiche</td><td><span class="badge badge-ok">Produzione</span></td><td>~2.500</td></tr>
+              <tr><td>16</td><td>Mobilita' Sostenibile</td><td><span class="badge badge-ok">Produzione</span></td><td>~2.000</td></tr>
+              <tr><td>17</td><td>Mappe GIS (8 componenti)</td><td><span class="badge badge-ok">Produzione</span></td><td>~6.000</td></tr>
+              <tr><td>18</td><td>Multi-Agente AI (MIO)</td><td><span class="badge badge-ok">Produzione</span></td><td>~5.000</td></tr>
+              <tr><td>19</td><td>Monitoring (Guardian)</td><td><span class="badge badge-ok">Produzione</span></td><td>~3.000</td></tr>
+              <tr><td>20</td><td>Integrazioni (API Keys, Webhooks)</td><td><span class="badge badge-ok">Produzione</span></td><td>~3.000</td></tr>
+              <tr><td>21</td><td>Dashboard PA (14 tab)</td><td><span class="badge badge-ok">Produzione</span></td><td>~7.200</td></tr>
+              <tr><td>22</td><td>Interfacce Operatore</td><td><span class="badge badge-ok">Produzione</span></td><td>~5.000</td></tr>
+              <tr><td>23</td><td>Interfacce Cittadino</td><td><span class="badge badge-ok">Produzione</span></td><td>~4.000</td></tr>
+              <tr><td>24</td><td>Trasporto TPER Bologna</td><td><span class="badge badge-ok">Produzione</span></td><td>~1.500</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== INTEGRAZIONI PA ===== -->
+      <div id="section-integrazioni" class="section">
+        <div class="section-header">
+          <h2><span class="accent">Integrazioni</span> PA</h2>
+          <p>Stato reale delle integrazioni con i sistemi della Pubblica Amministrazione.</p>
+        </div>
+        <div class="card">
+          <h3>PagoPA (Pagamenti Pubblici)</h3>
+          <table>
+            <thead><tr><th>Aspetto</th><th>Stato</th><th>Dettaglio</th></tr></thead>
+            <tbody>
+              <tr><td>WSPayment</td><td><span class="badge badge-ok">Implementato</span></td><td>Pagamento spontaneo + redirect checkout</td></tr>
+              <tr><td>WSFeed</td><td><span class="badge badge-ok">Implementato</span></td><td>Creazione posizioni debitorie</td></tr>
+              <tr><td>WSDeliver</td><td><span class="badge badge-ok">Implementato</span></td><td>Verifica + riconciliazione giornaliera</td></tr>
+              <tr><td>WSGeneratorPdf</td><td><span class="badge badge-ok">Implementato</span></td><td>PDF avvisi e quietanze</td></tr>
+              <tr><td>Generazione IUV</td><td><span class="badge badge-ok">Implementato</span></td><td>Algoritmo custom</td></tr>
+              <tr><td>Mock mode</td><td><span class="badge badge-partial">Attivo</span></td><td>Simulazione senza credenziali</td></tr>
+              <tr><td>Produzione</td><td><span class="badge badge-missing">Da attivare</span></td><td>Credenziali E-FIL richieste</td></tr>
+              <tr><td>Webhook RT</td><td><span class="badge badge-missing">Da implementare</span></td><td>Conferma asincrona pagamento</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>SPID / CIE / CNS</h3>
+          <table>
+            <thead><tr><th>Sistema</th><th>Stato</th><th>Note</th></tr></thead>
+            <tbody>
+              <tr><td>SPID</td><td><span class="badge badge-partial">Via intermediario</span></td><td>OAuth, NON integrazione diretta AgID</td></tr>
+              <tr><td>CIE</td><td><span class="badge badge-missing">Non implementato</span></td><td>Serve integrazione CIE id</td></tr>
+              <tr><td>CNS</td><td><span class="badge badge-missing">Non implementato</span></td><td>Serve supporto smart card</td></tr>
+              <tr><td>Firebase Google</td><td><span class="badge badge-ok">Attivo</span></td><td>OAuth2 completo</td></tr>
+              <tr><td>Firebase Apple</td><td><span class="badge badge-ok">Attivo</span></td><td>OAuth2 completo</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Altre Integrazioni PA</h3>
+          <div class="callout danger"><strong>PDND non implementata</strong> &mdash; Obbligatoria per PA dal CAD Art. 50-ter</div>
+          <table>
+            <thead><tr><th>Sistema</th><th>Stato</th><th>Cosa serve</th></tr></thead>
+            <tbody>
+              <tr><td>PDND</td><td><span class="badge badge-missing">Non implementata</span></td><td>Adesione + e-Service + Voucher OAuth</td></tr>
+              <tr><td>ANPR</td><td><span class="badge badge-missing">Non implementata</span></td><td>Accesso via PDND, verifica CF</td></tr>
+              <tr><td>AppIO</td><td><span class="badge badge-missing">Non implementata</span></td><td>Registrazione servizio + API key</td></tr>
+              <tr><td>SUAP</td><td><span class="badge badge-partial">Parziale</span></td><td>Frontend OK, backend esterno</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== SICUREZZA ===== -->
+      <div id="section-sicurezza" class="section">
+        <div class="section-header">
+          <h2><span class="accent">Sicurezza</span> e Maturita'</h2>
+          <p>Analisi dei livelli di sicurezza e vulnerabilita' identificate.</p>
+        </div>
+        <div class="card">
+          <h3>Matrice di Sicurezza &mdash; Media 5.7/10</h3>
+          <div class="score-row"><span class="score-label">Autenticazione</span><div class="score-bar"><div class="score-fill" style="width:80%;background:var(--green)"></div></div><span class="score-value" style="color:var(--green)">8/10</span></div>
+          <div class="score-row"><span class="score-label">RBAC</span><div class="score-bar"><div class="score-fill" style="width:70%;background:var(--green)"></div></div><span class="score-value" style="color:var(--green)">7/10</span></div>
+          <div class="score-row"><span class="score-label">Validazione input</span><div class="score-bar"><div class="score-fill" style="width:80%;background:var(--green)"></div></div><span class="score-value" style="color:var(--green)">8/10</span></div>
+          <div class="score-row"><span class="score-label">SQL injection</span><div class="score-bar"><div class="score-fill" style="width:90%;background:#059669"></div></div><span class="score-value" style="color:#059669">9/10</span></div>
+          <div class="score-row"><span class="score-label">Protezione XSS</span><div class="score-bar"><div class="score-fill" style="width:70%;background:var(--green)"></div></div><span class="score-value" style="color:var(--green)">7/10</span></div>
+          <div class="score-row"><span class="score-label">Logging e audit</span><div class="score-bar"><div class="score-fill" style="width:80%;background:var(--green)"></div></div><span class="score-value" style="color:var(--green)">8/10</span></div>
+          <div class="score-row"><span class="score-label">Rate limiting</span><div class="score-bar"><div class="score-fill" style="width:10%;background:var(--red)"></div></div><span class="score-value" style="color:var(--red)">1/10</span></div>
+          <div class="score-row"><span class="score-label">Security headers</span><div class="score-bar"><div class="score-fill" style="width:3%;background:var(--red)"></div></div><span class="score-value" style="color:var(--red)">0/10</span></div>
+          <div class="score-row"><span class="score-label">Crittografia dati</span><div class="score-bar"><div class="score-fill" style="width:40%;background:var(--amber)"></div></div><span class="score-value" style="color:var(--amber)">4/10</span></div>
+          <div class="score-row"><span class="score-label">Gestione segreti</span><div class="score-bar"><div class="score-fill" style="width:80%;background:var(--green)"></div></div><span class="score-value" style="color:var(--green)">8/10</span></div>
+          <div class="score-row"><span class="score-label">Backup e DR</span><div class="score-bar"><div class="score-fill" style="width:30%;background:var(--amber)"></div></div><span class="score-value" style="color:var(--amber)">3/10</span></div>
+        </div>
+        <div class="card">
+          <h3>Vulnerabilita' Critiche</h3>
+          <table>
+            <thead><tr><th>#</th><th>Vulnerabilita'</th><th>Rischio</th><th>Soluzione</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-critical">C1</span></td><td>Nessun rate limiting</td><td>DoS, brute force</td><td>express-rate-limit</td></tr>
+              <tr><td><span class="badge badge-critical">C2</span></td><td>Nessun security header</td><td>XSS, clickjacking</td><td>helmet</td></tr>
+              <tr><td><span class="badge badge-critical">C3</span></td><td>Sessione 1 anno</td><td>Session hijacking</td><td>30gg + refresh token</td></tr>
+              <tr><td><span class="badge badge-critical">C4</span></td><td>Email admin hardcoded</td><td>Rigidita'</td><td>Variabile d'ambiente</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== CONFORMITA ===== -->
+      <div id="section-conformita" class="section">
+        <div class="section-header">
+          <h2><span class="accent">Conformita'</span> Normativa</h2>
+          <p>Gap analysis rispetto ai requisiti AgID, GDPR e regolamenti europei.</p>
+        </div>
+        <div class="card">
+          <h3>CAD (Codice Amministrazione Digitale)</h3>
+          <table>
+            <thead><tr><th>Requisito</th><th>Art.</th><th>Stato</th></tr></thead>
+            <tbody>
+              <tr><td>Identita' digitale SPID</td><td>64</td><td><span class="badge badge-partial">Parziale</span></td></tr>
+              <tr><td>CIE come credenziale</td><td>64</td><td><span class="badge badge-missing">Mancante</span></td></tr>
+              <tr><td>Pagamenti PagoPA</td><td>5</td><td><span class="badge badge-partial">Parziale (mock)</span></td></tr>
+              <tr><td>Interoperabilita' PDND</td><td>50-ter</td><td><span class="badge badge-missing">Mancante</span></td></tr>
+              <tr><td>Accessibilita' WCAG 2.1</td><td>53</td><td><span class="badge badge-missing">Mancante</span></td></tr>
+              <tr><td>Open data</td><td>52</td><td><span class="badge badge-missing">Mancante</span></td></tr>
+              <tr><td>Sicurezza informatica</td><td>51</td><td><span class="badge badge-partial">Parziale</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>GDPR (Reg. UE 2016/679)</h3>
+          <table>
+            <thead><tr><th>Requisito</th><th>Stato</th></tr></thead>
+            <tbody>
+              <tr><td>Informativa privacy</td><td><span class="badge badge-missing">Assente</span></td></tr>
+              <tr><td>Cookie banner</td><td><span class="badge badge-missing">Assente</span></td></tr>
+              <tr><td>DPIA</td><td><span class="badge badge-missing">Assente</span></td></tr>
+              <tr><td>Diritto all'oblio</td><td><span class="badge badge-partial">Schema OK</span></td></tr>
+              <tr><td>Cifratura PII</td><td><span class="badge badge-missing">Assente</span></td></tr>
+              <tr><td>Privacy by design</td><td><span class="badge badge-partial">Parziale</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Qualificazione Cloud ACN</h3>
+          <table>
+            <thead><tr><th>Requisito</th><th>Stato</th></tr></thead>
+            <tbody>
+              <tr><td>Qualificazione SaaS ACN</td><td><span class="badge badge-missing">Non richiesta</span></td></tr>
+              <tr><td>Data residency EU</td><td><span class="badge badge-ok">OK</span></td></tr>
+              <tr><td>ISO 27001</td><td><span class="badge badge-missing">Assente</span></td></tr>
+              <tr><td>Pen test report</td><td><span class="badge badge-missing">Assente</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== VALUTAZIONE ===== -->
+      <div id="section-valutazione" class="section">
+        <div class="section-header">
+          <h2><span class="accent">Valutazione</span> Economica</h2>
+          <p>Stima del valore dell'asset e potenziale commerciale.</p>
+        </div>
+        <div class="summary-box">
+          <div class="stat-grid" style="margin-bottom:0">
+            <div class="stat" style="border-color:var(--teal)"><span class="value" style="font-size:20px">280-440K</span><span class="label">Valore Asset (EUR)</span></div>
+            <div class="stat" style="border-color:var(--amber)"><span class="value" style="font-size:20px;color:var(--amber)">80-150K</span><span class="label">Investimento Conformita'</span></div>
+            <div class="stat" style="border-color:var(--green)"><span class="value" style="font-size:20px;color:var(--green)">0.7-5M</span><span class="label">Valore Commerciale</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Costo di Ricostruzione (COCOMO II)</h3>
+          <table>
+            <tbody>
+              <tr><td>LOC attive</td><td><strong>113.922</strong></td></tr>
+              <tr><td>Produttivita' media</td><td>1.500 LOC/mese/dev</td></tr>
+              <tr><td>Mesi-uomo</td><td>~76</td></tr>
+              <tr><td>Costo/mese (RAL + overhead)</td><td>5.000 EUR</td></tr>
+              <tr><td><strong>Costo ricostruzione</strong></td><td><strong style="color:var(--teal)">~380.000 EUR</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Revenue Potential (SaaS per Comune)</h3>
+          <table>
+            <thead><tr><th>Scenario</th><th>Comuni</th><th>Revenue/anno</th><th>Valutazione 5x</th></tr></thead>
+            <tbody>
+              <tr><td>Conservativo</td><td>50</td><td>150K EUR</td><td>750K EUR</td></tr>
+              <tr><td>Base</td><td>200</td><td>600K EUR</td><td>3M EUR</td></tr>
+              <tr><td>Ottimistico</td><td>500</td><td>2.5M EUR</td><td>12.5M EUR</td></tr>
+              <tr><td><strong>Full scale</strong></td><td><strong>2.000</strong></td><td><strong>10M EUR</strong></td><td><strong style="color:var(--teal)">50M EUR</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== ROADMAP ===== -->
+      <div id="section-roadmap" class="section">
+        <div class="section-header">
+          <h2><span class="accent">Roadmap</span> di Conformita'</h2>
+          <p>4 fasi per portare il sistema alla piena conformita' PA.</p>
+        </div>
+        <div class="card">
+          <h3 style="color:var(--red)">Fase 1: Sicurezza Base (1-2 mesi)</h3>
+          <table>
+            <thead><tr><th>Azione</th><th>Effort</th><th>Priorita'</th></tr></thead>
+            <tbody>
+              <tr><td>Installare helmet (security headers)</td><td>2 ore</td><td><span class="badge badge-critical">Critica</span></td></tr>
+              <tr><td>Installare express-rate-limit</td><td>4 ore</td><td><span class="badge badge-critical">Critica</span></td></tr>
+              <tr><td>Sessione 30gg + refresh token</td><td>1 giorno</td><td><span class="badge badge-critical">Critica</span></td></tr>
+              <tr><td>Cifratura AES-256 per CF/PIVA</td><td>2 giorni</td><td><span class="badge badge-missing">Alta</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3 style="color:var(--amber)">Fase 2: Conformita' AgID (2-4 mesi)</h3>
+          <table>
+            <thead><tr><th>Azione</th><th>Effort</th><th>Priorita'</th></tr></thead>
+            <tbody>
+              <tr><td>Integrazione SPID diretta</td><td>2-4 settimane</td><td><span class="badge badge-blocked">Bloccante</span></td></tr>
+              <tr><td>Attivazione PagoPA produzione</td><td>1-2 settimane</td><td><span class="badge badge-blocked">Bloccante</span></td></tr>
+              <tr><td>Privacy policy + cookie banner</td><td>1 settimana</td><td><span class="badge badge-missing">Alta</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3 style="color:var(--cyan)">Fase 3: Interoperabilita' (4-6 mesi)</h3>
+          <table>
+            <thead><tr><th>Azione</th><th>Effort</th><th>Priorita'</th></tr></thead>
+            <tbody>
+              <tr><td>Adesione PDND + e-Service</td><td>4-6 settimane</td><td><span class="badge badge-blocked">Bloccante</span></td></tr>
+              <tr><td>Integrazione ANPR via PDND</td><td>2-3 settimane</td><td><span class="badge badge-missing">Alta</span></td></tr>
+              <tr><td>Audit WCAG 2.1 AA</td><td>4-6 settimane</td><td><span class="badge badge-missing">Alta</span></td></tr>
+              <tr><td>Test suite (60% coverage)</td><td>4-6 settimane</td><td><span class="badge badge-missing">Alta</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3 style="color:var(--green)">Fase 4: Certificazione (6-12 mesi)</h3>
+          <table>
+            <thead><tr><th>Azione</th><th>Effort</th><th>Priorita'</th></tr></thead>
+            <tbody>
+              <tr><td>Penetration test (terza parte)</td><td>2-3 settimane</td><td><span class="badge badge-blocked">Bloccante</span></td></tr>
+              <tr><td>Qualificazione SaaS ACN</td><td>2-4 mesi</td><td><span class="badge badge-blocked">Bloccante</span></td></tr>
+              <tr><td>Contratto SaaS PA (legale)</td><td>Esterno</td><td><span class="badge badge-blocked">Bloccante</span></td></tr>
+              <tr><td>ISO 27001</td><td>3-6 mesi</td><td><span class="badge badge-missing">Alta</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== BIBLIOTECA ===== -->
+      <div id="section-biblioteca" class="section">
+        <div class="section-header">
+          <h2><span class="accent">Biblioteca</span> Documentale</h2>
+          <p>42 documenti PDF strategici + 14 riferimenti normativi EU/Italia.</p>
+        </div>
+        <div class="callout"><strong>Accesso:</strong> Dashboard PA &gt; barra rapida &gt; "DMS News" &gt; pagina SPOT<br><strong>Repository:</strong> github.com/Chcndr/dms-gemello-news</div>
+        <div class="card">
+          <h3>Documenti Base (19 PDF)</h3>
+          <table>
+            <thead><tr><th>#</th><th>Titolo</th><th>Contenuto</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Hub Nazionale del Commercio</td><td>Visione hub nazionale mercati</td></tr>
+              <tr><td>2</td><td>DMS & CLUST-ER</td><td>Partnership Emilia-Romagna</td></tr>
+              <tr><td>3</td><td>Dossier Nazionale</td><td>Analisi situazione nazionale</td></tr>
+              <tr><td>4</td><td>DMS - Riaccendiamo i Mercati</td><td>Manifesto progetto</td></tr>
+              <tr><td>5</td><td>Passaporto EU</td><td>Passaporto Digitale Europeo</td></tr>
+              <tr><td>6</td><td>Presentazione DMS Bologna</td><td>Case study Bologna</td></tr>
+              <tr><td>7</td><td>Hub Urbani e di Prossimita'</td><td>Modello hub ER</td></tr>
+              <tr><td>8</td><td>Gemello DMS</td><td>Architettura rete europea</td></tr>
+              <tr><td>9-12</td><td>Carbon Credit (4 doc.)</td><td>Equilibrio, logica, implementazione</td></tr>
+              <tr><td>13</td><td>Ecosistema Costi PA</td><td>Analisi costi per PA</td></tr>
+              <tr><td>14</td><td>Analisi & Soluzione DMS</td><td>102 pagine analisi completa</td></tr>
+              <tr><td>15-19</td><td>Futuro, ALL-IN-ONE, ONCE ONLY, Web3</td><td>Proiezioni e conformita' EU</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-grid">
+          <div class="card"><h3>Analisi e Ricerche (6)</h3><p style="font-size:13px;color:var(--text-dim)">Commercio ambulante, Controlli PA, Dati, Usato, Riequilibrio economico</p></div>
+          <div class="card"><h3>Implementazione Tecnica (6)</h3><p style="font-size:13px;color:var(--text-dim)">Sistema completo, Avanzate, Offline CIE, Servizi accessori, Centro di tutto</p></div>
+          <div class="card"><h3>FinTech e Carbon Credit (4)</h3><p style="font-size:13px;color:var(--text-dim)">DMS FinTech, Eco Carbon Credit, Logica avanzata, Eventi straordinari</p></div>
+          <div class="card"><h3>Progetto Nazionale (4)</h3><p style="font-size:13px;color:var(--text-dim)">Piano nazionale, Web3/Smart Contract, Premessa politica, Bolkestein</p></div>
+        </div>
+        <div class="summary-box">
+          <h3 style="margin-bottom:8px">TPASS - Documento Strategico (155 pagine)</h3>
+          <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Formula: <code style="background:rgba(0,0,0,.3);padding:3px 8px;border-radius:4px;font-size:12px">TCO2 (EUR) = PCF (kgCO2e) x (ETS_anchor EUR/t / 1000) x PM</code></p>
+          <table>
+            <thead><tr><th>Scenario</th><th>Volume/anno</th><th>Ricavi DMS</th></tr></thead>
+            <tbody>
+              <tr><td>Italia</td><td>100M</td><td>5,97M EUR</td></tr>
+              <tr><td>UE Top-5</td><td>600M</td><td>32,28M EUR</td></tr>
+              <tr><td>UE-27</td><td>1 miliardo</td><td style="color:var(--teal);font-weight:700">54,60M EUR</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Valore Consulenziale della Biblioteca</h3>
+          <div class="callout"><strong>Stima: 30.000 - 60.000 EUR</strong><br>200-400 ore ricerca, copertura normativa EU+Italia, modello economico validato, dati reali 2003-2023, case study Bologna/Grosseto/ER.</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

@@ -1,10 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  FileText, Download, ExternalLink, Activity, 
-  Database, Server, LayoutDashboard, Shield, 
-  CheckCircle, AlertCircle, Clock, Calendar
+import {
+  FileText, Download, ExternalLink, Activity,
+  Database, Server, LayoutDashboard, Shield,
+  CheckCircle, AlertCircle, Clock, Calendar, Target
 } from 'lucide-react';
 
 export function LegacyReportCards() {
@@ -24,7 +24,7 @@ export function LegacyReportCards() {
       </div>
 
       {/* Main Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Card 1: System Blueprint */}
         <Card className="bg-[#1a2332] border-[#06b6d4]/30 hover:border-[#06b6d4]/60 transition-colors">
@@ -114,6 +114,32 @@ export function LegacyReportCards() {
           </CardContent>
         </Card>
 
+        {/* Card 4: Dossier Tecnico Sistema */}
+        <Card className="bg-[#1a2332] border-[#a855f7]/30 hover:border-[#a855f7]/60 transition-colors">
+          <CardHeader>
+            <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+              <Shield className="h-5 w-5 text-[#a855f7]" />
+              Dossier Tecnico
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-[#e8fbff]/70">
+              Analisi completa: architettura, sicurezza, conformità AGID/EU, integrazioni PA e valutazione economica.
+            </p>
+            <div className="flex items-center gap-2 text-xs text-[#e8fbff]/50">
+              <CheckCircle className="h-3 w-3" />
+              10 sezioni + 42 documenti PDF
+            </div>
+            <Button
+              className="w-full bg-[#a855f7] hover:bg-[#a855f7]/80 text-white"
+              onClick={() => window.open('/dossier/index.html', '_blank')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Apri Dossier Interattivo
+            </Button>
+          </CardContent>
+        </Card>
+
       </div>
 
       {/* Secondary Section: Documentazione Tecnica */}
@@ -149,6 +175,3 @@ export function LegacyReportCards() {
     </div>
   );
 }
-
-// Import missing icons
-import { Target } from 'lucide-react';
