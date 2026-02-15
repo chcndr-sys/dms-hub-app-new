@@ -21,9 +21,11 @@
 10. [SSO SUAP - Modulo SCIA](#sso-suap---modulo-scia)
 11. [Deploy e CI/CD](#deploy-e-cicd)
 12. [Architettura di Autenticazione (v2.0 - Firebase)](#architettura-di-autenticazione-v20---firebase)
-13. [Credenziali e Accessi](#credenziali-e-accessi)
-14. [Troubleshooting](#troubleshooting)
-15. [Regole per Agenti AI](#regole-per-agenti-ai)
+13. [GDPR Compliance e Privacy](#gdpr-compliance-e-privacy)
+14. [Test Suite e Quality Assurance](#test-suite-e-quality-assurance)
+15. [Credenziali e Accessi](#credenziali-e-accessi)
+16. [Troubleshooting](#troubleshooting)
+17. [Regole per Agenti AI](#regole-per-agenti-ai)
 
 ---
 
@@ -626,17 +628,31 @@ Per le specifiche tecniche complete da consegnare ad Abaco S.p.A., fare riferime
 
 ```
 dms-hub-app-new/
+├── .github/workflows/      # CI/CD Pipeline
+│   └── ci.yml             # Quality Gate (TypeScript + Test + Build + SBOM)
 ├── client/                 # Frontend React
 │   ├── src/
 │   │   ├── pages/         # Pagine dashboard
-│   │   ├── components/    # Componenti UI
-│   │   └── lib/           # Utilities
-│   └── public/            # Asset statici
-├── server/                 # Backend tRPC (Vercel)
-│   ├── routers.ts         # Router principale
-│   ├── guardianRouter.ts  # Guardian API
-│   └── services/          # Servizi business
-└── shared/                 # Tipi condivisi
+│   │   ├── components/    # Componenti UI (139+)
+│   │   ├── contexts/      # State management (Auth, Permissions, MIO)
+│   │   ├── hooks/         # Custom hooks (useAuth, usePermissions, etc.)
+│   │   └── lib/           # Utilities (trpc client, firebase)
+│   └── public/            # Asset statici + PWA + Dossier
+├── server/                 # Backend tRPC
+│   ├── _core/             # Core: index.ts, trpc.ts, oauth.ts, env.ts, cookies.ts
+│   ├── lib/               # Utilities: piiCrypto.ts (AES-256), tccSecurity.ts (HMAC)
+│   ├── services/          # Servizi: TPER, E-FIL PagoPA, API logs
+│   ├── routers.ts         # Router principale (20 router registrati)
+│   ├── gdprRouter.ts      # GDPR: export, oblio, retention, consents
+│   ├── dmsHubRouter.ts    # Mercati, posteggi, operatori, concessioni
+│   ├── walletRouter.ts    # Borsellino elettronico + PagoPA
+│   ├── tccSecurityRouter.ts # Anti-frode TCC (QR, GPS, audit)
+│   ├── guardianRouter.ts  # Monitoring e debug
+│   └── *.test.ts          # Test suite (36 test, 7 file)
+├── drizzle/schema.ts       # Schema DB (source of truth, 69+ tabelle)
+├── shared/                 # Tipi condivisi frontend/backend
+├── sbom.json               # SBOM CycloneDX (Software Bill of Materials)
+└── vitest.config.ts        # Configurazione test
 
 mihub-backend-rest/
 ├── routes/
@@ -1111,6 +1127,7 @@ La sezione `Integrazioni -> API Dashboard` del frontend Vercel include:
 | **Test Mercato** | `/api/test-mercato/*` | inizia-mercato, avvia-spunta, assegna-posteggio, chiudi-spunta, registra-rifiuti, chiudi-mercato |
 | **TCC v2** | `/api/tcc/v2/*` | wallet-impresa, qualifiche, settlement |
 | **TCC Security** | `/api/trpc/tccSecurity.*` | Anti-frode, QR firmati, rate limiting, audit trail (v6.1.0) |
+| **GDPR** | `/api/trpc/gdpr.*` | exportMyData, deleteMyAccount, retentionStatus, runRetentionCleanup, myConsents (v6.3.0) |
 | **DMS Legacy** | `/api/integrations/dms-legacy/*` | markets, vendors, concessions, presences, sync |
 | **MercaWeb** | `/api/integrations/mercaweb/*` | import/ambulanti, import/mercati, export/presenze, health |
 
@@ -1648,18 +1665,58 @@ POST /api/concessions
             └─────────────┘           └─────────────┘           └─────────────┘
 ```
 
+### CI/CD Pipeline — Quality Gate (v6.3.0)
+
+File: `.github/workflows/ci.yml`
+
+La pipeline si attiva automaticamente su **push** a `master`, `main`, e branch `claude/**`, e su **pull request** verso `master`/`main`.
+
+**Job: quality-gate** (ubuntu-latest, timeout 10 min)
+
+| Step | Comando | Descrizione |
+|------|---------|-------------|
+| 1 | `actions/checkout@v4` | Checkout codice |
+| 2 | `actions/setup-node@v4` | Setup Node.js 18 |
+| 3 | `pnpm/action-setup@v4` | Setup pnpm 10.4 |
+| 4 | `pnpm install --frozen-lockfile` | Installazione dipendenze |
+| 5 | `pnpm check` | TypeScript type check (`tsc --noEmit`) |
+| 6 | `pnpm test` | Test suite Vitest (36 test, 7 file) |
+| 7 | `pnpm build` | Build frontend (Vite) + backend (esbuild) |
+| 8 | `pnpm audit --audit-level=high` | Security audit dipendenze |
+
+**Job: sbom** (solo su push a master)
+
+| Step | Descrizione |
+|------|-------------|
+| 1 | Genera SBOM CycloneDX JSON (`sbom.json`) |
+| 2 | Upload artifact con retention 90 giorni |
+
+### SBOM — Software Bill of Materials
+
+- **Formato:** CycloneDX JSON (standard OWASP)
+- **File:** `sbom.json` (5.4 MB)
+- **Generazione:** Automatica su push a master via GitHub Actions
+- **Contenuto:** Inventario completo di tutte le dipendenze npm con versioni, licenze, hash
+- **Uso:** Compliance supply chain, audit di sicurezza, trasparenza PA
+
 ### Procedura Corretta
 
 ```bash
 # 1. Modifica codice
-# 2. Commit
+# 2. Verifica locale
+pnpm check && pnpm test
+
+# 3. Commit
 git add .
 git commit -m "feat: descrizione modifica"
 
-# 3. Push (triggera auto-deploy)
+# 4. Push (triggera CI/CD + auto-deploy)
 git push origin master
 
-# 4. Verifica (dopo 2-3 minuti)
+# 5. Verifica CI (GitHub Actions)
+# La pipeline esegue: TypeScript check → Test → Build → Audit
+
+# 6. Verifica deploy (dopo 2-3 minuti)
 curl https://orchestratore.mio-hub.me/api/health
 ```
 
@@ -1702,6 +1759,117 @@ La nuova architettura si basa sui seguenti componenti:
 | **`client/src/components/LoginModal.tsx`** | Componente UI (v2.0) che integra i metodi di login Firebase e mantiene il flusso SPID esistente. |
 | **`server/firebaseAuthRouter.ts`** | Router Express per il backend che gestisce la verifica dei token e la sincronizzazione degli utenti. |
 | **`api/auth/firebase/sync.ts`** | Serverless function equivalente per il deploy su Vercel, garantendo la compatibilità. |
+
+---
+
+## 🛡️ GDPR COMPLIANCE E PRIVACY (v6.3.0)
+
+### Panoramica
+
+Il sistema implementa la conformita GDPR attraverso un router tRPC dedicato (`server/gdprRouter.ts`) con 5 procedure e una utility di cifratura PII (`server/lib/piiCrypto.ts`).
+
+### Cifratura PII — AES-256-GCM
+
+**File:** `server/lib/piiCrypto.ts`
+
+Utility per la protezione crittografica dei dati PII (Personally Identifiable Information) nel database.
+
+| Funzione | Descrizione |
+|----------|-------------|
+| `encryptPII(plaintext)` | Cifra con AES-256-GCM + IV random per ogni operazione. Restituisce `iv:authTag:ciphertext` (Base64) |
+| `decryptPII(ciphertext)` | Decifra verificando l'auth tag. Supporta legacy plaintext passthrough |
+| `hashPII(value)` | Hash SHA-256 deterministico per ricerca indicizzata senza decifrare |
+| `isEncrypted(value)` | Rileva se un valore e' gia cifrato (pattern `base64:base64:base64`) |
+
+**Chiave:** Derivata da `PII_ENCRYPTION_KEY` env var (o fallback `JWT_SECRET`).
+
+### Router GDPR — Endpoint
+
+**File:** `server/gdprRouter.ts` — Registrato in `server/routers.ts`
+
+| Procedura | Tipo | Articolo GDPR | Descrizione |
+|-----------|------|---------------|-------------|
+| `exportMyData` | protectedProcedure | Art. 20 (Portabilita) | Raccoglie dati utente da 12 tabelle: users, extendedUsers, vendors, transactions, checkins, complianceCertificates, concessions, vendorDocuments, vendorPresences. Restituisce JSON completo |
+| `deleteMyAccount` | protectedProcedure | Art. 17 (Oblio) | Anonimizza dati in users, extendedUsers, vendors. Crea audit log e compliance certificate. Richiede conferma email |
+| `retentionStatus` | adminProcedure | Art. 5(1)(e) | Mostra conteggio record scaduti per ogni categoria con politica di retention |
+| `runRetentionCleanup` | adminProcedure | Art. 5(1)(e) | Elimina dati scaduti: apiMetrics >90gg, systemLogs >365gg, loginAttempts >90gg |
+| `myConsents` | protectedProcedure | Art. 7 | Restituisce i certificati di compliance dell'utente |
+
+### Politica Data Retention
+
+| Categoria | Retention | Tabella | Colonna timestamp |
+|-----------|-----------|---------|-------------------|
+| Metriche API | 90 giorni | `api_metrics` | `createdAt` |
+| Log di sistema | 365 giorni | `system_logs` | `createdAt` |
+| Tentativi login | 90 giorni | `login_attempts` | `createdAt` |
+| Audit log | 5 anni | `audit_logs` | Non eliminato automaticamente |
+
+### Flusso Anonimizzazione (deleteMyAccount)
+
+1. Verifica che l'email confermata corrisponda all'utente autenticato
+2. Anonimizza `users`: name → "DELETED_USER_xxxxx", email → hash, phone → null
+3. Anonimizza `extendedUsers`: codiceFiscale, partitaIva, pec, iban → "***REDACTED***"
+4. Anonimizza `vendors`: denominazione → "ANONIMIZZATO", cf/piva → null
+5. Crea record `audit_logs` con `entityType: "gdpr_deletion"`
+6. Crea `compliance_certificate` di tipo "gdpr_deletion"
+
+---
+
+## 🧪 TEST SUITE E QUALITY ASSURANCE (v6.3.0)
+
+### Panoramica
+
+Il sistema dispone di una test suite automatizzata basata su **Vitest** con 36 test distribuiti su 7 file.
+I test vengono eseguiti automaticamente nella CI/CD pipeline ad ogni push.
+
+### Comandi
+
+```bash
+pnpm test        # Esegui tutti i test (vitest run)
+pnpm check       # TypeScript type check (tsc --noEmit)
+```
+
+### File di Test e Copertura
+
+| File | Test | Copertura |
+|------|------|-----------|
+| `server/lib/piiCrypto.test.ts` | 9 | Cifratura AES-256-GCM: encrypt/decrypt roundtrip, random IV univoci, legacy plaintext passthrough, caratteri speciali/unicode, hash SHA-256 deterministico |
+| `server/lib/tccSecurity.test.ts` | 9 | Anti-frode TCC: firma QR HMAC-SHA256, validazione firma, firma forgiata, token alterato, nonce univoco, distanza Haversine (Bologna vicino, stesse coordinate, Bologna-Roma), plausibilita GPS |
+| `server/_core/trpc.test.ts` | 4 | Core tRPC: export router/publicProcedure/protectedProcedure/adminProcedure, creazione router validi con ciascun tipo di procedura |
+| `server/_core/cookies.test.ts` | 5 | Cookie utilities: creazione, parsing, opzioni di sicurezza |
+| `server/_core/env.test.ts` | 5 | Validazione variabili ambiente: rilevamento mancanti, valori corretti |
+| `server/routers.test.ts` | 1 | Registrazione router: verifica tutti i 20 router registrati inclusi endpoint GDPR, >50 endpoint totali |
+| `server/schema.test.ts` | 3 | Schema DB: tabelle core (users, markets, shops, transactions, checkins), tabelle audit (auditLogs, systemLogs, notifications, inspections), tabelle product tracking |
+
+### Configurazione Vitest
+
+**File:** `vitest.config.ts`
+
+```typescript
+// Path aliases per risolvere import nei test
+resolve: {
+  alias: {
+    "@shared": path.resolve(import.meta.dirname, "shared"),
+    "@": path.resolve(import.meta.dirname, "client/src"),
+  }
+}
+```
+
+### Mocking Strategy
+
+I test usano `vi.mock()` per isolare le dipendenze:
+
+- **Database:** `server/db` mockato con `getDb: vi.fn().mockResolvedValue(null)` — test senza connessione DB
+- **API Logs:** `server/services/apiLogsService` mockato per evitare side-effects
+- **Environment:** `process.env` impostato nel `beforeAll` con valori di test
+
+### Come Aggiungere Nuovi Test
+
+1. Crea file `*.test.ts` nella stessa directory del file da testare
+2. Importa da `vitest`: `describe`, `it`, `expect`, `vi`, `beforeAll`
+3. Mocka le dipendenze esterne con `vi.mock()`
+4. Imposta env vars nel `beforeAll` se necessario
+5. Esegui `pnpm test` per verificare
 
 ---
 
@@ -1886,13 +2054,18 @@ fi
 | MIO Agent | /api/mihub/orchestrator | ✅ Funzionante |
 | Guardian | /api/guardian/* | ✅ Funzionante |
 | TCC Security | /api/trpc/tccSecurity.* | ✅ Funzionante |
+| GDPR Router | /api/trpc/gdpr.* | ✅ Funzionante |
+| CI/CD Pipeline | GitHub Actions | ✅ Attiva |
 | PM2 | mihub-backend v1.1.0 cluster | ✅ Online (pid 711337, 168MB RAM) |
 
 ### Statistiche (Dati Reali 15 Feb 2026)
 
 - **Tabelle nel DB:** 155 (149 + 6 TCC Security)
 - **Righe totali:** 372.143+
-- **Endpoint montati:** 70 (su 82 file route) + 10 procedure tRPC TCC Security
+- **Router tRPC registrati:** 20 (incluso GDPR)
+- **Endpoint tRPC:** ~124 procedure
+- **Endpoint REST montati:** 70 (su 82 file route)
+- **Test suite:** 36 test su 7 file (Vitest)
 - **Mercati nel DB:** 3
 - **Imprese:** 34
 - **Posteggi:** 583
@@ -1907,11 +2080,16 @@ fi
 - **Trigger DB:** 9
 - **Funzioni DB:** 37
 
-### Compliance & Security (v6.2.0)
+### Compliance & Security (v6.3.0)
 
 | Area | Stato | Dettaglio |
 |------|-------|-----------|
-| **GDPR** | ✅ Conforme | Privacy Policy, Cookie Consent, diritti utente |
+| **GDPR — Privacy Policy** | ✅ Conforme | Pagina /privacy conforme Art. 13/14 |
+| **GDPR — Cookie Consent** | ✅ Conforme | CookieConsentBanner con consenso esplicito |
+| **GDPR — Portabilita (Art. 20)** | ✅ Implementato | `gdpr.exportMyData` — export JSON da 12 tabelle |
+| **GDPR — Diritto Oblio (Art. 17)** | ✅ Implementato | `gdpr.deleteMyAccount` — anonimizzazione completa |
+| **GDPR — Data Retention** | ✅ Implementato | `gdpr.runRetentionCleanup` — metriche 90gg, log 365gg |
+| **GDPR — Cifratura PII** | ✅ Implementato | AES-256-GCM per CF/PIVA/IBAN (`piiCrypto.ts`) |
 | **WCAG 2.1 AA** | ✅ Conforme | Skip to content, focus-visible, reduced-motion, lang="it" |
 | **Security Headers** | ✅ Attivo | Helmet.js (CSP, HSTS, X-Frame-Options, etc.) |
 | **Rate Limiting** | ✅ Attivo | Globale 100/15min + 4 specifici su endpoint finanziari |
@@ -1919,6 +2097,9 @@ fi
 | **Env Validation** | ✅ Attivo | Server non si avvia senza variabili critiche |
 | **API Auth** | ✅ Attivo | Tutte le procedure tRPC sensibili protette da autenticazione |
 | **Anti-Frode TCC** | ✅ Attivo | QR firmati HMAC-SHA256, GPS validation, rate limiting, audit trail |
+| **CI/CD Pipeline** | ✅ Attivo | GitHub Actions: TypeScript + Test + Build + Audit |
+| **SBOM** | ✅ Generato | CycloneDX JSON, generazione automatica su master |
+| **Test Suite** | ✅ Attivo | 36 test, 7 file, Vitest, esecuzione in CI |
 | **PWA** | ✅ Attivo | Service Worker, manifest.json, offline page |
 | **Graceful Shutdown** | ✅ Attivo | SIGTERM/SIGINT handler con timeout 10s |
 
