@@ -3,6 +3,9 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import path from "path";
+import helmet from "helmet";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
@@ -66,9 +69,70 @@ async function saveRestApiMetric(data: {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Trust proxy (Vercel, Hetzner reverse proxy)
+  app.set("trust proxy", 1);
+
+  // Security headers (Helmet)
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:", "blob:"],
+        connectSrc: ["'self'", "https://mihub.157-90-29-66.nip.io", "https://*.firebaseio.com", "https://*.googleapis.com", "https://orchestratore.mio-hub.me", "https://unpkg.com"],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false, // Necessario per Leaflet tiles
+    hsts: { maxAge: 31536000, includeSubDomains: true },
+  }));
+
+  // CORS restrittivo
+  app.use(cors({
+    origin: [
+      "https://dms-hub-app-new.vercel.app",
+      "https://orchestratore.mio-hub.me",
+      /^http:\/\/localhost:\d+$/,
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-API-Key"],
+  }));
+
+  // Rate limiting globale su API
+  app.use("/api/", rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minuti
+    max: 300, // max 300 richieste per IP per finestra
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Troppe richieste. Riprova tra qualche minuto." },
+  }));
+
+  // Rate limiting strict su auth (anti brute-force)
+  app.use("/api/auth/", rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Troppi tentativi di autenticazione. Riprova tra 15 minuti." },
+  }));
+
+  app.use("/api/oauth/", rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Troppi tentativi di login. Riprova tra 15 minuti." },
+  }));
+
+  // Body parser con limite ragionevole (5MB per JSON, file upload separato)
+  app.use(express.json({ limit: "5mb" }));
+  app.use(express.urlencoded({ limit: "5mb", extended: true }));
 
   // 👁️ GLOBAL REST MONITORING MIDDLEWARE - Logs ALL /api/* requests
   app.use("/api", (req, res, next) => {

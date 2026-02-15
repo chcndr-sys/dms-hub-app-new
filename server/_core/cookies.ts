@@ -41,7 +41,8 @@ export function getSessionCookieOptions(req: any): Partial<CookieOptions> {
     domain: undefined,
     httpOnly: true,
     path: "/",
-    sameSite: "none",
+    sameSite: "lax",
     secure: isSecureRequest(req),
+    maxAge: 365 * 24 * 60 * 60 * 1000, // 1 anno
   };
 }

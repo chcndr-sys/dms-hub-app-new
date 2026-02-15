@@ -1,10 +1,22 @@
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`[ENV] Variabile d'ambiente obbligatoria mancante: ${key}`);
+  }
+  return value;
+}
+
+function optionalEnv(key: string, defaultValue = ""): string {
+  return process.env[key] ?? defaultValue;
+}
+
 export const ENV = {
-  appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? "",
-  databaseUrl: process.env.DATABASE_URL ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
-  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
+  appId: optionalEnv("VITE_APP_ID"),
+  cookieSecret: requireEnv("JWT_SECRET"),
+  databaseUrl: requireEnv("DATABASE_URL"),
+  oAuthServerUrl: optionalEnv("OAUTH_SERVER_URL"),
+  ownerOpenId: optionalEnv("OWNER_OPEN_ID"),
   isProduction: process.env.NODE_ENV === "production",
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  forgeApiUrl: optionalEnv("BUILT_IN_FORGE_API_URL"),
+  forgeApiKey: optionalEnv("BUILT_IN_FORGE_API_KEY"),
 };

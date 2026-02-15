@@ -76,10 +76,9 @@ async function determineUserRoleId(): Promise<{ roleId: number; isImpersonating:
   try {
     const user = JSON.parse(userStr);
     
-    // 3. PRIORITÀ MASSIMA: Se l'utente è super admin (email specifica o flag)
-    // Questo controllo deve venire PRIMA di assigned_roles e base_role!
-    if (user.email === 'chcndr@gmail.com' || user.is_super_admin) {
-      console.log('[PermissionsContext] Super Admin rilevato - accesso completo');
+    // 3. PRIORITÀ MASSIMA: Se l'utente è super admin (flag dal server)
+    // Il check avviene solo tramite il flag is_super_admin impostato dal backend
+    if (user.is_super_admin) {
       return { roleId: ROLE_IDS.SUPER_ADMIN, isImpersonating: false };
     }
 
@@ -178,13 +177,13 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     }
     // Se non ci sono permessi caricati, nega l'accesso (tranne per super admin)
     if (permissionCodes.length === 0) {
-      // Controlla se è super admin
+      // Controlla se è super admin tramite flag dal server
       const userStr = localStorage.getItem('user');
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
-          if (user.email === 'chcndr@gmail.com' || user.is_super_admin) {
-            return true; // Super admin ha sempre accesso
+          if (user.is_super_admin) {
+            return true;
           }
         } catch {}
       }

@@ -5,7 +5,8 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
 
-// Chiave per il session token nel localStorage
+// Session token in sessionStorage (si cancella alla chiusura del browser, non accessibile da altri tab)
+// User info resta in localStorage per persistenza UX
 const SESSION_TOKEN_KEY = 'miohub_session_token';
 const USER_INFO_KEY = 'miohub_user_info';
 
@@ -46,15 +47,24 @@ export interface LoginResponse {
 // ============================================
 
 export function getSessionToken(): string | null {
-  return localStorage.getItem(SESSION_TOKEN_KEY);
+  // Migrazione: se il token e' ancora in localStorage, spostalo
+  const legacyToken = localStorage.getItem(SESSION_TOKEN_KEY);
+  if (legacyToken) {
+    sessionStorage.setItem(SESSION_TOKEN_KEY, legacyToken);
+    localStorage.removeItem(SESSION_TOKEN_KEY);
+  }
+  return sessionStorage.getItem(SESSION_TOKEN_KEY);
 }
 
 export function setSessionToken(token: string): void {
-  localStorage.setItem(SESSION_TOKEN_KEY, token);
+  sessionStorage.setItem(SESSION_TOKEN_KEY, token);
+  // Rimuovi eventuale copia legacy
+  localStorage.removeItem(SESSION_TOKEN_KEY);
 }
 
 export function clearSessionToken(): void {
-  localStorage.removeItem(SESSION_TOKEN_KEY);
+  sessionStorage.removeItem(SESSION_TOKEN_KEY);
+  localStorage.removeItem(SESSION_TOKEN_KEY); // pulizia legacy
   localStorage.removeItem(USER_INFO_KEY);
 }
 
