@@ -114,8 +114,8 @@ const MODULE_DETAILS: Record<string, {
   },
   integrations: {
     stats: [
-      { label: 'Router tRPC', value: '19', color: '#06b6d4' },
-      { label: 'Endpoints', value: '119', color: '#14b8a6' },
+      { label: 'Router tRPC', value: '20', color: '#06b6d4' },
+      { label: 'Endpoints', value: '124', color: '#14b8a6' },
       { label: 'Auth', value: 'Firebase', color: '#f59e0b' },
     ],
     highlights: [
@@ -326,8 +326,8 @@ export function NativeReportComponent() {
               {[
                 { label: 'Codice attivo', value: '114K righe', color: '#14b8a6' },
                 { label: 'Totale progetto', value: '218K righe', color: '#06b6d4' },
-                { label: 'Router tRPC', value: '19', color: '#a855f7' },
-                { label: 'Endpoints API', value: '119', color: '#f59e0b' },
+                { label: 'Router tRPC', value: '20', color: '#a855f7' },
+                { label: 'Endpoints API', value: '124', color: '#f59e0b' },
               ].map((s, i) => (
                 <Card key={i} className="bg-[#1a2332] border-[#1e293b]">
                   <CardContent className="p-4 text-center">
@@ -572,10 +572,16 @@ export function NativeReportComponent() {
                     { name: 'Rate Limiting', status: 'ok' as const, detail: 'Globale 100/15min + 4 finanziari' },
                     { name: 'Anti-Frode TCC', status: 'ok' as const, detail: 'QR HMAC-SHA256, GPS validation, audit' },
                     { name: 'PWA + Service Worker', status: 'ok' as const, detail: 'Installabile, offline page, manifest' },
+                    { name: 'Cifratura PII (AES-256-GCM)', status: 'ok' as const, detail: 'CF, PIVA, IBAN cifrati con IV random + auth tag' },
+                    { name: 'GDPR — Export Dati (Art. 20)', status: 'ok' as const, detail: 'Endpoint gdpr.exportMyData con 12 tabelle' },
+                    { name: 'GDPR — Diritto Oblio (Art. 17)', status: 'ok' as const, detail: 'Anonimizzazione account gdpr.deleteMyAccount' },
+                    { name: 'Data Retention Policy', status: 'ok' as const, detail: '90gg metrics, 365gg logs, 5y audit (obbligo legale)' },
+                    { name: 'CI/CD Pipeline', status: 'ok' as const, detail: 'GitHub Actions: check + test + build + audit' },
+                    { name: 'SBOM', status: 'ok' as const, detail: 'CycloneDX JSON generato automaticamente' },
+                    { name: 'Test Suite (36 test)', status: 'ok' as const, detail: 'Vitest: crypto, security, RBAC, router, schema' },
                     { name: 'PDND', status: 'partial' as const, detail: 'Predisposto — in attesa accreditamento' },
                     { name: 'DPIA', status: 'partial' as const, detail: 'Da redigere formalmente' },
                     { name: 'Qualificazione ACN SaaS', status: 'missing' as const, detail: 'Da avviare per vendita a PA' },
-                    { name: 'Cifratura PII nel DB', status: 'missing' as const, detail: 'AES-256 su CF/PIVA da implementare' },
                   ].map((int, i) => {
                     const st = STATUS_COLORS[int.status];
                     return (
@@ -666,7 +672,7 @@ export function NativeReportComponent() {
             <Activity className="h-6 w-6 text-[#a855f7]" />
             Analisi Sistema
           </h2>
-          <p className="text-xs text-[#e8fbff]/50 mt-1">DMS Hub — Report Tecnico v6.2</p>
+          <p className="text-xs text-[#e8fbff]/50 mt-1">DMS Hub — Report Tecnico v6.3</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">

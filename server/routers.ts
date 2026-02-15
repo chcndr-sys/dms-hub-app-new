@@ -9,6 +9,7 @@ import { mihubRouter } from "./mihubRouter";
 import { guardianRouter } from "./guardianRouter";
 import { walletRouter } from "./walletRouter";
 import { tccSecurityRouter } from "./tccSecurityRouter";
+import { gdprRouter } from "./gdprRouter";
 
 
 export const appRouter = router({
@@ -218,6 +219,9 @@ export const appRouter = router({
 
   // TCC SECURITY - Anti-frode, QR firmati, rate limiting, audit trail
   tccSecurity: tccSecurityRouter,
+
+  // GDPR - Export dati, diritto all'oblio, data retention
+  gdpr: gdprRouter,
 });
 
 export type AppRouter = typeof appRouter;

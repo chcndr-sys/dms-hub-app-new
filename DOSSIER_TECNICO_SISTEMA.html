@@ -627,9 +627,10 @@
       <tr><td>Informativa privacy</td><td><span class="badge badge-ok">Implementato</span></td><td>Pagina /privacy conforme GDPR Art. 13/14</td></tr>
       <tr><td>Cookie banner</td><td><span class="badge badge-ok">Implementato</span></td><td>CookieConsentBanner con consenso esplicito</td></tr>
       <tr><td>DPIA</td><td><span class="badge badge-missing">Da redigere</span></td><td>Valutazione impatto da effettuare</td></tr>
-      <tr><td>Diritto all'oblio</td><td><span class="badge badge-partial">Schema OK</span></td><td>Manca UI cancellazione dati</td></tr>
-      <tr><td>Portabilita' dati</td><td><span class="badge badge-missing">Assente</span></td><td>Nessun export utente</td></tr>
-      <tr><td>Cifratura dati sensibili</td><td><span class="badge badge-partial">Parziale</span></td><td>HTTPS + cookie sicuri, PII DB da cifrare</td></tr>
+      <tr><td>Diritto all'oblio (Art. 17)</td><td><span class="badge badge-ok">Implementato</span></td><td>gdprRouter.deleteMyAccount — anonimizzazione completa</td></tr>
+      <tr><td>Portabilita' dati (Art. 20)</td><td><span class="badge badge-ok">Implementato</span></td><td>gdprRouter.exportMyData — export JSON completo</td></tr>
+      <tr><td>Cifratura dati sensibili</td><td><span class="badge badge-ok">Implementato</span></td><td>AES-256-GCM per CF/PIVA/IBAN (piiCrypto.ts)</td></tr>
+      <tr><td>Data Retention Policy</td><td><span class="badge badge-ok">Implementato</span></td><td>Cleanup automatico: metriche 90gg, log 365gg, tentativi 90gg</td></tr>
       <tr><td>Privacy by design</td><td><span class="badge badge-ok">Implementato</span></td><td>Geo anonimizzata, cookie consent, auth protetto</td></tr>
     </tbody>
   </table>
@@ -721,7 +722,11 @@
       <tr><td>1.5</td><td>Validazione env obbligatoria</td><td>1 ora</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
       <tr><td>1.6</td><td>Graceful shutdown + protezione 44 procedure tRPC</td><td>4 ore</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
       <tr><td>1.7</td><td>Anti-frode TCC (QR HMAC-SHA256, GPS, audit)</td><td>1 giorno</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
-      <tr><td>1.8</td><td>Cifratura AES-256 per CF e PIVA nel DB</td><td>2 giorni</td><td><span class="badge badge-missing">Da fare</span></td></tr>
+      <tr><td>1.8</td><td>Cifratura AES-256 per CF e PIVA nel DB</td><td>2 giorni</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
+      <tr><td>1.9</td><td>GDPR Router (export dati + oblio + retention)</td><td>1 giorno</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
+      <tr><td>1.10</td><td>CI/CD Pipeline (GitHub Actions)</td><td>4 ore</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
+      <tr><td>1.11</td><td>SBOM (CycloneDX JSON)</td><td>2 ore</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
+      <tr><td>1.12</td><td>Test Suite (36 test, 7 file, Vitest)</td><td>1 giorno</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
     </tbody>
   </table>
 
@@ -782,7 +787,7 @@
     <li class="todo">Manuale utente PA</li>
     <li class="todo">Manuale utente operatore</li>
     <li class="todo">Guida installazione/deploy</li>
-    <li class="todo">SBOM (Software Bill of Materials)</li>
+    <li class="done">SBOM (Software Bill of Materials) — sbom.json CycloneDX</li>
   </ul>
 
   <h3>10.2 Documentazione Sicurezza</h3>
