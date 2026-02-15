@@ -85,7 +85,7 @@ interface HeatmapPoint {
   lat: number;
   lng: number;
   name: string;
-  type: 'shop' | 'hub' | 'market' | 'civic';
+  type: 'shop' | 'hub' | 'market' | 'civic' | 'mobility' | 'culture' | 'referral';
   tcc_earned: number;
   tcc_spent: number;
   transactions: number;
@@ -729,7 +729,7 @@ export default function GamingRewardsPanel() {
           // Il backend ritorna struttura annidata: civic_reports, mobility, culture, shopping
           // Mappiamo correttamente i campi
           setConfig({
-            comune_id: currentComuneId,
+            comune_id: currentComuneId || 1,
             // Civic Reports
             civic_enabled: cfg.civic_reports?.enabled ?? cfg.civic_enabled ?? true,
             civic_tcc_default: cfg.civic_reports?.tcc_default ?? cfg.civic_tcc_default ?? 10,
@@ -1690,7 +1690,7 @@ export default function GamingRewardsPanel() {
                       <div className="text-sm">
                         <div className="font-bold">{point.name}</div>
                         <div>TCC: {point.tcc_earned > 0 ? `+${point.tcc_earned}` : `-${point.tcc_spent}`}</div>
-                        <div className="text-xs text-gray-500">{new Date(point.created_at).toLocaleString('it-IT')}</div>
+                        <div className="text-xs text-gray-500">{point.created_at ? new Date(point.created_at).toLocaleString('it-IT') : '-'}</div>
                       </div>
                     </Popup>
                   </Marker>

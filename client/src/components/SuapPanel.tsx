@@ -62,6 +62,7 @@ interface SuapPraticaFull extends SuapPratica {
   sub_pec?: string;
   sub_telefono?: string;
   ced_cf?: string;
+  ced_impresa_id?: number | string;
   ced_partita_iva?: string;
   ced_ragione_sociale?: string;
   ced_nome?: string;
@@ -86,7 +87,6 @@ interface SuapPraticaFull extends SuapPratica {
   dimensioni_lineari?: string;
   attrezzature?: string;
   canone_annuo?: number;
-  settore_merceologico?: string;
   notaio_rogante?: string;
   numero_repertorio?: string;
   data_atto?: string;
@@ -607,7 +607,7 @@ export default function SuapPanel() {
                   <FileText className="w-4 h-4" />
                   Totale Pratiche
                 </div>
-                <div className="text-2xl font-bold text-white">{stats?.totale || 0}</div>
+                <div className="text-2xl font-bold text-white">{stats?.total || 0}</div>
                 <p className="text-xs text-gray-500">+20.1% dal mese scorso</p>
               </CardContent>
             </Card>
@@ -653,7 +653,7 @@ export default function SuapPanel() {
                   Pratiche Pendenti
                 </CardTitle>
                 <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
-                  {pratiche.filter(p => p.stato === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').length} da revisionare
+                  {pratiche.filter(p => (p.stato as string) === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').length} da revisionare
                 </span>
               </CardHeader>
               <CardContent>
@@ -661,7 +661,7 @@ export default function SuapPanel() {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-orange-400" />
                   </div>
-                ) : pratiche.filter(p => p.stato === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').length === 0 ? (
+                ) : pratiche.filter(p => (p.stato as string) === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').length === 0 ? (
                   <div className="text-center py-8">
                     <CheckCircle2 className="h-12 w-12 mx-auto text-green-400/40 mb-4" />
                     <p className="text-[#e8fbff]/60">Nessuna pratica pendente</p>
@@ -669,7 +669,7 @@ export default function SuapPanel() {
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                    {pratiche.filter(p => p.stato === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').map((pratica) => (
+                    {pratiche.filter(p => (p.stato as string) === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').map((pratica) => (
                       <div 
                         key={pratica.id}
                         className="flex items-center justify-between p-3 rounded-lg bg-orange-500/5 border border-orange-500/20 hover:bg-orange-500/10 cursor-pointer transition-colors"
@@ -1309,7 +1309,7 @@ export default function SuapPanel() {
                             )}
                           </div>
                           <div className="flex-1 pb-4">
-                            <p className="text-xs text-gray-500">{formatDateTime(evento.data_evento)}</p>
+                            <p className="text-xs text-gray-500">{formatDateTime((evento as any).data_evento || evento.created_at)}</p>
                             <p className="text-[#e8fbff] font-medium">{evento.tipo_evento}</p>
                             <p className="text-sm text-gray-400">{evento.descrizione}</p>
                           </div>
@@ -1955,7 +1955,7 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                   className="w-full px-3 py-2 bg-[#1a2332] border border-[#14b8a6]/30 rounded-md text-[#e8fbff] text-sm"
                 >
                   <option value="all">Tutti i mercati</option>
-                  {[...new Set(concessioni.map(c => c.market_name).filter(Boolean))].map(m => (
+                  {Array.from(new Set(concessioni.map(c => c.market_name).filter(Boolean))).map(m => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
@@ -2313,10 +2313,9 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
       {showSciaForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#1e293b] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <SciaForm 
+            <SciaForm
               onSubmit={handleSciaSubmit}
               onCancel={() => setShowSciaForm(false)}
-              isLoading={loading}
             />
           </div>
         </div>

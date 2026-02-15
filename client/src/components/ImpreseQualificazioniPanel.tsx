@@ -51,8 +51,11 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
 
 const MOCK_IMPRESE: ImpresaDTO[] = [
   {
+    id: 1,
     id_impresa: 1,
+    denominazione: 'Mercato Centrale S.r.l.',
     ragione_sociale: 'Mercato Centrale S.r.l.',
+    partita_iva: '01234567890',
     piva: '01234567890',
     codice_fiscale: '01234567890',
     comune: 'Bologna',
@@ -60,8 +63,11 @@ const MOCK_IMPRESE: ImpresaDTO[] = [
     num_qualificazioni_attive: 3
   },
   {
+    id: 2,
     id_impresa: 2,
+    denominazione: 'Alimentari Rossi & C.',
     ragione_sociale: 'Alimentari Rossi & C.',
+    partita_iva: '09876543210',
     piva: '09876543210',
     codice_fiscale: '09876543210',
     comune: 'Modena',
@@ -69,8 +75,11 @@ const MOCK_IMPRESE: ImpresaDTO[] = [
     num_qualificazioni_attive: 2
   },
   {
+    id: 3,
     id_impresa: 3,
+    denominazione: 'Distribuzione Emilia S.p.A.',
     ragione_sociale: 'Distribuzione Emilia S.p.A.',
+    partita_iva: '11223344556',
     piva: '11223344556',
     codice_fiscale: '11223344556',
     comune: 'Parma',
@@ -78,8 +87,11 @@ const MOCK_IMPRESE: ImpresaDTO[] = [
     num_qualificazioni_attive: 5
   },
   {
+    id: 4,
     id_impresa: 4,
+    denominazione: 'Bio Market Italia',
     ragione_sociale: 'Bio Market Italia',
+    partita_iva: '66778899001',
     piva: '66778899001',
     codice_fiscale: '66778899001',
     comune: 'Reggio Emilia',
@@ -262,12 +274,12 @@ export default function ImpreseQualificazioniPanel() {
             setQualificazioni(data.data);
           } else {
             // Fallback a dati mock
-            setQualificazioni(MOCK_QUALIFICAZIONI[selectedImpresa.id_impresa] || []);
+            setQualificazioni(MOCK_QUALIFICAZIONI[selectedImpresa.id_impresa || selectedImpresa.id] || []);
           }
         } catch (error) {
           console.error('Error fetching qualificazioni:', error);
           // Fallback a dati mock
-          setQualificazioni(MOCK_QUALIFICAZIONI[selectedImpresa.id_impresa] || []);
+          setQualificazioni(MOCK_QUALIFICAZIONI[selectedImpresa.id_impresa || selectedImpresa.id] || []);
         } finally {
           setLoading(false);
         }
@@ -307,7 +319,7 @@ export default function ImpreseQualificazioniPanel() {
   // Calcola statistiche
   const totalConcessioni = imprese.reduce((acc, i) => acc + (i.concessioni_attive?.length || 0), 0);
   const totalQualificazioni = imprese.reduce((acc, i) => acc + (i.num_qualificazioni_attive || 0), 0);
-  const comuniUnici = [...new Set(imprese.map(i => i.comune).filter(Boolean))].length;
+  const comuniUnici = Array.from(new Set(imprese.map(i => i.comune).filter(Boolean))).length;
   const mediaConcessioni = imprese.length > 0 ? (totalConcessioni / imprese.length).toFixed(1) : '0';
   
   // Filtra imprese in base alla ricerca

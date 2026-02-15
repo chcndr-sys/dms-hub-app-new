@@ -537,7 +537,7 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
     
     // Centra la mappa sulle coordinate dell'HUB
     if (hub.center_lat && hub.center_lng) {
-      setCustomCenter([hub.center_lat, hub.center_lng]);
+      setCustomCenter([Number(hub.center_lat), Number(hub.center_lng)]);
       setCustomZoom(15); // Zoom ravvicinato per vedere l'area HUB
     }
     
@@ -1166,26 +1166,26 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
               mode={mode}
               mapData={mapData || undefined}
               stallsData={stallsData}
-              allMarkets={mode === 'mercato' ? filteredMarkets : []}
+              allMarkets={mode === 'mercato' ? filteredMarkets.map(m => ({ ...m, latitude: Number(m.latitude), longitude: Number(m.longitude) })) : []}
               allHubs={mode === 'hub' ? filteredHubs : []}
               selectedHub={mode === 'hub' ? selectedHub || undefined : undefined}
               onMarketClick={(id) => { handleMarketClick(id); }}
               onHubClick={(id) => { handleHubClick(id); }}
-              onShopClick={handleShopClick}
+              onShopClick={(shop) => { handleShopClick(shop.id); }}
               showItalyView={showItalyView}
               viewTrigger={mobileViewTrigger}
               height="100%"
-              marketCenterFixed={selectedMarket && selectedMarket.latitude && selectedMarket.longitude ? [
-                parseFloat(String(selectedMarket.latitude)) || 42.5,
-                parseFloat(String(selectedMarket.longitude)) || 12.5
+              marketCenterFixed={selectedMarket?.latitude && selectedMarket?.longitude ? [
+                parseFloat(String(selectedMarket!.latitude)) || 42.5,
+                parseFloat(String(selectedMarket!.longitude)) || 12.5
               ] : undefined}
               hubCenterFixed={selectedHub ? (
-                selectedHub.center_lat && selectedHub.center_lng ? [
-                  parseFloat(String(selectedHub.center_lat)) || 42.5,
-                  parseFloat(String(selectedHub.center_lng)) || 12.5
-                ] : selectedHub.lat && selectedHub.lng ? [
-                  parseFloat(String(selectedHub.lat)) || 42.5,
-                  parseFloat(String(selectedHub.lng)) || 12.5
+                selectedHub!.center_lat && selectedHub!.center_lng ? [
+                  parseFloat(String(selectedHub!.center_lat)) || 42.5,
+                  parseFloat(String(selectedHub!.center_lng)) || 12.5
+                ] : selectedHub!.lat && selectedHub!.lng ? [
+                  parseFloat(String(selectedHub!.lat)) || 42.5,
+                  parseFloat(String(selectedHub!.lng)) || 12.5
                 ] : undefined
               ) : undefined}
               customZoom={mobileMapZoomed ? 15 : 6}
@@ -1258,12 +1258,12 @@ export default function GestioneHubMapWrapper({ routeConfig, navigationMode }: G
           mode={mode}
           mapData={mapData || undefined}
           stallsData={stallsData}
-          allMarkets={mode === 'mercato' ? filteredMarkets : []}
+          allMarkets={mode === 'mercato' ? filteredMarkets.map(m => ({ ...m, latitude: Number(m.latitude), longitude: Number(m.longitude) })) : []}
           allHubs={mode === 'hub' ? filteredHubs : []}
           selectedHub={mode === 'hub' ? selectedHub || undefined : undefined}
           onMarketClick={handleMarketClick}
           onHubClick={handleHubClick}
-          onShopClick={handleShopClick}
+          onShopClick={(shop) => { handleShopClick(shop.id); }}
           showItalyView={showItalyView}
           viewTrigger={viewTrigger}
           height="100%"

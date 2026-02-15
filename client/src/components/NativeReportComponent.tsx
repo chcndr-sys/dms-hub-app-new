@@ -115,7 +115,7 @@ const MODULE_DETAILS: Record<string, {
   integrations: {
     stats: [
       { label: 'Router tRPC', value: '20', color: '#06b6d4' },
-      { label: 'Endpoints', value: '124', color: '#14b8a6' },
+      { label: 'Endpoints', value: '126', color: '#14b8a6' },
       { label: 'Auth', value: 'Firebase', color: '#f59e0b' },
     ],
     highlights: [
@@ -324,10 +324,10 @@ export function NativeReportComponent() {
             {/* System summary bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Codice attivo', value: '114K righe', color: '#14b8a6' },
-                { label: 'Totale progetto', value: '218K righe', color: '#06b6d4' },
+                { label: 'Codice attivo', value: '115K righe', color: '#14b8a6' },
+                { label: 'Totale progetto', value: '219K righe', color: '#06b6d4' },
                 { label: 'Router tRPC', value: '20', color: '#a855f7' },
-                { label: 'Endpoints API', value: '124', color: '#f59e0b' },
+                { label: 'Endpoints API', value: '126', color: '#f59e0b' },
               ].map((s, i) => (
                 <Card key={i} className="bg-[#1a2332] border-[#1e293b]">
                   <CardContent className="p-4 text-center">
@@ -435,7 +435,7 @@ export function NativeReportComponent() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { label: 'Componenti React', value: '139', color: '#14b8a6' },
-                { label: 'Pagine', value: '34', color: '#06b6d4' },
+                { label: 'Pagine', value: '35', color: '#06b6d4' },
                 { label: 'Framework', value: 'React 19', color: '#a855f7' },
                 { label: 'Build', value: 'Vite 7', color: '#f59e0b' },
               ].map((s, i) => (
@@ -560,7 +560,7 @@ export function NativeReportComponent() {
               <CardContent className="p-5">
                 <h4 className="text-sm font-semibold text-[#e8fbff] flex items-center gap-2 mb-4">
                   <Lock className="h-4 w-4 text-[#10b981]" />
-                  Conformita' Normativa (aggiornata 15 Feb 2026)
+                  Conformita' Normativa v6.4 (aggiornata 15 Feb 2026)
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {[
@@ -579,6 +579,13 @@ export function NativeReportComponent() {
                     { name: 'CI/CD Pipeline', status: 'ok' as const, detail: 'GitHub Actions: check + test + build + audit' },
                     { name: 'SBOM', status: 'ok' as const, detail: 'CycloneDX JSON generato automaticamente' },
                     { name: 'Test Suite (36 test)', status: 'ok' as const, detail: 'Vitest: crypto, security, RBAC, router, schema' },
+                    { name: 'ARIA/WCAG Landmarks', status: 'ok' as const, detail: 'role=main, aria-label, aria-live, nav semantica' },
+                    { name: 'GDPR Consent Checkbox', status: 'ok' as const, detail: 'Consenso obbligatorio in registrazione' },
+                    { name: 'API Key Middleware', status: 'ok' as const, detail: 'Validazione X-API-Key + lastUsedAt tracking' },
+                    { name: 'RBAC Granulare', status: 'ok' as const, detail: 'requirePermission() middleware per permessi singoli' },
+                    { name: 'Error Monitoring', status: 'ok' as const, detail: 'ErrorBoundary + window.error → backend' },
+                    { name: 'Code Splitting', status: 'ok' as const, detail: 'React.lazy() su 30+ pagine, bundle ridotto' },
+                    { name: 'Console.log Cleanup', status: 'ok' as const, detail: '~185 console.log rimossi da 30 file' },
                     { name: 'PDND', status: 'partial' as const, detail: 'Predisposto — in attesa accreditamento' },
                     { name: 'DPIA', status: 'partial' as const, detail: 'Da redigere formalmente' },
                     { name: 'Qualificazione ACN SaaS', status: 'missing' as const, detail: 'Da avviare per vendita a PA' },
@@ -672,7 +679,7 @@ export function NativeReportComponent() {
             <Activity className="h-6 w-6 text-[#a855f7]" />
             Analisi Sistema
           </h2>
-          <p className="text-xs text-[#e8fbff]/50 mt-1">DMS Hub — Report Tecnico v6.3</p>
+          <p className="text-xs text-[#e8fbff]/50 mt-1">DMS Hub — Report Tecnico v6.4</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
