@@ -15,18 +15,44 @@ export function LegacyReportCards() {
         <div>
           <h2 className="text-2xl font-bold text-[#e8fbff] flex items-center gap-2">
             <FileText className="h-6 w-6 text-[#06b6d4]" />
-            Documentazione Tecnica & Blueprint
+            Documentazione Tecnica & Report
           </h2>
           <p className="text-[#e8fbff]/60 mt-1">
-            Accesso rapido alla documentazione di sistema, repository e stato del progetto.
+            Dossier di sistema, blueprint architetturale, stato del progetto e resoconto ecosistema.
           </p>
         </div>
       </div>
 
       {/* Main Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        
-        {/* Card 1: System Blueprint */}
+
+        {/* Card 1: DOSSIER TECNICO (in evidenza) */}
+        <Card className="bg-[#1a2332] border-[#a855f7]/40 hover:border-[#a855f7]/70 transition-colors ring-1 ring-[#a855f7]/10">
+          <CardHeader>
+            <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+              <Shield className="h-5 w-5 text-[#a855f7]" />
+              Dossier Tecnico
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-[#e8fbff]/70">
+              Analisi completa: architettura, sicurezza, conformità AGID/EU, integrazioni PA e valutazione economica.
+            </p>
+            <div className="flex items-center gap-2 text-xs text-[#e8fbff]/50">
+              <CheckCircle className="h-3 w-3 text-[#a855f7]" />
+              10 sezioni + 42 documenti PDF
+            </div>
+            <Button
+              className="w-full bg-[#a855f7] hover:bg-[#a855f7]/80 text-white"
+              onClick={() => window.open('/dossier/index.html', '_blank')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Apri Dossier Interattivo
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Card 2: System Blueprint */}
         <Card className="bg-[#1a2332] border-[#06b6d4]/30 hover:border-[#06b6d4]/60 transition-colors">
           <CardHeader>
             <CardTitle className="text-[#e8fbff] flex items-center gap-2">
@@ -36,33 +62,33 @@ export function LegacyReportCards() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-[#e8fbff]/70">
-              Blueprint completo del sistema: architettura, API, database e guide operative.
+              Codice sorgente, schema DB, guida operativa CLAUDE.md e documentazione tecnica.
             </p>
             <div className="flex items-center gap-2 text-xs text-[#e8fbff]/50">
               <Server className="h-3 w-3" />
-              Repo: dms-system-blueprint
+              218K righe — 70 tabelle — 119 endpoint
             </div>
             <div className="flex gap-2 pt-2">
-              <Button 
+              <Button
                 className="flex-1 bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
                 onClick={() => window.open('https://github.com/Chcndr/dms-hub-app-new', '_blank')}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Apri Repo
+                Repo GitHub
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="flex-1 border-[#a855f7] text-[#a855f7] hover:bg-[#a855f7]/10"
-                onClick={() => window.open('https://github.com/Chcndr/mihub-backend-rest/blob/master/BLUEPRINT_UNIFICATO.md', '_blank')}
+                onClick={() => window.open('https://github.com/Chcndr/dms-hub-app-new/blob/master/CLAUDE.md', '_blank')}
               >
                 <FileText className="h-4 w-4 mr-2" />
-                Master Plan
+                CLAUDE.md
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Card 2: Stato Progetto */}
+        {/* Card 3: Stato Progetto */}
         <Card className="bg-[#1a2332] border-[#06b6d4]/30 hover:border-[#06b6d4]/60 transition-colors">
           <CardHeader>
             <CardTitle className="text-[#e8fbff] flex items-center gap-2">
@@ -72,15 +98,15 @@ export function LegacyReportCards() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-[#e8fbff]/70">
-              Documento completo con stato attuale, architettura, funzionalità operative e TODO.
+              Documento completo con stato attuale, architettura, funzionalità operative e roadmap.
             </p>
             <div className="flex items-center gap-2 text-xs text-[#e8fbff]/50">
               <Calendar className="h-3 w-3" />
-              Aggiornato in tempo reale
+              Aggiornato periodicamente
             </div>
-            <Button 
+            <Button
               className="w-full bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
-              onClick={() => window.open('/project_analysis_and_plan.md', '_blank')}
+              onClick={() => window.open('/STATO_PROGETTO_AGGIORNATO.md', '_blank')}
             >
               <Download className="h-4 w-4 mr-2" />
               Visualizza Documento
@@ -88,7 +114,7 @@ export function LegacyReportCards() {
           </CardContent>
         </Card>
 
-        {/* Card 3: Resoconto Ecosistema */}
+        {/* Card 4: Resoconto Ecosistema */}
         <Card className="bg-[#1a2332] border-[#06b6d4]/30 hover:border-[#06b6d4]/60 transition-colors">
           <CardHeader>
             <CardTitle className="text-[#e8fbff] flex items-center gap-2">
@@ -104,38 +130,12 @@ export function LegacyReportCards() {
               <Calendar className="h-3 w-3" />
               Data: 9 Novembre 2025
             </div>
-            <Button 
+            <Button
               className="w-full bg-[#06b6d4] hover:bg-[#06b6d4]/80 text-white"
               onClick={() => window.open('/report/index.html', '_blank')}
             >
               <Download className="h-4 w-4 mr-2" />
               Visualizza Documento
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Card 4: Dossier Tecnico Sistema */}
-        <Card className="bg-[#1a2332] border-[#a855f7]/30 hover:border-[#a855f7]/60 transition-colors">
-          <CardHeader>
-            <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-              <Shield className="h-5 w-5 text-[#a855f7]" />
-              Dossier Tecnico
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-[#e8fbff]/70">
-              Analisi completa: architettura, sicurezza, conformità AGID/EU, integrazioni PA e valutazione economica.
-            </p>
-            <div className="flex items-center gap-2 text-xs text-[#e8fbff]/50">
-              <CheckCircle className="h-3 w-3" />
-              10 sezioni + 42 documenti PDF
-            </div>
-            <Button
-              className="w-full bg-[#a855f7] hover:bg-[#a855f7]/80 text-white"
-              onClick={() => window.open('/dossier/index.html', '_blank')}
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Apri Dossier Interattivo
             </Button>
           </CardContent>
         </Card>
@@ -148,7 +148,7 @@ export function LegacyReportCards() {
           <Shield className="h-5 w-5 text-[#ef4444]" />
           Documentazione Tecnica
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { title: 'Executive Summary', desc: 'Panoramica generale ecosistema DMS Hub', icon: Target, color: 'text-[#ef4444]' },

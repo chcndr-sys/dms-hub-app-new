@@ -1,81 +1,97 @@
-# 📘 DMS Hub System Blueprint
-**Versione:** 3.2 (Aggiornamento Post-Integrazione)
-**Data:** 26 Dicembre 2025
-**Stato:** ✅ Operativo
+# DMS Hub System Blueprint
+**Versione:** 4.0
+**Data:** Febbraio 2026
+**Stato:** Operativo
 
 ---
 
-## 🎯 Executive Summary
+## Executive Summary
 
-Il **DMS Hub** (Digital Market System) è l'ecosistema digitale integrato per la gestione dei mercati ambulanti, della mobilità sostenibile e dei servizi civici per la Pubblica Amministrazione.
+Il **DMS Hub** (Digital Market System) e' l'ecosistema digitale integrato per la gestione dei mercati ambulanti, della mobilita' sostenibile e dei servizi civici per la Pubblica Amministrazione italiana.
 
-Il sistema è composto da:
-1.  **Dashboard PA**: Frontend React/Vite per il monitoraggio e la gestione.
-2.  **Backend REST**: Node.js/Express su server Hetzner per le API core.
-3.  **Database**: PostgreSQL su Neon (Serverless) con estensioni GIS.
-4.  **Agenti AI**: Ecosistema multi-agente (MIO, GPT Dev, Manus, Abacus) per automazione e supporto.
+Un'unica app web che serve tutti i tipi di utente (PA, imprese, cittadini, pubblico) con contenuto differenziato per ruolo tramite RBAC.
 
 ---
 
-## 🏗️ Architettura Tecnica
+## Architettura Tecnica
 
-### 1. Frontend (Dashboard PA)
-*   **Tecnologia**: React 18, Vite, TypeScript, TailwindCSS.
-*   **Hosting**: Vercel (con deploy automatico da GitHub).
-*   **Moduli Principali**:
-    *   **Mappa GIS**: Visualizzazione mercati, posteggi e layer geografici.
-    *   **Gestione Mercati**: CRUD mercati, posteggi, concessioni e operatori.
-    *   **Reportistica**: Tab integrato con **Report Interattivo** (sito statico embedded) e documentazione tecnica.
-    *   **AI Chat**: Interfaccia per interagire con gli agenti MIO.
+### 1. Frontend (Dashboard PA + App Pubbliche)
+- **Tecnologia**: React 19, Vite 7, TypeScript strict, Tailwind 4, shadcn/ui
+- **Hosting**: Vercel (auto-deploy da GitHub master)
+- **Router**: Wouter (lightweight)
+- **Componenti**: 139 React components, 34 pagine
+- **State**: React Context + React Query (via tRPC client)
 
-### 2. Backend (MIO Hub API)
-*   **Tecnologia**: Node.js, Express.
-*   **Hosting**: Hetzner VPS (Ubuntu 22.04), gestito con PM2.
-*   **Endpoint Chiave**:
-    *   `/api/gis/market-map/:marketId`: Restituisce GeoJSON dei posteggi con dati ricchi (dimensioni, rotazione).
-    *   `/api/markets`: Gestione anagrafica mercati.
-    *   `/api/concessions`: Gestione assegnazioni e scadenze.
+### 2. Backend (tRPC API)
+- **Tecnologia**: Node.js 18+, Express 4, tRPC 11, Drizzle ORM 0.44
+- **Hosting**: Hetzner VPS (157.90.29.66), gestito con PM2
+- **Router tRPC registrati**: 19 (system, auth, analytics, dmsHub, wallet, integrations, mihub, mioAgent, guardian, tper, logs, carbonCredits, users, sustainability, businesses, inspections, notifications, civicReports, mobility)
+- **Procedure totali**: 119 (query + mutation)
 
 ### 3. Database (Neon PostgreSQL)
-*   **Struttura**: 39 tabelle relazionali.
-*   **Tabelle Core**:
-    *   `markets`: Anagrafica mercati.
-    *   `stalls`: Posteggi (include `geometry_geojson`, `dimensions`, `rotation`).
-    *   `vendors`: Anagrafica operatori.
-    *   `concessions`: Tabella di collegamento (storia assegnazioni).
+- **Tabelle**: 70 in 10 domini funzionali
+- **ORM**: Drizzle (schema source of truth: `drizzle/schema.ts`)
+- **Hosting**: Neon Serverless, regione EU
+- **Domini**: Core Business (12), Wallet (8), Auth/RBAC (5), AI/Agenti (10), Civic (4), Integrazioni (8), Comuni (6), Sostenibilita' (5), Sistema (7), Commercio/SUAP (5)
+
+### 4. Autenticazione
+- **Provider**: Firebase Auth (progetto dmshub-auth-2975e)
+- **OAuth**: SPID/CIE/CNS via intermediario
+- **Sessione**: Cookie JWT, scadenza 1 anno
+- **RBAC**: 4 tabelle (user_roles, role_permissions, permissions, user_role_assignments)
+- **Impersonazione**: Super admin puo' simulare vista PA per comune specifico
+
+### 5. Sistema AI Multi-Agente
+- **Agenti**: 5 (MIO orchestratore, GPT-Dev, Manus, Abacus, Zapier)
+- **LLM**: Gemini 2.5 Flash
+- **Knowledge Base**: 30 PDF integrati nel system prompt
+- **Features**: Task management, brain condiviso, workspace collaborativo
 
 ---
 
-## 🚀 Funzionalità Recenti (Changelog v3.2)
+## Dimensioni Codebase
 
-### ✅ Pop-up Mappa "Ricchi"
-*   **Feature**: I pop-up dei posteggi sulla mappa ora mostrano:
-    *   Dimensioni esatte (es. "6.00m x 9.00m").
-    *   Superficie in mq.
-    *   Rotazione (orientamento in gradi).
-    *   Link diretto al "Vetrina Editor" per modifiche visuali.
-*   **Implementazione**:
-    *   DB: Aggiunte colonne `dimensions` (VARCHAR) e `rotation` (DECIMAL) a `stalls`.
-    *   API: Aggiornato endpoint GIS per esporre questi campi.
-    *   Frontend: Aggiornato `MarketMapComponent` per il rendering condizionale.
-
-### ✅ Fix Associazione Concessioni
-*   **Bug**: La creazione di una concessione falliva inviando il codice posteggio invece dell'ID.
-*   **Fix**: Corretto il form in `MarketCompaniesTab.tsx` per usare `stall.id` come value della select.
-
-### ✅ Integrazione Report Interattivo & Blueprint
-*   **Feature**: Il tab "Report" ora ospita il sito di analisi avanzata (`miohub-analysis-report`) direttamente integrato via iframe.
-*   **Documentazione**: Mantenuto l'accesso al System Blueprint e allo stato del progetto nella sezione inferiore.
-*   **Accesso**: Il report è accessibile a `/report/index.html` o navigando nel tab Report della dashboard.
+| Metrica | Valore |
+|---------|--------|
+| Codice attivo (TS/TSX) | ~114.000 righe |
+| Totale progetto (con docs, config, etc.) | ~218.000 righe |
+| Componenti React | 139 |
+| Pagine frontend | 34 |
+| Tabelle database | 70 |
+| Procedure tRPC | 119 |
+| Router tRPC | 19 |
+| Tab Dashboard PA | 14 (protetti RBAC) |
 
 ---
 
-## 🗺️ Roadmap & Next Steps
+## Integrazioni PA
 
-1.  **Vista "Gemello Digitale Italia"**: Implementare la vista nazionale con zoom animato sui mercati.
-2.  **Integrazione TPER**: Completare il modulo per il trasporto pubblico (Centro Mobilità).
-3.  **Notifiche Real-time**: Attivare il sistema di notifiche push per gli operatori.
+| Integrazione | Stato | Dettaglio |
+|-------------|-------|-----------|
+| PagoPA | Parziale | E-FIL SOAP implementato, mock mode |
+| SPID/CIE/CNS | Parziale | Via OAuth intermediario |
+| Firebase Auth | Operativo | JWT + cookie session |
+| TPER Bologna | Operativo | API real-time |
+| PDND | Da fare | Non implementato |
+| ANPR | Da fare | Non implementato |
+| AppIO | Da fare | Non implementato |
+| SUAP | Parziale | Modulo locale |
 
 ---
 
-*Documento generato automaticamente da Manus AI per il progetto DMS Hub.*
+## Documentazione
+
+| Documento | Percorso |
+|-----------|----------|
+| Guida operativa agenti | `CLAUDE.md` (root) |
+| Dossier tecnico | `/dossier/index.html` |
+| Resoconto ecosistema | `/report/index.html` |
+| Stato progetto | `/STATO_PROGETTO_AGGIORNATO.md` |
+| Schema DB | `drizzle/schema.ts` |
+| Architettura | `docs/ARCHITECTURE.md` |
+| API reference | `docs/API.md` |
+| Operations | `docs/OPERATIONS.md` |
+
+---
+
+*Documento aggiornato — Febbraio 2026 — DMS Hub v4.0*
