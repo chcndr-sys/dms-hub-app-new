@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 6.0.0 (Inventario completo DB + Backend allineato alla realta)
-> **Data:** 14 Febbraio 2026
+> **Versione:** 6.1.0 (TCC Security Anti-Frode + Inventario completo DB + Backend allineato alla realta)
+> **Data:** 15 Febbraio 2026
 > **Autore:** Sistema documentato da Manus AI + Claude Code
 > **Stato:** PRODUZIONE
 
@@ -28,6 +28,21 @@
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 15 Febbraio 2026 (v6.1.0) — TCC Security & Anti-Frode
+- **[NEW] Sistema Anti-Frode TCC completo:** 6 nuove tabelle DB, 2 nuovi enum, 1 nuovo router tRPC con 10 procedure, utility crittografiche HMAC-SHA256.
+- **[NEW] `server/lib/tccSecurity.ts`:** Utility per firma QR (HMAC-SHA256), validazione GPS (Haversine + impossible travel), rate limiting, idempotency keys, cooldown check-in, logging frode.
+- **[NEW] `server/tccSecurityRouter.ts`:** Router tRPC con 10 procedure — generateSignedQR, validateSignedQR, recordCheckin (pipeline 9 step), getDailyLimits, fraudEvents, fraudStats, resolveFraud, auditTrail, getConfig, updateConfig.
+- **[NEW] `client/src/components/FraudMonitorPanel.tsx`:** Pannello anti-frode per Dashboard PA — statistiche real-time, lista eventi con filtri severita, risoluzione/ignora eventi, ricerca audit trail per utente.
+- **[NEW] 4 rate limiting su endpoint finanziari:** tccSecurity.recordCheckin (30/15min), tccSecurity.generateSignedQR (20/15min), wallet.ricarica (10/15min), wallet.decurtazione (50/15min).
+- **[FIX] `server/walletRouter.ts`:** 5 vulnerabilita corrette — operatoreId da hardcoded "SYSTEM" a ctx.user.email, check wallet SOSPESO su ricarica/decurtazione, 3 console.log sostituiti con audit_logs strutturati.
+- **[FIX] `client/src/hooks/useNearbyPOIs.ts`:** Aggiunti Authorization header, idempotency key, nonce anti-replay, GPS accuracy check (>150m = rifiutato).
+- **[FIX] `client/src/pages/WalletPage.tsx`:** Aggiunti auth header su tutte le fetch, rimossi alert() debug in produzione, aggiunto idempotency key su generateSpendQR.
+- **[FIX] `client/src/pages/HubOperatore.tsx`:** Operatore dinamico (non piu hardcoded "Luca Bianchi"), auth header su 7 fetch, idempotency key su issue/redeem.
+- **[UPDATE] `client/src/pages/DashboardPA.tsx`:** Integrato FraudMonitorPanel nel tab Security.
+- **[DB] 6 nuove tabelle:** `tcc_rate_limits`, `tcc_fraud_events`, `tcc_idempotency_keys`, `tcc_daily_limits`, `tcc_qr_tokens`, `tcc_rewards_config`.
+- **[DB] 2 nuovi enum:** `tcc_fraud_event_type` (7 valori), `tcc_action_type` (6 valori).
+- **Totale modifiche:** +2068/-51 righe su 12 file (2 nuovi backend, 1 nuovo frontend, 9 modificati).
 
 ### Sessione 14 Febbraio 2026 (v6.0.0)
 - **Inventario completo Database Neon:** 149 tabelle, 2.021 colonne, 372.143 righe, 409 indici, 9 trigger, 37 funzioni — dati reali verificati via psql da Manus.
@@ -704,7 +719,7 @@ POST /api/guardian/debug/testEndpoint
 
 | Metrica | Valore |
 |---------|--------|
-| **Tabelle totali** | 149 |
+| **Tabelle totali** | 155 (149 + 6 TCC Security v6.1.0) |
 | **Colonne totali** | 2.021 |
 | **Righe totali (stima)** | 372.143 |
 | **Indici totali** | 409 |
@@ -783,6 +798,23 @@ POST /api/guardian/debug/testEndpoint
 ### Tabelle Vuote / Predisposte (89 tabelle)
 
 Le seguenti tabelle sono create e pronte ma ancora senza dati: `agent_brain`, `agent_context`, `agent_projects`, `agent_tasks`, `api_keys`, `api_metrics`, `audit_logs`, `bookings`, `business_analytics`, `carbon_footprint`, `challenge_participations`, `chat_messages_old`, `checkins`, `compliance_certificates`, `comune_contratti`, `comune_fatture`, `concession_payments`, `custom_areas`, `custom_markers`, `data_bag`, `dima_mappe`, `dms_durc_snapshots`, `ecocredits`, `enterprise_employees`, `enterprise_qualifications`, `external_connections`, `hub_services`, `inspections_detailed`, `ip_blacklist`, `market_tariffs`, `notifications`, `product_tracking`, `products`, `reimbursements`, `security_delegations`, `suap_azioni`, `suap_documenti`, `suap_regole`, `sustainability_metrics`, `system_events`, `system_logs`, `user_analytics`, `vendor_documents`, `violations`, `wallet_balance_snapshots`, `webhook_logs`, `webhooks`, `zapier_webhook_logs`.
+
+### Tabelle TCC Security (v6.1.0 — 15 Febbraio 2026)
+
+Le seguenti 6 tabelle e 2 enum sono state aggiunte per il sistema anti-frode TCC. Richiedono `pnpm db:push` per essere create nel database.
+
+| Tabella | Colonne | Descrizione |
+|---------|---------|-------------|
+| `tcc_rate_limits` | id, user_id, action_type, count, window_start, created_at | Rate limiting per utente e tipo azione TCC |
+| `tcc_fraud_events` | id, user_id, event_type, severity, details, ip_address, user_agent, resolved, resolved_by, resolved_at, resolution_notes, created_at | Log eventi sospetti con workflow risoluzione admin |
+| `tcc_idempotency_keys` | id, idempotency_key, user_id, endpoint, request_hash, response_data, created_at, expires_at | Prevenzione transazioni duplicate via chiave UUID |
+| `tcc_daily_limits` | id, user_id, date, checkin_count, tcc_earned, tcc_spent, transaction_count, created_at, updated_at | Contatori giornalieri per limiti anti-frode |
+| `tcc_qr_tokens` | id, user_id, qr_type, token_hash, payload, amount, used, used_at, used_by_operator_id, expires_at, created_at | QR firmati HMAC-SHA256 con scadenza e uso singolo |
+| `tcc_rewards_config` | id, comune_id, max_daily_tcc_per_user, max_daily_checkins, max_monthly_tcc, max_single_transaction, qr_expiry_seconds, gps_radius_meters, cooldown_minutes, + 15 colonne rewards per tipo | Configurazione limiti e rewards per comune |
+
+Enum:
+- `tcc_fraud_event_type`: gps_spoofing, rate_exceeded, duplicate_checkin, invalid_qr, amount_anomaly, impossible_travel, suspicious_pattern
+- `tcc_action_type`: checkin_culture, checkin_mobility, scan, referral, spend, issue
 
 ### Tabelle Backup (da ignorare)
 
@@ -947,6 +979,7 @@ La sezione `Integrazioni -> API Dashboard` del frontend Vercel include:
 | **SUAP** | `/api/suap/*` | pratiche, stats, evaluate, notifiche-pm |
 | **Test Mercato** | `/api/test-mercato/*` | inizia-mercato, avvia-spunta, assegna-posteggio, chiudi-spunta, registra-rifiuti, chiudi-mercato |
 | **TCC v2** | `/api/tcc/v2/*` | wallet-impresa, qualifiche, settlement |
+| **TCC Security** | `/api/trpc/tccSecurity.*` | Anti-frode, QR firmati, rate limiting, audit trail (v6.1.0) |
 | **DMS Legacy** | `/api/integrations/dms-legacy/*` | markets, vendors, concessions, presences, sync |
 | **MercaWeb** | `/api/integrations/mercaweb/*` | import/ambulanti, import/mercati, export/presenze, health |
 
@@ -1140,6 +1173,132 @@ Response: { customer_name, wallet_balance, tcc_amount, euro_amount }
 - ✅ **Date Rimborsi:** Formato DD/MM/YYYY invece di oggetto Date raw
 - ✅ **Autocomplete Off:** Rimosso popup password Safari sui campi input
 - ✅ **Numeri in Batch:** I batch rimborsi mostrano i settlement numbers
+
+## 🛡️ TCC SECURITY — SISTEMA ANTI-FRODE (v6.1.0)
+
+### Cos'e il Sistema TCC Security?
+
+Il sistema **TCC Security** e' il layer di protezione anti-frode per tutte le operazioni TCC (Token Carbon Credit). Implementa validazione crittografica QR, rate limiting per utente, rilevamento GPS spoofing, prevenzione transazioni duplicate e monitoraggio eventi sospetti con dashboard admin.
+
+### Architettura di Sicurezza
+
+```
+Richiesta utente
+  |
+  v
+[1. Express Rate Limiting] -- 4 tier per endpoint (30/20/10/50 req per 15min)
+  |
+  v
+[2. tRPC Auth Middleware] -- protectedProcedure / adminProcedure
+  |
+  v
+[3. Idempotency Check] -- UUID key per prevenire duplicati
+  |
+  v
+[4. Rate Limit DB] -- Contatore per utente/azione nel periodo
+  |
+  v
+[5. GPS Validation] -- Accuracy check + Haversine impossible travel
+  |
+  v
+[6. Cooldown Check] -- Tempo minimo tra check-in stesso POI
+  |
+  v
+[7. Daily Limits] -- Max TCC/check-in/transazioni per giorno
+  |
+  v
+[8. Operazione TCC] -- Insert transazione + aggiorna saldi
+  |
+  v
+[9. Audit Log] -- Scrittura strutturata in audit_logs
+```
+
+### Procedure tRPC (Router: tccSecurity)
+
+| Procedura | Tipo | Auth | Descrizione |
+|-----------|------|------|-------------|
+| `generateSignedQR` | mutation | protectedProcedure | Genera QR firmato HMAC-SHA256 con scadenza (default 5 min) |
+| `validateSignedQR` | mutation | protectedProcedure | Valida firma, verifica scadenza, marca come usato (single-use) |
+| `recordCheckin` | mutation | protectedProcedure | Pipeline 9 step: idempotency, rate limit, GPS accuracy, GPS plausibility, cooldown, daily limits, insert, audit, save key |
+| `getDailyLimits` | query | protectedProcedure | Limiti giornalieri correnti per utente autenticato |
+| `fraudEvents` | query | adminProcedure | Lista eventi sospetti con filtri severita/risoluzione |
+| `fraudStats` | query | adminProcedure | Statistiche: critici aperti, non risolti, oggi, ultimi 30gg |
+| `resolveFraud` | mutation | adminProcedure | Risolvi/ignora evento con note admin |
+| `auditTrail` | query | adminProcedure | Cerca audit trail per email o userId |
+| `getConfig` | query | adminProcedure | Configurazione rewards e limiti per comune |
+| `updateConfig` | mutation | adminProcedure | Aggiorna configurazione limiti/rewards |
+
+### Firma QR HMAC-SHA256
+
+| Parametro | Valore |
+|-----------|--------|
+| Algoritmo | HMAC-SHA256 |
+| Segreto | JWT_SECRET (variabile ambiente) |
+| Formato token | base64url(HMAC) |
+| Payload firmato | userId + qrType + amount + nonce + expiresAt |
+| Scadenza default | 300 secondi (5 minuti) |
+| Uso singolo | Si — marcato `used=true` dopo prima validazione |
+
+### Validazione GPS
+
+| Controllo | Soglia | Azione |
+|-----------|--------|--------|
+| Accuracy GPS | > 150 metri | Rifiuto check-in + errore utente |
+| Impossible travel | > 200 km/h tra ultimo check-in | Log frode `impossible_travel` + rifiuto |
+| Distanza Haversine | Formula standard (raggio Terra 6371km) | Calcolo distanza tra coordinate |
+
+### Rate Limiting Express (4 tier)
+
+| Endpoint | Max richieste | Finestra |
+|----------|---------------|----------|
+| `tccSecurity.recordCheckin` | 30 | 15 minuti |
+| `tccSecurity.generateSignedQR` | 20 | 15 minuti |
+| `wallet.ricarica` | 10 | 15 minuti |
+| `wallet.decurtazione` | 50 | 15 minuti |
+
+### Limiti Giornalieri Default (configurabili per comune)
+
+| Limite | Valore default |
+|--------|----------------|
+| Max TCC per utente/giorno | 500 |
+| Max check-in per giorno | 10 |
+| Max TCC per mese | 5.000 |
+| Max singola transazione | 200 TCC |
+| Cooldown stesso POI | 30 minuti |
+| Max referral per giorno | 3 |
+| Soglia high-value | 5.000 centesimi (50 EUR) |
+
+### Componenti Frontend
+
+| File | Descrizione |
+|------|-------------|
+| `FraudMonitorPanel.tsx` | Pannello anti-frode nella Dashboard PA (tab Security) |
+| `FraudStatsCards` | 4 card statistiche: critici, non risolti, oggi, 30gg |
+| `FraudEventsList` | Lista eventi filtrabili per severita, con azioni risolvi/ignora |
+| `AuditTrailSearch` | Ricerca audit trail per email o userId |
+| `SeverityBadge` | Badge colorato per severita (low/medium/high/critical) |
+
+### File Backend
+
+| File | Descrizione |
+|------|-------------|
+| `server/lib/tccSecurity.ts` | Utility crittografiche e validazione (circa 350 righe) |
+| `server/tccSecurityRouter.ts` | Router tRPC con 10 procedure (circa 450 righe) |
+
+### Vulnerabilita Corrette (v6.1.0)
+
+| File | Vulnerabilita | Fix |
+|------|---------------|-----|
+| `walletRouter.ts` | operatoreId hardcoded "SYSTEM" | Usa ctx.user.email dalla sessione autenticata |
+| `walletRouter.ts` | Nessun check wallet SOSPESO su ricarica | Aggiunto controllo status prima di operare |
+| `walletRouter.ts` | console.log per eventi critici | Sostituiti con insert strutturati in audit_logs |
+| `useNearbyPOIs.ts` | Fetch senza Authorization header | Aggiunto Bearer token da localStorage |
+| `useNearbyPOIs.ts` | Check-in senza idempotency | Aggiunto UUID idempotency key + nonce anti-replay |
+| `WalletPage.tsx` | alert() debug in produzione | Rimossi, sostituiti con console.warn |
+| `HubOperatore.tsx` | Operatore hardcoded "Luca Bianchi" ID:1 | Operatore dinamico da localStorage user data |
+| `HubOperatore.tsx` | 7 fetch senza auth header | Aggiunti Authorization: Bearer su tutte |
+
+---
 
 ## 📋 SSO SUAP - MODULO SCIA
 
