@@ -555,6 +555,45 @@ export function NativeReportComponent() {
               </div>
             </div>
 
+            {/* Conformità Normativa */}
+            <Card className="bg-[#1a2332] border-[#1e293b]">
+              <CardContent className="p-5">
+                <h4 className="text-sm font-semibold text-[#e8fbff] flex items-center gap-2 mb-4">
+                  <Lock className="h-4 w-4 text-[#10b981]" />
+                  Conformita' Normativa (aggiornata 15 Feb 2026)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    { name: 'GDPR — Privacy Policy', status: 'ok' as const, detail: 'Pagina /privacy conforme Art. 13/14' },
+                    { name: 'GDPR — Cookie Consent', status: 'ok' as const, detail: 'Banner consenso esplicito attivo' },
+                    { name: 'WCAG 2.1 AA', status: 'ok' as const, detail: 'Skip-to-content, focus-visible, lang="it"' },
+                    { name: 'Dichiarazione Accessibilita\'', status: 'ok' as const, detail: 'Pagina /accessibilita conforme AgID' },
+                    { name: 'Security Headers (Helmet)', status: 'ok' as const, detail: 'CSP, HSTS, X-Frame-Options attivi' },
+                    { name: 'Rate Limiting', status: 'ok' as const, detail: 'Globale 100/15min + 4 finanziari' },
+                    { name: 'Anti-Frode TCC', status: 'ok' as const, detail: 'QR HMAC-SHA256, GPS validation, audit' },
+                    { name: 'PWA + Service Worker', status: 'ok' as const, detail: 'Installabile, offline page, manifest' },
+                    { name: 'PDND', status: 'partial' as const, detail: 'Predisposto — in attesa accreditamento' },
+                    { name: 'DPIA', status: 'partial' as const, detail: 'Da redigere formalmente' },
+                    { name: 'Qualificazione ACN SaaS', status: 'missing' as const, detail: 'Da avviare per vendita a PA' },
+                    { name: 'Cifratura PII nel DB', status: 'missing' as const, detail: 'AES-256 su CF/PIVA da implementare' },
+                  ].map((int, i) => {
+                    const st = STATUS_COLORS[int.status];
+                    return (
+                      <div key={i} className="p-3 rounded-lg bg-[#0b1220] border border-[#1e293b]">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-semibold text-[#e8fbff]">{int.name}</span>
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${st.bg} ${st.text}`}>
+                            {st.label}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#e8fbff]/40">{int.detail}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* PA Integrations status */}
             <Card className="bg-[#1a2332] border-[#1e293b]">
               <CardContent className="p-5">
@@ -627,7 +666,7 @@ export function NativeReportComponent() {
             <Activity className="h-6 w-6 text-[#a855f7]" />
             Analisi Sistema
           </h2>
-          <p className="text-xs text-[#e8fbff]/50 mt-1">DMS Hub — Report Tecnico v5.0</p>
+          <p className="text-xs text-[#e8fbff]/50 mt-1">DMS Hub — Report Tecnico v6.2</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">

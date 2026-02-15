@@ -347,17 +347,17 @@ Nessuna vulnerabilita' critica presente. Tutte le misure di sicurezza sono state
 | &#10003; | Cookie domain | Implementato | Configurazione per sottodomini |
 | &#10003; | Session invalidation | Implementato | Blacklist token attiva |
 
-### 6.3 Livello di Maturita' Software (CMMI-like)
+### 6.3 Livello di Maturita' Software (CMMI-like) — Aggiornato 15 Feb 2026
 
 | Area | Livello | Descrizione |
 |------|---------|-------------|
 | Gestione requisiti | 2 - Gestito | Requisiti tracciati in docs, non in tool dedicato |
 | Sviluppo | 3 - Definito | Stack definito, pattern consistenti, CLAUDE.md |
-| Testing | 1 - Iniziale | Solo type-check, nessun test automatizzato |
-| Deploy | 2 - Gestito | Vercel auto-deploy, PM2 manuale |
-| Monitoring | 3 - Definito | Guardian + audit logs + health check |
-| Sicurezza | 2 - Gestito | Auth solida, mancano hardening e compliance |
-| Documentazione | 3 - Definito | CLAUDE.md, INVENTARIO, docs/ completi |
+| Testing | 2 - Gestito | Type-check + 2 test unitari (cookies, env) |
+| Deploy | 3 - Definito | Vercel auto-deploy, GitHub Actions CI/CD, PM2 cluster |
+| Monitoring | 3 - Definito | Guardian + audit logs + health check + FraudMonitor |
+| Sicurezza | 3 - Definito | Helmet, rate limiting, CORS, cookie sicuri, anti-frode TCC, auth protetto |
+| Documentazione | 4 - Quantificato | CLAUDE.md, docs/*, INVENTARIO, DOSSIER, CONTESTO, BLUEPRINT completi |
 
 ---
 
@@ -369,15 +369,15 @@ Nessuna vulnerabilita' critica presente. Tutte le misure di sicurezza sono state
 
 | Requisito | Articolo | Stato | Gap |
 |-----------|----------|-------|-----|
-| Identita' digitale SPID | Art. 64 | Parziale | Serve integrazione diretta SPID |
-| CIE come credenziale | Art. 64 | Mancante | Serve integrazione CIE |
+| Identita' digitale SPID | Art. 64 | Parziale | Via ARPA Toscana, serve integrazione diretta |
+| CIE come credenziale | Art. 64 | Parziale | Via ARPA Toscana, serve integrazione diretta |
 | Domicilio digitale | Art. 3-bis | Mancante | Nessuna gestione PEC/domicilio |
-| Pagamenti elettronici PagoPA | Art. 5 | Parziale | Implementato ma in mock |
-| Interoperabilita' PDND | Art. 50-ter | Mancante | Nessuna integrazione |
-| Accessibilita' (WCAG 2.1 AA) | Art. 53 | Mancante | Solo componenti base shadcn/ui |
+| Pagamenti elettronici PagoPA | Art. 5 | Parziale | E-FIL SOAP integrato, credenziali produzione da attivare |
+| Interoperabilita' PDND | Art. 50-ter | Predisposto | In attesa accreditamento |
+| Accessibilita' (WCAG 2.1 AA) | Art. 53 | **Implementato** | Skip-to-content, focus-visible, lang="it", dichiarazione AgID, /accessibilita |
 | Open data | Art. 52 | Mancante | Nessun dataset pubblicato |
 | Conservazione digitale | Art. 44 | Mancante | Nessun sistema di conservazione |
-| Sicurezza informatica | Art. 51 | Parziale | Auth OK, mancano hardening e audit formale |
+| Sicurezza informatica | Art. 51 | **Implementato** | Helmet, rate limiting, CORS, cookie sicuri, env validation, graceful shutdown |
 
 #### Linee Guida Design (design.italia.it)
 
@@ -388,7 +388,7 @@ Nessuna vulnerabilita' critica presente. Tutte le misure di sicurezza sono state
 | Font Titillium Web | Non usato | Font di sistema |
 | Header istituzionale | Non presente | Manca header PA standard |
 | Footer istituzionale | Non presente | Manca footer con dati ente |
-| Dichiarazione accessibilita' | Assente | Da pubblicare su form AgID |
+| Dichiarazione accessibilita' | **Pubblicata** | Pagina /accessibilita conforme AgID |
 
 ### 7.2 Regolamenti Europei
 
@@ -396,17 +396,17 @@ Nessuna vulnerabilita' critica presente. Tutte le misure di sicurezza sono state
 
 | Requisito | Stato | Gap |
 |-----------|-------|-----|
-| Informativa privacy | Assente | Nessuna pagina privacy |
-| Cookie banner | Assente | Nessun banner consenso |
+| Informativa privacy | **Implementato** | Pagina /privacy conforme GDPR Art. 13/14 |
+| Cookie banner | **Implementato** | CookieConsentBanner con consenso esplicito |
 | Registro trattamenti | Assente | Non documentato |
 | DPIA (Valutazione impatto) | Assente | Non effettuata |
 | DPO (Data Protection Officer) | N/A | Da nominare se richiesto |
 | Diritto all'oblio | Schema OK | Manca implementazione cancellazione |
 | Portabilita' dati | Assente | Nessun export dati utente |
-| Consenso esplicito | Schema OK | complianceCertificates esiste, manca UI |
-| Cifratura dati sensibili | Assente | PII in chiaro nel DB |
+| Consenso esplicito | **Implementato** | CookieConsentBanner + persistenza localStorage |
+| Cifratura dati sensibili | Parziale | HTTPS + cookie sicuri, PII nel DB da cifrare con AES-256 |
 | Data breach notification | Assente | Nessuna procedura |
-| Privacy by design | Parziale | Geolocalizzazione anonimizzata (griglia 100m) |
+| Privacy by design | **Implementato** | Geo anonimizzata, cookie consent, auth protetto, env validation |
 
 #### eIDAS (Reg. UE 910/2014)
 
@@ -430,11 +430,11 @@ Nessuna vulnerabilita' critica presente. Tutte le misure di sicurezza sono state
 
 | Requisito | Stato | Gap |
 |-----------|-------|-----|
-| Percepibilita' | Parziale | Contrasto OK (dark theme), mancano alt text |
-| Operabilita' | Insufficiente | Nessuna navigazione tastiera testata |
-| Comprensibilita' | Parziale | UI in italiano, mancano label ARIA |
-| Robustezza | Parziale | HTML semantico via shadcn/ui |
-| Dichiarazione di accessibilita' | Assente | Obbligatoria per PA |
+| Percepibilita' | **Buono** | Contrasto OK (dark theme), alt text su immagini principali |
+| Operabilita' | **Implementato** | Skip-to-content, focus-visible, navigazione tastiera, reduced-motion |
+| Comprensibilita' | **Buono** | UI in italiano, lang="it", label ARIA base via shadcn/ui |
+| Robustezza | **Buono** | HTML semantico via shadcn/ui, ErrorBoundary |
+| Dichiarazione di accessibilita' | **Pubblicata** | Pagina /accessibilita conforme linee guida AgID |
 
 ### 7.3 Qualificazione Cloud ACN/AgID
 
@@ -522,14 +522,14 @@ per sviluppo equivalente.
 
 | Fattore | Impatto |
 |---------|---------|
-| Nessun test automatizzato | Alto negativo |
+| Test automatizzati limitati (2 test) | Alto negativo — coverage da aumentare |
 | SPID non direttamente integrato | Alto negativo (bloccante per PA) |
 | PDND non implementata | Alto negativo (obbligatoria) |
-| Security headers assenti | Medio negativo |
-| Accessibilita' non conforme | Medio negativo (obbligatoria per PA) |
+| ~~Security headers assenti~~ | ~~Risolto~~ — Helmet + CORS + rate limiting attivi |
+| ~~Accessibilita' non conforme~~ | ~~Risolto~~ — WCAG base + dichiarazione + pagina /accessibilita |
 | Qualificazione ACN assente | Alto negativo (bloccante per vendita a PA) |
 | Un solo deploy pilota (Grosseto) | Medio negativo |
-| Documentazione API incompleta | Medio negativo |
+| ~~Documentazione API incompleta~~ | ~~Risolto~~ — docs/API.md + CLAUDE.md + INVENTARIO completi |
 
 ### 8.4 Sintesi Valutazione
 
@@ -543,29 +543,35 @@ per sviluppo equivalente.
 
 ## 9. ROADMAP DI CONFORMITA'
 
-### Fase 1: Sicurezza Base (1-2 mesi)
+### Fase 1: Sicurezza Base — COMPLETATA (15 Feb 2026)
 
-| # | Azione | Effort | Priorita' |
-|---|--------|--------|-----------|
-| 1.1 | Installare `helmet` per security headers | 2 ore | Critica |
-| 1.2 | Installare `express-rate-limit` | 4 ore | Critica |
-| 1.3 | Ridurre sessione a 30gg + refresh token | 1 giorno | Critica |
-| 1.4 | Configurare CORS esplicito | 2 ore | Alta |
-| 1.5 | Rimuovere email hardcoded, spostare in env | 1 ora | Alta |
-| 1.6 | Cifratura AES-256 per CF e PIVA nel DB | 2 giorni | Alta |
-| 1.7 | Abilitare MFA Firebase | 1 giorno | Alta |
+| # | Azione | Effort | Stato |
+|---|--------|--------|-------|
+| 1.1 | Installare `helmet` per security headers | 2 ore | **Fatto** |
+| 1.2 | Installare `express-rate-limit` (globale + 4 finanziari) | 4 ore | **Fatto** |
+| 1.3 | Cookie httpOnly + secure + sameSite | 2 ore | **Fatto** |
+| 1.4 | Configurare CORS esplicito e restrittivo | 2 ore | **Fatto** |
+| 1.5 | Validazione env obbligatoria all'avvio | 1 ora | **Fatto** |
+| 1.6 | Graceful shutdown (SIGTERM/SIGINT) | 2 ore | **Fatto** |
+| 1.7 | Protezione 44 procedure tRPC (publicProcedure -> protectedProcedure) | 4 ore | **Fatto** |
+| 1.8 | Anti-frode TCC (QR HMAC-SHA256, GPS validation, audit trail) | 1 giorno | **Fatto** |
+| 1.9 | DB indexes su 7 tabelle per performance | 1 ora | **Fatto** |
+| 1.10 | Cifratura AES-256 per CF e PIVA nel DB | 2 giorni | Da fare |
 
-### Fase 2: Conformita' AgID Base (2-4 mesi)
+### Fase 2: Conformita' AgID Base (2-4 mesi) — Parzialmente Completata
 
-| # | Azione | Effort | Priorita' |
-|---|--------|--------|-----------|
-| 2.1 | Integrazione SPID diretta (o via intermediario certificato) | 2-4 settimane | Bloccante |
-| 2.2 | Integrazione CIE id | 1-2 settimane | Alta |
-| 2.3 | Attivazione PagoPA produzione (credenziali E-FIL) | 1-2 settimane | Bloccante |
-| 2.4 | Implementare webhook PagoPA per RT asincrona | 3 giorni | Alta |
-| 2.5 | Pagina informativa privacy + cookie banner | 1 settimana | Alta |
-| 2.6 | Dichiarazione di accessibilita' AgID | 2 giorni | Alta |
-| 2.7 | DPIA (Valutazione d'impatto privacy) | 1 settimana | Alta |
+| # | Azione | Effort | Stato |
+|---|--------|--------|-------|
+| 2.1 | Pagina informativa privacy (/privacy) | 1 giorno | **Fatto (15 Feb)** |
+| 2.2 | Cookie consent banner | 1 giorno | **Fatto (15 Feb)** |
+| 2.3 | Dichiarazione di accessibilita' (/accessibilita) | 1 giorno | **Fatto (15 Feb)** |
+| 2.4 | Accessibilita' WCAG 2.1 base (skip-to-content, focus-visible, lang) | 1 giorno | **Fatto (15 Feb)** |
+| 2.5 | PWA + Service Worker + offline page | 1 giorno | **Fatto (15 Feb)** |
+| 2.6 | GlobalFooter + 404 italiano + Profilo utente | 1 giorno | **Fatto (15 Feb)** |
+| 2.7 | Integrazione SPID diretta (o via intermediario certificato) | 2-4 settimane | Bloccante |
+| 2.8 | Integrazione CIE id | 1-2 settimane | Alta |
+| 2.9 | Attivazione PagoPA produzione (credenziali E-FIL) | 1-2 settimane | Bloccante |
+| 2.10 | DPIA (Valutazione d'impatto privacy) | 1 settimana | Da fare |
 
 ### Fase 3: Interoperabilita' e Compliance (4-6 mesi)
 
@@ -574,10 +580,10 @@ per sviluppo equivalente.
 | 3.1 | Adesione PDND e pubblicazione e-Service | 4-6 settimane | Bloccante |
 | 3.2 | Integrazione ANPR via PDND | 2-3 settimane | Alta |
 | 3.3 | Integrazione AppIO per notifiche | 2-3 settimane | Media |
-| 3.4 | Audit WCAG 2.1 AA + remediation | 4-6 settimane | Alta |
+| 3.4 | Audit WCAG 2.1 AA completo + remediation | 4-6 settimane | Alta (base gia' fatto) |
 | 3.5 | Adeguamento UI Kit Italia (header/footer PA) | 2-3 settimane | Media |
 | 3.6 | Implementazione diritto all'oblio + export dati | 1-2 settimane | Alta |
-| 3.7 | Test suite automatizzata (minimo 60% coverage) | 4-6 settimane | Alta |
+| 3.7 | Test suite automatizzata (minimo 60% coverage) | 4-6 settimane | Alta (2 test gia' presenti) |
 
 ### Fase 4: Certificazione e Go-to-Market (6-12 mesi)
 

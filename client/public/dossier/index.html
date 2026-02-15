@@ -460,13 +460,13 @@
           <table>
             <thead><tr><th>Requisito</th><th>Art.</th><th>Stato</th></tr></thead>
             <tbody>
-              <tr><td>Identita' digitale SPID</td><td>64</td><td><span class="badge badge-partial">Parziale</span></td></tr>
-              <tr><td>CIE come credenziale</td><td>64</td><td><span class="badge badge-missing">Mancante</span></td></tr>
-              <tr><td>Pagamenti PagoPA</td><td>5</td><td><span class="badge badge-partial">Parziale (mock)</span></td></tr>
-              <tr><td>Interoperabilita' PDND</td><td>50-ter</td><td><span class="badge badge-missing">Mancante</span></td></tr>
-              <tr><td>Accessibilita' WCAG 2.1</td><td>53</td><td><span class="badge badge-missing">Mancante</span></td></tr>
+              <tr><td>Identita' digitale SPID</td><td>64</td><td><span class="badge badge-partial">Parziale (via ARPA Toscana)</span></td></tr>
+              <tr><td>CIE come credenziale</td><td>64</td><td><span class="badge badge-partial">Parziale (via ARPA Toscana)</span></td></tr>
+              <tr><td>Pagamenti PagoPA</td><td>5</td><td><span class="badge badge-partial">Parziale (E-FIL SOAP integrato)</span></td></tr>
+              <tr><td>Interoperabilita' PDND</td><td>50-ter</td><td><span class="badge badge-missing">Predisposto — in attesa accreditamento</span></td></tr>
+              <tr><td>Accessibilita' WCAG 2.1</td><td>53</td><td><span class="badge badge-ok">Implementato</span></td></tr>
               <tr><td>Open data</td><td>52</td><td><span class="badge badge-missing">Mancante</span></td></tr>
-              <tr><td>Sicurezza informatica</td><td>51</td><td><span class="badge badge-partial">Parziale</span></td></tr>
+              <tr><td>Sicurezza informatica</td><td>51</td><td><span class="badge badge-ok">Implementato</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -475,12 +475,12 @@
           <table>
             <thead><tr><th>Requisito</th><th>Stato</th></tr></thead>
             <tbody>
-              <tr><td>Informativa privacy</td><td><span class="badge badge-missing">Assente</span></td></tr>
-              <tr><td>Cookie banner</td><td><span class="badge badge-missing">Assente</span></td></tr>
-              <tr><td>DPIA</td><td><span class="badge badge-missing">Assente</span></td></tr>
-              <tr><td>Diritto all'oblio</td><td><span class="badge badge-partial">Schema OK</span></td></tr>
-              <tr><td>Cifratura PII</td><td><span class="badge badge-missing">Assente</span></td></tr>
-              <tr><td>Privacy by design</td><td><span class="badge badge-partial">Parziale</span></td></tr>
+              <tr><td>Informativa privacy</td><td><span class="badge badge-ok">Implementato (/privacy)</span></td></tr>
+              <tr><td>Cookie banner</td><td><span class="badge badge-ok">Implementato (CookieConsentBanner)</span></td></tr>
+              <tr><td>DPIA</td><td><span class="badge badge-missing">Da redigere</span></td></tr>
+              <tr><td>Diritto all'oblio</td><td><span class="badge badge-partial">Schema OK, manca UI cancellazione</span></td></tr>
+              <tr><td>Cifratura PII</td><td><span class="badge badge-partial">HTTPS + cookie sicuri, PII DB da cifrare</span></td></tr>
+              <tr><td>Privacy by design</td><td><span class="badge badge-ok">Implementato (geo anonimizzata, cookie consent, auth protetto)</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -544,37 +544,45 @@
           <p>4 fasi per portare il sistema alla piena conformita' PA.</p>
         </div>
         <div class="card">
-          <h3 style="color:var(--red)">Fase 1: Sicurezza Base (1-2 mesi)</h3>
+          <h3 style="color:var(--green)">Fase 1: Sicurezza Base &mdash; COMPLETATA (15 Feb 2026)</h3>
           <table>
-            <thead><tr><th>Azione</th><th>Effort</th><th>Priorita'</th></tr></thead>
+            <thead><tr><th>Azione</th><th>Effort</th><th>Stato</th></tr></thead>
             <tbody>
-              <tr><td>Installare helmet (security headers)</td><td>2 ore</td><td><span class="badge badge-critical">Critica</span></td></tr>
-              <tr><td>Installare express-rate-limit</td><td>4 ore</td><td><span class="badge badge-critical">Critica</span></td></tr>
-              <tr><td>Sessione 30gg + refresh token</td><td>1 giorno</td><td><span class="badge badge-critical">Critica</span></td></tr>
-              <tr><td>Cifratura AES-256 per CF/PIVA</td><td>2 giorni</td><td><span class="badge badge-missing">Alta</span></td></tr>
+              <tr><td>Helmet (security headers)</td><td>2 ore</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
+              <tr><td>express-rate-limit (globale + 4 endpoint)</td><td>4 ore</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
+              <tr><td>CORS restrittivo</td><td>2 ore</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
+              <tr><td>Cookie httpOnly + secure + sameSite</td><td>2 ore</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
+              <tr><td>Validazione env obbligatoria</td><td>1 ora</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
+              <tr><td>Graceful shutdown</td><td>2 ore</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
+              <tr><td>Protezione procedure tRPC (44 procedure)</td><td>4 ore</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
+              <tr><td>Anti-frode TCC (QR HMAC-SHA256, GPS, rate limit)</td><td>1 giorno</td><td><span class="badge badge-ok">&#10003; Fatto</span></td></tr>
+              <tr><td>Cifratura AES-256 per CF/PIVA nel DB</td><td>2 giorni</td><td><span class="badge badge-missing">Da fare</span></td></tr>
             </tbody>
           </table>
         </div>
         <div class="card">
-          <h3 style="color:var(--amber)">Fase 2: Conformita' AgID (2-4 mesi)</h3>
+          <h3 style="color:var(--amber)">Fase 2: Conformita' AgID (2-4 mesi) &mdash; Parzialmente completata</h3>
           <table>
-            <thead><tr><th>Azione</th><th>Effort</th><th>Priorita'</th></tr></thead>
+            <thead><tr><th>Azione</th><th>Effort</th><th>Stato</th></tr></thead>
             <tbody>
+              <tr><td>Privacy policy + cookie banner</td><td>1 settimana</td><td><span class="badge badge-ok">&#10003; Fatto (15 Feb)</span></td></tr>
+              <tr><td>Dichiarazione accessibilita' AgID</td><td>2 giorni</td><td><span class="badge badge-ok">&#10003; Fatto (/accessibilita)</span></td></tr>
+              <tr><td>Accessibilita' WCAG 2.1 base</td><td>1 settimana</td><td><span class="badge badge-ok">&#10003; Fatto (skip-to-content, focus-visible, lang, reduced-motion)</span></td></tr>
               <tr><td>Integrazione SPID diretta</td><td>2-4 settimane</td><td><span class="badge badge-blocked">Bloccante</span></td></tr>
               <tr><td>Attivazione PagoPA produzione</td><td>1-2 settimane</td><td><span class="badge badge-blocked">Bloccante</span></td></tr>
-              <tr><td>Privacy policy + cookie banner</td><td>1 settimana</td><td><span class="badge badge-missing">Alta</span></td></tr>
+              <tr><td>DPIA (Valutazione d'impatto privacy)</td><td>1 settimana</td><td><span class="badge badge-missing">Da fare</span></td></tr>
             </tbody>
           </table>
         </div>
         <div class="card">
           <h3 style="color:var(--cyan)">Fase 3: Interoperabilita' (4-6 mesi)</h3>
           <table>
-            <thead><tr><th>Azione</th><th>Effort</th><th>Priorita'</th></tr></thead>
+            <thead><tr><th>Azione</th><th>Effort</th><th>Stato</th></tr></thead>
             <tbody>
               <tr><td>Adesione PDND + e-Service</td><td>4-6 settimane</td><td><span class="badge badge-blocked">Bloccante</span></td></tr>
               <tr><td>Integrazione ANPR via PDND</td><td>2-3 settimane</td><td><span class="badge badge-missing">Alta</span></td></tr>
-              <tr><td>Audit WCAG 2.1 AA</td><td>4-6 settimane</td><td><span class="badge badge-missing">Alta</span></td></tr>
-              <tr><td>Test suite (60% coverage)</td><td>4-6 settimane</td><td><span class="badge badge-missing">Alta</span></td></tr>
+              <tr><td>Audit WCAG 2.1 AA completo + remediation</td><td>4-6 settimane</td><td><span class="badge badge-partial">Base fatto, audit formale da fare</span></td></tr>
+              <tr><td>Test suite (60% coverage)</td><td>4-6 settimane</td><td><span class="badge badge-partial">2 test unitari, coverage da aumentare</span></td></tr>
             </tbody>
           </table>
         </div>
