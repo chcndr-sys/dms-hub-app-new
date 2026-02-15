@@ -65,7 +65,9 @@ export const shops = pgTable("shops", {
   totalReimbursed: integer("total_reimbursed").default(0).notNull(),
   bankAccount: varchar("bank_account", { length: 100 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  marketIdx: index("shops_market_idx").on(table.marketId),
+}));
 
 export const transactions = pgTable("transactions", {
   id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
@@ -76,7 +78,11 @@ export const transactions = pgTable("transactions", {
   euroValue: integer("euro_value"), // Store as cents (€1.50 = 150)
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  userIdx: index("transactions_user_idx").on(table.userId),
+  shopIdx: index("transactions_shop_idx").on(table.shopId),
+  createdAtIdx: index("transactions_created_idx").on(table.createdAt),
+}));
 
 export const checkins = pgTable("checkins", {
   id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
@@ -87,7 +93,10 @@ export const checkins = pgTable("checkins", {
   lng: varchar("lng", { length: 20 }),
   carbonSaved: integer("carbon_saved"), // grams CO₂ (1500 = 1.5kg)
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  userIdx: index("checkins_user_idx").on(table.userId),
+  marketIdx: index("checkins_market_idx").on(table.marketId),
+}));
 
 export const carbonCreditsConfig = pgTable("carbon_credits_config", {
   id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
@@ -422,7 +431,11 @@ export const vendorPresences = pgTable("vendor_presences", {
   lng: varchar("lng", { length: 20 }),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  vendorIdx: index("presences_vendor_idx").on(table.vendorId),
+  stallIdx: index("presences_stall_idx").on(table.stallId),
+  checkinIdx: index("presences_checkin_idx").on(table.checkinTime),
+}));
 
 // Controlli dettagliati (per Polizia Municipale)
 export const inspectionsDetailed = pgTable("inspections_detailed", {
@@ -548,7 +561,10 @@ export const apiMetrics = pgTable("api_metrics", {
   userAgent: text("user_agent"),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  endpointIdx: index("metrics_endpoint_idx").on(table.endpoint),
+  createdAtIdx: index("metrics_created_idx").on(table.createdAt),
+}));
 
 // Webhook configurati per notifiche real-time
 export const webhooks = pgTable("webhooks", {
@@ -617,7 +633,11 @@ export const mioAgentLogs = pgTable("mio_agent_logs", {
   details: text("details"), // JSON con dettagli aggiuntivi
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  agentIdx: index("mio_logs_agent_idx").on(table.agent),
+  statusIdx: index("mio_logs_status_idx").on(table.status),
+  timestampIdx: index("mio_logs_timestamp_idx").on(table.timestamp),
+}));
 
 export type MioAgentLog = typeof mioAgentLogs.$inferSelect;
 export type InsertMioAgentLog = typeof mioAgentLogs.$inferInsert;
