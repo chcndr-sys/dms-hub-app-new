@@ -1669,8 +1669,8 @@ function APIDashboard() {
 // ============================================================================
 function ConnessioniEsterne() {
   const { data: connections = [], refetch } = trpc.integrations.connections.list.useQuery();
-  const healthCheckMutation = trpc.integrations.connections.healthCheck.useMutation();
-  const healthCheckAllMutation = trpc.integrations.connections.healthCheckAll.useMutation();
+  const healthCheckMutation = (trpc.integrations.connections as any).healthCheck.useMutation();
+  const healthCheckAllMutation = (trpc.integrations.connections as any).healthCheckAll.useMutation();
   
   const handleHealthCheck = async (id: number) => {
     try {
@@ -2086,36 +2086,36 @@ function WebhookManager() {
 // ============================================================================
 function SyncStatus() {
   // Query per stato sincronizzazione
-  const { data: syncStatus, isLoading: statusLoading, refetch: refetchStatus } = trpc.integrations.sync.status.useQuery();
-  
+  const { data: syncStatus, isLoading: statusLoading, refetch: refetchStatus } = (trpc.integrations as any).sync.status.useQuery();
+
   // Query per job recenti
-  const { data: syncJobs, isLoading: jobsLoading, refetch: refetchJobs } = trpc.integrations.sync.jobs.useQuery({ limit: 10 });
-  
+  const { data: syncJobs, isLoading: jobsLoading, refetch: refetchJobs } = (trpc.integrations as any).sync.jobs.useQuery({ limit: 10 });
+
   // Query per configurazione
-  const { data: syncConfig, refetch: refetchConfig } = trpc.integrations.sync.getConfig.useQuery();
-  
+  const { data: syncConfig, refetch: refetchConfig } = (trpc.integrations as any).sync.getConfig.useQuery();
+
   // Mutation per trigger sync
-  const triggerSync = trpc.integrations.sync.trigger.useMutation({
-    onSuccess: (data) => {
+  const triggerSync = (trpc.integrations as any).sync.trigger.useMutation({
+    onSuccess: (data: any) => {
       toast.success(`Sincronizzazione completata${data.simulated ? ' (simulata)' : ''}`, {
         description: `${data.results.length} entità processate`,
       });
       refetchStatus();
       refetchJobs();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('Errore sincronizzazione', { description: error.message });
     },
   });
-  
+
   // Mutation per aggiornare config
-  const updateConfig = trpc.integrations.sync.updateConfig.useMutation({
+  const updateConfig = (trpc.integrations as any).sync.updateConfig.useMutation({
     onSuccess: () => {
       toast.success('Configurazione salvata');
       refetchConfig();
       refetchStatus();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('Errore salvataggio', { description: error.message });
     },
   });
@@ -2298,7 +2298,7 @@ function SyncStatus() {
             </div>
           ) : syncJobs && syncJobs.length > 0 ? (
             <div className="space-y-2">
-              {syncJobs.map((job) => (
+              {syncJobs.map((job: any) => (
                 <div
                   key={job.id}
                   className="flex items-center gap-4 p-3 bg-[#0a1628] rounded-lg border border-[#14b8a6]/20"
