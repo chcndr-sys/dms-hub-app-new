@@ -90,6 +90,7 @@ const FirebaseAuthContext = createContext<FirebaseAuthContextType | null>(null);
 // ============================================
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
+const TRPC_BASE = import.meta.env.VITE_TRPC_URL || 'https://mihub.157-90-29-66.nip.io';
 
 // ============================================
 // HELPER: Lookup user in orchestratore legacy DB
@@ -187,6 +188,32 @@ async function lookupLegacyUser(email: string): Promise<LegacyUserData | null> {
 }
 
 /**
+ * Controlla i ruoli dell'utente nel Neon DB (il vero RBAC system).
+ * Chiama il tRPC backend su Hetzner che ha accesso al Neon DB.
+ */
+async function checkNeonRoles(email: string): Promise<{ roles: any[]; isAdmin: boolean }> {
+  try {
+    const url = `${TRPC_BASE}/api/trpc/auth.checkRoles?input=${encodeURIComponent(JSON.stringify({ email }))}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn('[FirebaseAuth] Neon checkRoles fallito:', res.status);
+      return { roles: [], isAdmin: false };
+    }
+    const data = await res.json();
+    // tRPC wraps response in { result: { data: ... } }
+    const result = data?.result?.data;
+    if (result) {
+      console.warn(`[FirebaseAuth] Neon roles: isAdmin=${result.isAdmin}, roles=${JSON.stringify(result.roles)}`);
+      return result;
+    }
+    return { roles: [], isAdmin: false };
+  } catch (err) {
+    console.warn('[FirebaseAuth] Neon checkRoles errore:', err);
+    return { roles: [], isAdmin: false };
+  }
+}
+
+/**
  * Registra un evento di login nel sistema di sicurezza dell'orchestratore.
  */
 async function trackLoginEvent(userId: number, email: string, provider: string, success: boolean): Promise<void> {
@@ -275,16 +302,63 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
   }
 
   // ============================================
-  // STEP 4: Determina lo stato admin dal sistema legacy
-  // Il sistema legacy (orchestratore) è la fonte di verità per i ruoli admin.
-  // Firebase conosce solo il ruolo scelto al momento della registrazione
-  // (tipicamente 'citizen'), quindi NON può determinare lo stato admin.
+  // STEP 4: Controlla ruoli nel Neon DB (il vero RBAC system)
+  // Il Neon DB ha user_role_assignments che è la fonte di verità.
+  // L'orchestratore legacy è un fallback.
+  // Firebase conosce solo il ruolo scelto alla registrazione ('citizen').
   // ============================================
+  let neonAdmin = false;
+  let neonRoles: any[] = [];
+  if (email) {
+    const neonResult = await checkNeonRoles(email);
+    neonAdmin = neonResult.isAdmin;
+    neonRoles = neonResult.roles;
+
+    // Se non è admin nel Neon DB, tenta il bootstrap (funziona SOLO se
+    // non esiste ancora nessun super_admin nel sistema - one-time setup)
+    if (!neonAdmin) {
+      try {
+        const bootstrapRes = await fetch(`${TRPC_BASE}/api/trpc/auth.bootstrapAdmin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        if (bootstrapRes.ok) {
+          const bData = await bootstrapRes.json();
+          const bResult = bData?.result?.data;
+          if (bResult?.success) {
+            console.warn('[FirebaseAuth] Bootstrap admin riuscito:', bResult.message);
+            // Ricontrolla i ruoli dopo il bootstrap
+            const recheck = await checkNeonRoles(email);
+            neonAdmin = recheck.isAdmin;
+            neonRoles = recheck.roles;
+          }
+        }
+      } catch (err) {
+        console.warn('[FirebaseAuth] Bootstrap admin fallito:', err);
+      }
+    }
+  }
+
   const isLegacyAdmin = legacyUser?.is_super_admin === true ||
     legacyUser?.base_role === 'admin' ||
     (legacyUser?.assigned_roles || []).some(
       (r: { role_id: number }) => r.role_id === 1
     );
+
+  // Admin se Neon DB O orchestratore legacy lo dicono
+  const isAdmin = neonAdmin || isLegacyAdmin;
+
+  // Merge ruoli: Neon DB ha la priorità, poi legacy
+  const mergedRoles = neonRoles.length > 0
+    ? neonRoles.map((r: any) => ({
+        role_id: r.role_id,
+        role_code: r.role_code,
+        role_name: r.role_name,
+        territory_type: r.territory_type,
+        territory_id: r.territory_id,
+      }))
+    : legacyUser?.assigned_roles || [];
 
   // ============================================
   // STEP 5: Costruisci il MioHubUser con tutti i dati
@@ -295,19 +369,18 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
     displayName: firebaseUser.displayName,
     photoURL: firebaseUser.photoURL,
     provider,
-    // PRIORITÀ RUOLO: legacy admin > backendSync > selectedRole
-    // Se il legacy dice admin, quello prevale su Firebase (che ritorna 'citizen')
-    role: isLegacyAdmin ? 'pa' : (backendSyncData?.role || role),
+    // PRIORITÀ RUOLO: admin (Neon/legacy) > backendSync > selectedRole
+    role: isAdmin ? 'pa' : (backendSyncData?.role || role),
     fiscalCode: backendSyncData?.fiscalCode || undefined,
     verified: firebaseUser.emailVerified,
     // Dati dal DB legacy (orchestratore) - questi sono i dati critici
     miohubId: legacyUser?.id || backendSyncData?.id || 0,
     impresaId: legacyUser?.impresa_id || undefined,
     walletBalance: legacyUser?.wallet_balance || 0,
-    assignedRoles: legacyUser?.assigned_roles || [],
+    assignedRoles: mergedRoles,
     openId: legacyUser?.openId || undefined,
     permissions: backendSyncData?.permissions || [],
-    isSuperAdmin: isLegacyAdmin,
+    isSuperAdmin: isAdmin,
   };
 
   return miohubUser;
