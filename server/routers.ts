@@ -26,6 +26,88 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+    // Controlla ruoli utente nel Neon DB (user_role_assignments)
+    // Usato dal frontend durante il login Firebase per determinare admin status
+    checkRoles: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .query(async ({ input }) => {
+        const db = await (await import("./db")).getDb();
+        if (!db) return { roles: [], isAdmin: false };
+        const { sql } = await import("drizzle-orm");
+
+        // Assicurati che l'utente esista nel Neon DB (upsert)
+        await db.execute(sql`
+          INSERT INTO users (email, name, is_active)
+          VALUES (${input.email}, ${input.email.split('@')[0]}, true)
+          ON CONFLICT (email) DO NOTHING
+        `);
+
+        const result = await db.execute(sql`
+          SELECT ura.role_id, ur.code as role_code, ur.name as role_name, ur.level,
+                 ura.territory_type, ura.territory_id
+          FROM user_role_assignments ura
+          JOIN user_roles ur ON ur.id = ura.role_id
+          JOIN users u ON u.id = ura.user_id
+          WHERE u.email = ${input.email}
+            AND ura.is_active = true
+            AND (ura.valid_until IS NULL OR ura.valid_until > NOW())
+          ORDER BY ur.level ASC
+        `);
+        const roles = Array.isArray(result) ? result : [];
+        const isAdmin = roles.some((r: any) => r.role_id === 1 || r.level === 0);
+        return { roles, isAdmin };
+      }),
+    // Bootstrap: assegna super_admin al primo utente.
+    // Funziona SOLO se non esiste gia' un super_admin nel sistema.
+    bootstrapAdmin: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const db = await (await import("./db")).getDb();
+        if (!db) return { success: false, error: 'DB non disponibile' };
+        const { sql } = await import("drizzle-orm");
+
+        // Verifica che non esista gia' un super_admin
+        const existingAdmins = await db.execute(sql`
+          SELECT COUNT(*) as count FROM user_role_assignments
+          WHERE role_id = 1 AND is_active = true
+        `);
+        const adminCount = Array.isArray(existingAdmins) && existingAdmins[0]
+          ? Number((existingAdmins[0] as any).count)
+          : 0;
+        if (adminCount > 0) {
+          return { success: false, error: 'Un super_admin esiste gia nel sistema' };
+        }
+
+        // Assicurati che l'utente esista
+        await db.execute(sql`
+          INSERT INTO users (email, name, is_active)
+          VALUES (${input.email}, ${input.email.split('@')[0]}, true)
+          ON CONFLICT (email) DO NOTHING
+        `);
+
+        // Assicurati che il ruolo super_admin esista
+        await db.execute(sql`
+          INSERT INTO user_roles (code, name, level, sector, is_active)
+          VALUES ('super_admin', 'Super Amministratore', 0, 'sistema', true)
+          ON CONFLICT (code) DO NOTHING
+        `);
+
+        // Assegna il ruolo super_admin all'utente
+        const userId = await db.execute(sql`SELECT id FROM users WHERE email = ${input.email}`);
+        const roleId = await db.execute(sql`SELECT id FROM user_roles WHERE code = 'super_admin'`);
+
+        if (!Array.isArray(userId) || !userId[0] || !Array.isArray(roleId) || !roleId[0]) {
+          return { success: false, error: 'Utente o ruolo non trovato' };
+        }
+
+        await db.execute(sql`
+          INSERT INTO user_role_assignments (user_id, role_id, is_active)
+          VALUES (${(userId[0] as any).id}, ${(roleId[0] as any).id}, true)
+          ON CONFLICT DO NOTHING
+        `);
+
+        return { success: true, message: `Super admin assegnato a ${input.email}` };
+      }),
   }),
 
   // Dashboard PA Analytics (richiede autenticazione)
