@@ -507,6 +507,91 @@ export async function testDatabaseConnection() {
 
 
 // ============================================
+// TCC Security Query Helpers
+// ============================================
+
+export async function getTccFraudEvents(limit = 50, offset = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db
+    .select()
+    .from(schema.tccFraudEvents)
+    .orderBy(desc(schema.tccFraudEvents.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function getTccDailyLimits(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const [limits] = await db
+    .select()
+    .from(schema.tccDailyLimits)
+    .where(
+      and(
+        eq(schema.tccDailyLimits.userId, userId),
+        gte(schema.tccDailyLimits.date, today),
+        lt(schema.tccDailyLimits.date, tomorrow)
+      )
+    )
+    .limit(1);
+
+  return limits || null;
+}
+
+export async function getTccRewardsConfig(comuneId?: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  if (comuneId) {
+    const [config] = await db
+      .select()
+      .from(schema.tccRewardsConfig)
+      .where(eq(schema.tccRewardsConfig.comuneId, comuneId))
+      .limit(1);
+    return config || null;
+  }
+
+  const [config] = await db
+    .select()
+    .from(schema.tccRewardsConfig)
+    .limit(1);
+  return config || null;
+}
+
+export async function cleanupExpiredTccTokens() {
+  const db = await getDb();
+  if (!db) return { success: false, message: "Database not available" };
+
+  try {
+    const deleted = await db
+      .delete(schema.tccQrTokens)
+      .where(lt(schema.tccQrTokens.expiresAt, new Date()))
+      .returning({ id: schema.tccQrTokens.id });
+
+    const keysDeleted = await db
+      .delete(schema.tccIdempotencyKeys)
+      .where(lt(schema.tccIdempotencyKeys.expiresAt, new Date()))
+      .returning({ id: schema.tccIdempotencyKeys.id });
+
+    return {
+      success: true,
+      tokensDeleted: deleted.length,
+      keysDeleted: keysDeleted.length,
+    };
+  } catch (error) {
+    console.error("[TCC Cleanup] Errore:", error);
+    return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+  }
+}
+
+// ============================================
 // Data Retention / Cleanup
 // ============================================
 

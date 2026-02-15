@@ -360,7 +360,15 @@ export default function WalletPage() {
     try {
       setLoading(true);
 
-      const walletRes = await fetch(`${API_BASE}/api/tcc/wallet/${userId}`);
+      const token = localStorage.getItem('token') || '';
+      const authHeaders = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+
+      const walletRes = await fetch(`${API_BASE}/api/tcc/wallet/${userId}`, {
+        headers: authHeaders,
+      });
       if (walletRes.ok) {
         const data = await walletRes.json();
         if (data.success) {
@@ -371,7 +379,9 @@ export default function WalletPage() {
         }
       }
 
-      const txRes = await fetch(`${API_BASE}/api/tcc/wallet/${userId}/transactions`);
+      const txRes = await fetch(`${API_BASE}/api/tcc/wallet/${userId}/transactions`, {
+        headers: authHeaders,
+      });
       if (txRes.ok) {
         const data = await txRes.json();
         if (data.success) {
@@ -391,7 +401,12 @@ export default function WalletPage() {
   const refreshQRCode = async () => {
     try {
       setRefreshingQR(true);
-      const qrRes = await fetch(`${API_BASE}/api/tcc/qrcode/${userId}`);
+      const token = localStorage.getItem('token') || '';
+      const qrRes = await fetch(`${API_BASE}/api/tcc/qrcode/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (qrRes.ok) {
         const data = await qrRes.json();
         if (data.success) {
@@ -414,12 +429,18 @@ export default function WalletPage() {
     
     try {
       setGeneratingSpendQR(true);
+      const token = localStorage.getItem('token') || '';
       const res = await fetch(`${API_BASE}/api/tcc/v2/generate-spend-qr`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Idempotency-Key': crypto.randomUUID(),
+        },
         body: JSON.stringify({
           user_id: userId,
-          euro_amount: parseFloat(spendAmount)
+          euro_amount: parseFloat(spendAmount),
+          timestamp: Date.now(),
         })
       });
       const data = await res.json();
@@ -430,11 +451,11 @@ export default function WalletPage() {
           expires_at: data.expires_at
         });
       } else {
-        alert(data.error || 'Errore generazione QR');
+        console.warn('[Wallet] QR generation error:', data.error || 'Errore generazione QR');
       }
     } catch (err) {
       console.error('Errore generazione QR spesa:', err);
-      alert('Errore di connessione');
+      console.warn('[Wallet] Connection error generating spend QR');
     } finally {
       setGeneratingSpendQR(false);
     }
@@ -477,16 +498,18 @@ export default function WalletPage() {
 
   // Valida QR Code
   const validateQR = async (qrData: string) => {
-    console.log('validateQR called with:', qrData);
-    alert('Validazione QR: ' + qrData);
     try {
       setValidating(true);
       setCitizenInfo(null);
       setScanResult(null);
 
+      const token = localStorage.getItem('token') || '';
       const response = await fetch(`${API_BASE}/api/tcc/validate-qr`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ qr_data: qrData })
       });
 
@@ -662,8 +685,6 @@ export default function WalletPage() {
         },
         (decodedText) => {
           // QR Code scansionato con successo
-          console.log('QR Code scansionato:', decodedText);
-          alert('QR Code letto: ' + decodedText);
           setQrInput(decodedText);
           validateQR(decodedText);
           stopCameraScanner();
@@ -674,10 +695,9 @@ export default function WalletPage() {
         }
       );
       setCameraActive(true);
-      console.log('Camera scanner started successfully');
     } catch (err) {
       console.error('Errore avvio camera:', err);
-      alert('Errore avvio fotocamera: ' + (err as Error).message);
+      console.warn('[Wallet] Camera error:', (err as Error).message);
       setInputMode('manual');
     }
   };

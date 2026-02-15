@@ -8,6 +8,7 @@ import { mioAgentRouter } from "./mioAgentRouter";
 import { mihubRouter } from "./mihubRouter";
 import { guardianRouter } from "./guardianRouter";
 import { walletRouter } from "./walletRouter";
+import { tccSecurityRouter } from "./tccSecurityRouter";
 
 
 export const appRouter = router({
@@ -214,6 +215,9 @@ export const appRouter = router({
 
   // WALLET - Borsellino Elettronico Operatori Mercatali + PagoPA
   wallet: walletRouter,
+
+  // TCC SECURITY - Anti-frode, QR firmati, rate limiting, audit trail
+  tccSecurity: tccSecurityRouter,
 });
 
 export type AppRouter = typeof appRouter;

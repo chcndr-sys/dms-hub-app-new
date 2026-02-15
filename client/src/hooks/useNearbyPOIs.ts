@@ -153,7 +153,12 @@ export function useNearbyPOIs(options: UseNearbyPOIsOptions) {
         ...(userId && { user_id: userId }),
       });
 
-      const response = await fetch(`${API_BASE_URL}/gaming-rewards/nearby-pois?${params}`);
+      const token = localStorage.getItem('token') || '';
+      const response = await fetch(`${API_BASE_URL}/gaming-rewards/nearby-pois?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       const data: NearbyPOIsResponse = await response.json();
 
       if (!data.success) {
@@ -176,12 +181,22 @@ export function useNearbyPOIs(options: UseNearbyPOIsOptions) {
       return { success: false, error: 'Posizione GPS non disponibile' };
     }
 
+    // Verifica accuracy GPS prima di procedere
+    if (currentPosition.accuracy > 150) {
+      return { success: false, error: 'Precisione GPS insufficiente. Spostati in un\'area aperta.' };
+    }
+
     try {
-      const endpoint = poi.type === 'culture' 
+      const endpoint = poi.type === 'culture'
         ? `${API_BASE_URL}/gaming-rewards/culture/checkin`
         : `${API_BASE_URL}/gaming-rewards/mobility/checkin`;
 
-      const body = poi.type === 'culture' 
+      // Genera idempotency key e nonce anti-replay
+      const idempotencyKey = crypto.randomUUID();
+      const nonce = crypto.randomUUID();
+      const token = localStorage.getItem('token') || '';
+
+      const body = poi.type === 'culture'
         ? {
             user_id: userId,
             poi_type: poi.poi_type,
@@ -189,7 +204,10 @@ export function useNearbyPOIs(options: UseNearbyPOIsOptions) {
             poi_name: poi.name,
             lat: currentPosition.lat,
             lng: currentPosition.lng,
+            accuracy: currentPosition.accuracy,
             comune_id: comuneId,
+            timestamp: Date.now(),
+            nonce,
           }
         : {
             user_id: userId,
@@ -197,12 +215,19 @@ export function useNearbyPOIs(options: UseNearbyPOIsOptions) {
             stop_name: poi.name,
             lat: currentPosition.lat,
             lng: currentPosition.lng,
+            accuracy: currentPosition.accuracy,
             comune_id: comuneId,
+            timestamp: Date.now(),
+            nonce,
           };
 
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Idempotency-Key': idempotencyKey,
+        },
         body: JSON.stringify(body),
       });
 
