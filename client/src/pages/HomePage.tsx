@@ -5,9 +5,9 @@ import { usePermissions } from '@/contexts/PermissionsContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { 
+import {
   Search, MapPin, Store, Building2, Leaf, TrendingUp, BarChart3, LogIn, LogOut,
-  Bell, Wallet, Activity, ClipboardList, Menu, Presentation
+  Bell, Wallet, Activity, ClipboardList, Menu, Presentation, User
 } from 'lucide-react';
 import { geoAPI } from '@/utils/api';
 import { firebaseLogout } from '@/lib/firebase';
@@ -249,6 +249,16 @@ export default function HomePage() {
                 </Button>
               )}
 {isAuthenticated ? (
+                <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation('/profilo')}
+                  className="bg-primary-foreground/10 border-primary-foreground/30 hover:bg-primary-foreground/20 text-primary-foreground"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Profilo
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -272,6 +282,7 @@ export default function HomePage() {
                   <LogOut className="w-4 h-4 mr-2" />
                   Esci
                 </Button>
+                </>
               ) : (
                 <Button
                   variant="outline"
@@ -486,15 +497,7 @@ export default function HomePage() {
           </div>
         </main>
 
-        {/* Footer */}
-        <footer className="p-4 text-center text-sm text-muted-foreground space-y-2">
-          <p>PA Digitale 2026 • Cloud First • Rete Mercati Made in Italy</p>
-          <div className="flex justify-center gap-4">
-            <a href="/privacy" className="hover:text-teal-400 transition-colors">Privacy Policy</a>
-            <span>•</span>
-            <a href="/accessibilita" className="hover:text-teal-400 transition-colors">Accessibilita'</a>
-          </div>
-        </footer>
+        {/* Footer globale gestito da App.tsx GlobalFooter */}
       </div>
 
       {/* Login Modal */}
