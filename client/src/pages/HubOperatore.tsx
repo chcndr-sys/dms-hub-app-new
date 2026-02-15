@@ -48,7 +48,10 @@ function WalletStatusIndicator({ operatorId }: WalletStatusIndicatorProps) {
     const fetchStatus = async () => {
       try {
         // Fetch wallet status tramite operator_id (v5.7.0 fix)
-        const response = await fetch(`${API_BASE}/operator/wallet/${operatorId}`);
+        const token = localStorage.getItem('token') || '';
+        const response = await fetch(`${API_BASE}/operator/wallet/${operatorId}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.wallet) {
@@ -159,13 +162,22 @@ export default function HubOperatore() {
   // Stato abilitazione wallet (v5.7.0) - false se qualifiche scadute/mancanti
   const [walletEnabled, setWalletEnabled] = useState<boolean>(true);
 
-  // Mock data operatore (in futuro da auth)
-  const operatore = {
-    id: 1,
-    nome: 'Luca Bianchi',
-    negozio: 'Frutta e Verdura Bio',
-    ruolo: 'Operatore',
-  };
+  // Operatore da autenticazione (localStorage)
+  const operatore = (() => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return {
+          id: user.id || 1,
+          nome: user.name || 'Operatore',
+          negozio: user.shopName || 'Negozio',
+          ruolo: 'Operatore',
+        };
+      }
+    } catch {}
+    return { id: 1, nome: 'Operatore', negozio: 'Negozio', ruolo: 'Operatore' };
+  })();
 
   // Carica dati iniziali
   useEffect(() => {
@@ -185,8 +197,11 @@ export default function HubOperatore() {
 
   const loadOperatorWallet = async () => {
     try {
+      const token = localStorage.getItem('token') || '';
       // Aggiungo timestamp per evitare cache del browser (specialmente Safari/iPad)
-      const res = await fetch(`${API_BASE}/operator/wallet/${operatore.id}?_t=${Date.now()}`);
+      const res = await fetch(`${API_BASE}/operator/wallet/${operatore.id}?_t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
       const data = await res.json();
       if (data.success) {
         setOperatorWallet(data.wallet);
@@ -204,7 +219,10 @@ export default function HubOperatore() {
 
   const loadTransactions = async () => {
     try {
-      const res = await fetch(`${API_BASE}/operator/transactions/${operatore.id}?limit=20`);
+      const token = localStorage.getItem('token') || '';
+      const res = await fetch(`${API_BASE}/operator/transactions/${operatore.id}?limit=20`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.transactions)) {
         setTransactions(data.transactions);
@@ -250,9 +268,13 @@ export default function HubOperatore() {
   // Valida QR Code cliente (per assegnazione TCC)
   const validateCustomerQR = async (qrData: string) => {
     try {
+      const token = localStorage.getItem('token') || '';
       const res = await fetch('https://orchestratore.mio-hub.me/api/tcc/validate-qr', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ qr_data: qrData })
       });
       const data = await res.json();
@@ -283,14 +305,20 @@ export default function HubOperatore() {
 
     setIsLoading(true);
     try {
+      const token = localStorage.getItem('token') || '';
       const res = await fetch(`${API_BASE}/operator/issue`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Idempotency-Key': crypto.randomUUID(),
+        },
         body: JSON.stringify({
           operator_id: operatore.id,
           qr_data: scannedData,
           euro_amount: parseFloat(amount),
-          certifications: selectedCerts
+          certifications: selectedCerts,
+          timestamp: Date.now(),
         })
       });
       const data = await res.json();
@@ -329,12 +357,18 @@ export default function HubOperatore() {
 
     setIsLoading(true);
     try {
+      const token = localStorage.getItem('token') || '';
       const res = await fetch(`${API_BASE}/operator/redeem-spend`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Idempotency-Key': crypto.randomUUID(),
+        },
         body: JSON.stringify({
           operator_id: operatore.id,
-          qr_data: scannedData
+          qr_data: scannedData,
+          timestamp: Date.now(),
         })
       });
       const data = await res.json();
@@ -369,9 +403,13 @@ export default function HubOperatore() {
 
     setIsLoading(true);
     try {
+      const token = localStorage.getItem('token') || '';
       const res = await fetch(`${API_BASE}/operator/settlement`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ operator_id: operatore.id })
       });
       const data = await res.json();
@@ -496,9 +534,13 @@ export default function HubOperatore() {
   // Valida QR di spesa e recupera info cliente
   const validateSpendQR = async (qrData: string) => {
     try {
+      const token = localStorage.getItem('token') || '';
       const res = await fetch(`${API_BASE}/operator/validate-spend-qr`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ qr_data: qrData })
       });
       const data = await res.json();

@@ -1334,3 +1334,170 @@ export const securityDelegations = pgTable("security_delegations", {
 export type SecurityDelegation = typeof securityDelegations.$inferSelect;
 export type InsertSecurityDelegation = typeof securityDelegations.$inferInsert;
 
+// ============================================
+// TCC SECURITY - Anti-frode e limiti transazioni
+// ============================================
+
+// Enum per tipi eventi frode TCC
+export const tccFraudEventTypeEnum = pgEnum("tcc_fraud_event_type", [
+  "gps_spoofing",
+  "rate_exceeded",
+  "duplicate_checkin",
+  "invalid_qr",
+  "amount_anomaly",
+  "impossible_travel",
+  "suspicious_pattern",
+]);
+
+// Enum per tipi azione TCC (rate limiting)
+export const tccActionTypeEnum = pgEnum("tcc_action_type", [
+  "checkin_culture",
+  "checkin_mobility",
+  "scan",
+  "referral",
+  "spend",
+  "issue",
+]);
+
+// Tabella rate limiting per utente TCC
+export const tccRateLimits = pgTable("tcc_rate_limits", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  actionType: tccActionTypeEnum("action_type").notNull(),
+  count: integer("count").default(0).notNull(),
+  windowStart: timestamp("window_start").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userActionIdx: index("tcc_rate_limits_user_action_idx").on(table.userId, table.actionType),
+  windowIdx: index("tcc_rate_limits_window_idx").on(table.windowStart),
+}));
+
+// Log eventi sospetti TCC
+export const tccFraudEvents = pgTable("tcc_fraud_events", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  eventType: tccFraudEventTypeEnum("event_type").notNull(),
+  severity: severityEnum("severity").notNull(),
+  details: text("details"), // JSON con coordinate, importo, endpoint, etc.
+  ipAddress: varchar("ip_address", { length: 50 }),
+  userAgent: text("user_agent"),
+  resolved: boolean("resolved").default(false).notNull(),
+  resolvedBy: integer("resolved_by").references(() => users.id),
+  resolvedAt: timestamp("resolved_at"),
+  resolutionNotes: text("resolution_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("tcc_fraud_events_user_idx").on(table.userId),
+  typeIdx: index("tcc_fraud_events_type_idx").on(table.eventType),
+  severityIdx: index("tcc_fraud_events_severity_idx").on(table.severity),
+  resolvedIdx: index("tcc_fraud_events_resolved_idx").on(table.resolved),
+  createdIdx: index("tcc_fraud_events_created_idx").on(table.createdAt),
+}));
+
+// Chiavi di idempotenza per prevenire transazioni duplicate
+export const tccIdempotencyKeys = pgTable("tcc_idempotency_keys", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).notNull().unique(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  endpoint: varchar("endpoint", { length: 255 }).notNull(),
+  requestHash: varchar("request_hash", { length: 64 }),
+  responseData: text("response_data"), // JSON della risposta cached
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+}, (table) => ({
+  keyIdx: index("tcc_idempotency_key_idx").on(table.idempotencyKey),
+  userIdx: index("tcc_idempotency_user_idx").on(table.userId),
+  expiresIdx: index("tcc_idempotency_expires_idx").on(table.expiresAt),
+}));
+
+// Limiti giornalieri per utente TCC
+export const tccDailyLimits = pgTable("tcc_daily_limits", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  date: timestamp("date").notNull(),
+  checkinCount: integer("checkin_count").default(0).notNull(),
+  tccEarned: integer("tcc_earned").default(0).notNull(),
+  tccSpent: integer("tcc_spent").default(0).notNull(),
+  transactionCount: integer("transaction_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userDateIdx: index("tcc_daily_limits_user_date_idx").on(table.userId, table.date),
+}));
+
+// QR code firmati con scadenza
+export const tccQrTokens = pgTable("tcc_qr_tokens", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  qrType: varchar("qr_type", { length: 20 }).notNull(), // receive, spend
+  tokenHash: varchar("token_hash", { length: 128 }).notNull(), // HMAC-SHA256
+  payload: text("payload").notNull(), // JSON payload
+  amount: integer("amount"), // Per spend QR, in TCC
+  used: boolean("used").default(false).notNull(),
+  usedAt: timestamp("used_at"),
+  usedByOperatorId: integer("used_by_operator_id"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  tokenIdx: index("tcc_qr_tokens_token_idx").on(table.tokenHash),
+  userIdx: index("tcc_qr_tokens_user_idx").on(table.userId),
+  expiresIdx: index("tcc_qr_tokens_expires_idx").on(table.expiresAt),
+  usedIdx: index("tcc_qr_tokens_used_idx").on(table.used),
+}));
+
+// Configurazione limiti e rewards per comune
+export const tccRewardsConfig = pgTable("tcc_rewards_config", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  comuneId: integer("comune_id"),
+  // Limiti anti-frode
+  maxDailyTccPerUser: integer("max_daily_tcc_per_user").default(500).notNull(),
+  maxDailyCheckins: integer("max_daily_checkins").default(10).notNull(),
+  maxMonthlyTcc: integer("max_monthly_tcc").default(5000).notNull(),
+  maxSingleTransaction: integer("max_single_transaction").default(200).notNull(),
+  qrExpirySeconds: integer("qr_expiry_seconds").default(300).notNull(), // 5 min
+  gpsRadiusMeters: integer("gps_radius_meters").default(100).notNull(),
+  cooldownMinutes: integer("cooldown_minutes").default(30).notNull(),
+  maxDailyReferrals: integer("max_daily_referrals").default(3).notNull(),
+  highValueThresholdEur: integer("high_value_threshold_eur").default(5000).notNull(), // cents
+  // Rewards TCC
+  civicEnabled: boolean("civic_enabled").default(true).notNull(),
+  civicTccDefault: integer("civic_tcc_default").default(5).notNull(),
+  civicTccUrgent: integer("civic_tcc_urgent").default(10).notNull(),
+  civicTccPhotoBonus: integer("civic_tcc_photo_bonus").default(3).notNull(),
+  mobilityEnabled: boolean("mobility_enabled").default(true).notNull(),
+  mobilityTccBus: integer("mobility_tcc_bus").default(3).notNull(),
+  mobilityTccBikeKm: integer("mobility_tcc_bike_km").default(5).notNull(),
+  mobilityTccWalkKm: integer("mobility_tcc_walk_km").default(8).notNull(),
+  cultureEnabled: boolean("culture_enabled").default(true).notNull(),
+  cultureTccMuseum: integer("culture_tcc_museum").default(10).notNull(),
+  cultureTccMonument: integer("culture_tcc_monument").default(5).notNull(),
+  cultureTccRoute: integer("culture_tcc_route").default(15).notNull(),
+  shoppingEnabled: boolean("shopping_enabled").default(true).notNull(),
+  shoppingCashbackPercent: integer("shopping_cashback_percent").default(5).notNull(),
+  shoppingKm0Bonus: integer("shopping_km0_bonus").default(20).notNull(),
+  shoppingMarketBonus: integer("shopping_market_bonus").default(10).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  comuneIdx: index("tcc_rewards_config_comune_idx").on(table.comuneId),
+}));
+
+// Export types per tabelle TCC Security
+export type TccRateLimit = typeof tccRateLimits.$inferSelect;
+export type InsertTccRateLimit = typeof tccRateLimits.$inferInsert;
+
+export type TccFraudEvent = typeof tccFraudEvents.$inferSelect;
+export type InsertTccFraudEvent = typeof tccFraudEvents.$inferInsert;
+
+export type TccIdempotencyKey = typeof tccIdempotencyKeys.$inferSelect;
+export type InsertTccIdempotencyKey = typeof tccIdempotencyKeys.$inferInsert;
+
+export type TccDailyLimit = typeof tccDailyLimits.$inferSelect;
+export type InsertTccDailyLimit = typeof tccDailyLimits.$inferInsert;
+
+export type TccQrToken = typeof tccQrTokens.$inferSelect;
+export type InsertTccQrToken = typeof tccQrTokens.$inferInsert;
+
+export type TccRewardsConfig = typeof tccRewardsConfig.$inferSelect;
+export type InsertTccRewardsConfig = typeof tccRewardsConfig.$inferInsert;
+

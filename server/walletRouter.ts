@@ -264,9 +264,15 @@ export const walletRouter = router({
    */
   updateStatus: adminProcedure
     .input(updateWalletStatusSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database non disponibile");
+
+      // Ottieni stato precedente per audit
+      const [current] = await db
+        .select()
+        .from(schema.operatoreWallet)
+        .where(eq(schema.operatoreWallet.id, input.walletId));
 
       const [updated] = await db
         .update(schema.operatoreWallet)
@@ -277,10 +283,15 @@ export const walletRouter = router({
         .where(eq(schema.operatoreWallet.id, input.walletId))
         .returning();
 
-      // Log operazione
-      console.log(
-        `[Wallet] Stato wallet ${input.walletId} aggiornato a ${input.status}. Motivo: ${input.motivo || "N/A"}`
-      );
+      // Log strutturato in audit_logs
+      await db.insert(schema.auditLogs).values({
+        userEmail: ctx.user?.email || "admin",
+        action: "WALLET_STATUS_CHANGED",
+        entityType: "operatore_wallet",
+        entityId: input.walletId,
+        oldValue: JSON.stringify({ status: current?.status }),
+        newValue: JSON.stringify({ status: input.status, motivo: input.motivo }),
+      });
 
       return updated;
     }),
@@ -306,7 +317,7 @@ export const walletRouter = router({
   /**
    * Effettua ricarica wallet (manuale o da callback PagoPA)
    */
-  ricarica: protectedProcedure.input(ricaricaWalletSchema).mutation(async ({ input }) => {
+  ricarica: protectedProcedure.input(ricaricaWalletSchema).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database non disponibile");
 
@@ -317,6 +328,11 @@ export const walletRouter = router({
       .where(eq(schema.operatoreWallet.id, input.walletId));
 
     if (!wallet) throw new Error("Wallet non trovato");
+
+    // Verifica che il wallet non sia sospeso
+    if (wallet.status === "SOSPESO") {
+      throw new Error("Wallet sospeso - operazione non consentita");
+    }
 
     const saldoPrecedente = wallet.saldo;
     const saldoSuccessivo = saldoPrecedente + input.importoCents;
@@ -332,7 +348,7 @@ export const walletRouter = router({
         saldoSuccessivo,
         riferimento: input.riferimento,
         descrizione: input.note || `Ricarica ${input.metodo}`,
-        operatoreId: "SYSTEM", // TODO: da sessione utente
+        operatoreId: ctx.user?.email || "SYSTEM",
       })
       .returning();
 
@@ -360,7 +376,7 @@ export const walletRouter = router({
    */
   decurtazione: protectedProcedure
     .input(decurtazioneWalletSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database non disponibile");
 
@@ -372,6 +388,7 @@ export const walletRouter = router({
 
       if (!wallet) throw new Error("Wallet non trovato");
       if (wallet.status === "BLOCCATO") throw new Error("Wallet bloccato");
+      if (wallet.status === "SOSPESO") throw new Error("Wallet sospeso - operazione non consentita");
 
       const saldoPrecedente = wallet.saldo;
       const saldoSuccessivo = saldoPrecedente - input.importoCents;
@@ -394,7 +411,7 @@ export const walletRouter = router({
           posteggioId: input.posteggioId,
           mercatoId: input.mercatoId,
           descrizione: input.descrizione,
-          operatoreId: "SYSTEM",
+          operatoreId: ctx.user?.email || "SYSTEM",
         })
         .returning();
 
@@ -413,11 +430,19 @@ export const walletRouter = router({
         })
         .where(eq(schema.operatoreWallet.id, input.walletId));
 
-      // Se wallet bloccato, notifica
+      // Se wallet bloccato, log strutturato in audit_logs
       if (nuovoStatus === "BLOCCATO") {
-        console.log(
-          `[Wallet] ATTENZIONE: Wallet ${input.walletId} bloccato per saldo insufficiente`
-        );
+        await db.insert(schema.auditLogs).values({
+          userEmail: ctx.user?.email || "SYSTEM",
+          action: "WALLET_AUTO_BLOCKED",
+          entityType: "operatore_wallet",
+          entityId: input.walletId,
+          newValue: JSON.stringify({
+            saldoSuccessivo,
+            saldoMinimo: wallet.saldoMinimo,
+            importoDecurtazione: input.importoCents,
+          }),
+        });
       }
 
       return transazione;
@@ -631,9 +656,19 @@ export const walletRouter = router({
               })
               .where(eq(schema.operatoreWallet.id, avviso.walletId));
 
-            console.log(
-              `[Wallet] Ricarica PagoPA completata. Wallet ${avviso.walletId}, importo €${(avviso.importo / 100).toFixed(2)}`
-            );
+            // Log strutturato ricarica PagoPA
+            await db.insert(schema.auditLogs).values({
+              userEmail: "PAGOPA",
+              action: "WALLET_PAGOPA_RECHARGE",
+              entityType: "operatore_wallet",
+              entityId: avviso.walletId,
+              newValue: JSON.stringify({
+                importoCents: avviso.importo,
+                iuv: input.iuv,
+                saldoPrecedente,
+                saldoSuccessivo,
+              }),
+            });
           }
         }
       }

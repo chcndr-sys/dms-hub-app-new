@@ -42,6 +42,7 @@ import NotificationsPanel from '@/components/NotificationsPanel';
 import ComuniPanel from '@/components/ComuniPanel';
 import WalletPanel from '@/components/WalletPanel';
 import SecurityTab from '@/components/SecurityTab';
+import FraudMonitorPanel from '@/components/FraudMonitorPanel';
 import ClientiTab from '@/components/ClientiTab';
 import GestioneHubPanel from '@/components/GestioneHubPanel';
 import GestioneHubMapWrapper from '@/components/GestioneHubMapWrapper';
@@ -3991,6 +3992,10 @@ export default function DashboardPA() {
           {/* TAB 10: SICUREZZA */}
           <TabsContent value="security" className="space-y-6">
             <SecurityTab />
+            {/* Anti-Frode TCC */}
+            <div className="mt-8 pt-6 border-t border-border">
+              <FraudMonitorPanel />
+            </div>
           </TabsContent>
 
           {/* TAB: SSO SUAP - Pratiche Ente Sussidiario */}

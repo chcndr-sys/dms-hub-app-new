@@ -130,6 +130,40 @@ async function startServer() {
     message: { error: "Troppi tentativi di login. Riprova tra 15 minuti." },
   }));
 
+  // Rate limiting su TCC Security (check-in, QR generation)
+  app.use("/api/trpc/tccSecurity.recordCheckin", rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Troppi check-in. Riprova tra qualche minuto." },
+  }));
+
+  app.use("/api/trpc/tccSecurity.generateSignedQR", rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Troppi QR generati. Riprova tra qualche minuto." },
+  }));
+
+  // Rate limiting su operazioni wallet finanziarie
+  app.use("/api/trpc/wallet.ricarica", rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Troppe ricariche. Riprova tra qualche minuto." },
+  }));
+
+  app.use("/api/trpc/wallet.decurtazione", rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 50,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Troppe decurtazioni. Riprova tra qualche minuto." },
+  }));
+
   // Body parser con limite ragionevole (5MB per JSON, file upload separato)
   app.use(express.json({ limit: "5mb" }));
   app.use(express.urlencoded({ limit: "5mb", extended: true }));
