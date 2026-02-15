@@ -10,7 +10,7 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { eq, desc, and, gte, lte, sql, sum, count } from "drizzle-orm";
 import * as schema from "../drizzle/schema";
@@ -83,7 +83,7 @@ export const walletRouter = router({
   /**
    * Ottieni statistiche generali wallet
    */
-  stats: publicProcedure.query(async () => {
+  stats: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) return null;
 
@@ -146,7 +146,7 @@ export const walletRouter = router({
   /**
    * Lista tutti i wallet con dati impresa
    */
-  list: publicProcedure.query(async () => {
+  list: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) return [];
 
@@ -169,7 +169,7 @@ export const walletRouter = router({
   /**
    * Dettaglio singolo wallet
    */
-  getById: publicProcedure.input(walletIdSchema).query(async ({ input }) => {
+  getById: protectedProcedure.input(walletIdSchema).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return null;
 
@@ -211,7 +211,7 @@ export const walletRouter = router({
   /**
    * Ottieni wallet per impresa
    */
-  getByImpresa: publicProcedure.input(impresaIdSchema).query(async ({ input }) => {
+  getByImpresa: protectedProcedure.input(impresaIdSchema).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return null;
 
@@ -230,7 +230,7 @@ export const walletRouter = router({
   /**
    * Crea nuovo wallet per impresa
    */
-  create: publicProcedure.input(createWalletSchema).mutation(async ({ input }) => {
+  create: adminProcedure.input(createWalletSchema).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("Database non disponibile");
 
@@ -262,7 +262,7 @@ export const walletRouter = router({
   /**
    * Aggiorna stato wallet (blocca/sblocca)
    */
-  updateStatus: publicProcedure
+  updateStatus: adminProcedure
     .input(updateWalletStatusSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -292,7 +292,7 @@ export const walletRouter = router({
   /**
    * Lista transazioni wallet
    */
-  transazioni: publicProcedure.input(walletIdSchema).query(async ({ input }) => {
+  transazioni: protectedProcedure.input(walletIdSchema).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
 
@@ -306,7 +306,7 @@ export const walletRouter = router({
   /**
    * Effettua ricarica wallet (manuale o da callback PagoPA)
    */
-  ricarica: publicProcedure.input(ricaricaWalletSchema).mutation(async ({ input }) => {
+  ricarica: protectedProcedure.input(ricaricaWalletSchema).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new Error("Database non disponibile");
 
@@ -358,7 +358,7 @@ export const walletRouter = router({
   /**
    * Effettua decurtazione wallet (per presenza mercato)
    */
-  decurtazione: publicProcedure
+  decurtazione: protectedProcedure
     .input(decurtazioneWalletSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -430,7 +430,7 @@ export const walletRouter = router({
   /**
    * Genera avviso PagoPA per ricarica wallet
    */
-  generaAvvisoPagopa: publicProcedure
+  generaAvvisoPagopa: protectedProcedure
     .input(generaAvvisoPagopaSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -495,7 +495,7 @@ export const walletRouter = router({
   /**
    * Avvia pagamento immediato PagoPA (redirect a checkout)
    */
-  avviaPagamentoPagopa: publicProcedure
+  avviaPagamentoPagopa: protectedProcedure
     .input(generaAvvisoPagopaSchema)
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -564,7 +564,7 @@ export const walletRouter = router({
   /**
    * Verifica stato pagamento PagoPA
    */
-  verificaPagamento: publicProcedure
+  verificaPagamento: protectedProcedure
     .input(verificaPagamentoSchema)
     .query(async ({ input }) => {
       const db = await getDb();
@@ -644,7 +644,7 @@ export const walletRouter = router({
   /**
    * Genera PDF avviso PagoPA
    */
-  generaPdfAvviso: publicProcedure
+  generaPdfAvviso: protectedProcedure
     .input(verificaPagamentoSchema)
     .query(async ({ input }) => {
       const result = await efilService.generaPdf({
@@ -658,7 +658,7 @@ export const walletRouter = router({
   /**
    * Genera PDF quietanza pagamento
    */
-  generaPdfQuietanza: publicProcedure
+  generaPdfQuietanza: protectedProcedure
     .input(verificaPagamentoSchema)
     .query(async ({ input }) => {
       const result = await efilService.generaPdf({
@@ -672,7 +672,7 @@ export const walletRouter = router({
   /**
    * Lista avvisi PagoPA
    */
-  avvisiPagopa: publicProcedure.input(walletIdSchema).query(async ({ input }) => {
+  avvisiPagopa: protectedProcedure.input(walletIdSchema).query(async ({ input }) => {
     const db = await getDb();
     if (!db) return [];
 
@@ -690,7 +690,7 @@ export const walletRouter = router({
   /**
    * Lista tariffe posteggio per mercato
    */
-  tariffe: publicProcedure
+  tariffe: protectedProcedure
     .input(z.object({ mercatoId: z.number().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -709,7 +709,7 @@ export const walletRouter = router({
   /**
    * Crea/aggiorna tariffa posteggio
    */
-  upsertTariffa: publicProcedure
+  upsertTariffa: adminProcedure
     .input(
       z.object({
         id: z.number().optional(),
@@ -768,7 +768,7 @@ export const walletRouter = router({
   /**
    * Ricerca pagamenti giornalieri per riconciliazione
    */
-  ricercaPagamentiGiornalieri: publicProcedure
+  ricercaPagamentiGiornalieri: adminProcedure
     .input(ricercaPagamentiSchema)
     .query(async ({ input }) => {
       const result = await efilService.ricercaPagamentiGiornalieri({
@@ -781,7 +781,7 @@ export const walletRouter = router({
   /**
    * Report movimenti wallet per periodo
    */
-  reportMovimenti: publicProcedure
+  reportMovimenti: protectedProcedure
     .input(
       z.object({
         walletId: z.number().optional(),
@@ -844,7 +844,7 @@ export const walletRouter = router({
   /**
    * Verifica se operatore può fare presenza (saldo sufficiente)
    */
-  verificaSaldoPresenza: publicProcedure
+  verificaSaldoPresenza: protectedProcedure
     .input(
       z.object({
         impresaId: z.number(),

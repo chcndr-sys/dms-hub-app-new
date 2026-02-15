@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import * as schema from "../drizzle/schema";
@@ -174,7 +174,7 @@ export const dmsHubRouter = router({
   
   markets: router({
     // Import JSON completo da Slot Editor v3
-    importFromSlotEditor: publicProcedure
+    importFromSlotEditor: adminProcedure
       .input(z.object({
         marketName: z.string(),
         city: z.string(),
@@ -327,7 +327,7 @@ export const dmsHubRouter = router({
       }),
 
     // Import automatico da Slot Editor v3 / BusHubEditor
-    importAuto: publicProcedure
+    importAuto: adminProcedure
       .input(z.object({
         slotEditorData: z.any(), // JSON grezzo da Slot Editor v3
         name: z.string().optional(), // Nome mercato (opzionale, da BusHubEditor)
@@ -529,7 +529,7 @@ export const dmsHubRouter = router({
       }),
 
     // Aggiorna stato posteggio
-    updateStatus: publicProcedure
+    updateStatus: protectedProcedure
       .input(z.object({
         stallId: z.number(),
         status: z.enum(["free", "reserved", "occupied", "booked", "maintenance"]),
@@ -594,7 +594,7 @@ export const dmsHubRouter = router({
     }),
 
     // Crea nuovo operatore
-    create: publicProcedure
+    create: protectedProcedure
       .input(z.object({
         firstName: z.string(),
         lastName: z.string(),
@@ -633,7 +633,7 @@ export const dmsHubRouter = router({
       }),
 
     // Aggiorna operatore
-    update: publicProcedure
+    update: protectedProcedure
       .input(z.object({
         vendorId: z.number(),
         data: z.object({
@@ -677,7 +677,7 @@ export const dmsHubRouter = router({
       }),
 
     // Dettagli operatore completi (per App Polizia)
-    getFullDetails: publicProcedure
+    getFullDetails: protectedProcedure
       .input(z.object({ vendorId: z.number() }))
       .query(async ({ input }) => {
         const db = await getDb();
@@ -734,7 +734,7 @@ export const dmsHubRouter = router({
   
   bookings: router({
     // Crea prenotazione
-    create: publicProcedure
+    create: protectedProcedure
       .input(z.object({
         stallId: z.number(),
         userId: z.number().optional(),
@@ -802,7 +802,7 @@ export const dmsHubRouter = router({
     }),
 
     // Conferma check-in con verifica saldo wallet
-    confirmCheckin: publicProcedure
+    confirmCheckin: protectedProcedure
       .input(z.object({
         bookingId: z.number(),
         vendorId: z.number(),
@@ -958,7 +958,7 @@ export const dmsHubRouter = router({
       }),
 
     // Cancella prenotazione
-    cancel: publicProcedure
+    cancel: protectedProcedure
       .input(z.object({ bookingId: z.number() }))
       .mutation(async ({ input }) => {
         const db = await getDb();
@@ -999,7 +999,7 @@ export const dmsHubRouter = router({
   
   presences: router({
     // Check-out operatore
-    checkout: publicProcedure
+    checkout: protectedProcedure
       .input(z.object({
         presenceId: z.number(),
         notes: z.string().optional(),
@@ -1047,7 +1047,7 @@ export const dmsHubRouter = router({
       }),
 
     // Presenze oggi per mercato
-    getTodayByMarket: publicProcedure
+    getTodayByMarket: protectedProcedure
       .input(z.object({ marketId: z.number() }))
       .query(async ({ input }) => {
         const db = await getDb();
@@ -1080,7 +1080,7 @@ export const dmsHubRouter = router({
   
   inspections: router({
     // Crea controllo
-    create: publicProcedure
+    create: adminProcedure
       .input(z.object({
         vendorId: z.number(),
         stallId: z.number().optional(),
@@ -1139,7 +1139,7 @@ export const dmsHubRouter = router({
 
   violations: router({
     // Crea verbale
-    create: publicProcedure
+    create: adminProcedure
       .input(z.object({
         inspectionId: z.number().optional(),
         vendorId: z.number(),
@@ -1225,7 +1225,7 @@ export const dmsHubRouter = router({
           return hub || null;
         }),
       
-      create: publicProcedure
+      create: adminProcedure
         .input(z.object({
           marketId: z.number(),
           name: z.string(),
@@ -1259,7 +1259,7 @@ export const dmsHubRouter = router({
           return { success: true, hubId: hub.id };
         }),
       
-      update: publicProcedure
+      update: adminProcedure
         .input(z.object({
           id: z.number(),
           marketId: z.number().optional(),
@@ -1306,12 +1306,12 @@ export const dmsHubRouter = router({
           return { success: true };
         }),
       
-      delete: publicProcedure
+      delete: adminProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
           const db = await getDb();
           if (!db) throw new Error("Database not available");
-          
+
           // Ottieni valore vecchio per log
           const [oldHub] = await db.select().from(schema.hubLocations)
             .where(eq(schema.hubLocations.id, input.id));
@@ -1348,7 +1348,7 @@ export const dmsHubRouter = router({
             .orderBy(desc(schema.hubShops.createdAt));
         }),
       
-      create: publicProcedure
+      create: adminProcedure
         .input(z.object({
           hubId: z.number(),
           name: z.string(),
@@ -1409,7 +1409,7 @@ export const dmsHubRouter = router({
             .orderBy(desc(schema.hubServices.createdAt));
         }),
       
-      create: publicProcedure
+      create: adminProcedure
         .input(z.object({
           hubId: z.number(),
           name: z.string(),
@@ -1490,7 +1490,7 @@ export const dmsHubRouter = router({
       }),
     
     // Crea concessione (chiamato dal form SUAP)
-    create: publicProcedure
+    create: protectedProcedure
       .input(z.object({
         vendorId: z.number(),
         stallId: z.number().optional(),
@@ -1547,7 +1547,7 @@ export const dmsHubRouter = router({
       }),
     
     // Aggiorna concessione
-    update: publicProcedure
+    update: protectedProcedure
       .input(z.object({
         id: z.number(),
         status: z.string().optional(),
@@ -1665,7 +1665,7 @@ export const dmsHubRouter = router({
       }),
 
     // SAVE config per comune
-    saveConfig: publicProcedure
+    saveConfig: adminProcedure
       .input(z.object({
         comuneId: z.number(),
         civicEnabled: z.boolean().optional(),
