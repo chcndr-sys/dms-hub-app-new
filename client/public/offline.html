@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#14b8a6">
+  <title>DMS Hub - Offline</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #0b1220;
+      color: #e8fbff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .container {
+      text-align: center;
+      max-width: 400px;
+    }
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: #14b8a6;
+    }
+    p {
+      color: #9bd6de;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    button {
+      background: #14b8a6;
+      color: #0b1220;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    button:focus-visible {
+      outline: 2px solid #14b8a6;
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="alert">
+    <div class="icon" aria-hidden="true">&#x1F4F6;</div>
+    <h1>Sei offline</h1>
+    <p>
+      La connessione a internet non e' disponibile.
+      Controlla la tua rete e riprova.
+    </p>
+    <button onclick="window.location.reload()">Riprova</button>
+  </div>
+</body>
+</html>

@@ -60,4 +60,12 @@ createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </trpc.Provider>
 );
-// Force rebuild Wed Dec  3 06:37:53 EST 2025
+
+// Registra Service Worker per PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // SW registration failed silently
+    });
+  });
+}

@@ -52,6 +52,7 @@ import AccessibilityPage from "./pages/AccessibilityPage";
 import ProfiloPage from "./pages/ProfiloPage";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import SkipToContent from "./components/SkipToContent";
+import GlobalFooter from "./components/GlobalFooter";
 
 function Router() {
   return (
@@ -120,6 +121,7 @@ function App() {
                     <main id="main-content" role="main">
                       <Router />
                     </main>
+                    <GlobalFooter />
                     <ChatWidget userRole="client" />
                     <CookieConsentBanner />
                   </TooltipProvider>
