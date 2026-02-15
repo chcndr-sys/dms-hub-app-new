@@ -8,7 +8,7 @@ import { mioAgentRouter } from "./mioAgentRouter";
 import { mihubRouter } from "./mihubRouter";
 import { guardianRouter } from "./guardianRouter";
 import { walletRouter } from "./walletRouter";
-import { sql } from "drizzle-orm/sql";
+
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with 
@@ -151,58 +151,56 @@ export const appRouter = router({
         return await getTPERStops();
       }),
       
-	      // GET /api/integrations/tper/sync - Sincronizza dati TPER
-	      sync: publicProcedure.mutation(async () => {
-	        try {
-	          const { syncTPERData, updateTPERRealtimeData } = await import("./services/tperService");
-	          const { getDb } = await import("./db");
-	          const { mobilityData } = await import("../drizzle/schema");
-	          
-	          // Sincronizza i dati
-	          console.log("Inizio sincronizzazione TPER...");
-		          const data = await syncTPERData();
-		          console.log(`Sincronizzazione TPER completata. Trovati ${data.length} record.`);
-	          
-	          // Salva nel database con un'unica query SQL per l'inserimento di massa (più stabile di Drizzle ORM per bulk insert)
-	          if (data.length > 0) {
-		            console.log(`Tentativo di inserimento di ${data.length} record.`);
-	            const db = await getDb();
-	            
-	            if (!db) {
-	              console.error("[TPER Router] Errore: Connessione al database non disponibile.");
-	              throw new Error("Errore durante la sincronizzazione TPER: Connessione al database non disponibile.");
-	            }
-	            
-	            // 1. Costruisci la query di inserimento di massa
-	            const values = data.map(d => 
-	              `(${d.marketId}, '${d.type}', '${d.lineNumber}', '${d.lineName}', '${d.stopName}', ${d.lat}, ${d.lng}, '${d.status}', ${d.occupancy ?? 'NULL'}, ${d.nextArrival ?? 'NULL'}, NOW(), NOW())`
-	            ).join(', ');
-	            
-	            console.log("Inizio inserimento di massa nel DB...");
-		  const insertQuery = `
-	              INSERT INTO mobility_data (market_id, type, line_number, line_name, stop_name, lat, lng, status, occupancy, next_arrival, updated_at, created_at)
-	              VALUES ${values}
-	              ON CONFLICT DO NOTHING;
-	            `;
-	            
-	            // 2. Esegui la query raw
-	            await db.execute(sql.raw(insertQuery));
-	            console.log(`[TPER Router] Inserimento di massa completato per ${data.length} record.`);
-	          }
-	          
-	          // Aggiorna i dati real-time
-	          await updateTPERRealtimeData();
-	          
-	          return {
-	            success: true,
-	            count: data.length,
-	            message: `Sincronizzati ${data.length} dati mobilità TPER`
-	          };
-	        } catch (error: any) {
-	          console.error("[TPER Router] Errore critico durante la sincronizzazione:", error.message, error.stack);
-	          throw new Error("Errore durante la sincronizzazione TPER: " + error.message);
-	        }
-	      }),
+      // GET /api/integrations/tper/sync - Sincronizza dati TPER
+      sync: publicProcedure.mutation(async () => {
+        try {
+          const { syncTPERData, updateTPERRealtimeData } = await import("./services/tperService");
+          const { getDb } = await import("./db");
+          const schema = await import("../drizzle/schema");
+
+          const data = await syncTPERData();
+
+          // Bulk insert parametrizzato via Drizzle ORM (no SQL injection)
+          if (data.length > 0) {
+            const db = await getDb();
+
+            if (!db) {
+              throw new Error("Errore durante la sincronizzazione TPER: Connessione al database non disponibile.");
+            }
+
+            const batchSize = 100;
+            for (let i = 0; i < data.length; i += batchSize) {
+              const batch = data.slice(i, i + batchSize);
+              await db.insert(schema.mobilityData).values(
+                batch.map(d => ({
+                  marketId: d.marketId,
+                  type: d.type,
+                  lineNumber: d.lineNumber,
+                  lineName: d.lineName,
+                  stopName: d.stopName,
+                  lat: d.lat,
+                  lng: d.lng,
+                  status: d.status,
+                  occupancy: d.occupancy ?? null,
+                  nextArrival: d.nextArrival ?? null,
+                }))
+              ).onConflictDoNothing();
+            }
+          }
+
+          // Aggiorna i dati real-time
+          await updateTPERRealtimeData();
+
+          return {
+            success: true,
+            count: data.length,
+            message: `Sincronizzati ${data.length} dati mobilità TPER`
+          };
+        } catch (error: any) {
+          console.error("[TPER Router] Errore sincronizzazione:", error.message);
+          throw new Error("Errore durante la sincronizzazione TPER: " + error.message);
+        }
+      }),
   }),
 
   // MIO Agent - Log e Monitoraggio Agenti
