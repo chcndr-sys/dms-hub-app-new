@@ -1,0 +1,20 @@
+{
+  "name": "DMS Hub - Rete Mercati Made in Italy",
+  "short_name": "DMS Hub",
+  "description": "Piattaforma digitale per la gestione dei mercati ambulanti italiani",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#14b8a6",
+  "orientation": "any",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["government", "business", "utilities"]
+}

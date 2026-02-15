@@ -49,7 +49,9 @@ import WalletStorico from "./pages/WalletStorico";
 // GDPR & Compliance pages
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import AccessibilityPage from "./pages/AccessibilityPage";
+import ProfiloPage from "./pages/ProfiloPage";
 import CookieConsentBanner from "./components/CookieConsentBanner";
+import SkipToContent from "./components/SkipToContent";
 
 function Router() {
   return (
@@ -93,6 +95,7 @@ function Router() {
       {/* GDPR & Compliance */}
       <Route path="/privacy" component={PrivacyPolicyPage} />
       <Route path="/accessibilita" component={AccessibilityPage} />
+      <Route path="/profilo" component={ProfiloPage} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -111,9 +114,12 @@ function App() {
               <PermissionsProvider>
                 <TransportProvider>
                   <TooltipProvider>
+                    <SkipToContent />
                     <ImpersonationBanner />
                     <Toaster />
-                    <Router />
+                    <main id="main-content" role="main">
+                      <Router />
+                    </main>
                     <ChatWidget userRole="client" />
                     <CookieConsentBanner />
                   </TooltipProvider>
