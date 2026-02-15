@@ -689,15 +689,22 @@ dei mercati ambulanti italiani, progettata per scalare a **8.000 mercati**.
 
 ### A.1 Dimensioni Codebase
 
-| Metrica | Valore |
-|---------|--------|
-| **Righe di codice totali** (TS + TSX) | **113.922** |
-| File TypeScript (.ts) | 73 |
-| File React (.tsx) | 183 |
-| File CSS | 1 |
-| File totali sorgente | **256** |
-| Dimensione progetto (senza node_modules) | 71 MB |
-| Dimensione node_modules | 781 MB |
+| Metrica | Valore | Note |
+|---------|--------|------|
+| **Codice sorgente attivo** (TS + TSX) | **113.922** | client/src + server + drizzle + shared |
+| Codice totale (incl. scripts, legacy, api/) | **118.793** | + scripts, _cantina, api/, src/ legacy |
+| Documentazione (.md) | **9.920** | docs/, report, progetti, blueprint |
+| Presentazioni e slide (HTML/JS) | **43.091** | audit_presentation/ + tech_slides/ |
+| File di configurazione (JSON, YAML, etc.) | **~39.000** | package.json, tsconfig, drizzle, etc. |
+| Migrazioni SQL | **373** | 7 file in migrations/ |
+| **TOTALE PROGETTO** | **~218.000** | Tutto (escl. node_modules e .git) |
+| | | |
+| File TypeScript (.ts) | 73 | Solo sorgente attivo |
+| File React (.tsx) | 183 | Solo sorgente attivo |
+| File CSS | 1 | |
+| File totali sorgente attivo | **256** | |
+| Dimensione progetto (senza node_modules) | 71 MB | |
+| Dimensione node_modules | 781 MB | |
 
 ### A.2 Distribuzione Codice per Area
 
