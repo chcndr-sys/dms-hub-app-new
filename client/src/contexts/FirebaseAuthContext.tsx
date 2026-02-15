@@ -275,7 +275,19 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
   }
 
   // ============================================
-  // STEP 4: Costruisci il MioHubUser con tutti i dati
+  // STEP 4: Determina lo stato admin dal sistema legacy
+  // Il sistema legacy (orchestratore) è la fonte di verità per i ruoli admin.
+  // Firebase conosce solo il ruolo scelto al momento della registrazione
+  // (tipicamente 'citizen'), quindi NON può determinare lo stato admin.
+  // ============================================
+  const isLegacyAdmin = legacyUser?.is_super_admin === true ||
+    legacyUser?.base_role === 'admin' ||
+    (legacyUser?.assigned_roles || []).some(
+      (r: { role_id: number }) => r.role_id === 1
+    );
+
+  // ============================================
+  // STEP 5: Costruisci il MioHubUser con tutti i dati
   // ============================================
   const miohubUser: MioHubUser = {
     uid: firebaseUser.uid,
@@ -283,7 +295,9 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
     displayName: firebaseUser.displayName,
     photoURL: firebaseUser.photoURL,
     provider,
-    role: backendSyncData?.role || (legacyUser?.base_role === 'admin' ? 'pa' : undefined) || role,
+    // PRIORITÀ RUOLO: legacy admin > backendSync > selectedRole
+    // Se il legacy dice admin, quello prevale su Firebase (che ritorna 'citizen')
+    role: isLegacyAdmin ? 'pa' : (backendSyncData?.role || role),
     fiscalCode: backendSyncData?.fiscalCode || undefined,
     verified: firebaseUser.emailVerified,
     // Dati dal DB legacy (orchestratore) - questi sono i dati critici
@@ -293,9 +307,7 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
     assignedRoles: legacyUser?.assigned_roles || [],
     openId: legacyUser?.openId || undefined,
     permissions: backendSyncData?.permissions || [],
-    isSuperAdmin: (legacyUser?.assigned_roles || []).some(
-      (r: { role_id: number }) => r.role_id === 1
-    ) || legacyUser?.is_super_admin === true,
+    isSuperAdmin: isLegacyAdmin,
   };
 
   return miohubUser;
