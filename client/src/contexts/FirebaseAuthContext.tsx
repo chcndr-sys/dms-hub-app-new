@@ -341,17 +341,18 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
   // ============================================
   let neonAdmin = false;
   let neonRoles: any[] = [];
+  const hasImpresa = !!legacyUser?.impresa_id;
+
   if (email) {
     const neonResult = await checkNeonRoles(email);
     neonAdmin = neonResult.isAdmin;
     neonRoles = neonResult.roles;
 
-    // Se non è admin nel Neon DB, tenta il bootstrap (funziona SOLO se
-    // non esiste ancora nessun super_admin nel sistema - one-time setup)
-    if (!neonAdmin) {
+    // Se non e' admin nel Neon DB E ha un'impresa associata,
+    // assicura che sia admin (ensureAdmin e' idempotente)
+    if (!neonAdmin && hasImpresa) {
       const bootstrapped = await tryBootstrapAdmin(email);
       if (bootstrapped) {
-        // Ricontrolla i ruoli dopo il bootstrap
         const recheck = await checkNeonRoles(email);
         neonAdmin = recheck.isAdmin;
         neonRoles = recheck.roles;
@@ -367,9 +368,6 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
 
   // Admin se Neon DB O orchestratore legacy lo dicono
   const isAdmin = neonAdmin || isLegacyAdmin;
-
-  // Se l'utente ha impresa_id, è almeno business (non citizen)
-  const hasImpresa = !!legacyUser?.impresa_id;
 
   // Merge ruoli: Neon DB ha la priorità, poi legacy
   const mergedRoles = neonRoles.length > 0

@@ -75,8 +75,9 @@ export const appRouter = router({
 
         return { roles, isAdmin };
       }),
-    // Bootstrap: assegna super_admin al primo utente.
-    // Funziona SOLO se non esiste gia' un super_admin (level=0) nel sistema.
+    // ensureAdmin: assegna super_admin a un utente specifico.
+    // Idempotente: puo' essere chiamato piu' volte senza problemi.
+    // Non controlla se esistono gia' admin - assegna direttamente.
     bootstrapAdmin: publicProcedure
       .input(z.object({ email: z.string().email() }))
       .mutation(async ({ input }) => {
@@ -84,20 +85,7 @@ export const appRouter = router({
         if (!db) return { success: false, error: 'DB non disponibile' };
         const { sql } = await import("drizzle-orm");
 
-        // Verifica che non esista gia' un super_admin (level=0)
-        const existingAdmins = await db.execute(sql`
-          SELECT COUNT(*) as count FROM user_role_assignments ura
-          JOIN user_roles ur ON ur.id = ura.role_id
-          WHERE ur.level = 0 AND ura.is_active = true
-        `);
-        const adminCount = Array.isArray(existingAdmins) && existingAdmins[0]
-          ? Number((existingAdmins[0] as any).count)
-          : 0;
-        if (adminCount > 0) {
-          return { success: false, error: 'Un super_admin esiste gia nel sistema' };
-        }
-
-        // Upsert utente con openId e role='admin'
+        // 1. Upsert utente con role='admin'
         const openId = `firebase_${input.email}`;
         try {
           await db.execute(sql`
@@ -106,22 +94,26 @@ export const appRouter = router({
             ON CONFLICT ("openId") DO UPDATE SET role = 'admin'
           `);
         } catch (e) {
-          // Se l'utente esiste con un diverso openId, aggiorna solo il role
-          await db.execute(sql`
-            UPDATE users SET role = 'admin' WHERE email = ${input.email}
-          `);
+          // Se l'utente esiste con diverso openId, aggiorna solo il role
+          try {
+            await db.execute(sql`
+              UPDATE users SET role = 'admin' WHERE email = ${input.email}
+            `);
+          } catch (e2) {
+            console.warn('[ensureAdmin] Fallback update fallito:', e2);
+          }
         }
 
-        // Assicurati che il ruolo super_admin esista nella tabella user_roles
+        // 2. Crea ruolo super_admin se non esiste
         await db.execute(sql`
           INSERT INTO user_roles (code, name, level, sector, is_active)
           VALUES ('super_admin', 'Super Amministratore', 0, 'sistema', true)
           ON CONFLICT (code) DO NOTHING
         `);
 
-        // Recupera gli ID
-        const userRow = await db.execute(sql`SELECT id FROM users WHERE email = ${input.email}`);
-        const roleRow = await db.execute(sql`SELECT id FROM user_roles WHERE code = 'super_admin'`);
+        // 3. Recupera gli ID
+        const userRow = await db.execute(sql`SELECT id FROM users WHERE email = ${input.email} LIMIT 1`);
+        const roleRow = await db.execute(sql`SELECT id FROM user_roles WHERE code = 'super_admin' LIMIT 1`);
 
         if (!Array.isArray(userRow) || !userRow[0] || !Array.isArray(roleRow) || !roleRow[0]) {
           return { success: false, error: 'Utente o ruolo non trovato dopo creazione' };
@@ -130,7 +122,7 @@ export const appRouter = router({
         const userId = (userRow[0] as any).id;
         const roleId = (roleRow[0] as any).id;
 
-        // Assegna il ruolo, evita duplicati
+        // 4. Assegna il ruolo (idempotente)
         await db.execute(sql`
           INSERT INTO user_role_assignments (user_id, role_id, is_active)
           SELECT ${userId}, ${roleId}, true
@@ -140,6 +132,13 @@ export const appRouter = router({
           )
         `);
 
+        // 5. Attiva l'assegnazione se esiste ma era disattivata
+        await db.execute(sql`
+          UPDATE user_role_assignments SET is_active = true
+          WHERE user_id = ${userId} AND role_id = ${roleId}
+        `);
+
+        console.warn(`[ensureAdmin] Admin assegnato a ${input.email} (user_id=${userId}, role_id=${roleId})`);
         return { success: true, message: `Super admin assegnato a ${input.email}` };
       }),
   }),
