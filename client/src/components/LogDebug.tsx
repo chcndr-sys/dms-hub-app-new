@@ -151,7 +151,7 @@ function APILogsTab() {
         const convertedLogs: APILog[] = data.logs.map((log: any, index: number) => ({
           id: index + 1,
           timestamp: new Date(log.timestamp),
-          method: 'GET', // TODO: estrarre dal messaggio se disponibile
+          method: (log.message?.match(/(GET|POST|PUT|DELETE|PATCH)/)?.[1] as any) || log.method || 'GET',
           endpoint: log.source,
           statusCode: log.level === 'error' ? 500 : 200,
           responseTime: 0,
@@ -564,7 +564,15 @@ function SystemStatusTab() {
           backend: {
             url: 'https://api.mio-hub.me',
             status: data.status.processes.find((p: any) => p.name === 'mihub-backend')?.status === 'online' ? 'up' : 'down',
-            uptime: 99.8, // TODO: calcolare da uptime
+            uptime: (() => {
+              const proc = data.status.processes.find((p: any) => p.name === 'mihub-backend');
+              if (!proc) return 0;
+              const restarts = proc.pm2_env?.restart_time || proc.pm2_env?.unstable_restarts || 0;
+              // Stima: ogni restart = ~10s downtime. Uptime su 30gg
+              const downtimeSec = restarts * 10;
+              const totalSec = 30 * 24 * 3600;
+              return Math.round((1 - downtimeSec / totalSec) * 1000) / 10;
+            })(),
             lastCheck: new Date()
           },
           database: {

@@ -41,11 +41,11 @@ export default function GuardianDebugSection() {
   const errorLogs = errorLogsData?.logs || [];
   const allLogs = allLogsData?.logs || [];
 
-  // Calcola statistiche
+  // Calcola statistiche (warning = log con "warn" nel messaggio o level)
   const stats = {
     errors: errorLogs.length,
-    warnings: 0, // TODO: aggiungere campo warning nel backend
-    debug: 0,
+    warnings: allLogs.filter((log: any) => log.level === 'warn' || log.message?.toLowerCase().includes('warning')).length,
+    debug: allLogs.filter((log: any) => log.level === 'debug').length,
     total: allLogs.length,
   };
 

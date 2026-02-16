@@ -35,7 +35,7 @@ export default function GuardianLogsSection() {
   const stats = statsData?.stats ? {
     total: statsData.stats.total,
     info: statsData.stats.successful,
-    warn: 0, // TODO: aggiungere conteggio warning nel backend
+    warn: (statsData.stats as any).warnings || Math.max(0, statsData.stats.total - statsData.stats.successful - statsData.stats.failed),
     error: statsData.stats.failed,
   } : {
     total: 0,

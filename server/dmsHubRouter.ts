@@ -307,7 +307,7 @@ export const dmsHubRouter = router({
           "IMPORT_SLOT_EDITOR",
           "market",
           Number(marketId),
-          null, // TODO: prendere da ctx.user quando disponibile
+          ctx.user?.uid || null,
           null,
           {
             marketName: input.marketName,
@@ -1389,6 +1389,74 @@ export const dmsHubRouter = router({
           await logAction("CREATE_HUB_SHOP", "hub_shop", shop.id, null, null, shop);
           return { success: true, shopId: shop.id };
         }),
+
+      update: adminProcedure
+        .input(z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          category: z.string().optional(),
+          certifications: z.string().optional(),
+          ownerId: z.number().optional(),
+          businessName: z.string().optional(),
+          vatNumber: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().optional(),
+          lat: z.string().optional(),
+          lng: z.string().optional(),
+          areaMq: z.number().optional(),
+          description: z.string().optional(),
+          photoUrl: z.string().optional(),
+          status: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          const [oldShop] = await db.select().from(schema.hubShops)
+            .where(eq(schema.hubShops.id, input.id));
+          if (!oldShop) throw new Error("Negozio HUB non trovato");
+
+          const updateData: any = { updatedAt: new Date() };
+          if (input.name !== undefined) updateData.name = input.name;
+          if (input.category !== undefined) updateData.category = input.category;
+          if (input.certifications !== undefined) updateData.certifications = input.certifications;
+          if (input.ownerId !== undefined) updateData.ownerId = input.ownerId;
+          if (input.businessName !== undefined) updateData.businessName = input.businessName;
+          if (input.vatNumber !== undefined) updateData.vatNumber = input.vatNumber;
+          if (input.phone !== undefined) updateData.phone = input.phone;
+          if (input.email !== undefined) updateData.email = input.email;
+          if (input.lat !== undefined) updateData.lat = input.lat;
+          if (input.lng !== undefined) updateData.lng = input.lng;
+          if (input.areaMq !== undefined) updateData.areaMq = input.areaMq;
+          if (input.description !== undefined) updateData.description = input.description;
+          if (input.photoUrl !== undefined) updateData.photoUrl = input.photoUrl;
+          if (input.status !== undefined) updateData.status = input.status;
+
+          await db.update(schema.hubShops)
+            .set(updateData)
+            .where(eq(schema.hubShops.id, input.id));
+
+          await logAction("UPDATE_HUB_SHOP", "hub_shop", input.id, null, oldShop, updateData);
+          return { success: true };
+        }),
+
+      delete: adminProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          const [oldShop] = await db.select().from(schema.hubShops)
+            .where(eq(schema.hubShops.id, input.id));
+          if (!oldShop) throw new Error("Negozio HUB non trovato");
+
+          await db.update(schema.hubShops)
+            .set({ status: "inactive", updatedAt: new Date() })
+            .where(eq(schema.hubShops.id, input.id));
+
+          await logAction("DELETE_HUB_SHOP", "hub_shop", input.id, null, oldShop, { status: "inactive" });
+          return { success: true };
+        }),
     }),
     
     // Gestione servizi HUB
@@ -1441,6 +1509,66 @@ export const dmsHubRouter = router({
           
           await logAction("CREATE_HUB_SERVICE", "hub_service", service.id, null, null, service);
           return { success: true, serviceId: service.id };
+        }),
+
+      update: adminProcedure
+        .input(z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          type: z.string().optional(),
+          description: z.string().optional(),
+          capacity: z.number().optional(),
+          available: z.number().optional(),
+          price: z.number().optional(),
+          lat: z.string().optional(),
+          lng: z.string().optional(),
+          metadata: z.string().optional(),
+          status: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          const [oldService] = await db.select().from(schema.hubServices)
+            .where(eq(schema.hubServices.id, input.id));
+          if (!oldService) throw new Error("Servizio HUB non trovato");
+
+          const updateData: any = { updatedAt: new Date() };
+          if (input.name !== undefined) updateData.name = input.name;
+          if (input.type !== undefined) updateData.type = input.type;
+          if (input.description !== undefined) updateData.description = input.description;
+          if (input.capacity !== undefined) updateData.capacity = input.capacity;
+          if (input.available !== undefined) updateData.available = input.available;
+          if (input.price !== undefined) updateData.price = input.price;
+          if (input.lat !== undefined) updateData.lat = input.lat;
+          if (input.lng !== undefined) updateData.lng = input.lng;
+          if (input.metadata !== undefined) updateData.metadata = input.metadata;
+          if (input.status !== undefined) updateData.status = input.status;
+
+          await db.update(schema.hubServices)
+            .set(updateData)
+            .where(eq(schema.hubServices.id, input.id));
+
+          await logAction("UPDATE_HUB_SERVICE", "hub_service", input.id, null, oldService, updateData);
+          return { success: true };
+        }),
+
+      delete: adminProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ input }) => {
+          const db = await getDb();
+          if (!db) throw new Error("Database not available");
+
+          const [oldService] = await db.select().from(schema.hubServices)
+            .where(eq(schema.hubServices.id, input.id));
+          if (!oldService) throw new Error("Servizio HUB non trovato");
+
+          await db.update(schema.hubServices)
+            .set({ status: "inactive", updatedAt: new Date() })
+            .where(eq(schema.hubServices.id, input.id));
+
+          await logAction("DELETE_HUB_SERVICE", "hub_service", input.id, null, oldService, { status: "inactive" });
+          return { success: true };
         }),
     }),
   }),

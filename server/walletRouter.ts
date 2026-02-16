@@ -155,15 +155,31 @@ export const walletRouter = router({
       .from(schema.operatoreWallet)
       .orderBy(desc(schema.operatoreWallet.updatedAt));
 
-    // Per ogni wallet, recupera i dati dell'impresa (mock per ora)
-    return wallets.map((w) => ({
-      ...w,
-      impresa: {
-        id: w.impresaId,
-        ragioneSociale: `Impresa ${w.impresaId}`, // Da collegare a tabella imprese
-        partitaIva: `IT${w.impresaId.toString().padStart(11, "0")}`,
-      },
-    }));
+    // Per ogni wallet, recupera i dati reali dell'impresa da vendors
+    const results = await Promise.all(
+      wallets.map(async (w) => {
+        const [vendor] = await db
+          .select()
+          .from(schema.vendors)
+          .where(eq(schema.vendors.id, w.impresaId))
+          .limit(1);
+        return {
+          ...w,
+          impresa: vendor
+            ? {
+                id: vendor.id,
+                ragioneSociale: vendor.businessName || `${vendor.firstName} ${vendor.lastName}`,
+                partitaIva: vendor.vatNumber || "",
+              }
+            : {
+                id: w.impresaId,
+                ragioneSociale: `Impresa ${w.impresaId}`,
+                partitaIva: "",
+              },
+        };
+      })
+    );
+    return results;
   }),
 
   /**
@@ -469,13 +485,26 @@ export const walletRouter = router({
 
       if (!wallet) throw new Error("Wallet non trovato");
 
-      // TODO: Recuperare dati reali impresa da tabella imprese
-      const impresaData = {
-        id: wallet.impresaId,
-        ragioneSociale: `Impresa ${wallet.impresaId}`,
-        partitaIva: `IT${wallet.impresaId.toString().padStart(11, "0")}`,
-        email: `impresa${wallet.impresaId}@example.com`,
-      };
+      // Recupera dati reali impresa da tabella vendors
+      const [vendor] = await db
+        .select()
+        .from(schema.vendors)
+        .where(eq(schema.vendors.id, wallet.impresaId))
+        .limit(1);
+
+      const impresaData = vendor
+        ? {
+            id: vendor.id,
+            ragioneSociale: vendor.businessName || `${vendor.firstName} ${vendor.lastName}`,
+            partitaIva: vendor.vatNumber || "",
+            email: vendor.email || "",
+          }
+        : {
+            id: wallet.impresaId,
+            ragioneSociale: `Impresa ${wallet.impresaId}`,
+            partitaIva: "",
+            email: "",
+          };
 
       // Genera avviso tramite E-FIL
       const result = await efilService.generaAvvisoRicaricaWallet({

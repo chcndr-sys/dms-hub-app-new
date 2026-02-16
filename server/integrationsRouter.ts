@@ -37,10 +37,10 @@ export const integrationsRouter = router({
         permissions: z.array(z.string()).optional(),
         rateLimit: z.number().default(1000),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) throw new Error("Database non disponibile");
-        
+
         // Genera chiave API univoca
         const prefix = input.environment === "production" ? "dms_live_" : "dms_test_";
         const key = prefix + nanoid(24);
@@ -52,7 +52,7 @@ export const integrationsRouter = router({
           status: "active",
           permissions: input.permissions ? JSON.stringify(input.permissions) : null,
           rateLimit: input.rateLimit,
-          createdBy: "admin", // TODO: prendere da ctx.user
+          createdBy: ctx.user?.uid || "system",
         }).returning();
         
         return { id: result.id, key };
@@ -188,10 +188,10 @@ export const integrationsRouter = router({
         secret: z.string().optional(),
         headers: z.record(z.string(), z.string()).optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) throw new Error("Database non disponibile");
-        
+
         const [result] = await db.insert(schema.webhooks).values({
           name: input.name,
           url: input.url,
@@ -199,7 +199,7 @@ export const integrationsRouter = router({
           secret: input.secret || nanoid(32),
           headers: input.headers ? JSON.stringify(input.headers) : null,
           status: "active",
-          createdBy: "admin", // TODO: prendere da ctx.user
+          createdBy: ctx.user?.uid || "system",
         }).returning();
         
         return { id: result.id };

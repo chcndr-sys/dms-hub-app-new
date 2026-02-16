@@ -142,11 +142,43 @@ export default function GestioneHubNegozi() {
     }
   });
 
+  const updateShopMutation = trpc.dmsHub.hub.shops.update.useMutation({
+    onSuccess: () => {
+      hubShopsQuery.refetch();
+      setIsShopDialogOpen(false);
+      setEditingShop(null);
+      resetShopForm();
+    }
+  });
+
+  const deleteShopMutation = trpc.dmsHub.hub.shops.delete.useMutation({
+    onSuccess: () => {
+      hubShopsQuery.refetch();
+      setDeleteShopId(null);
+    }
+  });
+
   const createServiceMutation = trpc.dmsHub.hub.services.create.useMutation({
     onSuccess: () => {
       hubServicesQuery.refetch();
       setIsServiceDialogOpen(false);
       resetServiceForm();
+    }
+  });
+
+  const updateServiceMutation = trpc.dmsHub.hub.services.update.useMutation({
+    onSuccess: () => {
+      hubServicesQuery.refetch();
+      setIsServiceDialogOpen(false);
+      setEditingService(null);
+      resetServiceForm();
+    }
+  });
+
+  const deleteServiceMutation = trpc.dmsHub.hub.services.delete.useMutation({
+    onSuccess: () => {
+      hubServicesQuery.refetch();
+      setDeleteServiceId(null);
     }
   });
 
@@ -237,20 +269,36 @@ export default function GestioneHubNegozi() {
     }
   };
 
-  // Handle create shop
-  const handleCreateShop = () => {
-    createShopMutation.mutate({
-      hubId: selectedHubId,
-      ...shopForm
-    });
+  // Handle create/update shop
+  const handleSubmitShop = () => {
+    if (editingShop) {
+      updateShopMutation.mutate({ id: editingShop.id, ...shopForm });
+    } else {
+      createShopMutation.mutate({ hubId: selectedHubId, ...shopForm });
+    }
   };
 
-  // Handle create service
-  const handleCreateService = () => {
-    createServiceMutation.mutate({
-      hubId: selectedHubId,
-      ...serviceForm
-    });
+  // Handle delete shop
+  const handleDeleteShop = () => {
+    if (deleteShopId) {
+      deleteShopMutation.mutate({ id: deleteShopId });
+    }
+  };
+
+  // Handle create/update service
+  const handleSubmitService = () => {
+    if (editingService) {
+      updateServiceMutation.mutate({ id: editingService.id, ...serviceForm });
+    } else {
+      createServiceMutation.mutate({ hubId: selectedHubId, ...serviceForm });
+    }
+  };
+
+  // Handle delete service
+  const handleDeleteService = () => {
+    if (deleteServiceId) {
+      deleteServiceMutation.mutate({ id: deleteServiceId });
+    }
   };
 
   // Load map data dynamically based on view mode and selection
@@ -824,12 +872,12 @@ export default function GestioneHubNegozi() {
                         Annulla
                       </Button>
                       <Button
-                        onClick={handleCreateShop}
-                        disabled={createShopMutation.isPending || !shopForm.name}
+                        onClick={handleSubmitShop}
+                        disabled={(editingShop ? updateShopMutation.isPending : createShopMutation.isPending) || !shopForm.name}
                         className="bg-[#14b8a6] hover:bg-[#0d9488] text-white"
                       >
-                        {createShopMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Aggiungi Negozio
+                        {(editingShop ? updateShopMutation.isPending : createShopMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        {editingShop ? 'Salva Modifiche' : 'Aggiungi Negozio'}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -908,19 +956,39 @@ export default function GestioneHubNegozi() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 className="border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/10"
-                                title="Modifica (TODO: implementare update)"
+                                title="Modifica negozio"
+                                onClick={() => {
+                                  setEditingShop(shop);
+                                  setShopForm({
+                                    name: shop.name || '',
+                                    category: shop.category || '',
+                                    certifications: shop.certifications || '',
+                                    ownerId: shop.ownerId || undefined,
+                                    businessName: shop.businessName || '',
+                                    vatNumber: shop.vatNumber || '',
+                                    phone: shop.phone || '',
+                                    email: shop.email || '',
+                                    lat: shop.lat || '',
+                                    lng: shop.lng || '',
+                                    areaMq: shop.areaMq || undefined,
+                                    description: shop.description || '',
+                                    photoUrl: shop.photoUrl || '',
+                                  });
+                                  setIsShopDialogOpen(true);
+                                }}
                               >
                                 <Edit className="h-3 w-3" />
                               </Button>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 className="border-[#ef4444]/30 text-[#ef4444] hover:bg-[#ef4444]/10"
-                                title="Elimina (TODO: implementare delete)"
+                                title="Elimina negozio"
+                                onClick={() => setDeleteShopId(shop.id)}
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
@@ -1035,12 +1103,12 @@ export default function GestioneHubNegozi() {
                         Annulla
                       </Button>
                       <Button
-                        onClick={handleCreateService}
-                        disabled={createServiceMutation.isPending || !serviceForm.name || !serviceForm.type}
+                        onClick={handleSubmitService}
+                        disabled={(editingService ? updateServiceMutation.isPending : createServiceMutation.isPending) || !serviceForm.name || !serviceForm.type}
                         className="bg-[#14b8a6] hover:bg-[#0d9488] text-white"
                       >
-                        {createServiceMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Aggiungi Servizio
+                        {(editingService ? updateServiceMutation.isPending : createServiceMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        {editingService ? 'Salva Modifiche' : 'Aggiungi Servizio'}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -1106,19 +1174,35 @@ export default function GestioneHubNegozi() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 className="border-[#14b8a6]/30 text-[#14b8a6] hover:bg-[#14b8a6]/10"
-                                title="Modifica (TODO: implementare update)"
+                                title="Modifica servizio"
+                                onClick={() => {
+                                  setEditingService(service);
+                                  setServiceForm({
+                                    name: service.name || '',
+                                    type: service.type || '',
+                                    description: service.description || '',
+                                    capacity: service.capacity || undefined,
+                                    available: service.available || undefined,
+                                    price: service.price || undefined,
+                                    lat: service.lat || '',
+                                    lng: service.lng || '',
+                                    metadata: service.metadata || '',
+                                  });
+                                  setIsServiceDialogOpen(true);
+                                }}
                               >
                                 <Edit className="h-3 w-3" />
                               </Button>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 className="border-[#ef4444]/30 text-[#ef4444] hover:bg-[#ef4444]/10"
-                                title="Elimina (TODO: implementare delete)"
+                                title="Elimina servizio"
+                                onClick={() => setDeleteServiceId(service.id)}
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
@@ -1307,6 +1391,62 @@ export default function GestioneHubNegozi() {
             >
               {deleteLocationMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Disattiva HUB
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Shop Confirmation Dialog */}
+      <AlertDialog open={deleteShopId !== null} onOpenChange={(open) => !open && setDeleteShopId(null)}>
+        <AlertDialogContent className="bg-[#1a2332] border-[#ef4444]/30 text-[#e8fbff]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[#ef4444] flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Conferma Disattivazione Negozio
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[#e8fbff]/70">
+              Sei sicuro di voler disattivare questo negozio? Lo stato verrà impostato su <strong>inactive</strong>.
+              Potrai riattivarlo in seguito modificandone lo stato.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[#14b8a6]/30 text-[#e8fbff]">
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteShop}
+              className="bg-[#ef4444] hover:bg-[#dc2626] text-white"
+            >
+              {deleteShopMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Disattiva Negozio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Service Confirmation Dialog */}
+      <AlertDialog open={deleteServiceId !== null} onOpenChange={(open) => !open && setDeleteServiceId(null)}>
+        <AlertDialogContent className="bg-[#1a2332] border-[#ef4444]/30 text-[#e8fbff]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[#ef4444] flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Conferma Disattivazione Servizio
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-[#e8fbff]/70">
+              Sei sicuro di voler disattivare questo servizio? Lo stato verrà impostato su <strong>inactive</strong>.
+              Potrai riattivarlo in seguito modificandone lo stato.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-[#14b8a6]/30 text-[#e8fbff]">
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteService}
+              className="bg-[#ef4444] hover:bg-[#dc2626] text-white"
+            >
+              {deleteServiceMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Disattiva Servizio
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
