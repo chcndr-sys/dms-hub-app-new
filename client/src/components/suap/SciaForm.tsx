@@ -341,7 +341,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
         
         if (json.success && json.data) {
           const sortedStalls = json.data.sort((a: Stall, b: Stall) => {
-            return a.number.localeCompare(b.number, undefined, { numeric: true, sensitivity: 'base' });
+            return String(a.number).localeCompare(String(b.number), undefined, { numeric: true, sensitivity: 'base' });
           });
           setStalls(sortedStalls);
           

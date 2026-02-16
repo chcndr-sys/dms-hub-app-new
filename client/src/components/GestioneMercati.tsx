@@ -1573,6 +1573,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
         // ma il frontend usa italiano (libero/occupato/riservato)
         const normalizedStalls = stallsData.data.map((s: Stall) => ({
           ...s,
+          number: String(s.number), // L'API può restituire number come intero — forza stringa
           status: normalizeStallStatus(s.status)
         }));
         setStalls(normalizedStalls);
@@ -1918,7 +1919,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
     
     // Trova il posteggio nella mappa tramite gis_slot_id
     const mapFeature = mapData?.stalls_geojson.features.find(
-      f => f.properties.number === stall.number
+      f => String(f.properties.number) === String(stall.number)
     );
     
     if (mapFeature && mapFeature.geometry.type === 'Polygon') {
@@ -2791,9 +2792,10 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                   })
                   .sort((a, b) => {
                   // Ordina alfanumerico naturale: 1, 2, 22, 22A, 22B, 23
-                  return a.number.localeCompare(b.number, undefined, { numeric: true, sensitivity: 'base' });
+                  // String() necessario: l'API può restituire number come intero o stringa
+                  return String(a.number).localeCompare(String(b.number), undefined, { numeric: true, sensitivity: 'base' });
                 }).map((stall) => {                  // Trova i dati di presenza per questo posteggio
-                  const presenzaOggi = presenze.find(p => p.stall_number === stall.number || p.stallId === stall.id);
+                  const presenzaOggi = presenze.find(p => String(p.stall_number) === String(stall.number) || p.stallId === stall.id);
                   // Cerca graduatoria: prima per posteggio (ID), poi per impresa del concessionario, poi per spuntista
                   let gradRecord = graduatoria.find(g => g.stallId === stall.id || g.stall_id === stall.id);
                   // Se non trovato, cerca per impresa_id del concessionario
