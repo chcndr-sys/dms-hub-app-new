@@ -27,7 +27,7 @@ export const appRouter = router({
       } as const;
     }),
     // Controlla ruoli utente nel Neon DB (user_role_assignments)
-    // Usato dal frontend durante il login Firebase per determinare admin status
+    // Schema users: id (auto), openId (NOT NULL UNIQUE), email, name, role enum('user','admin')
     checkRoles: publicProcedure
       .input(z.object({ email: z.string().email() }))
       .query(async ({ input }) => {
@@ -35,12 +35,18 @@ export const appRouter = router({
         if (!db) return { roles: [], isAdmin: false };
         const { sql } = await import("drizzle-orm");
 
-        // Assicurati che l'utente esista nel Neon DB (upsert)
-        await db.execute(sql`
-          INSERT INTO users (email, name, is_active)
-          VALUES (${input.email}, ${input.email.split('@')[0]}, true)
-          ON CONFLICT (email) DO NOTHING
-        `);
+        // Upsert utente - openId è NOT NULL UNIQUE, usiamo 'firebase_' + email come ID
+        const openId = `firebase_${input.email}`;
+        try {
+          await db.execute(sql`
+            INSERT INTO users ("openId", email, name, role)
+            VALUES (${openId}, ${input.email}, ${input.email.split('@')[0]}, 'user')
+            ON CONFLICT ("openId") DO NOTHING
+          `);
+        } catch (e) {
+          // Se fallisce (es. email duplicata con diverso openId), ignora
+          console.warn('[checkRoles] Upsert user fallito (ok se esiste gia):', e);
+        }
 
         const result = await db.execute(sql`
           SELECT ura.role_id, ur.code as role_code, ur.name as role_name, ur.level,
@@ -54,11 +60,23 @@ export const appRouter = router({
           ORDER BY ur.level ASC
         `);
         const roles = Array.isArray(result) ? result : [];
-        const isAdmin = roles.some((r: any) => r.role_id === 1 || r.level === 0);
+        // Admin se ha level=0 (super_admin) OPPURE il campo role nella tabella users è 'admin'
+        const isAdmin = roles.some((r: any) => r.level === 0);
+
+        // Fallback: controlla anche il campo role nella tabella users
+        if (!isAdmin) {
+          const userRole = await db.execute(sql`
+            SELECT role FROM users WHERE email = ${input.email} LIMIT 1
+          `);
+          if (Array.isArray(userRole) && userRole[0] && (userRole[0] as any).role === 'admin') {
+            return { roles, isAdmin: true };
+          }
+        }
+
         return { roles, isAdmin };
       }),
     // Bootstrap: assegna super_admin al primo utente.
-    // Funziona SOLO se non esiste gia' un super_admin nel sistema.
+    // Funziona SOLO se non esiste gia' un super_admin (level=0) nel sistema.
     bootstrapAdmin: publicProcedure
       .input(z.object({ email: z.string().email() }))
       .mutation(async ({ input }) => {
@@ -79,32 +97,47 @@ export const appRouter = router({
           return { success: false, error: 'Un super_admin esiste gia nel sistema' };
         }
 
-        // Assicurati che l'utente esista
-        await db.execute(sql`
-          INSERT INTO users (email, name, is_active)
-          VALUES (${input.email}, ${input.email.split('@')[0]}, true)
-          ON CONFLICT (email) DO NOTHING
-        `);
+        // Upsert utente con openId e role='admin'
+        const openId = `firebase_${input.email}`;
+        try {
+          await db.execute(sql`
+            INSERT INTO users ("openId", email, name, role)
+            VALUES (${openId}, ${input.email}, ${input.email.split('@')[0]}, 'admin')
+            ON CONFLICT ("openId") DO UPDATE SET role = 'admin'
+          `);
+        } catch (e) {
+          // Se l'utente esiste con un diverso openId, aggiorna solo il role
+          await db.execute(sql`
+            UPDATE users SET role = 'admin' WHERE email = ${input.email}
+          `);
+        }
 
-        // Assicurati che il ruolo super_admin esista
+        // Assicurati che il ruolo super_admin esista nella tabella user_roles
         await db.execute(sql`
           INSERT INTO user_roles (code, name, level, sector, is_active)
           VALUES ('super_admin', 'Super Amministratore', 0, 'sistema', true)
           ON CONFLICT (code) DO NOTHING
         `);
 
-        // Assegna il ruolo super_admin all'utente
-        const userId = await db.execute(sql`SELECT id FROM users WHERE email = ${input.email}`);
-        const roleId = await db.execute(sql`SELECT id FROM user_roles WHERE code = 'super_admin'`);
+        // Recupera gli ID
+        const userRow = await db.execute(sql`SELECT id FROM users WHERE email = ${input.email}`);
+        const roleRow = await db.execute(sql`SELECT id FROM user_roles WHERE code = 'super_admin'`);
 
-        if (!Array.isArray(userId) || !userId[0] || !Array.isArray(roleId) || !roleId[0]) {
-          return { success: false, error: 'Utente o ruolo non trovato' };
+        if (!Array.isArray(userRow) || !userRow[0] || !Array.isArray(roleRow) || !roleRow[0]) {
+          return { success: false, error: 'Utente o ruolo non trovato dopo creazione' };
         }
 
+        const userId = (userRow[0] as any).id;
+        const roleId = (roleRow[0] as any).id;
+
+        // Assegna il ruolo, evita duplicati
         await db.execute(sql`
           INSERT INTO user_role_assignments (user_id, role_id, is_active)
-          VALUES (${(userId[0] as any).id}, ${(roleId[0] as any).id}, true)
-          ON CONFLICT DO NOTHING
+          SELECT ${userId}, ${roleId}, true
+          WHERE NOT EXISTS (
+            SELECT 1 FROM user_role_assignments
+            WHERE user_id = ${userId} AND role_id = ${roleId}
+          )
         `);
 
         return { success: true, message: `Super admin assegnato a ${input.email}` };

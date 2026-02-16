@@ -368,6 +368,9 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
   // Admin se Neon DB O orchestratore legacy lo dicono
   const isAdmin = neonAdmin || isLegacyAdmin;
 
+  // Se l'utente ha impresa_id, è almeno business (non citizen)
+  const hasImpresa = !!legacyUser?.impresa_id;
+
   // Merge ruoli: Neon DB ha la priorità, poi legacy
   const mergedRoles = neonRoles.length > 0
     ? neonRoles.map((r: any) => ({
@@ -382,14 +385,24 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
   // ============================================
   // STEP 5: Costruisci il MioHubUser con tutti i dati
   // ============================================
+
+  // Determina ruolo effettivo: admin > business (ha impresa) > Firebase > citizen
+  let effectiveRole: UserRole;
+  if (isAdmin) {
+    effectiveRole = 'pa';
+  } else if (hasImpresa) {
+    effectiveRole = 'business';
+  } else {
+    effectiveRole = backendSyncData?.role || role;
+  }
+
   const miohubUser: MioHubUser = {
     uid: firebaseUser.uid,
     email: firebaseUser.email,
     displayName: firebaseUser.displayName,
     photoURL: firebaseUser.photoURL,
     provider,
-    // PRIORITÀ RUOLO: admin (Neon/legacy) > backendSync > selectedRole
-    role: isAdmin ? 'pa' : (backendSyncData?.role || role),
+    role: effectiveRole,
     fiscalCode: backendSyncData?.fiscalCode || undefined,
     verified: firebaseUser.emailVerified,
     // Dati dal DB legacy (orchestratore) - questi sono i dati critici
