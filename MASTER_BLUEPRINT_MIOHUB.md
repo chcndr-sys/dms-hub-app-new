@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 6.6.0 (Merge completo + Dossier aggiornato + Metriche reali)
+> **Versione:** 6.7.0 (Export Mappa PNG + Sync Router + Webhook Form + Fix FraudMonitor)
 > **Data:** 16 Febbraio 2026
 > **Autore:** Sistema documentato da Manus AI + Claude Code
 > **Stato:** PRODUZIONE
@@ -31,6 +31,50 @@
 
 ## 📝 CHANGELOG RECENTE
 
+### Sessione 16 Febbraio 2026 — (v6.7.0) — Export Mappa PNG + Sync Router Backend + Webhook Create Form
+
+#### Export Mappa PNG con Canvas Nativo (`67b3c1e`)
+- **[NEW] `client/src/components/GISMap.tsx`:** Implementazione completa export mappa in formato PNG
+- Cattura tile Leaflet su canvas 2x (retina) per alta risoluzione
+- Watermark automatico "DMS Hub" con data nel footer dell'immagine
+- Download automatico come `mappa-dms-hub-{timestamp}.png`
+- Zero dipendenze esterne — usa Canvas API nativo del browser
+
+#### Sync Router Backend — 5 Nuove Procedure tRPC (`3f6327d`)
+- **[NEW] `server/integrationsRouter.ts`:** Aggiunto sub-router `sync` con 5 procedure:
+  - `sync.status` — Stato sincronizzazione (conteggio job per stato)
+  - `sync.jobs` — Lista job con filtro per entità e stato (paginato, limit 50)
+  - `sync.getConfig` — Configurazione sync da tabella `sync_config`
+  - `sync.trigger` — Trigger manuale: crea job per ogni entità con stato `completed`
+  - `sync.updateConfig` — Upsert configurazione (insert se non esiste)
+- Usa tabelle `sync_config` e `sync_jobs` da schema Drizzle
+
+#### Webhook Create Form Completo (`3f6327d`)
+- **[NEW] `client/src/components/Integrazioni.tsx`:** WebhookManager con form di creazione
+  - Dialog "Nuovo Webhook" con campi: nome, URL endpoint, eventi (separati da virgola)
+  - Usa `trpc.integrations.webhooks.create` mutation
+  - Reset form automatico dopo creazione riuscita
+- **Tab Integrazioni ora 100% operativi:** API Dashboard, Connessioni, API Keys, Secrets, Webhooks (CRUD completo), Sync Status (5 procedure)
+
+#### Fix FraudMonitorPanel Select.Item (`922fef7`)
+- **[FIX] `client/src/components/FraudMonitorPanel.tsx`:** Sostituito `value=""` con `value="all"` nel SelectItem "Tutte" del filtro severità. shadcn/ui Select non permette valori stringa vuota.
+
+#### Riepilogo Metriche Verificate v6.7
+| Metrica | Valore v6.6 | Valore v6.7 | Delta |
+|---------|-------------|-------------|-------|
+| Endpoints API totali | 796 | 796 | — |
+| Endpoints documentati (apiInventoryService) | 226 | 226 | — |
+| Procedure tRPC (query + mutation) | 112 | 150 | +38 |
+| Router tRPC | 21 | 21 | — |
+| Tabelle database | 75 | 75 | — |
+| Componenti React (non-UI) | 90 | 72 | verificato (conteggio reale .tsx in components/) |
+| Componenti shadcn/ui | 53 | 53 | — |
+| Pagine frontend | 37 | 34 | verificato (conteggio reale .tsx in pages/) |
+| Test suite | 36 test | 52 test | +16 (7 file) |
+| Codice attivo (client+server) | ~82.000 righe | ~116.000 righe | +34.000 |
+
+---
+
 ### Sessione 16 Febbraio 2026 — (v6.6.0) — Merge Master + Dossier Aggiornato + Metriche Reali
 
 #### Merge 24 Commit su Master
@@ -53,7 +97,7 @@
 - **Causa:** API orchestratore (`/api/tcc/v2/operator/wallet/{id}`) restituisce `impresa.denominazione = "Ritual"` (id=34)
 - **Fix:** Da applicare nel DB orchestratore (non nel codice frontend)
 
-#### Riepilogo Metriche Verificate v6.6
+#### Riepilogo Metriche Verificate v6.6 (superato da v6.7)
 | Metrica | Valore |
 |---------|--------|
 | Endpoints API totali | 796 |
@@ -1249,6 +1293,8 @@ La sezione `Integrazioni -> API Dashboard` del frontend Vercel include:
 | **GDPR** | `/api/trpc/gdpr.*` | exportMyData, deleteMyAccount, retentionStatus, runRetentionCleanup, myConsents (v6.3.0) |
 | **DMS Legacy** | `/api/integrations/dms-legacy/*` | markets, vendors, concessions, presences, sync |
 | **MercaWeb** | `/api/integrations/mercaweb/*` | import/ambulanti, import/mercati, export/presenze, health |
+| **Integrations Sync** | `/api/trpc/integrations.sync.*` | status, jobs, getConfig, trigger, updateConfig (v6.7.0) |
+| **Integrations Webhooks** | `/api/trpc/integrations.webhooks.*` | list, create, test, delete (CRUD completo v6.7.0) |
 
 ---
 
@@ -2177,14 +2223,14 @@ fi
 | CI/CD Pipeline | GitHub Actions | ✅ Attiva |
 | PM2 | mihub-backend v1.1.0 cluster | ✅ Online (pid 711337, 168MB RAM) |
 
-### Statistiche (Dati Reali 15 Feb 2026)
+### Statistiche (Dati Reali 16 Feb 2026 — v6.7.0)
 
 - **Tabelle nel DB:** 155 (149 + 6 TCC Security)
 - **Righe totali:** 372.143+
-- **Router tRPC registrati:** 20 (incluso GDPR)
-- **Endpoint tRPC:** ~124 procedure
+- **Router tRPC registrati:** 21 (incluso GDPR + tccSecurity)
+- **Endpoint tRPC:** ~150 procedure (query + mutation)
 - **Endpoint REST montati:** 70 (su 82 file route)
-- **Test suite:** 36 test su 7 file (Vitest)
+- **Test suite:** 52 test su 7 file (Vitest)
 - **Mercati nel DB:** 3
 - **Imprese:** 34
 - **Posteggi:** 583
