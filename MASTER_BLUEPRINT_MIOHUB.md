@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 6.8.0 (Fix Mappa Posteggi + Normalizzazione Stati + Impersonazione RBAC + cost_per_sqm)
+> **Versione:** 6.8.1 (Fix Posteggi Alfanumerici 22A/22B + Mappa + Normalizzazione + Impersonazione RBAC)
 > **Data:** 16 Febbraio 2026
 > **Autore:** Sistema documentato da Manus AI + Claude Code
 > **Stato:** PRODUZIONE
@@ -31,7 +31,20 @@
 
 ## 📝 CHANGELOG RECENTE
 
-### Sessione 16 Febbraio 2026 — (v6.8.0) — Fix Mappa Posteggi + Normalizzazione Stati EN/IT + Impersonazione RBAC
+### Sessione 16 Febbraio 2026 — (v6.8.1) — Fix Posteggi Alfanumerici (22A, 22B) + Normalizzazione + Impersonazione RBAC
+
+#### Fix Posteggi Alfanumerici — parseInt troncava suffisso lettera (`7a1901b`)
+- **[BUG] Root cause:** `parseInt("22A")` → `22`, perdendo il suffisso lettera. Posteggi come 22A, 22B, 33C non venivano visualizzati nella simulazione del mercato di Modena.
+- **[FIX] `client/src/components/GestioneMercati.tsx`:** Rimosso `parseInt()` da `stallsData` e `selectedStallNumber` — numeri posteggio passati as-is alla mappa
+- **[FIX] `client/src/components/MarketMapComponent.tsx`:** Tipi props cambiati da `number` a `number | string` per `stallNumber`, `selectedStallNumber`, `stallsData[].number`. Map `stallsByNumber` usa solo chiavi stringa (`String(s.number)`)
+- **[FIX] `client/src/components/HubMarketMapComponent.tsx`:** Stessa fix — stallsByNumber con chiavi stringa, `getStallColor` accetta `number | string`
+- **[FIX] `client/src/components/MappaItaliaComponent.tsx`:** Rimosso `parseInt()` + sorting con `localeCompare` naturale
+- **[FIX] `client/src/components/PresenzeGraduatoriaPanel.tsx`:** Sorting con `localeCompare({ numeric: true })`
+- **[FIX] `client/src/components/suap/SciaForm.tsx`:** Sorting con `localeCompare({ numeric: true })`
+- **[FIX] `client/src/components/suap/ConcessioneForm.tsx`:** Sorting con `localeCompare({ numeric: true })`
+- **Ordinamento naturale:** `1, 2, 22, 22A, 22B, 23` (prima numerico, poi suffisso lettera)
+
+---
 
 #### Normalizzazione Stati Posteggi EN↔IT (`7b7e693`, `dd02ca8`)
 - **[NEW] `client/src/lib/stallStatus.ts`:** Sistema completo di normalizzazione stati posteggi
