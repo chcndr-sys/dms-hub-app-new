@@ -1348,7 +1348,8 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       });
 
       if (stallsData.success) {
-        setStalls(stallsData.data);
+        // Normalizza number a stringa — l'API può restituire int o string
+        setStalls(stallsData.data.map((s: any) => ({ ...s, number: String(s.number) })));
         console.log('[DEBUG fetchData] stalls aggiornato, length:', stallsData.data.length);
       }
       if (mapDataRes.success) {
@@ -1478,7 +1479,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
     
     // Trova il posteggio nella mappa tramite gis_slot_id
     const mapFeature = mapData?.stalls_geojson.features.find(
-      f => f.properties.number === stall.number
+      f => String(f.properties.number) === String(stall.number)
     );
     
     if (mapFeature && mapFeature.geometry.type === 'Polygon') {
@@ -1689,7 +1690,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               <TableBody>
                 {[...stalls].sort((a, b) => {
                   // Ordina alfanumerico naturale: 1, 2, 22, 22A, 22B, 23
-                  return a.number.localeCompare(b.number, undefined, { numeric: true, sensitivity: 'base' });
+                  return String(a.number).localeCompare(String(b.number), undefined, { numeric: true, sensitivity: 'base' });
                 }).map((stall) => (
                   <TableRow 
                     key={stall.id}

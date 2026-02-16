@@ -611,7 +611,7 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
                       </td>
                     </tr>
                   ) : stalls
-                    .sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true, sensitivity: 'base' }))
+                    .sort((a, b) => String(a.number).localeCompare(String(b.number), undefined, { numeric: true, sensitivity: 'base' }))
                     .map((stall) => {
                     const record = graduatoria.find(g => g.stall_id === stall.id);
                     const presenza = presenze.find(p => p.stall_id === stall.id);

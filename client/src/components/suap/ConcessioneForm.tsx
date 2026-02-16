@@ -419,7 +419,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode 
         if (json.success && json.data) {
           // Ordina posteggi per numero
           const sortedStalls = json.data.sort((a: Stall, b: Stall) => {
-            return a.number.localeCompare(b.number, undefined, { numeric: true, sensitivity: 'base' });
+            return String(a.number).localeCompare(String(b.number), undefined, { numeric: true, sensitivity: 'base' });
           });
           setStalls(sortedStalls);
           
