@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 6.8.1 (Fix Posteggi Alfanumerici 22A/22B + Mappa + Normalizzazione + Impersonazione RBAC)
+> **Versione:** 7.0.0 (DMS Legacy Interop Completa + Piattaforme PA + PDND/AppIO/ANPR/SSO)
 > **Data:** 16 Febbraio 2026
 > **Autore:** Sistema documentato da Manus AI + Claude Code
 > **Stato:** PRODUZIONE
@@ -30,6 +30,63 @@
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 16 Febbraio 2026 — (v7.0.0) — DMS Legacy Interop Completa + Piattaforme PA
+
+#### DMS Legacy Interoperabilita' Completa — Cervello ↔ Braccio (`2e44c2e`)
+
+**Implementazione completa del bridge bidirezionale MioHub (cervello) ↔ DMS Legacy (braccio Heroku).**
+
+3 nuovi file, 1.689 righe di codice:
+
+- **[NEW] `server/services/dmsLegacyService.ts`** — Servizio connessione diretta al DB PostgreSQL Legacy (AWS RDS)
+  - Pool limitato a 3 connessioni (specifica sicurezza)
+  - Health check con latenza
+  - 8 funzioni SYNC OUT via stored functions `_crup` (amb, mercati, piazzole, conc_std, spuntisti, suser, istanza_start/close)
+  - 9 funzioni lettura Legacy (markets, vendors, concessions, stalls, presences, sessions, spuntisti, documents, stats)
+  - Graceful degradation: se `DMS_LEGACY_DB_URL` non configurato, opera offline senza errori
+- **[NEW] `server/services/dmsLegacyTransformers.ts`** — Transformer bidirezionale completo
+  - **SYNC OUT** (6): `transformVendorToAmb`, `transformMarketToMkt`, `transformStallToPz`, `transformConcessionToConc`, `transformUserToSuser`, `transformSpuntistaToSp`
+  - **SYNC IN** (2): `transformPreToPresence`, `transformIstToSession`
+  - **EXPORT** (3): `transformMktToMarket`, `transformAmbToVendor`, `transformConcToConcession`
+  - **Resolver** (4): `resolveVendorId`, `resolveStallId`, `resolveMarketId`, `resolveSessionId` — mapping via `legacy_*_id`
+  - Parser indirizzo italiano (via, civico, CAP, citta', provincia)
+- **[NEW] `server/dmsLegacyRouter.ts`** — Router tRPC con 23 endpoint:
+  - **EXPORT** (9): markets, vendors, concessions, presences, sessions, stalls, spuntisti, documents, stats
+  - **SYNC OUT** (7): vendors, markets, stalls, concessions, users, spuntisti, sessions + /all
+  - **SYNC IN** (3): presences, sessions, /all — upsert intelligente via `legacy_pre_id` / `legacy_ist_id`
+  - **UTILITY** (4): health, status (con contatori MioHub + Legacy + linked), sync manuale, cron-sync
+  - Sync engine reale con job tracking in `syncJobs` + `syncLogs` (sostituisce il mock precedente)
+- **[MOD] `server/_core/index.ts`** — REST proxy `/api/integrations/dms-legacy/*` (tutti i 23 endpoint accessibili anche via REST)
+- **[MOD] `server/_core/index.ts`** — CRON sync automatico configurabile (default 5 min), con graceful shutdown
+- **[MOD] `server/integrationsRouter.ts`** — `sync.trigger` ora delega al sync engine reale (non piu' `simulated: true`)
+- **[MOD] `server/routers.ts`** — Registrato `dmsLegacy: dmsLegacyRouter`
+- **[MOD] `server/_core/env.ts`** — Aggiunto `DMS_LEGACY_DB_URL` (opzionale)
+- **[MOD] `.env.example`** — Documentata variabile `DMS_LEGACY_DB_URL`
+
+**Architettura sync bidirezionale:**
+```
+MioHub (Neon DB)              DMS Legacy (Heroku PostgreSQL)
+    |                                    |
+    |-- SYNC OUT --(transformer)-------> amb_crup(), mercati_crup(), piazzole_crup()...
+    |<- SYNC IN --(transformer)--------- presenze, istanze
+    |<- EXPORT --(lettura diretta)------ tutte le tabelle Legacy
+    |-- CRON (ogni 5 min) ------------>  sync bidirezionale automatico
+```
+
+#### Piattaforme PA — PDND, App IO, ANPR, SSO (`3d24fd0`, `67afdb2`)
+- **[NEW] `client/src/components/PiattaformePA.tsx`** — Dashboard completa con 4 pannelli: PDND, App IO, ANPR, SSO/SPID/CIE
+- **[NEW] `server/services/pdndService.ts`** — Servizio PDND con voucher JWT, e-service catalog
+- **[NEW] `server/services/appIoService.ts`** — Servizio App IO con notifiche cittadini
+- **[NEW] `server/services/anprService.ts`** — Servizio ANPR per verifica residenza/CF
+- **[NEW] `server/services/ssoService.ts`** — Servizio SSO SPID/CIE/CNS con status provider
+- **[NEW] `server/pdndRouter.ts`**, `appIoRouter.ts`, `piattaformeRouter.ts` — Router tRPC dedicati
+- Registrati in `routers.ts` come `pdnd.*`, `appIo.*`, `piattaforme.*`
+
+#### Fix Security — Credenziali rimosse (`207d793`)
+- Rimossa API key MercaWeb hardcoded e credenziali DMS Legacy dal codice sorgente
+
+---
 
 ### Sessione 16 Febbraio 2026 — (v6.8.1) — Fix Posteggi Alfanumerici (22A, 22B) + Normalizzazione + Impersonazione RBAC
 
@@ -727,25 +784,33 @@ Tutti gli endpoint sono prefissati con `/api/integrations/dms-legacy/`.
 
 > **Nota:** Questi endpoint servono anche per l'interoperabilità con **MercaWeb** (software Polizia Municipale Grosseto). Vedi sezione 9.5 per i dettagli completi dell'integrazione MercaWeb.
 
-#### 9.2 SYNC OUT (MioHub → Legacy) — DA IMPLEMENTARE
+#### 9.2 SYNC OUT (MioHub → Legacy) — ✅ IMPLEMENTATI (v7.0.0)
 
-| # | Metodo | Endpoint | Stored Function Legacy | Descrizione |
-|---|---|---|---|---|
-| 10 | `POST` | `/sync-out/vendors` | `amb_crup(json)` | Manda imprese al Legacy |
-| 11 | `POST` | `/sync-out/markets` | `mercati_crup(json)` | Manda mercati al Legacy |
-| 12 | `POST` | `/sync-out/stalls` | `piazzole_crup(json)` | Manda piazzole al Legacy |
-| 13 | `POST` | `/sync-out/concessions` | `conc_std_crup(json)` | Manda concessioni al Legacy |
-| 14 | `POST` | `/sync-out/spuntisti` | `spuntisti_crup(json)` | Manda autorizzazioni spunta |
-| 15 | `POST` | `/sync-out/users` | `suser_crup(json)` | Manda operatori |
-| 16 | `POST` | `/sync-out/all` | Tutte le `_crup` | Sincronizzazione completa |
+| # | Metodo | Endpoint | Stored Function Legacy | Descrizione | Stato |
+|---|---|---|---|---|---|
+| 10 | `POST` | `/sync-out/vendors` | `amb_crup(json)` | Manda imprese al Legacy | ✅ Implementato |
+| 11 | `POST` | `/sync-out/markets` | `mercati_crup(json)` | Manda mercati al Legacy | ✅ Implementato |
+| 12 | `POST` | `/sync-out/stalls` | `piazzole_crup(json)` | Manda piazzole al Legacy | ✅ Implementato |
+| 13 | `POST` | `/sync-out/concessions` | `conc_std_crup(json)` | Manda concessioni al Legacy | ✅ Implementato |
+| 14 | `POST` | `/sync-out/spuntisti` | `spuntisti_crup(json)` | Manda autorizzazioni spunta | ✅ Implementato |
+| 15 | `POST` | `/sync-out/users` | `suser_crup(json)` | Manda operatori | ✅ Implementato |
+| 16 | `POST` | `/sync-out/sessions` | `istanza_start/close` | Gestione sessioni mercato | ✅ Implementato |
+| — | `POST` | `/sync-out/all` | Tutte le `_crup` | Sync completa tutte le entita' | ✅ Implementato |
 
-#### 9.3 SYNC IN (Legacy → MioHub) — DA IMPLEMENTARE
+**File sorgente:** `server/dmsLegacyRouter.ts` → `syncOut.*`
+**Transformer:** `server/services/dmsLegacyTransformers.ts` → `transformVendorToAmb()`, `transformMarketToMkt()`, etc.
 
-| # | Metodo | Endpoint | Stored Function Legacy | Descrizione |
-|---|---|---|---|---|
-| 17 | `POST` | `/sync-in/presences` | `presenze_get(json)` | Riceve presenze dal campo |
-| 18 | `POST` | `/sync-in/market-sessions` | `instanze_mercato(json)` | Riceve stato giornate |
-| 19 | `POST` | `/sync-in/all` | Tutte le `_get` presenze | Sincronizzazione completa in ingresso |
+#### 9.3 SYNC IN (Legacy → MioHub) — ✅ IMPLEMENTATI (v7.0.0)
+
+| # | Metodo | Endpoint | Azione | Descrizione | Stato |
+|---|---|---|---|---|---|
+| 17 | `POST` | `/sync-in/presences` | Importa presenze | Upsert via `legacy_pre_id` | ✅ Implementato |
+| 18 | `POST` | `/sync-in/sessions` | Importa sessioni | Upsert via `legacy_ist_id` | ✅ Implementato |
+| 19 | `POST` | `/sync-in/all` | Sync completa | Presenze + sessioni | ✅ Implementato |
+
+**File sorgente:** `server/dmsLegacyRouter.ts` → `syncIn.*`
+**Transformer:** `server/services/dmsLegacyTransformers.ts` → `transformPreToPresence()`, `transformIstToSession()`
+**Resolver ID:** `resolveVendorId()`, `resolveStallId()`, `resolveMarketId()`, `resolveSessionId()`
 
 #### 9.4 UTILITY — ✅ ATTIVI
 
@@ -756,22 +821,24 @@ Tutti gli endpoint sono prefissati con `/api/integrations/dms-legacy/`.
 | 22 | `POST` | `/sync` | Sync manuale on-demand | ✅ Testato |
 | 23 | `POST` | `/cron-sync` | Sync CRON periodica (60 min) | ✅ Attivo |
 
-### 10. Campi da Creare nel DB MioHub (Neon)
+### 10. Campi Interoperabilita' nel DB MioHub (Neon) — ✅ TUTTI PRESENTI
 
-Per completare l'interoperabilità, questi campi vanno aggiunti alle nostre tabelle:
+Tutti i campi sono gia' nello schema `drizzle/schema.ts` e operativi:
 
-| Tabella | Campo | Tipo | Scopo |
-|---|---|---|---|
-| `imprese` | `fido` | `numeric(8,2) DEFAULT 0` | Fido/credito concesso, compatibilità con `amb_fido` |
-| `imprese` | `legacy_amb_id` | `integer` | ID ambulante nel Legacy per tracciare la corrispondenza |
-| `markets` | `data_creazione` | `date` | Data inizio attività mercato, compatibilità con `mkt_dal` |
-| `markets` | `data_scadenza` | `date NULL` | Data fine attività mercato, compatibilità con `mkt_al` |
-| `markets` | `legacy_mkt_id` | `integer` | ID mercato nel Legacy |
-| `stalls` | `legacy_pz_id` | `integer` | ID piazzola nel Legacy |
-| `concessions` | `legacy_conc_id` | `integer` | ID concessione nel Legacy |
-| `users` | `cie_id` | `varchar(32)` | ID Carta d'Identità Elettronica (sostituisce badge NFC) |
-| `vendor_presences` | `legacy_pre_id` | `integer` | ID presenza nel Legacy |
-| `vendor_presences` | `rifiutata` | `boolean DEFAULT false` | Se la presenza è stata rifiutata dal Legacy |
+| Tabella | Campo | Tipo | Scopo | Stato |
+|---|---|---|---|---|
+| `vendors` | `legacy_amb_id` | `integer` | ID ambulante nel Legacy | ✅ Presente |
+| `markets` | `legacy_mkt_id` | `integer` | ID mercato nel Legacy | ✅ Presente |
+| `stalls` | `legacy_pz_id` | `integer` | ID piazzola nel Legacy | ✅ Presente |
+| `concessions` | `legacy_conc_id` | `integer` | ID concessione nel Legacy | ✅ Presente |
+| `users` | `cie_id` | `varchar(32)` | ID CIE (sostituisce badge NFC) | ✅ Presente |
+| `vendor_presences` | `legacy_pre_id` | `integer` | ID presenza nel Legacy | ✅ Presente + indice |
+| `vendor_presences` | `rifiutata` | `boolean DEFAULT false` | Presenza rifiutata dal Legacy | ✅ Presente |
+| `vendor_presences` | `tipo_presenza` | `varchar(50)` | CONCESSIONARIO, SPUNTISTA, ABUSIVO | ✅ Presente |
+| `vendor_presences` | `orario_deposito_rifiuti` | `timestamp` | Timestamp deposito spazzatura | ✅ Presente |
+| `vendor_presences` | `importo_addebitato` | `numeric(10,2)` | Importo calcolato (mq x tariffa) | ✅ Presente |
+| `market_sessions` | `legacy_ist_id` | `integer` | ID istanza nel Legacy | ✅ Presente + indice |
+| `spuntisti` | `legacy_sp_id` | `integer` | ID spuntista nel Legacy | ✅ Presente + indice |
 
 ### 11. Sicurezza
 
@@ -781,20 +848,24 @@ Per completare l'interoperabilità, questi campi vanno aggiunti alle nostre tabe
 | **Pool Limitato** | Max 3 connessioni simultanee per non sovraccaricare il DB Legacy |
 | **Dati MAI trasferiti** | Password (`suser_password`), OTP (`suser_otp`, `suser_otp_creation`) |
 | **Scrittura controllata** | Solo tramite stored functions `_crup` (mai INSERT/UPDATE diretti) |
-| **Guard SYNC OUT** | Flag `SYNC_CONFIG.syncOut.enabled` per abilitare/disabilitare |
-| **Guard SYNC IN** | Flag `SYNC_CONFIG.syncIn.enabled` per abilitare/disabilitare |
-| **Logging** | Ogni operazione di sync viene loggata con timestamp e risultato |
+| **Guard SYNC OUT** | Flag `syncConfig.enabled` nella tabella `sync_config` |
+| **Guard SYNC IN** | Flag `syncConfig.enabled` nella tabella `sync_config` |
+| **Logging** | Ogni operazione di sync viene loggata in `sync_jobs` + `sync_logs` con timestamp e risultato |
+| **Graceful Degradation** | Se `DMS_LEGACY_DB_URL` non configurato, opera in modalita' offline senza errori |
+| **CRON Sync** | Intervallo configurabile (default 5 min), avvio dopo 10s per stabilizzazione server |
 
 ### 12. Monitoraggio Guardian
 
 | # | Endpoint | Metodo | Categoria | Stato |
 |---|---|---|---|---|
 | 1-9 | `/api/integrations/dms-legacy/*` (export) | GET | DMS Legacy Integration | ✅ Attivo |
-| 10-16 | `/api/integrations/dms-legacy/sync-out/*` | POST | DMS Legacy Sync Out | Da registrare |
-| 17-19 | `/api/integrations/dms-legacy/sync-in/*` | POST | DMS Legacy Sync In | Da registrare |
+| 10-16 | `/api/integrations/dms-legacy/sync-out/*` | POST | DMS Legacy Sync Out | ✅ Attivo (v7.0.0) |
+| 17-19 | `/api/integrations/dms-legacy/sync-in/*` | POST | DMS Legacy Sync In | ✅ Attivo (v7.0.0) |
 | 20-23 | `/api/integrations/dms-legacy/health,status,sync,cron` | GET/POST | DMS Legacy Utility | ✅ Attivo |
 
-**Totale endpoint DMS Legacy:** 23 (di cui 13 attivi, 10 da implementare)
+**Totale endpoint DMS Legacy:** 23 (tutti attivi e implementati)
+
+**Accesso duale:** Ogni endpoint e' accessibile sia via tRPC (`dmsLegacy.export.markets`) che via REST (`GET /api/integrations/dms-legacy/markets`)
 
 ### 13. Frontend — Tab Connessioni
 
@@ -818,14 +889,27 @@ Nella Dashboard PA → Integrazioni → Tab Connessioni:
 
 | Fase | Descrizione | Stato | Completata |
 |---|---|---|---|
-| **Fase 1** | Endpoint EXPORT (lettura Legacy) | ✅ **COMPLETATA** | Pre-esistente |
-| **Fase 2** | Transformer bidirezionale + endpoint SYNC OUT (scrittura verso Legacy) | ✅ **COMPLETATA** | 12 Feb 2026 |
-| **Fase 3** | Endpoint SYNC IN (ricezione presenze dal campo) | ✅ **COMPLETATA** | 12 Feb 2026 |
-| **Fase 4** | Campi nuovi nel DB Neon + migrazione dati (8 colonne legacy_*_id + indici) | ✅ **COMPLETATA** | 12 Feb 2026 |
-| **Fase 5** | Registrazione Guardian + aggiornamento frontend | ✅ **GIÀ FATTO** | Pre-esistente |
-| **Fase 6** | Test integrato con dati reali + connessione a Heroku | ✅ **COMPLETATA** | 12 Feb 2026 |
+| **Fase 1** | Schema DB: colonne `legacy_*_id`, tabelle `market_sessions`, `spuntisti`, `sync_*` | ✅ **COMPLETATA** | Pre-esistente |
+| **Fase 2** | Servizio connessione Legacy DB (`dmsLegacyService.ts`) | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
+| **Fase 3** | Transformer bidirezionale (`dmsLegacyTransformers.ts`) — 15 funzioni | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
+| **Fase 4** | Router tRPC 23 endpoint (`dmsLegacyRouter.ts`) — EXPORT + SYNC OUT + SYNC IN + UTILITY | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
+| **Fase 5** | REST proxy `/api/integrations/dms-legacy/*` per compatibilita' | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
+| **Fase 6** | Sync engine reale con job tracking (`syncJobs` + `syncLogs`) | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
+| **Fase 7** | CRON sync automatico (configurabile, default 5 min) | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
+| **Fase 8** | Registrazione router + env vars + frontend gia' pronto | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
+| **Fase 9** | Test con DB Legacy reale su Hetzner | 🔶 **DA FARE** | Richiede `DMS_LEGACY_DB_URL` in produzione |
 
-> **Tutte le 6 fasi completate.** Tag stabile: `v5.5.0-full-sync-tested`. Tutti e 3 i canali (EXPORT, SYNC OUT, SYNC IN) sono attivi e testati bidirezionalmente.
+> **Fasi 1-8 completate.** Il codice e' pronto e compila senza errori. Per attivare la connessione reale, aggiungere `DMS_LEGACY_DB_URL` su Hetzner.
+
+**File sorgente principali:**
+| File | Descrizione |
+|------|-------------|
+| `server/dmsLegacyRouter.ts` | Router tRPC con 23 endpoint (EXPORT + SYNC OUT + SYNC IN + UTILITY) |
+| `server/services/dmsLegacyService.ts` | Connessione Legacy DB + stored functions + lettura tabelle |
+| `server/services/dmsLegacyTransformers.ts` | 15 transformer bidirezionali + 4 resolver ID |
+| `server/routers.ts` | Registrazione router `dmsLegacy.*` |
+| `server/_core/index.ts` | REST proxy + CRON sync |
+| `server/integrationsRouter.ts` | Sync trigger aggiornato (non piu' mock) |
 
 ### 15. Interoperabilità con MercaWeb (Abaco S.p.A.)
 
