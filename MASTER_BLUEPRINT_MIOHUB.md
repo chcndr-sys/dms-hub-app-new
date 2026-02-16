@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 6.7.0 (Export Mappa PNG + Sync Router + Webhook Form + Fix FraudMonitor)
+> **Versione:** 6.8.0 (Fix Mappa Posteggi + Normalizzazione Stati + Impersonazione RBAC + cost_per_sqm)
 > **Data:** 16 Febbraio 2026
 > **Autore:** Sistema documentato da Manus AI + Claude Code
 > **Stato:** PRODUZIONE
@@ -30,6 +30,50 @@
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 16 Febbraio 2026 — (v6.8.0) — Fix Mappa Posteggi + Normalizzazione Stati EN/IT + Impersonazione RBAC
+
+#### Normalizzazione Stati Posteggi EN↔IT (`7b7e693`, `dd02ca8`)
+- **[NEW] `client/src/lib/stallStatus.ts`:** Sistema completo di normalizzazione stati posteggi
+  - `normalizeStallStatus()` — Converte stati inglesi DB (free/occupied/reserved/booked/maintenance) in italiano frontend (libero/occupato/riservato)
+  - `stallStatusToEnglish()` — Converte stati italiani in inglese per scrittura su DB
+  - `STATUS_NORMALIZE_MAP` — Mappa bidirezionale con 10 chiavi (5 EN + 5 IT)
+  - Gestisce null/undefined in modo sicuro (default: 'libero')
+- **[FIX] `client/src/components/GestioneMercati.tsx`:** Normalizzazione al caricamento posteggi
+  - Entrambi i fetch (MarketDetail + PosteggiTab) ora normalizzano gli stati via `normalizeStallStatus()`
+  - Aggiornamento stato locale IMMEDIATO su azioni (occupa/libera/spunta) per feedback visivo istantaneo, con API call in background
+  - Rimozione stato `in_assegnazione` dalle condizioni (ora gestito dalla normalizzazione)
+- **[FIX] `client/src/components/MarketMapComponent.tsx`:** Fix colori mappa che non cambiavano
+  - `getStallColor()` ora usa `normalizeStallStatus()` invece di cast diretto
+  - Lookup robusto nella `stallsByNumber` Map: prova sia chiave numerica che stringa
+  - Popup e pulsanti azione ora usano `displayStatus` normalizzato
+  - Rimosso controllo per stato `in_assegnazione` (non piu' necessario)
+
+#### Fix Impersonazione Comune rispetta RBAC (`61dcb51`)
+- **[FIX] `client/src/contexts/PermissionsContext.tsx`:** Impersonazione ora rispetta i permessi RBAC configurati
+  - `getClientSidePermissions(isImpersonating)` — In impersonazione ritorna `[]` (nessun permesso full-access iniettato)
+  - `hasPermission()` — In impersonazione con 0 permessi, nega l'accesso invece di fare fallback super_admin
+  - Dipendenza `isImpersonating` aggiunta a `useCallback` di `hasPermission`
+  - **Effetto:** Il super admin che impersona un PA vede SOLO i tab che quel PA ha configurato, non tutti i 28
+- **[FIX] `client/src/pages/DashboardPA.tsx`:** Rimosso array `hiddenTabsForComuni` hardcoded
+  - I tab nascosti in impersonazione ora sono gestiti dinamicamente dal sistema RBAC, non da una lista statica
+
+#### Fix Canone Posteggio — cost_per_sqm dal mercato (`81b58d6`)
+- **[FIX] `client/src/components/GestioneMercati.tsx`:** La lista posteggi ora usa `market.cost_per_sqm` reale
+  - Prima: canone calcolato con `0.90 €/m²` hardcoded → importo errato (es. 18€ per 20m²)
+  - Ora: `allMarkets.find(m => m.id === marketId)?.cost_per_sqm || 0.90` → importo corretto (es. 8€ per 20m² a 0.40€/m²)
+  - Il fallback 0.90 rimane solo se il mercato non ha `cost_per_sqm` configurato
+
+#### Riepilogo Tecnico v6.8
+| File | Modifiche | Tipo |
+|------|-----------|------|
+| `client/src/lib/stallStatus.ts` | +49 righe, 2 nuove funzioni export, 2 mappe costanti | Enhancement |
+| `client/src/components/GestioneMercati.tsx` | +70/-81 righe, normalizzazione + feedback immediato | Fix |
+| `client/src/components/MarketMapComponent.tsx` | +19/-19 righe, normalizzazione colori mappa | Fix |
+| `client/src/contexts/PermissionsContext.tsx` | +17/-3 righe, RBAC impersonazione | Fix |
+| `client/src/pages/DashboardPA.tsx` | -5 righe, rimosso array hardcoded | Cleanup |
+
+---
 
 ### Sessione 16 Febbraio 2026 — (v6.7.0) — Export Mappa PNG + Sync Router Backend + Webhook Create Form
 
