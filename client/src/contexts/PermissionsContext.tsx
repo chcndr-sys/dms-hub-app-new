@@ -32,16 +32,30 @@ const ROLE_IDS = {
 
 // Permessi client-side per utenti business (impresa)
 const IMPRESA_PERMISSION_CODES = [
+  'tab.view.dashboard',
   'tab.view.wallet_impresa',
   'quick.view.hub_operatore',
   'quick.view.notifiche',
   'tab.view.anagrafica',
   'tab.view.presenze',
+  'tab.view.mercati',
+  'tab.view.imprese',
+  'tab.view.wallet',
+  'tab.view.commercio',
 ];
 
-// Permessi client-side per utenti admin/PA
+// Permessi client-side per utenti admin/PA (super_admin)
 const ADMIN_PERMISSION_CODES = [
   'tab.view.dashboard',
+  'tab.view.hub',
+  'tab.view.controlli',
+  'tab.view.reports',
+  'tab.view.workspace',
+  'tab.view.comuni',
+  'tab.view.security',
+  'tab.view.sistema',
+  'tab.view.ai',
+  'tab.view.integrations',
 ];
 
 /**
