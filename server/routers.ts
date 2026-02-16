@@ -66,10 +66,11 @@ export const appRouter = router({
         if (!db) return { success: false, error: 'DB non disponibile' };
         const { sql } = await import("drizzle-orm");
 
-        // Verifica che non esista gia' un super_admin
+        // Verifica che non esista gia' un super_admin (level=0)
         const existingAdmins = await db.execute(sql`
-          SELECT COUNT(*) as count FROM user_role_assignments
-          WHERE role_id = 1 AND is_active = true
+          SELECT COUNT(*) as count FROM user_role_assignments ura
+          JOIN user_roles ur ON ur.id = ura.role_id
+          WHERE ur.level = 0 AND ura.is_active = true
         `);
         const adminCount = Array.isArray(existingAdmins) && existingAdmins[0]
           ? Number((existingAdmins[0] as any).count)

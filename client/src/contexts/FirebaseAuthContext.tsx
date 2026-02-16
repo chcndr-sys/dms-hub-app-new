@@ -190,18 +190,20 @@ async function lookupLegacyUser(email: string): Promise<LegacyUserData | null> {
 /**
  * Controlla i ruoli dell'utente nel Neon DB (il vero RBAC system).
  * Chiama il tRPC backend su Hetzner che ha accesso al Neon DB.
+ * Formato: httpBatchLink + superjson
  */
 async function checkNeonRoles(email: string): Promise<{ roles: any[]; isAdmin: boolean }> {
   try {
-    const url = `${TRPC_BASE}/api/trpc/auth.checkRoles?input=${encodeURIComponent(JSON.stringify({ email }))}`;
-    const res = await fetch(url);
+    const input = encodeURIComponent(JSON.stringify({ "0": { json: { email } } }));
+    const url = `${TRPC_BASE}/api/trpc/auth.checkRoles?batch=1&input=${input}`;
+    const res = await fetch(url, { credentials: 'include' });
     if (!res.ok) {
       console.warn('[FirebaseAuth] Neon checkRoles fallito:', res.status);
       return { roles: [], isAdmin: false };
     }
     const data = await res.json();
-    // tRPC wraps response in { result: { data: ... } }
-    const result = data?.result?.data;
+    // httpBatchLink response: [{ result: { data: { json: ... } } }]
+    const result = data?.[0]?.result?.data?.json || data?.[0]?.result?.data;
     if (result) {
       console.warn(`[FirebaseAuth] Neon roles: isAdmin=${result.isAdmin}, roles=${JSON.stringify(result.roles)}`);
       return result;
@@ -210,6 +212,36 @@ async function checkNeonRoles(email: string): Promise<{ roles: any[]; isAdmin: b
   } catch (err) {
     console.warn('[FirebaseAuth] Neon checkRoles errore:', err);
     return { roles: [], isAdmin: false };
+  }
+}
+
+/**
+ * Tenta il bootstrap admin nel Neon DB (one-time, solo se non esiste admin).
+ * Formato: httpBatchLink + superjson mutation
+ */
+async function tryBootstrapAdmin(email: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${TRPC_BASE}/api/trpc/auth.bootstrapAdmin?batch=1`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ "0": { json: { email } } }),
+    });
+    if (!res.ok) {
+      console.warn('[FirebaseAuth] Bootstrap admin HTTP fallito:', res.status);
+      return false;
+    }
+    const data = await res.json();
+    const result = data?.[0]?.result?.data?.json || data?.[0]?.result?.data;
+    if (result?.success) {
+      console.warn('[FirebaseAuth] Bootstrap admin riuscito:', result.message);
+      return true;
+    }
+    console.warn('[FirebaseAuth] Bootstrap admin rifiutato:', result?.error);
+    return false;
+  } catch (err) {
+    console.warn('[FirebaseAuth] Bootstrap admin errore:', err);
+    return false;
   }
 }
 
@@ -317,25 +349,12 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
     // Se non è admin nel Neon DB, tenta il bootstrap (funziona SOLO se
     // non esiste ancora nessun super_admin nel sistema - one-time setup)
     if (!neonAdmin) {
-      try {
-        const bootstrapRes = await fetch(`${TRPC_BASE}/api/trpc/auth.bootstrapAdmin`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        });
-        if (bootstrapRes.ok) {
-          const bData = await bootstrapRes.json();
-          const bResult = bData?.result?.data;
-          if (bResult?.success) {
-            console.warn('[FirebaseAuth] Bootstrap admin riuscito:', bResult.message);
-            // Ricontrolla i ruoli dopo il bootstrap
-            const recheck = await checkNeonRoles(email);
-            neonAdmin = recheck.isAdmin;
-            neonRoles = recheck.roles;
-          }
-        }
-      } catch (err) {
-        console.warn('[FirebaseAuth] Bootstrap admin fallito:', err);
+      const bootstrapped = await tryBootstrapAdmin(email);
+      if (bootstrapped) {
+        // Ricontrolla i ruoli dopo il bootstrap
+        const recheck = await checkNeonRoles(email);
+        neonAdmin = recheck.isAdmin;
+        neonRoles = recheck.roles;
       }
     }
   }
