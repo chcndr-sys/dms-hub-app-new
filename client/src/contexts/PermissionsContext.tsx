@@ -30,18 +30,32 @@ const ROLE_IDS = {
   CITIZEN: 13,
 };
 
-// Permessi client-side per utenti business (impresa)
+// Tutti i permessi tab della Dashboard PA
+const ALL_DASHBOARD_TAB_CODES = [
+  'tab.view.dashboard',
+  'tab.view.mercati',
+  'tab.view.imprese',
+  'tab.view.commercio',
+  'tab.view.wallet',
+  'tab.view.hub',
+  'tab.view.controlli',
+  'tab.view.comuni',
+  'tab.view.security',
+  'tab.view.sistema',
+  'tab.view.ai',
+  'tab.view.integrations',
+  'tab.view.reports',
+  'tab.view.workspace',
+];
+
+// Permessi client-side per utenti business (impresa) - tutti i tab
 const IMPRESA_PERMISSION_CODES = [
+  ...ALL_DASHBOARD_TAB_CODES,
   'tab.view.wallet_impresa',
   'quick.view.hub_operatore',
   'quick.view.notifiche',
   'tab.view.anagrafica',
   'tab.view.presenze',
-];
-
-// Permessi client-side per utenti admin/PA
-const ADMIN_PERMISSION_CODES = [
-  'tab.view.dashboard',
 ];
 
 /**
@@ -57,17 +71,10 @@ function getClientSidePermissions(): Permission[] {
     const extraPerms: Permission[] = [];
     let id = 9000;
 
-    // Utenti business (con impresa_id o base_role 'business') → tab impresa
-    if (user.impresa_id || user.base_role === 'business') {
+    // Utenti con impresa_id o base_role business/admin → tutti i tab
+    if (user.impresa_id || user.base_role === 'business' || user.base_role === 'admin' || user.is_super_admin) {
       for (const code of IMPRESA_PERMISSION_CODES) {
         extraPerms.push({ id: id++, code, name: code, category: code.startsWith('tab') ? 'tab' : 'quick', is_sensitive: false });
-      }
-    }
-
-    // Utenti admin/super_admin → tab dashboard PA
-    if (user.is_super_admin || user.base_role === 'admin') {
-      for (const code of ADMIN_PERMISSION_CODES) {
-        extraPerms.push({ id: id++, code, name: code, category: 'tab', is_sensitive: false });
       }
     }
 
