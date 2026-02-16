@@ -330,7 +330,7 @@ function AppIoPanel() {
           {cfInput.length === 16 && checkProfileMutation.data && (
             <div className="mt-3 p-3 bg-[#0f1729] border border-[#10b981]/20 rounded-lg">
               <div className="flex items-center gap-2">
-                {checkProfileMutation.data.isAppIoEnabled ? (
+                {checkProfileMutation.data.senderAllowed ? (
                   <>
                     <CheckCircle className="h-5 w-5 text-emerald-400" />
                     <span className="text-emerald-400 text-sm font-medium">
