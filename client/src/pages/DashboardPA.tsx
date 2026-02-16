@@ -586,11 +586,6 @@ export default function DashboardPA() {
   const comuneIdFromUrl = urlParams.get('comune_id');
   const comuneNomeFromUrl = urlParams.get('comune_nome');
   
-  // Tab da nascondere in modalità impersonificazione (solo per comuni)
-  const hiddenTabsForComuni = [
-    'security', 'sistema', 'ai', 'integrations', 'settings', 
-    'comuni', 'reports', 'workspace', 'docs'
-  ];
   const [dashboardSubTab, setDashboardSubTab] = useState<'overview' | 'mercati'>('overview');
   const [sistemaSubTab, setSistemaSubTab] = useState<'logs' | 'debug'>('logs');
   const [walletSubTab, setWalletSubTab] = useState<'wallet' | 'pagopa'>('wallet');

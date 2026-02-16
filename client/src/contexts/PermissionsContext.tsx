@@ -94,8 +94,16 @@ const FULL_ACCESS_PERMISSION_CODES = [
 /**
  * Genera permessi extra basati sui dati utente in localStorage.
  * Questi si aggiungono ai permessi caricati dall'orchestratore.
+ *
+ * IMPORTANTE: Durante l'impersonazione, NON iniettare permessi full-access
+ * perche' devono valere SOLO i permessi configurati per il ruolo impersonato.
  */
-function getClientSidePermissions(): Permission[] {
+function getClientSidePermissions(isImpersonating: boolean): Permission[] {
+  // Durante impersonazione, usa solo i permessi dal server (ruolo admin_pa)
+  if (isImpersonating) {
+    return [];
+  }
+
   const userStr = localStorage.getItem('user');
   if (!userStr) return [];
 
@@ -241,7 +249,8 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
       }
 
       // Unisci permessi server con permessi client-side basati su dati utente
-      const clientPerms = getClientSidePermissions();
+      // Durante impersonazione, getClientSidePermissions ritorna [] per rispettare i permessi del ruolo
+      const clientPerms = getClientSidePermissions(impersonating);
       const serverCodes = new Set(serverPerms.map((p: Permission) => p.code));
       const extraPerms = clientPerms.filter(p => !serverCodes.has(p.code));
       const allPerms = [...serverPerms, ...extraPerms];
@@ -256,7 +265,9 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
       console.error('[PermissionsContext] Errore:', err);
       setError(err.message);
       // In caso di errore, usa solo permessi client-side basati su dati utente
-      const clientPerms = getClientSidePermissions();
+      // Durante impersonazione, non iniettare permessi full-access
+      const impersonation = getImpersonationParams();
+      const clientPerms = getClientSidePermissions(impersonation.isImpersonating);
       if (clientPerms.length > 0) {
         console.warn(`[PermissionsContext] Fallback: usando ${clientPerms.length} permessi client-side`);
         setPermissions(clientPerms);
@@ -289,8 +300,12 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     if (loading) {
       return true;
     }
-    // Se non ci sono permessi caricati, nega l'accesso (tranne per super admin)
+    // Se non ci sono permessi caricati, nega l'accesso (tranne per super admin NON in impersonazione)
     if (permissionCodes.length === 0) {
+      // Durante impersonazione, rispetta i permessi del ruolo impersonato (anche se vuoti)
+      if (isImpersonating) {
+        return false;
+      }
       // Controlla se è super admin tramite flag dal server
       const userStr = localStorage.getItem('user');
       if (userStr) {
@@ -304,7 +319,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
       return false;
     }
     return permissionCodes.includes(code);
-  }, [permissionCodes, loading]);
+  }, [permissionCodes, loading, isImpersonating]);
 
   // Verifica se l'utente ha almeno uno dei permessi
   const hasAnyPermission = useCallback((codes: string[]): boolean => {
