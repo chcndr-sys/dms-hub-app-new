@@ -114,8 +114,8 @@ const MODULE_DETAILS: Record<string, {
   },
   integrations: {
     stats: [
-      { label: 'Router tRPC', value: '20', color: '#06b6d4' },
-      { label: 'Endpoints', value: '126', color: '#14b8a6' },
+      { label: 'Router tRPC', value: '21', color: '#06b6d4' },
+      { label: 'Endpoints', value: '796', color: '#14b8a6' },
       { label: 'Auth', value: 'Firebase', color: '#f59e0b' },
     ],
     highlights: [
@@ -128,7 +128,7 @@ const MODULE_DETAILS: Record<string, {
   }
 };
 
-// ─── Schema DB raggruppato (70 tabelle) ──────────────────────────────
+// ─── Schema DB raggruppato (75 tabelle) ──────────────────────────────
 const DB_GROUPS = [
   { name: 'Core Business', color: '#14b8a6', icon: Store, count: 12,
     tables: ['markets', 'stalls', 'vendors', 'concessions', 'presences', 'daily_presences', 'market_sectors', 'stall_types', 'vendor_categories', 'market_schedules', 'market_operators', 'market_fees'] },
@@ -150,17 +150,19 @@ const DB_GROUPS = [
     tables: ['notifications', 'system_logs', 'audit_trail', 'sessions', 'app_settings', 'feature_flags', 'maintenance_windows'] },
   { name: 'Commercio & SUAP', color: '#ec4899', icon: FileText, count: 5,
     tables: ['businesses', 'licenses', 'suap_requests', 'inspections', 'business_categories'] },
+  { name: 'TCC Security & Anti-Frode', color: '#f43f5e', icon: Shield, count: 5,
+    tables: ['tcc_rate_limits', 'tcc_fraud_events', 'tcc_idempotency_keys', 'tcc_daily_limits', 'tcc_qr_tokens'] },
 ];
 
-// ─── Gruppi componenti (139 totali) ──────────────────────────────────
+// ─── Gruppi componenti (143 totali) ──────────────────────────────────
 const COMPONENT_GROUPS = [
-  { name: 'Dashboard PA', count: 14, desc: '14 tab protetti con sistema RBAC + ProtectedTab', color: '#14b8a6', icon: LayoutDashboard },
+  { name: 'Dashboard PA', count: 14, desc: '28 tab protetti con sistema RBAC + ProtectedTab', color: '#14b8a6', icon: LayoutDashboard },
   { name: 'Gestione Mercati', count: 12, desc: 'Mercati, posteggi, concessioni, presenze, operatori', color: '#06b6d4', icon: Store },
   { name: 'Mappe & GIS', count: 10, desc: 'Leaflet maps, layer manager, route optimizer', color: '#10b981', icon: MapPin },
   { name: 'Wallet & Pagamenti', count: 8, desc: 'Borsellino, PagoPA E-FIL, transazioni', color: '#f59e0b', icon: Wallet },
   { name: 'AI & Chat', count: 8, desc: 'MIO Agent, workspace collaborativo, brain', color: '#8b5cf6', icon: Bot },
   { name: 'Auth & Security', count: 6, desc: 'Login, RBAC manager, impersonation, guard', color: '#ef4444', icon: Lock },
-  { name: 'UI Base (shadcn)', count: 45, desc: 'Button, Card, Dialog, Table, Select, etc.', color: '#64748b', icon: Layers },
+  { name: 'UI Base (shadcn)', count: 53, desc: 'Button, Card, Dialog, Table, Select, etc.', color: '#64748b', icon: Layers },
   { name: 'Report & Docs', count: 5, desc: 'Blueprint navigator, dossier, report cards', color: '#a855f7', icon: FileText },
   { name: 'Segnalazioni', count: 6, desc: 'Civic reports panel, heatmap, categorie', color: '#06b6d4', icon: AlertCircle },
   { name: 'Impresa & Operatori', count: 10, desc: 'Dashboard impresa, anagrafica, notifiche, hub', color: '#f97316', icon: Globe },
@@ -220,7 +222,7 @@ export function NativeReportComponent() {
                 <Card className="bg-[#1a2332] border-[#06b6d4]/30 h-full">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-[#e8fbff] text-lg">Moduli di Sistema</CardTitle>
-                    <p className="text-xs text-[#e8fbff]/40">5 moduli core — 218.000 righe di codice</p>
+                    <p className="text-xs text-[#e8fbff]/40">5 moduli core — 82.000 righe di codice (client+server)</p>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {BLUEPRINT_SLIDES.modules.map((module) => (
@@ -326,8 +328,8 @@ export function NativeReportComponent() {
               {[
                 { label: 'Codice attivo', value: '115K righe', color: '#14b8a6' },
                 { label: 'Totale progetto', value: '219K righe', color: '#06b6d4' },
-                { label: 'Router tRPC', value: '20', color: '#a855f7' },
-                { label: 'Endpoints API', value: '126', color: '#f59e0b' },
+                { label: 'Router tRPC', value: '21', color: '#a855f7' },
+                { label: 'Endpoints API', value: '796', color: '#f59e0b' },
               ].map((s, i) => (
                 <Card key={i} className="bg-[#1a2332] border-[#1e293b]">
                   <CardContent className="p-4 text-center">
@@ -373,7 +375,7 @@ export function NativeReportComponent() {
             {/* Header stats */}
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: 'Tabelle totali', value: '70', color: '#14b8a6' },
+                { label: 'Tabelle totali', value: '75', color: '#14b8a6' },
                 { label: 'ORM', value: 'Drizzle', color: '#06b6d4' },
                 { label: 'Database', value: 'Neon PostgreSQL', color: '#a855f7' },
               ].map((s, i) => (
@@ -434,8 +436,8 @@ export function NativeReportComponent() {
             {/* Header stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Componenti React', value: '139', color: '#14b8a6' },
-                { label: 'Pagine', value: '35', color: '#06b6d4' },
+                { label: 'Componenti React', value: '143', color: '#14b8a6' },
+                { label: 'Pagine', value: '37', color: '#06b6d4' },
                 { label: 'Framework', value: 'React 19', color: '#a855f7' },
                 { label: 'Build', value: 'Vite 7', color: '#f59e0b' },
               ].map((s, i) => (
@@ -560,7 +562,7 @@ export function NativeReportComponent() {
               <CardContent className="p-5">
                 <h4 className="text-sm font-semibold text-[#e8fbff] flex items-center gap-2 mb-4">
                   <Lock className="h-4 w-4 text-[#10b981]" />
-                  Conformita' Normativa v6.4 (aggiornata 15 Feb 2026)
+                  Conformita' Normativa v6.6 (aggiornata 16 Feb 2026)
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {[
@@ -663,8 +665,8 @@ export function NativeReportComponent() {
   const TAB_HEADERS: Record<string, { title: string; subtitle: string }> = {
     architecture: { title: 'Panoramica Architetturale', subtitle: 'Struttura ad alto livello del sistema DMS Hub e moduli core.' },
     dataflow: { title: 'Flussi Dati & Processi', subtitle: 'Architettura e flussi informativi tra frontend, backend e servizi esterni.' },
-    database: { title: 'Schema Database — 70 Tabelle', subtitle: 'PostgreSQL su Neon Serverless — ORM Drizzle — 10 domini funzionali.' },
-    components: { title: 'Componenti Frontend — 139 React', subtitle: 'React 19 + Vite 7 + TypeScript strict + Tailwind 4 + shadcn/ui.' },
+    database: { title: 'Schema Database — 75 Tabelle', subtitle: 'PostgreSQL su Neon Serverless — ORM Drizzle — 10 domini funzionali.' },
+    components: { title: 'Componenti Frontend — 143 React', subtitle: 'React 19 + Vite 7 + TypeScript strict + Tailwind 4 + shadcn/ui.' },
     dossier: { title: 'Dossier Tecnico di Sistema', subtitle: 'Analisi conformità, sicurezza, integrazioni PA e valutazione economica.' },
   };
 
@@ -679,7 +681,7 @@ export function NativeReportComponent() {
             <Activity className="h-6 w-6 text-[#a855f7]" />
             Analisi Sistema
           </h2>
-          <p className="text-xs text-[#e8fbff]/50 mt-1">DMS Hub — Report Tecnico v6.4</p>
+          <p className="text-xs text-[#e8fbff]/50 mt-1">DMS Hub — Report Tecnico v6.6</p>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">

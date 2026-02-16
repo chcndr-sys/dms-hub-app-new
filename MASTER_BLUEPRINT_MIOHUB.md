@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 6.5.0 (Fix Auth/RBAC Completo + Accesso Admin Full)
+> **Versione:** 6.6.0 (Merge completo + Dossier aggiornato + Metriche reali)
 > **Data:** 16 Febbraio 2026
 > **Autore:** Sistema documentato da Manus AI + Claude Code
 > **Stato:** PRODUZIONE
@@ -30,6 +30,44 @@
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 16 Febbraio 2026 — (v6.6.0) — Merge Master + Dossier Aggiornato + Metriche Reali
+
+#### Merge 24 Commit su Master
+- **[MERGE]** Branch `claude/explore-repository-fA9m8` → `master` (24 commit, 67 file, +159.666 righe)
+- Include: Fix Auth/RBAC, Security TCC Anti-Frode, GDPR, CI/CD, PII Crypto, Test Suite, Blueprint updates
+
+#### Aggiornamento Dossier Interattivo (NativeReportComponent.tsx) — Metriche Reali
+- **[FIX] Endpoints API:** 126 → **796** (inventario reale backend Hetzner, verificato da tab Integrazioni)
+- **[FIX] Router tRPC:** 20 → **21** (aggiunto tccSecurityRouter + gdprRouter)
+- **[FIX] Tabelle DB:** 70 → **75** (aggiunte 5 tabelle TCC Security: rate_limits, fraud_events, idempotency_keys, daily_limits, qr_tokens)
+- **[FIX] Componenti React:** 139 → **143** (aggiunti FraudMonitorPanel, ErrorBoundary, LoginModal update, etc.)
+- **[FIX] Pagine:** 35 → **37** (aggiunte nuove pagine)
+- **[FIX] shadcn/ui:** 45 → **53** (componenti UI base aggiornati)
+- **[ADD] Gruppo DB "TCC Security & Anti-Frode":** 5 tabelle nel dossier tecnico
+- **[FIX] Dashboard PA tab:** Da "14 tab" a "28 tab protetti RBAC" nel dossier
+- **[UPDATE] Versione report:** v6.4 → v6.6
+
+#### Anomalia Rilevata: Hub Operatore
+- **[BUG DATA]** `/hub-operatore` mostra "Ritual" come nome impresa invece di "MIO TEST"
+- **Causa:** API orchestratore (`/api/tcc/v2/operator/wallet/{id}`) restituisce `impresa.denominazione = "Ritual"` (id=34)
+- **Fix:** Da applicare nel DB orchestratore (non nel codice frontend)
+
+#### Riepilogo Metriche Verificate v6.6
+| Metrica | Valore |
+|---------|--------|
+| Endpoints API totali | 796 |
+| Endpoints documentati (apiInventoryService) | 226 |
+| Procedure tRPC (query + mutation) | 112 |
+| Router tRPC | 21 |
+| Tabelle database | 75 |
+| Componenti React (non-UI) | 90 |
+| Componenti shadcn/ui | 53 |
+| Pagine frontend | 37 |
+| Test suite | 36 test |
+| Codice attivo (client+server) | ~82.000 righe |
+
+---
 
 ### Sessione 16 Febbraio 2026 — (v6.5.0) — Fix Autenticazione + RBAC Accesso Admin Completo
 
