@@ -126,13 +126,13 @@ function EventTypeLabel({ type }: { type: string }) {
 // ============================================================================
 
 function FraudEventsList() {
-  const [severity, setSeverity] = useState<string>('');
+  const [severity, setSeverity] = useState<string>('all');
   const [showResolved, setShowResolved] = useState(false);
 
   const { data, isLoading, refetch } = trpc.tccSecurity.fraudEvents.useQuery({
     limit: 50,
     offset: 0,
-    severity: severity as "low" | "medium" | "high" | "critical" | undefined || undefined,
+    severity: severity !== 'all' ? severity as "low" | "medium" | "high" | "critical" : undefined,
     resolved: showResolved ? undefined : false,
   });
 
@@ -158,7 +158,7 @@ function FraudEventsList() {
                 <SelectValue placeholder="Severita'" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutte</SelectItem>
+                <SelectItem value="all">Tutte</SelectItem>
                 <SelectItem value="low">Low</SelectItem>
                 <SelectItem value="medium">Medium</SelectItem>
                 <SelectItem value="high">High</SelectItem>
