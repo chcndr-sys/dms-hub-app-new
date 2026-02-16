@@ -1566,3 +1566,211 @@ export type InsertTccQrToken = typeof tccQrTokens.$inferInsert;
 export type TccRewardsConfig = typeof tccRewardsConfig.$inferSelect;
 export type InsertTccRewardsConfig = typeof tccRewardsConfig.$inferInsert;
 
+// ============================================================================
+// PIATTAFORME PA - PDND, App IO, ANPR, SSO
+// ============================================================================
+
+// Enum per stato e-Service PDND
+export const eserviceStatusEnum = pgEnum("eservice_status", [
+  "draft", "published", "suspended", "deprecated",
+]);
+
+// Enum per provider SSO
+export const ssoProviderEnum = pgEnum("sso_provider", [
+  "spid", "cie", "cns", "eidas",
+]);
+
+// Enum per livello SPID
+export const spidLevelEnum = pgEnum("spid_level", [
+  "L1", "L2", "L3",
+]);
+
+// ---- PDND e-Service ----
+export const pdndEservices = pgTable("pdnd_eservices", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  serviceId: varchar("service_id", { length: 100 }).notNull().unique(), // dms-mercati, dms-concessioni, etc.
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  version: varchar("version", { length: 20 }).default("1.0.0").notNull(),
+  technology: varchar("technology", { length: 20 }).default("REST").notNull(),
+  status: eserviceStatusEnum("status").default("draft").notNull(),
+  pdndDescriptorId: varchar("pdnd_descriptor_id", { length: 255 }), // ID su PDND dopo pubblicazione
+  pdndAgreementId: varchar("pdnd_agreement_id", { length: 255 }), // Agreement ID
+  endpointUrl: varchar("endpoint_url", { length: 500 }),
+  audienceUrl: varchar("audience_url", { length: 500 }),
+  vouchersIssued: integer("vouchers_issued").default(0).notNull(),
+  lastPublishedAt: timestamp("last_published_at"),
+  publishedBy: varchar("published_by", { length: 255 }),
+  config: text("config"), // JSON con configurazione avanzata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  serviceIdx: index("pdnd_eservices_service_idx").on(table.serviceId),
+  statusIdx: index("pdnd_eservices_status_idx").on(table.status),
+}));
+
+// ---- PDND Voucher Log ----
+export const pdndVouchers = pgTable("pdnd_vouchers", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  eserviceId: integer("eservice_id").references(() => pdndEservices.id),
+  purposeId: varchar("purpose_id", { length: 255 }).notNull(),
+  clientId: varchar("client_id", { length: 255 }).notNull(),
+  clientAssertion: text("client_assertion"), // JWT generato
+  accessToken: text("access_token"), // Token ricevuto
+  tokenExpiresAt: timestamp("token_expires_at"),
+  scope: varchar("scope", { length: 500 }),
+  status: varchar("status", { length: 50 }).default("active").notNull(), // active, expired, revoked
+  requestIp: varchar("request_ip", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  eserviceIdx: index("pdnd_vouchers_eservice_idx").on(table.eserviceId),
+  createdIdx: index("pdnd_vouchers_created_idx").on(table.createdAt),
+}));
+
+// ---- App IO Messaggi Inviati ----
+export const appIoMessages = pgTable("app_io_messages", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  fiscalCode: varchar("fiscal_code", { length: 16 }).notNull(),
+  templateId: varchar("template_id", { length: 100 }).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  params: text("params"), // JSON parametri template
+  messageId: varchar("message_id", { length: 255 }), // ID restituito da App IO
+  status: varchar("status", { length: 50 }).default("sent").notNull(), // sent, delivered, read, failed
+  errorMessage: text("error_message"),
+  sentBy: varchar("sent_by", { length: 255 }), // Email operatore
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  fiscalCodeIdx: index("app_io_messages_fc_idx").on(table.fiscalCode),
+  templateIdx: index("app_io_messages_template_idx").on(table.templateId),
+  statusIdx: index("app_io_messages_status_idx").on(table.status),
+  createdIdx: index("app_io_messages_created_idx").on(table.createdAt),
+}));
+
+// ---- App IO Configurazione Servizio ----
+export const appIoServiceConfig = pgTable("app_io_service_config", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  serviceId: varchar("service_id", { length: 255 }).notNull().unique(), // ID servizio su App IO
+  serviceName: varchar("service_name", { length: 255 }).notNull(),
+  departmentName: varchar("department_name", { length: 255 }),
+  organizationName: varchar("organization_name", { length: 255 }),
+  organizationFiscalCode: varchar("organization_fiscal_code", { length: 16 }),
+  isVisible: boolean("is_visible").default(true).notNull(),
+  maxAllowedPaymentAmount: integer("max_allowed_payment_amount"), // centesimi
+  environment: varchar("environment", { length: 50 }).default("test").notNull(), // test, production
+  subscriptionKey: varchar("subscription_key", { length: 255 }), // Ocp-Apim-Subscription-Key
+  primaryKeyHash: varchar("primary_key_hash", { length: 64 }), // Hash per sicurezza
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ---- ANPR Verifiche ----
+export const anprVerifications = pgTable("anpr_verifications", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  fiscalCode: varchar("fiscal_code", { length: 16 }).notNull(),
+  verificationType: varchar("verification_type", { length: 50 }).notNull(), // cf_existence, residenza, stato_famiglia
+  requestedBy: varchar("requested_by", { length: 255 }).notNull(), // Email operatore
+  status: varchar("status", { length: 50 }).default("pending").notNull(), // pending, success, error, not_found
+  responseData: text("response_data"), // JSON risposta ANPR
+  errorMessage: text("error_message"),
+  pdndVoucherId: integer("pdnd_voucher_id").references(() => pdndVouchers.id), // Voucher PDND usato
+  responseTimeMs: integer("response_time_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  fiscalCodeIdx: index("anpr_verif_fc_idx").on(table.fiscalCode),
+  typeIdx: index("anpr_verif_type_idx").on(table.verificationType),
+  createdIdx: index("anpr_verif_created_idx").on(table.createdAt),
+}));
+
+// ---- SSO Configurazioni Provider ----
+export const ssoConfigurations = pgTable("sso_configurations", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  provider: ssoProviderEnum("provider").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  entityId: varchar("entity_id", { length: 500 }).notNull(), // Entity ID del Service Provider
+  metadataUrl: varchar("metadata_url", { length: 500 }), // URL metadata IdP
+  ssoUrl: varchar("sso_url", { length: 500 }), // URL endpoint SSO
+  sloUrl: varchar("slo_url", { length: 500 }), // URL endpoint Single Logout
+  certificateHash: varchar("certificate_hash", { length: 64 }), // SHA256 del certificato
+  spidLevel: spidLevelEnum("spid_level").default("L2"), // Solo per SPID
+  attributeMapping: text("attribute_mapping"), // JSON mapping attributi
+  isActive: boolean("is_active").default(false).notNull(),
+  environment: varchar("environment", { length: 50 }).default("test").notNull(), // test, production
+  lastTestAt: timestamp("last_test_at"),
+  lastTestResult: varchar("last_test_result", { length: 50 }), // success, error
+  config: text("config"), // JSON configurazione aggiuntiva
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  providerIdx: index("sso_config_provider_idx").on(table.provider),
+  activeIdx: index("sso_config_active_idx").on(table.isActive),
+}));
+
+// ---- SSO Login Log ----
+export const ssoLoginLogs = pgTable("sso_login_logs", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  configurationId: integer("configuration_id").references(() => ssoConfigurations.id),
+  provider: ssoProviderEnum("provider").notNull(),
+  fiscalCode: varchar("fiscal_code", { length: 16 }),
+  spidLevel: spidLevelEnum("spid_level"),
+  sessionId: varchar("session_id", { length: 255 }),
+  ipAddress: varchar("ip_address", { length: 50 }),
+  userAgent: text("user_agent"),
+  success: boolean("success").notNull(),
+  errorCode: varchar("error_code", { length: 50 }),
+  errorMessage: text("error_message"),
+  responseTimeMs: integer("response_time_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  providerIdx: index("sso_login_provider_idx").on(table.provider),
+  successIdx: index("sso_login_success_idx").on(table.success),
+  createdIdx: index("sso_login_created_idx").on(table.createdAt),
+}));
+
+// ---- Audit Trail Piattaforme PA ----
+export const platformAuditTrail = pgTable("platform_audit_trail", {
+  id: integer("id").generatedAlwaysAsIdentity().primaryKey(),
+  platform: varchar("platform", { length: 50 }).notNull(), // pdnd, appio, anpr, sso
+  action: varchar("action", { length: 100 }).notNull(), // publish_eservice, send_notification, verify_cf, login_sso, etc.
+  entityType: varchar("entity_type", { length: 100 }), // eservice, message, verification, login
+  entityId: varchar("entity_id", { length: 255 }), // ID entità coinvolta
+  userEmail: varchar("user_email", { length: 255 }),
+  status: varchar("status", { length: 50 }).notNull(), // success, error, warning
+  requestData: text("request_data"), // JSON richiesta
+  responseData: text("response_data"), // JSON risposta
+  errorMessage: text("error_message"),
+  ipAddress: varchar("ip_address", { length: 50 }),
+  durationMs: integer("duration_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  platformIdx: index("audit_trail_platform_idx").on(table.platform),
+  actionIdx: index("audit_trail_action_idx").on(table.action),
+  userIdx: index("audit_trail_user_idx").on(table.userEmail),
+  createdIdx: index("audit_trail_created_idx").on(table.createdAt),
+}));
+
+// Export types per Piattaforme PA
+export type PdndEservice = typeof pdndEservices.$inferSelect;
+export type InsertPdndEservice = typeof pdndEservices.$inferInsert;
+
+export type PdndVoucher = typeof pdndVouchers.$inferSelect;
+export type InsertPdndVoucher = typeof pdndVouchers.$inferInsert;
+
+export type AppIoMessage = typeof appIoMessages.$inferSelect;
+export type InsertAppIoMessage = typeof appIoMessages.$inferInsert;
+
+export type AppIoServiceConfig = typeof appIoServiceConfig.$inferSelect;
+export type InsertAppIoServiceConfig = typeof appIoServiceConfig.$inferInsert;
+
+export type AnprVerification = typeof anprVerifications.$inferSelect;
+export type InsertAnprVerification = typeof anprVerifications.$inferInsert;
+
+export type SsoConfiguration = typeof ssoConfigurations.$inferSelect;
+export type InsertSsoConfiguration = typeof ssoConfigurations.$inferInsert;
+
+export type SsoLoginLog = typeof ssoLoginLogs.$inferSelect;
+export type InsertSsoLoginLog = typeof ssoLoginLogs.$inferInsert;
+
+export type PlatformAuditTrail = typeof platformAuditTrail.$inferSelect;
+export type InsertPlatformAuditTrail = typeof platformAuditTrail.$inferInsert;
+

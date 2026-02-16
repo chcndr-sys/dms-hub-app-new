@@ -28,6 +28,7 @@ import { MarketMapComponent } from '@/components/MarketMapComponent';
 import CivicReportsHeatmap from '@/components/CivicReportsHeatmap';
 import { CivicReportsProvider } from '@/contexts/CivicReportsContext';
 import SuapPanel from '@/components/SuapPanel';
+import PiattaformePA from '@/components/PiattaformePA';
 
 import MIOAgent from '@/components/MIOAgent';
 import { LogsSectionReal, DebugSectionReal } from '@/components/LogsDebugReal';
@@ -2342,12 +2343,12 @@ export default function DashboardPA() {
               onClick={() => setActiveTab('settings')}
               className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 activeTab === 'settings'
-                  ? 'bg-[#64748b] border-[#64748b] text-white shadow-lg'
-                  : 'bg-[#64748b]/10 border-[#64748b]/30 hover:bg-[#64748b]/20 text-[#64748b]'
+                  ? 'bg-[#0ea5e9] border-[#0ea5e9] text-white shadow-lg'
+                  : 'bg-[#0ea5e9]/10 border-[#0ea5e9]/30 hover:bg-[#0ea5e9]/20 text-[#0ea5e9]'
               }`}
             >
-              <SettingsIcon className="h-6 w-6" />
-              <span className="text-xs font-medium">Impostazioni</span>
+              <Globe className="h-6 w-6" />
+              <span className="text-xs font-medium">Piattaforme PA</span>
             </button>
             </ProtectedTab>
             <ProtectedTab tabId="mercati">
@@ -4604,54 +4605,9 @@ export default function DashboardPA() {
             <Integrazioni />
           </TabsContent>
 
-          {/* TAB 21: IMPOSTAZIONI */}
+          {/* TAB 21: PIATTAFORME PA (PDND, App IO, ANPR, SSO) */}
           <TabsContent value="settings" className="space-y-6">
-            <Card className="bg-[#1a2332] border-[#64748b]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <SettingsIcon className="h-5 w-5 text-[#64748b]" />
-                  Impostazioni Dashboard PA
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* API & Agent Tokens */}
-                  <div 
-                    onClick={() => window.location.href = '/settings/api-tokens'}
-                    className="p-4 bg-[#0f1729] border border-[#64748b]/30 rounded-lg hover:border-[#64748b]/50 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <Lock className="h-5 w-5 text-[#64748b]" />
-                      <h3 className="text-[#e8fbff] font-semibold">API & Agent Tokens</h3>
-                    </div>
-                    <p className="text-[#e8fbff]/60 text-sm">
-                      Gestione sicura dei token API per servizi esterni (OpenAI, Gemini, ecc.)
-                    </p>
-                  </div>
-
-                  {/* Altre impostazioni (placeholder) */}
-                  <div className="p-4 bg-[#0f1729] border border-[#64748b]/30 rounded-lg opacity-50">
-                    <div className="flex items-center gap-3 mb-2">
-                      <UserCog className="h-5 w-5 text-[#64748b]" />
-                      <h3 className="text-[#e8fbff] font-semibold">Permessi Utenti</h3>
-                    </div>
-                    <p className="text-[#e8fbff]/60 text-sm">
-                      Configurazione permessi e ruoli utenti (in sviluppo)
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-[#0f1729] border border-[#64748b]/30 rounded-lg opacity-50">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Sliders className="h-5 w-5 text-[#64748b]" />
-                      <h3 className="text-[#e8fbff] font-semibold">Preferenze Dashboard</h3>
-                    </div>
-                    <p className="text-[#e8fbff]/60 text-sm">
-                      Personalizzazione visualizzazione e layout (in sviluppo)
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <PiattaformePA />
           </TabsContent>
 
           {/* TAB 22: GESTIONE MERCATI */}

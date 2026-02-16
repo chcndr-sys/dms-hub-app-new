@@ -13,6 +13,7 @@ import { tccSecurityRouter } from "./tccSecurityRouter";
 import { gdprRouter } from "./gdprRouter";
 import { pdndRouter } from "./pdndRouter";
 import { appIoRouter } from "./appIoRouter";
+import { piattaformeRouter } from "./piattaformeRouter";
 
 
 export const appRouter = router({
@@ -370,6 +371,9 @@ export const appRouter = router({
 
   // APP IO - Notifiche cittadini tramite App IO
   appIo: appIoRouter,
+
+  // PIATTAFORME PA - Dashboard PDND/AppIO/ANPR/SSO + Audit Trail
+  piattaforme: piattaformeRouter,
 });
 
 export type AppRouter = typeof appRouter;
