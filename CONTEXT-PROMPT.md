@@ -73,7 +73,7 @@ La differenziazione avviene tramite il **sistema RBAC**: ogni utente vede solo l
 **DMS Legacy (BRACCIO)** — opera sul campo, raccoglie dati grezzi:
 - App tablet per presenze fisiche, uscite, spazzatura, scelte spunta
 - Heroku app `lapsy-dms`, PostgreSQL su AWS RDS, 25 tabelle, 117 stored functions
-- URL: `lapsy-dms.herokuapp.com/index.html` (cred: `checchi@me.com` / `Dms2022!`)
+- URL: `lapsy-dms.herokuapp.com/index.html` (cred: vedi env `DMS_LEGACY_USER` / `DMS_LEGACY_PASS`)
 
 **Flusso dati bidirezionale:**
 - MioHub → Legacy (76%): anagrafica imprese, saldo wallet, graduatoria, mercati, posteggi, concessioni, autorizzazioni, regolarita'
@@ -234,7 +234,7 @@ pnpm db:push      # Migrazioni Drizzle
 | Frontend | dms-hub-app-new.vercel.app |
 | Backend | mihub.157-90-29-66.nip.io |
 | Orchestratore | orchestratore.mio-hub.me |
-| DMS Legacy | lapsy-dms.herokuapp.com (`checchi@me.com` / `Dms2022!`) |
+| DMS Legacy | lapsy-dms.herokuapp.com (cred: vedi env) |
 | Neon DB | console.neon.tech (ep-bold-silence-adftsojg) |
 | Firebase | console.firebase.google.com (dmshub-auth-2975e) |
 | Hetzner | SSH 157.90.29.66 |

@@ -405,7 +405,7 @@ L'app tablet registra presenze fisiche, uscite, deposito spazzatura, scelte alla
 |------------|---------|
 | **Piattaforma** | Heroku (app `lapsy-dms`) |
 | **URL Gestionale** | `https://lapsy-dms.herokuapp.com/index.html` |
-| **Credenziali Gestionale** | `checchi@me.com` / `Dms2022!` (accesso frontend) |
+| **Credenziali Gestionale** | Vedi variabili d'ambiente `DMS_LEGACY_USER` / `DMS_LEGACY_PASS` |
 | **Backend** | Node.js + Express — thin layer sopra stored functions |
 | **Database** | PostgreSQL su AWS RDS (eu-west-1) — 25 tabelle, 117 stored functions |
 | **Real-time** | Socket.IO namespace `/ac.mappe` per aggiornamento mappe tablet |
@@ -668,7 +668,7 @@ pnpm docs:update      # Sincronizza docs API + blueprint
 | **Frontend** | dms-hub-app-new.vercel.app | Vercel auto-deploy |
 | **Backend Hetzner** | mihub.157-90-29-66.nip.io | PM2 + Express |
 | **Orchestratore** | orchestratore.mio-hub.me | REST legacy backend |
-| **DMS Legacy** | lapsy-dms.herokuapp.com | Credenziali: `checchi@me.com` / `Dms2022!` |
+| **DMS Legacy** | lapsy-dms.herokuapp.com | Credenziali: vedi env `DMS_LEGACY_USER` / `DMS_LEGACY_PASS` |
 | **Neon DB** | console.neon.tech | PostgreSQL serverless |
 | **Firebase** | console.firebase.google.com | Progetto: dmshub-auth-2975e |
 | **Hetzner VPS** | SSH 157.90.29.66 | Solo emergenze, con chiave |

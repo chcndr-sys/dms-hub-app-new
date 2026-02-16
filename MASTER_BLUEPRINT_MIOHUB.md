@@ -539,7 +539,7 @@
 |---|---|
 | **Piattaforma** | Heroku (app `lapsy-dms`) |
 | **URL Gestionale** | `https://lapsy-dms.herokuapp.com/index.html` |
-| **Credenziali Gestionale** | `checchi@me.com` / `Dms2022!` (accesso frontend) |
+| **Credenziali Gestionale** | Vedi variabili d'ambiente `DMS_LEGACY_USER` / `DMS_LEGACY_PASS` |
 | **Backend** | Node.js + Express — **thin layer** sopra stored functions |
 | **Database** | PostgreSQL su AWS RDS (`eu-west-1`) — **25 tabelle, 117 stored functions** |
 | **URI Database** | `postgres://u4gjr63u7b0f3k:p813...scl.eu-west-1.rds.amazonaws.com:5432/d18d7n7ncg8ao7` |
@@ -9306,7 +9306,7 @@ Tutti i 14 fix sono stati implementati, deployati e testati. Risultati dei test 
 
 ### 4. Verifica Visiva sul Gestionale Lapsy (12 Feb 2026)
 
-Accesso effettuato al gestionale Lapsy DMS (`https://lapsy-dms.herokuapp.com`) con credenziali `checchi@me.com`. Tutti i dati inviati tramite SYNC OUT sono visibili e corretti nell'interfaccia.
+Accesso effettuato al gestionale Lapsy DMS (`https://lapsy-dms.herokuapp.com`) con credenziali da env. Tutti i dati inviati tramite SYNC OUT sono visibili e corretti nell'interfaccia.
 
 **Sezione Ambulanti** — Tutti i record creati da MioHub sono presenti nella griglia:
 

@@ -27,7 +27,7 @@ L'app tablet registra presenze fisiche, uscite, deposito spazzatura, scelte alla
 |------------|---------|
 | **Piattaforma** | Heroku (app `lapsy-dms`) |
 | **URL Gestionale** | `https://lapsy-dms.herokuapp.com/index.html` |
-| **Credenziali Gestionale** | `checchi@me.com` / `Dms2022!` (accesso frontend) |
+| **Credenziali Gestionale** | Vedi variabili d'ambiente `DMS_LEGACY_USER` / `DMS_LEGACY_PASS` |
 | **Backend** | Node.js + Express — thin layer sopra stored functions |
 | **Database** | PostgreSQL su AWS RDS (eu-west-1) — 25 tabelle, 117 stored functions |
 | **Real-time** | Socket.IO namespace `/ac.mappe` per aggiornamento mappe tablet |

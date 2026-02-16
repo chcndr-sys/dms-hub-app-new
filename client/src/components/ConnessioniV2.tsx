@@ -64,7 +64,7 @@ export default function ConnessioniV2() {
       } else if (integration.id === 'mercaweb') {
         // Per MercaWeb, usa l'endpoint health dedicato con API Key
         const response = await fetch(`${API_BASE_URL}/api/integrations/mercaweb/health`, {
-          headers: { 'X-MercaWeb-API-Key': 'mw_d936305213e4b1df05f7694a9cac2aadff25e369979a1ca1' }
+          headers: { 'X-MercaWeb-API-Key': import.meta.env.VITE_MERCAWEB_API_KEY || '' }
         });
         const data = await response.json();
         if (data.success && data.data?.status === 'connected') {
@@ -91,7 +91,7 @@ export default function ConnessioniV2() {
     setSyncingIntegration('mercaweb');
     try {
       const response = await fetch(`${API_BASE_URL}/api/integrations/mercaweb/status`, {
-        headers: { 'X-MercaWeb-API-Key': 'mw_d936305213e4b1df05f7694a9cac2aadff25e369979a1ca1' }
+        headers: { 'X-MercaWeb-API-Key': import.meta.env.VITE_MERCAWEB_API_KEY || '' }
       });
       const data = await response.json();
       if (data.success) {

@@ -1021,7 +1021,7 @@ function APIDashboard() {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
-              'X-MercaWeb-API-Key': 'mw_d936305213e4b1df05f7694a9cac2aadff25e369979a1ca1'
+              'X-MercaWeb-API-Key': import.meta.env.VITE_MERCAWEB_API_KEY || ''
             },
           });
           data = await mwGetRes.json();
@@ -1033,7 +1033,7 @@ function APIDashboard() {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
-              'X-MercaWeb-API-Key': 'mw_d936305213e4b1df05f7694a9cac2aadff25e369979a1ca1'
+              'X-MercaWeb-API-Key': import.meta.env.VITE_MERCAWEB_API_KEY || ''
             },
           });
           data = await mwPresRes.json();
@@ -1045,7 +1045,7 @@ function APIDashboard() {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
-              'X-MercaWeb-API-Key': 'mw_d936305213e4b1df05f7694a9cac2aadff25e369979a1ca1'
+              'X-MercaWeb-API-Key': import.meta.env.VITE_MERCAWEB_API_KEY || ''
             },
           });
           data = await mwMapRes.json();
@@ -1060,7 +1060,7 @@ function APIDashboard() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-MercaWeb-API-Key': 'mw_d936305213e4b1df05f7694a9cac2aadff25e369979a1ca1'
+              'X-MercaWeb-API-Key': import.meta.env.VITE_MERCAWEB_API_KEY || ''
             },
             body: JSON.stringify(parsedBody),
           });

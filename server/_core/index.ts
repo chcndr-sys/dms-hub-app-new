@@ -97,6 +97,7 @@ async function startServer() {
     origin: [
       "https://dms-hub-app-new.vercel.app",
       "https://orchestratore.mio-hub.me",
+      "https://mihub.157-90-29-66.nip.io",
       /^http:\/\/localhost:\d+$/,
     ],
     credentials: true,
