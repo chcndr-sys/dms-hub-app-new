@@ -281,17 +281,28 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     }
   }, []);
 
-  // Carica permessi all'avvio e quando cambia l'URL (impersonificazione)
+  // Carica permessi all'avvio, quando cambia l'URL (impersonificazione),
+  // e quando FirebaseAuthContext finisce il sync (evento 'storage')
   useEffect(() => {
     loadUserPermissions();
-    
+
     // Ricarica quando cambia l'URL (per impersonificazione)
     const handleUrlChange = () => {
       loadUserPermissions();
     };
-    
+
+    // Ricarica quando FirebaseAuthContext aggiorna localStorage.user
+    // (dispatcha new Event('storage') dopo il sync)
+    const handleStorageChange = () => {
+      loadUserPermissions();
+    };
+
     window.addEventListener('popstate', handleUrlChange);
-    return () => window.removeEventListener('popstate', handleUrlChange);
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [loadUserPermissions]);
 
   // Verifica se l'utente ha un permesso specifico
