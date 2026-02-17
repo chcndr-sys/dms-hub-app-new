@@ -10,7 +10,7 @@ describe('Cookie security', () => {
     } as any;
 
     const options = getSessionCookieOptions(mockReq);
-    expect(options.sameSite).toBe('lax');
+    expect(options.sameSite).toBe('none'); // Cross-domain Vercel→Hetzner richiede SameSite=None + Secure
   });
 
   it('should set httpOnly to true', () => {
