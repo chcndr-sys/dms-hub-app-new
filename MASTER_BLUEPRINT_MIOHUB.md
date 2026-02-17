@@ -63,34 +63,37 @@ Questo meccanismo è fondamentale e va rispettato:
 
 4. **Regola:** Gli utenti team/legacy **non devono avere la stessa email** dell'admin Firebase, altrimenti si crea conflitto. Devono avere solo il telefono come identificativo.
 
-#### Analisi Dipendenze tRPC Residue
+#### Analisi Dipendenze tRPC Residue (Corretta)
 
-Analisi completa di tutto ciò che è ancora connesso al backend tRPC vecchio:
+**Cosa è stato già rimosso:**
+- **FASE 1 (Claude):** 12 chiamate tRPC da `DashboardPA.tsx`.
+- **Pulizia (Manus):** 6 file server (`appIoRouter`, `pdndRouter`, `piattaformeRouter` + relativi services).
+- **FASE 2 (Claude):** `useAuth.ts` eliminato, `DashboardLayout` migrato a `useFirebaseAuth`.
 
-**Chiamate tRPC attive nel frontend (23 useQuery/useMutation):**
+**Cosa resta ancora attivo:**
 
-| Componente | Chiamate | Dettaglio |
+| Categoria | Quantità | Dettaglio |
 |---|---|---|
-| `Integrazioni.tsx` | 17 | API keys, webhooks, health checks, sync |
-| `PiattaformePA.tsx` | 11 | PDND, AppIO, SSO, Audit |
-| `useOrchestrator.ts` | 3 | Orchestrazione AI (chat, conversazioni) |
-| `GuardianIntegrations.tsx` | 3 | Test integrazioni Guardian |
-| `MIOLogs.tsx` | 1 | Log agente MIO |
+| **Chiamate tRPC attive** | **37** | In 5 componenti principali |
+| **Fetch dirette critiche** | **3** | In `FirebaseAuthContext` (checkRoles, bootstrapAdmin, createFirebaseSession) |
+| **Infrastruttura tRPC** | **Tutta** | Client, provider, router server-side, dipendenze `package.json` |
 
-**Fetch dirette critiche (FirebaseAuthContext.tsx):**
-- `auth.checkRoles` — verifica ruoli utente
-- `auth.bootstrapAdmin` — crea admin se non esiste
-- `auth.createFirebaseSession` — crea sessione JWT
+**Chiamate tRPC Attive (Reali):**
 
-**Infrastruttura tRPC ancora attiva:**
-- `main.tsx` — `trpc.Provider` e `trpcClient` inizializzati
-- `lib/trpc.ts` — client tRPC (`createTRPCReact`)
-- `api/trpc/[trpc].ts` — entrypoint API Vercel
-- `server/` — 12+ router con logica di business
-- `package.json` — dipendenze `@trpc/client`, `@trpc/react-query`, `@trpc/server`, `drizzle-orm`, `drizzle-kit`
+| Componente | Chiamate Attive | Router tRPC Usati |
+|---|---|---|
+| `Integrazioni.tsx` | **17** | `integrations` |
+| `PiattaformePA.tsx` | **14** | `pdnd`, `appIo`, `piattaforme`, `audit` |
+| `useOrchestrator.ts` | **3** | `mihub` |
+| `GuardianIntegrations.tsx` | **2** | `guardian` |
+| `MIOLogs.tsx` | **1** | `mioAgent` |
 
-**Menzioni/commenti residui (bassa priorità):**
-- `DashboardPA.tsx`, `GuardianEndpoints.tsx`, `ComponentShowcase.tsx`, `MarketAutorizzazioniTab.tsx`, `stallStatus.ts`
+**NOTA CRITICA:** Il componente `PiattaformePA.tsx` fa **14 chiamate** a router tRPC (`pdnd`, `appIo`, `piattaforme`) che **sono stati rimossi** dal server (commit `0145c5f`). Questo significa che queste chiamate **stanno fallendo silenziosamente** o sono disabilitate. Questo è un **bug latente** da risolvere.
+
+**Fetch Dirette e Infrastruttura tRPC:**
+
+- **`FirebaseAuthContext.tsx`**: Le 3 `fetch` dirette a `auth.checkRoles`, `auth.bootstrapAdmin`, `auth.createFirebaseSession` sono **ancora attive e critiche** per l'autenticazione.
+- **Infrastruttura tRPC**: `main.tsx`, `lib/trpc.ts`, `api/trpc/[trpc].ts` e tutta la directory `server/` sono ancora presenti e necessari per far funzionare le chiamate residue.
 
 ---
 
