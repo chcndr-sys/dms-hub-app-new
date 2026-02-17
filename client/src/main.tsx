@@ -41,7 +41,7 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: import.meta.env.VITE_TRPC_URL || "https://mihub.157-90-29-66.nip.io",
+      url: ((import.meta.env.VITE_TRPC_URL || "https://orchestratore.mio-hub.me").trim() + "/api/trpc"),
       transformer: superjson,
       fetch(input, init) {
         // Invia Authorization: Bearer <token> come fallback per i cookie cross-domain.
@@ -71,7 +71,7 @@ createRoot(document.getElementById("root")!).render(
 
 // Global error monitoring — cattura errori non gestiti e li invia al backend
 window.addEventListener('error', (event) => {
-  const trpcUrl = import.meta.env.VITE_TRPC_URL || '';
+  const trpcUrl = (import.meta.env.VITE_TRPC_URL || '').trim();
   if (trpcUrl && event.error) {
     fetch(`${trpcUrl}/api/trpc/logs.reportClientError`, {
       method: 'POST',
@@ -89,7 +89,7 @@ window.addEventListener('error', (event) => {
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-  const trpcUrl = import.meta.env.VITE_TRPC_URL || '';
+  const trpcUrl = (import.meta.env.VITE_TRPC_URL || '').trim();
   if (trpcUrl) {
     const reason = event.reason;
     fetch(`${trpcUrl}/api/trpc/logs.reportClientError`, {

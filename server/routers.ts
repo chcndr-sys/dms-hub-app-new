@@ -12,9 +12,6 @@ import { guardianRouter } from "./guardianRouter";
 import { walletRouter } from "./walletRouter";
 import { tccSecurityRouter } from "./tccSecurityRouter";
 import { gdprRouter } from "./gdprRouter";
-import { pdndRouter } from "./pdndRouter";
-import { appIoRouter } from "./appIoRouter";
-import { piattaformeRouter } from "./piattaformeRouter";
 import { dmsLegacyRouter } from "./dmsLegacyRouter";
 
 
@@ -61,7 +58,7 @@ export const appRouter = router({
           JOIN users u ON u.id = ura.user_id
           WHERE u.email = ${input.email}
             AND ura.is_active = true
-            AND (ura.valid_until IS NULL OR ura.valid_until > NOW())
+            AND (ura.expires_at IS NULL OR ura.expires_at > NOW())
           ORDER BY ur.level ASC
         `);
         const roles = Array.isArray(result) ? result : [];
@@ -452,14 +449,9 @@ export const appRouter = router({
   // GDPR - Export dati, diritto all'oblio, data retention
   gdpr: gdprRouter,
 
-  // PDND - Piattaforma Digitale Nazionale Dati + ANPR
-  pdnd: pdndRouter,
 
-  // APP IO - Notifiche cittadini tramite App IO
-  appIo: appIoRouter,
 
   // PIATTAFORME PA - Dashboard PDND/AppIO/ANPR/SSO + Audit Trail
-  piattaforme: piattaformeRouter,
 
   // DMS LEGACY - Interoperabilità bidirezionale con gestionale Heroku
   dmsLegacy: dmsLegacyRouter,

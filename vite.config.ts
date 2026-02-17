@@ -14,7 +14,7 @@ export default defineConfig({
   plugins,
   define: {
     'import.meta.env.VITE_TRPC_URL': JSON.stringify(
-      process.env.VITE_TRPC_URL || 'https://orchestratore.mio-hub.me'
+      ((process.env.VITE_TRPC_URL || 'https://orchestratore.mio-hub.me').trim()).trim()
     ),
   },
   resolve: {

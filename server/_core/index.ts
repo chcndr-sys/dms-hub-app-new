@@ -1,7 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
-import net from "net";
 import path from "path";
 import helmet from "helmet";
 import cors from "cors";
@@ -15,25 +14,6 @@ import { serveStatic, setupVite } from "./vite";
 import { addLog } from "../services/apiLogsService";
 import { getDb } from "../db";
 import * as schema from "../../drizzle/schema";
-
-function isPortAvailable(port: number): Promise<boolean> {
-  return new Promise(resolve => {
-    const server = net.createServer();
-    server.listen(port, () => {
-      server.close(() => resolve(true));
-    });
-    server.on("error", () => resolve(false));
-  });
-}
-
-async function findAvailablePort(startPort: number = 3000): Promise<number> {
-  for (let port = startPort; port < startPort + 20; port++) {
-    if (await isPortAvailable(port)) {
-      return port;
-    }
-  }
-  throw new Error(`No available port found starting from ${startPort}`);
-}
 
 /**
  * Salva la metrica API REST nel database per statistiche persistenti
@@ -240,6 +220,26 @@ async function startServer() {
   // Questo router è solo per sviluppo locale
   app.use("/api/auth", firebaseAuthRouter);
   
+  // System status endpoints (usati dal frontend useSystemStatus hook)
+  app.get("/api/system/health", (_req, res) => {
+    res.json({
+      status: "online",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: "7.0.0",
+    });
+  });
+
+  app.get("/api/system/pm2-status", (_req, res) => {
+    res.json({
+      status: "online",
+      pid: process.pid,
+      uptime: process.uptime(),
+      memory: process.memoryUsage().rss,
+      pm2_env: { status: "online" },
+    });
+  });
+
   // REST endpoint for Slot Editor v3 import (CORS-enabled)
   app.post("/api/import-from-slot-editor", async (req, res) => {
     try {
@@ -392,12 +392,7 @@ async function startServer() {
     });
   }
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
-
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
+  const port = parseInt(process.env.PORT || "3000");
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
