@@ -527,11 +527,16 @@ export default function WalletPanel() {
         const mercati = data.data.map((m: any) => ({ id: m.id, name: m.name }));
         setMercatiList(mercati);
         
-        // v3.60.0: Pre-seleziona il primo mercato del comune se non già selezionato
+        // v3.60.0 fix: Pre-seleziona il primo mercato SOLO per la sezione imprese/concessioni
+        // NON modificare canoneFilters per evitare re-fetch che azzera le scadenze visibili
         if (mercati.length > 0 && !selectedMercatoId) {
           const primoMercato = mercati[0].id.toString();
           setSelectedMercatoId(primoMercato);
-          setCanoneFilters(prev => ({ ...prev, mercato_id: primoMercato }));
+          // Pre-seleziona il filtro canone SOLO se c'è un solo mercato (impersonificazione comune)
+          // Se admin vede tutti i mercati, lascia il filtro su 'all' per mostrare tutte le scadenze
+          if (mercati.length === 1) {
+            setCanoneFilters(prev => ({ ...prev, mercato_id: primoMercato }));
+          }
         }
       }
     } catch (err) {
