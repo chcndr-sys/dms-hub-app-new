@@ -37,12 +37,16 @@ export function getSessionCookieOptions(req: any): Partial<CookieOptions> {
   //       ? hostname
   //       : undefined;
 
+  const secure = isSecureRequest(req);
+
   return {
     domain: undefined,
     httpOnly: true,
     path: "/",
-    sameSite: "lax",
-    secure: isSecureRequest(req),
+    // Cross-domain (Vercel frontend → Hetzner backend) richiede SameSite=None + Secure.
+    // SameSite=None è sicuro qui perché CORS restrittivo limita le origini.
+    sameSite: secure ? "none" : "lax",
+    secure,
     maxAge: 365 * 24 * 60 * 60 * 1000, // 1 anno
   };
 }

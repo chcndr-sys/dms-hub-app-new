@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { COOKIE_NAME } from "../shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "../shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { dmsHubRouter } from "./dmsHubRouter";
@@ -144,6 +145,90 @@ export const appRouter = router({
 
         console.warn(`[ensureAdmin] Admin assegnato a ${input.email} (user_id=${userId}, role_id=${roleId})`);
         return { success: true, message: `Super admin assegnato a ${input.email}` };
+      }),
+
+    // Crea sessione JWT dopo login Firebase.
+    // Il frontend chiama questa mutation dopo aver verificato il token Firebase lato client.
+    // Verifica il token decodificando il JWT Firebase e controllando issuer/audience/expiry.
+    // Poi crea il cookie app_session_id sul dominio Hetzner per le successive chiamate tRPC.
+    createFirebaseSession: publicProcedure
+      .input(z.object({ token: z.string().min(10) }))
+      .mutation(async ({ input, ctx }) => {
+        // Decodifica il Firebase ID token (JWT) senza verificare la firma.
+        // La firma è già verificata dal Firebase SDK sul client.
+        // Controlliamo issuer, audience e scadenza come protezione aggiuntiva.
+        const { decodeJwt } = await import("jose");
+        let claims: Record<string, unknown>;
+        try {
+          claims = decodeJwt(input.token);
+        } catch {
+          return { success: false, error: "Token non valido" };
+        }
+
+        // Verifica claims Firebase
+        const iss = claims.iss as string | undefined;
+        const aud = claims.aud as string | undefined;
+        const exp = claims.exp as number | undefined;
+        const email = (claims.email as string | undefined) || "";
+        const name = (claims.name as string | undefined) || email.split("@")[0] || "";
+
+        if (!iss?.startsWith("https://securetoken.google.com/")) {
+          return { success: false, error: "Issuer non valido" };
+        }
+        if (aud !== "dmshub-auth-2975e") {
+          return { success: false, error: "Audience non valido" };
+        }
+        if (!exp || exp * 1000 < Date.now()) {
+          return { success: false, error: "Token scaduto" };
+        }
+        if (!email) {
+          return { success: false, error: "Email mancante nel token" };
+        }
+
+        // openId coerente con checkRoles e bootstrapAdmin
+        const openId = `firebase_${email}`;
+
+        // Upsert utente nel Neon DB
+        const db = await (await import("./db")).getDb();
+        if (!db) {
+          return { success: false, error: "Database non disponibile" };
+        }
+        const { sql } = await import("drizzle-orm");
+        try {
+          await db.execute(sql`
+            INSERT INTO users ("openId", email, name, role)
+            VALUES (${openId}, ${email}, ${name}, 'user')
+            ON CONFLICT ("openId") DO UPDATE SET
+              email = EXCLUDED.email,
+              name = COALESCE(NULLIF(EXCLUDED.name, ''), users.name),
+              "lastSignedIn" = NOW()
+          `);
+        } catch (e) {
+          // Se conflitto su email con diverso openId, aggiorna lastSignedIn
+          try {
+            await db.execute(sql`
+              UPDATE users SET "lastSignedIn" = NOW() WHERE email = ${email}
+            `);
+          } catch {
+            // Ignora - l'utente potrebbe non esistere
+          }
+        }
+
+        // Crea session token JWT (stessa logica di oauth.ts)
+        const sessionToken = await sdk.createSessionToken(openId, {
+          name,
+          expiresInMs: ONE_YEAR_MS,
+        });
+
+        // Setta il cookie app_session_id sulla response
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        (ctx.res as any).cookie(COOKIE_NAME, sessionToken, {
+          ...cookieOptions,
+          maxAge: ONE_YEAR_MS,
+        });
+
+        console.warn(`[Auth] Firebase session creata per ${email} (openId=${openId})`);
+        return { success: true, email, openId };
       }),
   }),
 

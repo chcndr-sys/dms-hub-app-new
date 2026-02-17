@@ -246,6 +246,37 @@ async function tryBootstrapAdmin(email: string): Promise<boolean> {
 }
 
 /**
+ * Crea una sessione JWT sul backend tRPC (Hetzner) dopo login Firebase.
+ * Questo è il passo critico: setta il cookie app_session_id sul dominio del backend,
+ * così le successive chiamate tRPC protectedProcedure funzionano.
+ */
+async function createFirebaseSession(idToken: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${TRPC_BASE}/api/trpc/auth.createFirebaseSession?batch=1`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ "0": { json: { token: idToken } } }),
+    });
+    if (!res.ok) {
+      console.warn('[FirebaseAuth] createFirebaseSession HTTP fallito:', res.status);
+      return false;
+    }
+    const data = await res.json();
+    const result = data?.[0]?.result?.data?.json || data?.[0]?.result?.data;
+    if (result?.success) {
+      console.warn(`[FirebaseAuth] Sessione JWT creata con successo per ${result.email}`);
+      return true;
+    }
+    console.warn('[FirebaseAuth] createFirebaseSession fallito:', result?.error);
+    return false;
+  } catch (err) {
+    console.warn('[FirebaseAuth] createFirebaseSession errore:', err);
+    return false;
+  }
+}
+
+/**
  * Registra un evento di login nel sistema di sicurezza dell'orchestratore.
  */
 async function trackLoginEvent(userId: number, email: string, provider: string, success: boolean): Promise<void> {
@@ -381,7 +412,13 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
     : legacyUser?.assigned_roles || [];
 
   // ============================================
-  // STEP 5: Costruisci il MioHubUser con tutti i dati
+  // STEP 5: Crea sessione JWT sul backend (cookie app_session_id)
+  // Senza questo cookie, tutte le protectedProcedure tRPC falliscono con 401.
+  // ============================================
+  await createFirebaseSession(idToken);
+
+  // ============================================
+  // STEP 6: Costruisci il MioHubUser con tutti i dati
   // ============================================
 
   // Determina ruolo effettivo: admin > business (ha impresa) > Firebase > citizen

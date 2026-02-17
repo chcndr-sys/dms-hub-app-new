@@ -4,10 +4,6 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/auth/firebase/:path*",
-      "destination": "/api/auth/firebase/:path*"
-    },
-    {
       "source": "/api/auth/:path*",
       "destination": "https://api.mio-hub.me/api/auth/:path*"
     },
