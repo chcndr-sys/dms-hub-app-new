@@ -19,7 +19,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { trpc } from '@/lib/trpc';
 import MobilityMap from '@/components/MobilityMap';
 import GestioneMercati from '@/components/GestioneMercati';
 import Integrazioni from '@/components/Integrazioni';
@@ -71,21 +70,8 @@ import { useMio } from '@/contexts/MioContext';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-// Hook per dati reali da backend
+// Hook per dati reali da backend (REST — tRPC rimosso in FASE 1 stacco backend)
 function useDashboardData() {
-  const overviewQuery = trpc.analytics.overview.useQuery();
-  const marketsQuery = trpc.analytics.markets.useQuery();
-  const shopsQuery = trpc.analytics.shops.useQuery();
-  const transactionsQuery = trpc.analytics.transactions.useQuery();
-  const systemLogsQuery = trpc.logs.system.useQuery();
-  const userAnalyticsQuery = trpc.users.analytics.useQuery();
-  const sustainabilityQuery = trpc.sustainability.metrics.useQuery();
-  const businessesQuery = trpc.businesses.list.useQuery();
-  const inspectionsQuery = trpc.inspections.list.useQuery();
-  const notificationsQuery = trpc.notifications.list.useQuery();
-  const civicReportsQuery = trpc.civicReports.list.useQuery();
-  const mobilityQuery = trpc.mobility.list.useQuery();
-
   // Fetch stats overview dal backend REST MIHUB
   const [statsOverview, setStatsOverview] = useState<any>(null);
   const [statsRealtime, setStatsRealtime] = useState<any>(null);
@@ -208,7 +194,7 @@ function useDashboardData() {
       .catch(err => console.error('Bandi stats fetch error:', err));
   }, []);
 
-  // Combina dati tRPC con dati REST
+  // Overview dai dati REST
   const combinedOverview = useMemo(() => {
     if (statsOverview) {
       return {
@@ -220,7 +206,6 @@ function useDashboardData() {
         transactionGrowth: 0,
         sustainabilityRating: statsOverview.rating_sostenibilita || 0,
         co2Saved: statsOverview.tcc?.total_redeemed || 0,
-        // Dati aggiuntivi
         vendors: statsOverview.vendors || 0,
         stalls: statsOverview.stalls || 0,
         comuni: statsOverview.comuni || 0,
@@ -231,23 +216,14 @@ function useDashboardData() {
         today: statsOverview.today || {}
       };
     }
-    return overviewQuery.data;
-  }, [statsOverview, overviewQuery.data]);
+    return null;
+  }, [statsOverview]);
 
   return {
     overview: combinedOverview,
-    markets: marketsQuery.data || [],
-    shops: shopsQuery.data || [],
-    transactions: transactionsQuery.data || [],
-    systemLogs: systemLogsQuery.data || [],
-    userAnalytics: userAnalyticsQuery.data || [],
-    sustainabilityMetrics: sustainabilityQuery.data || [],
-    businesses: businessesQuery.data || [],
-    inspections: inspectionsQuery.data || [],
-    notifications: notificationsQuery.data || [],
-    civicReports: civicReportsQuery.data || [],
-    mobilityData: mobilityQuery.data || [],
-    isLoading: overviewQuery.isLoading && !statsOverview,
+    markets: [] as any[],
+    shops: [] as any[],
+    isLoading: !statsOverview,
     statsOverview: statsOverview,
     statsRealtime: statsRealtime,
     statsGrowth: statsGrowth,
