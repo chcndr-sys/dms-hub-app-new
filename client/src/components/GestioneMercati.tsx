@@ -180,9 +180,43 @@ export default function GestioneMercati() {
   const [searchQuery, setSearchQuery] = useState('');
   const [marketStalls, setMarketStalls] = useState<Stall[]>([]);
   const [refreshStallsCallback, setRefreshStallsCallback] = useState<(() => Promise<void>) | null>(null);
-  
+
   // Hook per impersonificazione - filtro mercati per comune
   const { isImpersonating, comuneNome } = useImpersonation();
+
+  // tRPC fallback: dmsHub.markets.list è publicProcedure (nessuna auth richiesta)
+  const trpcMarketsQuery = trpc.dmsHub.markets.list.useQuery();
+
+  /** Applica filtro comune ai mercati */
+  const applyFilters = (rawMarkets: Market[]) => {
+    const userStr = localStorage.getItem('user');
+    let userComune: string | null = null;
+    let isSuperAdmin = false;
+
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        isSuperAdmin = user.is_super_admin === true;
+        if (user.assigned_roles && user.assigned_roles.length > 0) {
+          userComune = user.assigned_roles[0].comune_nome || null;
+        }
+      } catch (e) {
+        console.error('Error parsing user:', e);
+      }
+    }
+
+    const comuneFilter = isImpersonating ? comuneNome : userComune;
+
+    if (!isSuperAdmin && comuneFilter) {
+      const filtered = rawMarkets.filter((market: Market) =>
+        market.municipality?.toLowerCase() === comuneFilter.toLowerCase()
+      );
+      console.warn(`[GestioneMercati] Filtro mercati per comune: ${comuneFilter} - ${filtered.length} mercati`);
+      return filtered;
+    }
+    console.warn(`[GestioneMercati] Nessun filtro comune - ${rawMarkets.length} mercati totali`);
+    return rawMarkets;
+  };
 
   useEffect(() => {
     fetchMarkets();
@@ -192,53 +226,45 @@ export default function GestioneMercati() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/markets`);
       const data = await response.json();
-      if (data.success) {
-        let filteredMarkets = data.data;
-        
-        // Filtra mercati per comune se in modalità impersonificazione
-        // oppure se l'utente ha un comune assegnato (non super admin)
-        const userStr = localStorage.getItem('user');
-        let userComune: string | null = null;
-        let isSuperAdmin = false;
-        
-        if (userStr) {
-          try {
-            const user = JSON.parse(userStr);
-            isSuperAdmin = user.is_super_admin === true;
-            // Se l'utente ha un comune assegnato nei ruoli
-            if (user.assigned_roles && user.assigned_roles.length > 0) {
-              userComune = user.assigned_roles[0].comune_nome || null;
-            }
-          } catch (e) {
-            console.error('Error parsing user:', e);
-          }
-        }
-        
-        // Determina il comune da usare per il filtro
-        const comuneFilter = isImpersonating ? comuneNome : userComune;
-        
-        // Applica filtro solo se NON è super admin e c'è un comune
-        if (!isSuperAdmin && comuneFilter) {
-          filteredMarkets = data.data.filter((market: Market) => 
-            market.municipality?.toLowerCase() === comuneFilter.toLowerCase()
-          );
-          console.warn(`[GestioneMercati] Filtro mercati per comune: ${comuneFilter} - ${filteredMarkets.length} mercati`);
-        } else {
-          console.warn(`[GestioneMercati] Nessun filtro comune - ${filteredMarkets.length} mercati totali`);
-        }
-        
+      if (data.success && data.data && data.data.length > 0) {
+        const filteredMarkets = applyFilters(data.data);
         setMarkets(filteredMarkets);
         if (filteredMarkets.length > 0 && !selectedMarket) {
           setSelectedMarket(filteredMarkets[0]);
         }
+        setLoading(false);
+        return;
       }
     } catch (error) {
-      console.error('Error fetching markets:', error);
-      toast.error('Errore nel caricamento dei mercati');
-    } finally {
+      console.error('Error fetching markets from REST:', error);
+    }
+    // REST failed or returned empty — tRPC fallback will handle via useEffect
+    setLoading(false);
+  };
+
+  // Fallback tRPC: se REST non ha caricato mercati, usa dati dal Neon DB
+  useEffect(() => {
+    if (markets.length === 0 && trpcMarketsQuery.data && trpcMarketsQuery.data.length > 0) {
+      const mapped: Market[] = trpcMarketsQuery.data.map((m: any) => ({
+        id: m.id,
+        code: String(m.id),
+        name: m.name,
+        municipality: m.city,
+        days: m.openingHours || '',
+        total_stalls: m.totalStalls || 0,
+        status: m.active === 1 ? 'active' : 'inactive',
+        gis_market_id: String(m.id),
+        latitude: m.lat,
+        longitude: m.lng,
+      }));
+      const filtered = applyFilters(mapped);
+      setMarkets(filtered);
+      if (filtered.length > 0 && !selectedMarket) {
+        setSelectedMarket(filtered[0]);
+      }
       setLoading(false);
     }
-  };
+  }, [trpcMarketsQuery.data, markets.length]);
 
   if (loading) {
     return (

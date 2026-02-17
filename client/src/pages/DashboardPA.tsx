@@ -860,7 +860,7 @@ export default function DashboardPA() {
     return () => clearInterval(interval);
   }, []); // Carica una volta all'avvio, non dipende dal comune selezionato
   
-  // Carica statistiche imprese
+  // Carica statistiche imprese (REST + fallback tRPC)
   useEffect(() => {
     fetch('https://api.mio-hub.me/api/imprese')
       .then(r => r.json())
@@ -873,8 +873,23 @@ export default function DashboardPA() {
           setImpreseStats({ total: imprese.length, concessioni: totalConcessioni, comuni: comuniUnici, media });
         }
       })
-      .catch(err => console.error('Error loading imprese stats:', err));
+      .catch(err => console.error('Error loading imprese stats from REST:', err));
   }, []);
+
+  // Fallback tRPC per impreseStats: usa dati da shops/markets del Neon DB
+  useEffect(() => {
+    if (impreseStats.total === 0 && realData.shops.length > 0) {
+      const comuni = new Set(realData.markets.map((m: any) => m.city || m.municipality).filter(Boolean));
+      setImpreseStats({
+        total: realData.shops.length,
+        concessioni: realData.shops.length,
+        comuni: comuni.size,
+        media: realData.markets.length > 0
+          ? (realData.shops.length / realData.markets.length).toFixed(1)
+          : '0',
+      });
+    }
+  }, [realData.shops, realData.markets, impreseStats.total]);
   
   // Multi-Agent Chat state
   const [showMultiAgentChat, setShowMultiAgentChat] = useState(true);  // 🎯 FIX: Mostra Vista 4 Agenti di default
