@@ -41,7 +41,7 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: (import.meta.env.VITE_TRPC_URL || "https://orchestratore.mio-hub.me").trim(),
+      url: ((import.meta.env.VITE_TRPC_URL || "https://orchestratore.mio-hub.me").trim() + "/api/trpc"),
       transformer: superjson,
       fetch(input, init) {
         // Invia Authorization: Bearer <token> come fallback per i cookie cross-domain.
