@@ -12,7 +12,7 @@ export function useSystemStatus(pollInterval: number = 30000): SystemStatusResul
   const [apiStatus, setApiStatus] = useState<SystemStatus>('checking');
   const [pm2Status, setPm2Status] = useState<SystemStatus>('checking');
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
-  const intervalRef = useRef<number | undefined>();
+  const intervalRef = useRef<number | undefined>(undefined);
 
   const checkBackendAPI = async (): Promise<boolean> => {
     try {

@@ -66,7 +66,7 @@ function LazyFallback() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" sonnElement={'exact'} component={HomePage} />
+      <Route path="/" component={HomePage} />
       <Route path="/mappa" component={MapPage} />
       <Route path="/wallet" component={WalletPage} />
       <Route path="/wallet/paga" component={WalletPaga} />
@@ -86,7 +86,7 @@ function Router() {
       <Route path="/log-debug" component={LogDebugPage} />
       <Route path="/settings/api-tokens" component={APITokensPage} />
       <Route path="/council" component={CouncilPage} />
-      <Route path="/suap" component={SuapDashboard} />
+      <Route path="/suap" component={() => <SuapDashboard />} />
       <Route path="/suap/list" component={SuapList} />
       <Route path="/suap/detail/:id" component={SuapDetail} />
       <Route path="/hub-map-test" component={HubMapTestPage} />
@@ -133,7 +133,7 @@ function App() {
                       </Suspense>
                     </main>
                     <GlobalFooter />
-                    <ChatWidget userRole="client" />
+                    <ChatWidget userRole="cliente" />
                     <CookieConsentBanner />
                   </TooltipProvider>
                 </TransportProvider>

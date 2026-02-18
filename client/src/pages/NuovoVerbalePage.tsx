@@ -84,6 +84,8 @@ interface Impresa {
   rappresentante_legale_residenza_cap: string;
   rappresentante_legale_residenza_comune: string;
   rappresentante_legale_residenza_provincia: string;
+  indirizzo?: string;
+  citta?: string;
 }
 
 export default function NuovoVerbalePage() {

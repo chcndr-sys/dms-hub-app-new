@@ -1706,7 +1706,7 @@ export default function SecurityTab() {
                             <XCircle className="h-4 w-4 text-red-500" />
                           )}
                           <div>
-                            <div className="text-sm text-[#e8fbff]">{attempt.user_email || attempt.email_attempted || attempt.username || 'N/A'}</div>
+                            <div className="text-sm text-[#e8fbff]">{attempt.user_email || attempt.email_attempted || attempt.user_name || 'N/A'}</div>
                             <div className="text-xs text-[#e8fbff]/50">{attempt.ip_address}</div>
                           </div>
                         </div>

@@ -236,6 +236,7 @@ interface Transgression {
   justification_status: string | null;
   justification_notes: string | null;
   justification_display_status: string;
+  description?: string;
   days_remaining: number;
   checkin_time?: string;
   checkin_local?: string;
@@ -618,7 +619,7 @@ export default function ControlliSanzioniPanel() {
         const marketsData = await marketsRes.json();
         if (marketsData.success && marketsData.data?.length > 0) {
           // Prendi i market_id unici dalle sessioni
-          const marketIds = [...new Set((marketsData.data || []).map((s: any) => s.market_id))];
+          const marketIds = Array.from(new Set((marketsData.data || []).map((s: any) => s.market_id)));
           let allGraduatoria: any[] = [];
           for (const mId of marketIds) {
             try {

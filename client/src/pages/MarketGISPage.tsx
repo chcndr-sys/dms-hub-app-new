@@ -7,19 +7,20 @@ interface MarketMapData {
   container: [number, number][];
   center: { lat: number; lng: number };
   stalls_geojson: {
-    type: string;
+    type: 'FeatureCollection';
     features: Array<{
-      type: string;
+      type: 'Feature';
       geometry: {
         type: 'Point' | 'Polygon';
         coordinates: [number, number] | [number, number][][];
       };
       properties: {
-        number: string;
+        number: number | string;
         orientation?: number;
         kind?: string;
         status?: string;
         dimensions?: string;
+        [key: string]: any;
       };
     }>;
   };
@@ -289,7 +290,7 @@ export default function MarketGISPage() {
             mapData={mapData}
             // Trasformiamo i dati geojson nel formato stallsData che il componente si aspetta
             stallsData={mapData.stalls_geojson.features.map(f => ({
-              id: parseInt(f.properties.number) || 0, // Fallback ID
+              id: parseInt(String(f.properties.number)) || 0, // Fallback ID
               number: f.properties.number,
               status: f.properties.status || 'free',
               type: f.properties.kind || 'fisso',

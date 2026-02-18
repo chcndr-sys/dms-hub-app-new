@@ -32,7 +32,7 @@ export function useAgentLogs({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<number | undefined>();
+  const reconnectTimeoutRef = useRef<number | undefined>(undefined);
   const wsConnectedRef = useRef<boolean>(false);
   
   // 🔥 FIX: Ref per la funzione load per poterla chiamare da refetch

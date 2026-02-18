@@ -1,11 +1,11 @@
 import React from 'react';
-import { useRouter } from 'next/router';
+import { useLocation } from 'wouter';
 
 export default function HomeButtons() {
-  const router = useRouter();
+  const [, setLocation] = useLocation();
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', flexGrow: 'wrap' }}>
-      <button onClick={() => router.push('/mio')}>MIO System</button>
+    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+      <button onClick={() => setLocation('/mio')}>MIO System</button>
     </div>
   );
 }

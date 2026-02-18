@@ -50,10 +50,11 @@ export default function APIDashboardV2() {
     setIsLoading(true);
     
     const startTime = Date.now();
-    
+    let url = '';
+
     try {
       // Costruisci URL con parametri
-      let url = `${API_BASE_URL}${selectedEndpoint.path}`;
+      url = `${API_BASE_URL}${selectedEndpoint.path}`;
       
       // Sostituisci parametri path (es. :id)
       if (requestParams) {

@@ -503,13 +503,13 @@ function PosteggiTabPubblica({
           return (
             <MarketMapComponent
               refreshKey={0}
-              mapData={mapData}
+              mapData={mapData as any}
               center={viewMode === 'mercato' ? marketCenter : [43.5, 12.5] as [number, number]}
               zoom={viewMode === 'mercato' ? 17 : 6.3}
               height="100%"
               isSpuntaMode={false}
               onStallClick={(stallNumber) => {
-                const dbStall = stallsByNumber.get(stallNumber);
+                const dbStall = stallsByNumber.get(String(stallNumber));
                 if (dbStall) {
                   setSelectedStallId(dbStall.id);
                   setTimeout(() => {

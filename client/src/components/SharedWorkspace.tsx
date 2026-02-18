@@ -18,7 +18,7 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const autoSaveIntervalRef = useRef<number | undefined>();
+  const autoSaveIntervalRef = useRef<number | undefined>(undefined);
 
   // Memoizza loadWorkspaceState per evitare re-render
   const loadWorkspaceState = useCallback(async () => {
@@ -70,7 +70,7 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
             };
             
             // Usa la nuova API loadSnapshot
-            loadSnapshot(editorRef.current.store, newSnapshot);
+            loadSnapshot(editorRef.current.store, newSnapshot as any);
           } else if (snapshot.document) {
             // Già nel nuovo formato
             loadSnapshot(editorRef.current.store, snapshot);
@@ -156,7 +156,7 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
 
     try {
       // 1. Seleziona tutte le shape per l'export
-      const shapeIds = Array.from(editorRef.current.getCurrentPageShapeIds());
+      const shapeIds = Array.from(editorRef.current.getCurrentPageShapeIds()) as any;
       if (shapeIds.length === 0) {
         alert("La lavagna \u00e8 vuota!");
         return;
@@ -370,7 +370,7 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
             };
             
             // Gestione upload immagini con Base64
-            editor.registerExternalAssetHandler('file', async ({ file }) => {
+            editor.registerExternalAssetHandler('file', async ({ file }): Promise<any> => {
               // Verifica che sia un'immagine
               if (!file.type.startsWith('image/')) {
                 console.warn('[SharedWorkspace] File non supportato:', file.type);
@@ -403,7 +403,7 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
                       isAnimated: false,
                     },
                     meta: {},
-                  });
+                  } as any);
                   console.log('[SharedWorkspace] Immagine caricata come Base64:', file.name);
                 };
                 reader.readAsDataURL(file);

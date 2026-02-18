@@ -68,6 +68,7 @@ interface MarketMapComponentProps {
     vendor_name?: string;
     impresa_id?: number;
     wallet_id?: number; // ID wallet per detrazione importo
+    dimensions?: string;
   }>;
   refreshKey?: number; // Key per forzare re-mount completo della mappa
   isSpuntaMode?: boolean; // Modalità spunta per test dimensioni
@@ -84,7 +85,7 @@ interface MarketMapComponentProps {
     mode: 'walking' | 'cycling' | 'driving';
   };
   // Props per Vista Italia (Gemello Digitale)
-  allMarkets?: Array<{ id: number; name: string; latitude: number; longitude: number }>;
+  allMarkets?: Array<{ id: number; name: string; latitude: number; longitude: number; comune?: string; giorno?: string; posteggi_totali?: number }>;
   onMarketClick?: (marketId: number) => void;
   showItalyView?: boolean;
   viewTrigger?: number; // Trigger per forzare flyTo quando cambia vista
@@ -527,7 +528,7 @@ export function MarketMapComponent({
             
             // Recupera dati aggiornati dal database (chiave stringa per supporto alfanumerico)
             const dbStall = stallsByNumber.get(String(props.number));
-            const displayStatus: string = normalizeStallStatus(dbStall?.status); // Normalizza EN→IT, null-safe
+            const displayStatus = normalizeStallStatus(dbStall?.status) as string; // Normalizza EN→IT, null-safe
             
             const displayVendor = dbStall?.vendor_name || props.vendor_name || '-';
             
@@ -813,7 +814,7 @@ export function MarketMapComponent({
                           })()}
 
 	                          {/* PULSANTI DI AZIONE (OCCUPA / LIBERA / SPUNTA) */}
-	                          {isOccupaMode && (displayStatus === 'libero' || displayStatus === 'riservato') && (
+	                          {isOccupaMode && (['libero', 'riservato'].includes(displayStatus)) && (
 	                            <button
 	                              className="w-full bg-[#ef4444] hover:bg-[#ef4444]/80 text-white font-bold py-3 px-4 rounded transition-colors shadow-lg shadow-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
 	                              onClick={async (e) => {
@@ -825,7 +826,7 @@ export function MarketMapComponent({
 	                            </button>
 	                          )}
 
-	                          {isLiberaMode && (displayStatus === 'occupato' || displayStatus === 'riservato') && (
+	                          {isLiberaMode && (['occupato', 'riservato'].includes(displayStatus)) && (
 	                            <button
 	                              className="w-full bg-[#10b981] hover:bg-[#10b981]/80 text-white font-bold py-3 px-4 rounded transition-colors shadow-lg shadow-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
 	                              onClick={async (e) => {

@@ -25,6 +25,8 @@ export interface TransportStop {
   agency_name?: string;
   routes?: TransportRoute[];
   next_departures?: StopTime[];
+  distance_m?: number;
+  walk_time_min?: number;
 }
 
 export interface TransportRoute {
@@ -63,7 +65,7 @@ const createStopIcon = (type: string, isSelected: boolean = false) => {
     metro: { emoji: '🚇', color: '#9C27B0', bgColor: '#F3E5F5' },
   };
   
-  const config = iconConfig[type] || iconConfig.bus;
+  const config = iconConfig[type as keyof typeof iconConfig] || iconConfig.bus;
   const size = isSelected ? 36 : 28;
   const borderWidth = isSelected ? 3 : 2;
   

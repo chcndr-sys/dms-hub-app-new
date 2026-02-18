@@ -249,6 +249,8 @@ export const dmsHubEndpoints: EndpointConfig[] = [
     id: 'dmshub-markets-list',
     method: 'GET',
     path: '/api/dmsHub/markets/list',
+    name: 'Lista Mercati DMS',
+    category: 'DMS Hub',
     description: 'Lista mercati (formato DMS Hub)',
     mockResponse: {
       success: true,
@@ -261,6 +263,8 @@ export const dmsHubEndpoints: EndpointConfig[] = [
     id: 'dmshub-markets-getbyid',
     method: 'GET',
     path: '/api/dmsHub/markets/getById',
+    name: 'Dettaglio Mercato DMS',
+    category: 'DMS Hub',
     description: 'Dettagli mercato per ID (formato DMS Hub)',
     mockResponse: {
       success: true,
@@ -272,6 +276,8 @@ export const dmsHubEndpoints: EndpointConfig[] = [
     id: 'dmshub-stalls-listbymarket',
     method: 'GET',
     path: '/api/dmsHub/stalls/listByMarket',
+    name: 'Lista Posteggi DMS',
+    category: 'DMS Hub',
     description: 'Lista posteggi per mercato (formato DMS Hub)',
     mockResponse: {
       success: true,
@@ -284,6 +290,8 @@ export const dmsHubEndpoints: EndpointConfig[] = [
     id: 'dmshub-vendors-list',
     method: 'GET',
     path: '/api/dmsHub/vendors/list',
+    name: 'Lista Vendor DMS',
+    category: 'DMS Hub',
     description: 'Lista vendor/imprese (formato DMS Hub)',
     mockResponse: {
       success: true,
@@ -296,6 +304,8 @@ export const dmsHubEndpoints: EndpointConfig[] = [
     id: 'dmshub-concessions-list',
     method: 'GET',
     path: '/api/dmsHub/concessions/list',
+    name: 'Lista Concessioni DMS',
+    category: 'DMS Hub',
     description: 'Lista concessioni (formato DMS Hub)',
     mockResponse: {
       success: true,
