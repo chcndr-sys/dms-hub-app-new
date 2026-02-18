@@ -26,6 +26,16 @@ export const MIHUB_API_BASE_URL = import.meta.env.VITE_MIHUB_API_URL || 'https:/
 export const ORCHESTRATORE_API_BASE_URL = 'https://orchestratore.mio-hub.me';
 
 /**
+ * TCC Carbon Credit API (Orchestratore)
+ * In produzione usa il proxy Vercel (/api/tcc/* → orchestratore.mio-hub.me/api/tcc/*)
+ * In sviluppo usa l'URL diretto.
+ * Usare per tutti gli endpoint /api/tcc/v2/...
+ */
+export const TCC_API_BASE = import.meta.env.DEV
+  ? 'https://orchestratore.mio-hub.me'
+  : '';
+
+/**
  * AI Chat API
  * Used for AI assistant and chat features.
  */

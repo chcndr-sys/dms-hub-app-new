@@ -70,6 +70,11 @@ import { useMio } from '@/contexts/MioContext';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+// API TCC Carbon Credit — in produzione usa proxy Vercel (/api/tcc/* → orchestratore.mio-hub.me)
+const TCC_API = import.meta.env.DEV
+  ? 'https://orchestratore.mio-hub.me'
+  : '';
+
 // Hook per dati reali da backend (REST — tRPC rimosso in FASE 1 stacco backend)
 function useDashboardData() {
   // Fetch stats overview dal backend REST MIHUB
@@ -690,7 +695,7 @@ export default function DashboardPA() {
   useEffect(() => {
     const loadComuni = async () => {
       try {
-        const response = await fetch('https://orchestratore.mio-hub.me/api/tcc/v2/comuni');
+        const response = await fetch(`${TCC_API}/api/tcc/v2/comuni`);
         const data = await response.json();
         if (data.success && data.comuni) {
           setTccComuni(data.comuni);
@@ -714,7 +719,7 @@ export default function DashboardPA() {
       if (!selectedComuneId) return;
       try {
         setTccRulesLoading(true);
-        const response = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/rules?comune_id=${selectedComuneId}`);
+        const response = await fetch(`${TCC_API}/api/tcc/v2/rules?comune_id=${selectedComuneId}`);
         const data = await response.json();
         if (data.success && data.rules) {
           setTccRules(data.rules);
@@ -746,7 +751,7 @@ export default function DashboardPA() {
       if (!selectedComuneId) return;
       setEnvLoading(true);
       try {
-        const response = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/environment/${selectedComuneId}`);
+        const response = await fetch(`${TCC_API}/api/tcc/v2/environment/${selectedComuneId}`);
         const data = await response.json();
         if (data.success) {
           setEnvData(data);
@@ -765,7 +770,7 @@ export default function DashboardPA() {
   const handleEtsPriceUpdate = async () => {
     if (!editableEtsPrice || editableEtsPrice <= 0) return;
     try {
-      const response = await fetch('https://orchestratore.mio-hub.me/api/tcc/v2/ets-price', {
+      const response = await fetch(`${TCC_API}/api/tcc/v2/ets-price`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -776,7 +781,7 @@ export default function DashboardPA() {
       const data = await response.json();
       if (data.success && selectedComuneId) {
         // Ricarica i dati ambientali per aggiornare il valore TCC
-        const envResponse = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/environment/${selectedComuneId}`);
+        const envResponse = await fetch(`${TCC_API}/api/tcc/v2/environment/${selectedComuneId}`);
         const envData = await envResponse.json();
         if (envData.success) {
           setEnvData(envData);
@@ -794,8 +799,8 @@ export default function DashboardPA() {
         setFundLoading(true);
         // Usa l'endpoint originale per le statistiche nazionali
         const [statsResponse, transactionsResponse] = await Promise.all([
-          fetch('https://orchestratore.mio-hub.me/api/tcc/v2/fund/stats'),
-          fetch('https://orchestratore.mio-hub.me/api/tcc/v2/fund/transactions')
+          fetch(`${TCC_API}/api/tcc/v2/fund/stats`),
+          fetch(`${TCC_API}/api/tcc/v2/fund/transactions`)
         ]);
         const statsData = await statsResponse.json();
         const transactionsData = await transactionsResponse.json();
@@ -838,7 +843,7 @@ export default function DashboardPA() {
   
   // Carica statistiche imprese (REST + fallback tRPC)
   useEffect(() => {
-    fetch('https://api.mio-hub.me/api/imprese')
+    fetch('/api/imprese')
       .then(r => r.json())
       .then(data => {
         if (data.success && data.data) {
@@ -1228,7 +1233,7 @@ export default function DashboardPA() {
       .catch(err => console.error('Hub fetch error:', err));
     
     // Fetch lista imprese
-    fetch('https://api.mio-hub.me/api/imprese')
+    fetch('/api/imprese')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
@@ -3275,7 +3280,7 @@ export default function DashboardPA() {
                         // Es: slider su 10 → policy_multiplier = 10 → €100 spesi = (100/10)*10 = 100 TCC
                         const policyMultiplier = tccValue;
                         
-                        const response = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/config/update/${selectedComuneId}`, {
+                        const response = await fetch(`${TCC_API}/api/tcc/v2/config/update/${selectedComuneId}`, {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
@@ -3481,7 +3486,7 @@ export default function DashboardPA() {
                       btn.disabled = true;
                       btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2 inline" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Elaborazione...';
                       try {
-                        const response = await fetch('https://orchestratore.mio-hub.me/api/tcc/v2/process-batch-reimbursements', {
+                        const response = await fetch(`${TCC_API}/api/tcc/v2/process-batch-reimbursements`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' }
                         });

@@ -449,16 +449,15 @@ export default function WalletImpresaPage() {
     setIsProcessingSanzione(true);
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
       // Usa importo ridotto se nel periodo ridotto
-      const importo = selectedSanzione.in_periodo_ridotto 
-        ? parseFloat(selectedSanzione.importo_ridotto) 
+      const importo = selectedSanzione.in_periodo_ridotto
+        ? parseFloat(selectedSanzione.importo_ridotto)
         : parseFloat(selectedSanzione.amount);
-      
+
       // Genera IUV simulato
       const iuv = `IUV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-      
-      const response = await fetch(`${API_URL}/api/sanctions/${selectedSanzione.id}/paga-pagopa`, {
+
+      const response = await fetch(`${API_BASE_URL}/api/sanctions/${selectedSanzione.id}/paga-pagopa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -488,12 +487,11 @@ export default function WalletImpresaPage() {
     if (!selectedScadenza) return;
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
       const importoTotale = parseFloat(selectedScadenza.importo_dovuto) + parseFloat(selectedScadenza.importo_mora || '0') + parseFloat(selectedScadenza.importo_interessi || '0');
       const description = `Pagamento Canone ${selectedScadenza.tipo === 'CANONE_ANNUO' ? 'Annuo' : selectedScadenza.tipo} - Rata ${selectedScadenza.rata_numero}/${selectedScadenza.rata_totale} - ${selectedScadenza.mercato_nome} - Posteggio ${selectedScadenza.posteggio}`;
-      
-      // Usa l'endpoint corretto /api/wallets/deposit
-      const response = await fetch(`${API_URL}/api/wallets/deposit`, {
+
+      // Usa l'endpoint corretto /api/wallets/deposit (proxy Vercel in prod)
+      const response = await fetch(`${API_BASE_URL}/api/wallets/deposit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -530,10 +528,9 @@ export default function WalletImpresaPage() {
     setIsProcessingRicarica(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
       const description = `Ricarica Wallet Generico - ${company?.ragione_sociale}`;
-      
-      const response = await fetch(`${API_URL}/api/wallets/deposit`, {
+
+      const response = await fetch(`${API_BASE_URL}/api/wallets/deposit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

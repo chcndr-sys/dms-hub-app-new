@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MIHUB_API_BASE_URL } from '@/config/api';
+import { TCC_API_BASE } from '@/config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,7 @@ function FraudStatsCards() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['tcc-fraud-stats'],
     queryFn: async () => {
-      const res = await fetch(`${MIHUB_API_BASE_URL}/api/tcc/v2/fraud/stats`);
+      const res = await fetch(`${TCC_API_BASE}/api/tcc/v2/fraud/stats`);
       if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
       return res.json();
     },
@@ -143,7 +143,7 @@ function FraudEventsList() {
       const params = new URLSearchParams({ limit: '50', offset: '0' });
       if (severity !== 'all') params.append('severity', severity);
       if (!showResolved) params.append('resolved', 'false');
-      const res = await fetch(`${MIHUB_API_BASE_URL}/api/tcc/v2/fraud/events?${params}`);
+      const res = await fetch(`${TCC_API_BASE}/api/tcc/v2/fraud/events?${params}`);
       if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
       return res.json();
     },
@@ -151,7 +151,7 @@ function FraudEventsList() {
 
   const resolveMutation = useMutation({
     mutationFn: async (params: { eventId: number; resolution: string; notes: string }) => {
-      const res = await fetch(`${MIHUB_API_BASE_URL}/api/tcc/v2/fraud/resolve`, {
+      const res = await fetch(`${TCC_API_BASE}/api/tcc/v2/fraud/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -304,7 +304,7 @@ function AuditTrailSearch() {
       const params = new URLSearchParams({ limit: '30' });
       if (searchEmail) params.append('email', searchEmail);
       if (searchUserId) params.append('userId', searchUserId);
-      const res = await fetch(`${MIHUB_API_BASE_URL}/api/tcc/v2/audit?${params}`);
+      const res = await fetch(`${TCC_API_BASE}/api/tcc/v2/audit?${params}`);
       if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
       return res.json();
     },
