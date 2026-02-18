@@ -28,6 +28,26 @@
       "destination": "https://api.mio-hub.me/api/abacus/:path*"
     },
     {
+      "source": "/api/wallets/:path*",
+      "destination": "https://api.mio-hub.me/api/wallets/:path*"
+    },
+    {
+      "source": "/api/wallet-history",
+      "destination": "https://api.mio-hub.me/api/wallet-history"
+    },
+    {
+      "source": "/api/canone-unico/:path*",
+      "destination": "https://api.mio-hub.me/api/canone-unico/:path*"
+    },
+    {
+      "source": "/api/sanctions/:path*",
+      "destination": "https://api.mio-hub.me/api/sanctions/:path*"
+    },
+    {
+      "source": "/api/imprese/:path*",
+      "destination": "https://api.mio-hub.me/api/imprese/:path*"
+    },
+    {
       "source": "/api/tcc/:path*",
       "destination": "https://orchestratore.mio-hub.me/api/tcc/:path*"
     },

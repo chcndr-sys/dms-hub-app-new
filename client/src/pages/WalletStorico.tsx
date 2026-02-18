@@ -6,7 +6,10 @@ import {
 } from 'lucide-react';
 import { Link } from 'wouter';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
+// API Base URL — in produzione usa proxy Vercel (/api/tcc/* → orchestratore.mio-hub.me)
+const API_BASE = import.meta.env.DEV
+  ? 'https://orchestratore.mio-hub.me'
+  : '';
 
 // Livelli di score con soglie TCC
 const SCORE_LEVELS = [

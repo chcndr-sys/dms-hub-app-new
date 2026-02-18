@@ -19,7 +19,11 @@ import {
 } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
+// API Base URL — in produzione usa proxy Vercel (/api/tcc/* → orchestratore.mio-hub.me)
+// VITE_API_URL punta a api.mio-hub.me che NON serve API TCC, quindi usiamo il proxy
+const API_BASE = import.meta.env.DEV
+  ? 'https://orchestratore.mio-hub.me'
+  : '';
 
 // ============================================================================
 // INTERFACES

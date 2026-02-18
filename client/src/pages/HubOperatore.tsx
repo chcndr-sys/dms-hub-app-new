@@ -373,10 +373,10 @@ export default function HubOperatore() {
   }, [getToken, authToken]);
 
   // Carica dati iniziali quando abbiamo un operatore valido e il token
+  // loadTransactions viene chiamato da loadOperatorWallet con l'impresaId risolto
   useEffect(() => {
     if (operatore.id > 0 || operatore.impresaId) {
       loadOperatorWallet();
-      loadTransactions();
     }
     loadTccConfig();
   }, [operatore.id, operatore.impresaId, authToken]);
@@ -432,19 +432,26 @@ export default function HubOperatore() {
       if (data && data.success) {
         setApiConnected(true);
         setOperatorWallet(data.wallet);
+        // Salva l'impresaId risolto dal wallet per usarlo nelle transazioni
+        const resolvedImpresaId = data.impresa?.id || operatore.impresaId;
         if (data.impresa?.denominazione) {
           setImpresaNome(data.impresa.denominazione);
         }
         // Verifica qualifiche LOCALMENTE dal backend principale (stessa logica del semaforo card imprese)
-        const checkId = data.impresa?.id || operatore.impresaId;
-        if (checkId) {
-          const localCheck = await checkQualificationsLocally(checkId);
+        if (resolvedImpresaId) {
+          const localCheck = await checkQualificationsLocally(resolvedImpresaId);
           setWalletEnabled(localCheck.walletEnabled);
         } else {
           setWalletEnabled(data.qualification?.walletEnabled ?? true);
         }
+        // Carica transazioni con l'impresaId risolto dal wallet
+        loadTransactions(resolvedImpresaId);
       } else {
         setApiConnected(true);
+        // Prova comunque a caricare transazioni con impresaId dell'operatore
+        if (operatore.impresaId) {
+          loadTransactions(operatore.impresaId);
+        }
       }
     } catch (error) {
       console.error('Errore caricamento wallet:', error);
@@ -452,14 +459,31 @@ export default function HubOperatore() {
     }
   };
 
-  const loadTransactions = async () => {
-    if (operatore.id <= 0 && !operatore.impresaId) return;
+  const loadTransactions = async (resolvedImpresaId?: number | null) => {
+    if (operatore.id <= 0 && !operatore.impresaId && !resolvedImpresaId) return;
     try {
       const token = await getCurrentToken();
       let data: any = null;
 
-      // Tentativo 1: transazioni per operatorId
-      if (operatore.id > 0) {
+      // L'impresaId puo' venire dal wallet response (priorita') o dall'operatore
+      const impresaId = resolvedImpresaId || operatore.impresaId;
+
+      // Tentativo 1: transazioni per impresaId (endpoint documentato e funzionante)
+      if (impresaId) {
+        try {
+          const res = await fetch(`${API_BASE}/impresa/${impresaId}/wallet/transactions?limit=20`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          if (res.ok) {
+            data = await res.json();
+          }
+        } catch (err) {
+          console.warn('Impresa transactions fetch failed:', err);
+        }
+      }
+
+      // Tentativo 2: transazioni per operatorId (fallback legacy)
+      if ((!data || !data.success || !Array.isArray(data.transactions) || data.transactions.length === 0) && operatore.id > 0) {
         try {
           const res = await fetch(`${API_BASE}/operator/transactions/${operatore.id}?limit=20`, {
             headers: { 'Authorization': `Bearer ${token}` },
@@ -469,20 +493,6 @@ export default function HubOperatore() {
           }
         } catch (err) {
           console.warn('Operator transactions fetch failed:', err);
-        }
-      }
-
-      // Tentativo 2: transazioni per impresaId (fallback v5.8.0)
-      if ((!data || !data.success || !Array.isArray(data.transactions) || data.transactions.length === 0) && operatore.impresaId) {
-        try {
-          const res = await fetch(`${API_BASE}/impresa/${operatore.impresaId}/wallet/transactions?limit=20`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          });
-          if (res.ok) {
-            data = await res.json();
-          }
-        } catch (err) {
-          console.warn('Impresa transactions fetch failed:', err);
         }
       }
 

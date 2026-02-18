@@ -3,7 +3,10 @@ import { Euro, ArrowLeft, QrCode, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QRCodeSVG } from 'qrcode.react';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
+// API Base URL — in produzione usa proxy Vercel (/api/tcc/* → orchestratore.mio-hub.me)
+const API_BASE = import.meta.env.DEV
+  ? 'https://orchestratore.mio-hub.me'
+  : '';
 
 export default function WalletPaga() {
   const [importo, setImporto] = useState('');

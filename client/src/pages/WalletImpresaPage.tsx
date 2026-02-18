@@ -143,8 +143,13 @@ export default function WalletImpresaPage() {
   const [resolvedImpresaId, setResolvedImpresaId] = useState<number | null>(null);
   const [impresaResolving, setImpresaResolving] = useState(true);
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
-  const ORCHESTRATORE_URL = 'https://orchestratore.mio-hub.me';
+  // In produzione usa proxy Vercel (/api/wallets/* → api.mio-hub.me), in dev URL diretto
+  const API_BASE_URL = import.meta.env.DEV
+    ? (import.meta.env.VITE_API_URL || 'https://api.mio-hub.me')
+    : '';
+  const ORCHESTRATORE_URL = import.meta.env.DEV
+    ? 'https://orchestratore.mio-hub.me'
+    : '';
   const MIHUB_URL = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io';
 
   // Risolvi impresa_id con multi-strategia (come DashboardImpresa)

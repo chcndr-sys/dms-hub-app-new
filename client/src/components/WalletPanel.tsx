@@ -36,6 +36,12 @@ import {
 import { addComuneIdToUrl, getImpersonationParams } from '@/hooks/useImpersonation';
 import NotificationManager from '@/components/suap/NotificationManager';
 
+// API Base URL — in produzione usa proxy Vercel (/api/wallets/* → api.mio-hub.me)
+// In sviluppo locale usa URL diretto per evitare problemi CORS
+const WALLET_API_BASE = import.meta.env.DEV
+  ? (import.meta.env.VITE_API_URL || 'https://api.mio-hub.me')
+  : '';
+
 // --- TIPI ---
 
 interface WalletItem {
@@ -160,7 +166,7 @@ export default function WalletPanel() {
   const fetchWallets = async () => {
     setIsLoading(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const response = await fetch(addComuneIdToUrl(`${API_URL}/api/wallets`));
       const data = await response.json();
 
@@ -219,15 +225,27 @@ export default function WalletPanel() {
     }
   };
 
+  // Auto-init: assicura che le tabelle wallets e wallet_transactions esistano nel DB
+  const ensureWalletTablesExist = async () => {
+    try {
+      await fetch(`${WALLET_API_BASE}/api/wallets/init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch {
+      // Silenzioso - se fallisce non bloccare l'interfaccia
+    }
+  };
+
   useEffect(() => {
-    fetchWallets();
+    ensureWalletTablesExist().then(() => fetchWallets());
   }, []);
 
   // --- CANONE UNICO ---
   // Funzione per caricare impostazioni mora (v3.46.0)
   const fetchImpostazioniMora = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const response = await fetch(`${API_URL}/api/canone-unico/impostazioni-mora`);
       const data = await response.json();
       if (data.success) {
@@ -247,7 +265,7 @@ export default function WalletPanel() {
   const handleSaveImpostazioniMora = async () => {
     setIsSavingMora(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const response = await fetch(`${API_URL}/api/canone-unico/impostazioni-mora`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -276,7 +294,7 @@ export default function WalletPanel() {
   const fetchCanoneScadenze = async () => {
     setIsLoadingCanone(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const params = new URLSearchParams();
       if (canoneFilters.mercato_id && canoneFilters.mercato_id !== 'all') params.append('mercato_id', canoneFilters.mercato_id);
       if (canoneFilters.tipo_operatore && canoneFilters.tipo_operatore !== 'all') params.append('tipo_operatore', canoneFilters.tipo_operatore);
@@ -300,7 +318,7 @@ export default function WalletPanel() {
   const fetchRicaricheSpunta = async () => {
     setIsLoadingRicariche(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const params = new URLSearchParams();
       if (canoneFilters.mercato_id && canoneFilters.mercato_id !== 'all') params.append('mercato_id', canoneFilters.mercato_id);
       if (canoneFilters.impresa_search) params.append('impresa_search', canoneFilters.impresa_search);
@@ -319,7 +337,7 @@ export default function WalletPanel() {
 
   const handleGeneraCanoneAnnuo = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const response = await fetch(`${API_URL}/api/canone-unico/genera-canone-annuo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -351,7 +369,7 @@ export default function WalletPanel() {
   const handleDeleteScadenza = async (scadenzaId: number) => {
     if (!confirm('Sei sicuro di voler eliminare questa scadenza?')) return;
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const response = await fetch(`${API_URL}/api/canone-unico/scadenza/${scadenzaId}`, {
         method: 'DELETE'
       });
@@ -371,7 +389,7 @@ export default function WalletPanel() {
   // Handler per visualizzare dettaglio scadenza
   const handleViewScadenza = async (scadenzaId: number) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const response = await fetch(`${API_URL}/api/canone-unico/scadenza/${scadenzaId}`);
       const data = await response.json();
       if (data.success) {
@@ -392,7 +410,7 @@ export default function WalletPanel() {
     if (!anno) return;
     if (!confirm(`Sei sicuro di voler eliminare TUTTE le scadenze dell'anno ${anno}?`)) return;
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const response = await fetch(`${API_URL}/api/canone-unico/scadenze/${anno}`, {
         method: 'DELETE'
       });
@@ -416,7 +434,7 @@ export default function WalletPanel() {
     }
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const response = await fetch(`${API_URL}/api/canone-unico/genera-pagamento-straordinario`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -459,7 +477,7 @@ export default function WalletPanel() {
     
     setIsLoadingPosteggi(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const params = new URLSearchParams();
       if (impresaId) params.append('impresa_id', impresaId);
       
@@ -491,7 +509,7 @@ export default function WalletPanel() {
     }
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       // v3.90.0: Filtro per comune_id durante impersonificazione
       const response = await fetch(addComuneIdToUrl(`${API_URL}/api/imprese?search=${encodeURIComponent(search)}&limit=5`));
       const data = await response.json();
@@ -520,7 +538,7 @@ export default function WalletPanel() {
   // --- LISTA IMPRESE/CONCESSIONI (v3.36.0) ---
   const fetchMercatiList = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       // Usa addComuneIdToUrl per filtrare i mercati per comune (v3.60.0)
       const response = await fetch(addComuneIdToUrl(`${API_URL}/api/markets`));
       const data = await response.json();
@@ -549,7 +567,7 @@ export default function WalletPanel() {
     if (!marketId) return;
     setIsLoadingImprese(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const params = new URLSearchParams({ market_id: marketId });
       if (impreseSearch) params.append('search', impreseSearch);
       if (tipoOperatore && tipoOperatore !== 'all') params.append('tipo_operatore', tipoOperatore);
@@ -596,7 +614,7 @@ export default function WalletPanel() {
   const fetchAllTransactions = async () => {
     setIsLoadingTx(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       // Fetch transactions for all wallets of all companies
       // Since we don't have a global transactions endpoint, we'll fetch for each wallet
       // In a real app, we should have a dedicated endpoint. For now, we iterate.
@@ -650,7 +668,7 @@ export default function WalletPanel() {
   const fetchWalletHistory = async () => {
     setIsLoadingHistory(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       // Usa addComuneIdToUrl per filtrare per comune
       const response = await fetch(addComuneIdToUrl(`${API_URL}/api/wallet-history`));
       const data = await response.json();
@@ -674,7 +692,7 @@ export default function WalletPanel() {
   const fetchSanzioni = async () => {
     setIsLoadingSanzioni(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const params = new URLSearchParams();
       if (sanzioniFilters.stato !== 'all') params.append('stato', sanzioniFilters.stato);
       if (sanzioniFilters.impresa_search) params.append('impresa_search', sanzioniFilters.impresa_search);
@@ -712,7 +730,7 @@ export default function WalletPanel() {
     if (!selectedSanzione) return;
     setIsRegistrandoPagamento(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const iuv = `MAN-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
       
       const response = await fetch(`${API_URL}/api/sanctions/${selectedSanzione.id}/paga-pagopa`, {
@@ -777,7 +795,7 @@ export default function WalletPanel() {
     // Carica le scadenze/rate da pagare per TUTTI i tipi di wallet
     setIsCalculating(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const anno = new Date().getFullYear();
       
       // Prima prova a caricare le scadenze esistenti
@@ -833,7 +851,7 @@ export default function WalletPanel() {
     setIsProcessing(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       
       // Determina la descrizione e la scadenza da pagare
       let description = '';
@@ -883,7 +901,7 @@ export default function WalletPanel() {
         alert(mode === 'AVVISO' ? "Avviso PagoPA generato con successo!" : "Pagamento effettuato con successo!");
         setShowDepositDialog(false);
         fetchWallets(); // Ricarica dati wallet
-        // Ricarica sempre le scadenze dopo pagamento (per aggiornare semaforo)
+        fetchAllTransactions(); // Ricarica transazioni dopo deposito
         fetchCanoneScadenze();
       } else {
         alert("Errore: " + data.error);
@@ -907,7 +925,7 @@ export default function WalletPanel() {
     setIsDeleting(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const res = await fetch(`${API_URL}/api/wallets/${walletToDelete.id}`, {
         method: 'DELETE',
       });
@@ -934,7 +952,7 @@ export default function WalletPanel() {
     if (!confirm(`Vuoi azzerare il saldo del wallet #${walletId}?`)) return;
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const res = await fetch(`${API_URL}/api/canone-unico/wallet/${walletId}/azzera`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
@@ -957,7 +975,7 @@ export default function WalletPanel() {
     if (!confirm('ATTENZIONE: Vuoi azzerare il saldo di TUTTI i wallet? Questa operazione è per test.')) return;
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+      const API_URL = WALLET_API_BASE;
       const res = await fetch(`${API_URL}/api/canone-unico/wallets/azzera-tutti`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
