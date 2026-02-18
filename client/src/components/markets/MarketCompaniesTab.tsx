@@ -261,7 +261,7 @@ type QualificazioneRow = {
 // CONSTANTS
 // ============================================================================
 
-import { MIHUB_API_BASE_URL } from '@/config/api';
+import { MIHUB_API_BASE_URL, TCC_API_BASE } from '@/config/api';
 
 const API_BASE_URL = MIHUB_API_BASE_URL;
 
@@ -1598,7 +1598,7 @@ function WalletTCCBadge({ impresaId, qualificazioni }: WalletTCCBadgeProps) {
   useEffect(() => {
     const fetchWalletStatus = async () => {
       try {
-        const response = await fetch(`https://orchestratore.mio-hub.me/api/tcc/v2/impresa/${impresaId}/wallet`);
+        const response = await fetch(`${TCC_API_BASE}/api/tcc/v2/impresa/${impresaId}/wallet`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.wallet) {

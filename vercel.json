@@ -48,6 +48,10 @@
       "destination": "https://api.mio-hub.me/api/imprese/:path*"
     },
     {
+      "source": "/api/gaming-rewards/:path*",
+      "destination": "https://orchestratore.mio-hub.me/api/gaming-rewards/:path*"
+    },
+    {
       "source": "/api/tcc/:path*",
       "destination": "https://orchestratore.mio-hub.me/api/tcc/:path*"
     },

@@ -13,8 +13,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-// Configurazione
-const API_BASE_URL = 'https://orchestratore.mio-hub.me/api';
+// Configurazione — in produzione usa proxy Vercel, in dev URL diretto
+const API_BASE_URL = import.meta.env.DEV
+  ? 'https://orchestratore.mio-hub.me/api'
+  : '/api';
 const GPS_CHECK_INTERVAL = 30000; // 30 secondi tra ogni check
 const MIN_DISTANCE_CHANGE = 10; // Metri minimi di spostamento per nuovo check
 
