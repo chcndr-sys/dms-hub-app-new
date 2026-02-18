@@ -80,7 +80,7 @@ export const appRouter = router({
     // ensureAdmin: assegna super_admin a un utente specifico.
     // Idempotente: puo' essere chiamato piu' volte senza problemi.
     // Non controlla se esistono gia' admin - assegna direttamente.
-    bootstrapAdmin: publicProcedure
+    bootstrapAdmin: adminProcedure
       .input(z.object({ email: z.string().email() }))
       .mutation(async ({ input }) => {
         const db = await (await import("./db")).getDb();

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { trpcQuery, trpcMutate } from '@/lib/trpcHttp';
 import { Building2, Store, Wrench, MapPin, Phone, Mail, Clock, Plus, Edit, Trash2, Loader2, AlertCircle, AlertTriangle, Users } from 'lucide-react';
 import { MarketCompaniesTab } from './markets/MarketCompaniesTab';
 import { MarketMapComponent } from './MarketMapComponent';
@@ -104,82 +105,105 @@ export default function GestioneHubNegozi() {
     metadata: ''
   });
 
-  // tRPC Queries
-  const hubLocationsQuery = trpc.dmsHub.hub.locations.list.useQuery();
-  const hubShopsQuery = trpc.dmsHub.hub.shops.list.useQuery({ hubId: selectedHubId });
-  const hubServicesQuery = trpc.dmsHub.hub.services.list.useQuery({ hubId: selectedHubId });
+  // Query Client per invalidare cache dopo mutation
+  const queryClient = useQueryClient();
 
-  // tRPC Mutations
-  const createLocationMutation = trpc.dmsHub.hub.locations.create.useMutation({
-    onSuccess: () => {
-      hubLocationsQuery.refetch();
-      setIsLocationDialogOpen(false);
-      resetLocationForm();
-    }
+  // REST Queries (via tRPC HTTP)
+  const hubLocationsQuery = useQuery({
+    queryKey: ['hub-locations'],
+    queryFn: () => trpcQuery<any[]>('dmsHub.hub.locations.list'),
   });
 
-  const updateLocationMutation = trpc.dmsHub.hub.locations.update.useMutation({
+  const hubShopsQuery = useQuery({
+    queryKey: ['hub-shops', selectedHubId],
+    queryFn: () => trpcQuery<any[]>('dmsHub.hub.shops.list', { hubId: selectedHubId }),
+  });
+
+  const hubServicesQuery = useQuery({
+    queryKey: ['hub-services', selectedHubId],
+    queryFn: () => trpcQuery<any[]>('dmsHub.hub.services.list', { hubId: selectedHubId }),
+  });
+
+  // REST Mutations (via tRPC HTTP)
+  const createLocationMutation = useMutation({
+    mutationFn: (data: typeof locationForm) => trpcMutate('dmsHub.hub.locations.create', data),
     onSuccess: () => {
-      hubLocationsQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['hub-locations'] });
+      setIsLocationDialogOpen(false);
+      resetLocationForm();
+    },
+  });
+
+  const updateLocationMutation = useMutation({
+    mutationFn: (data: { id: number } & typeof locationForm) => trpcMutate('dmsHub.hub.locations.update', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hub-locations'] });
       setIsLocationDialogOpen(false);
       setEditingLocation(null);
       resetLocationForm();
-    }
+    },
   });
 
-  const deleteLocationMutation = trpc.dmsHub.hub.locations.delete.useMutation({
+  const deleteLocationMutation = useMutation({
+    mutationFn: (data: { id: number }) => trpcMutate('dmsHub.hub.locations.delete', data),
     onSuccess: () => {
-      hubLocationsQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['hub-locations'] });
       setDeleteLocationId(null);
-    }
+    },
   });
 
-  const createShopMutation = trpc.dmsHub.hub.shops.create.useMutation({
+  const createShopMutation = useMutation({
+    mutationFn: (data: { hubId: number } & typeof shopForm) => trpcMutate('dmsHub.hub.shops.create', data),
     onSuccess: () => {
-      hubShopsQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['hub-shops'] });
       setIsShopDialogOpen(false);
       resetShopForm();
-    }
+    },
   });
 
-  const updateShopMutation = trpc.dmsHub.hub.shops.update.useMutation({
+  const updateShopMutation = useMutation({
+    mutationFn: (data: { id: number } & typeof shopForm) => trpcMutate('dmsHub.hub.shops.update', data),
     onSuccess: () => {
-      hubShopsQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['hub-shops'] });
       setIsShopDialogOpen(false);
       setEditingShop(null);
       resetShopForm();
-    }
+    },
   });
 
-  const deleteShopMutation = trpc.dmsHub.hub.shops.delete.useMutation({
+  const deleteShopMutation = useMutation({
+    mutationFn: (data: { id: number }) => trpcMutate('dmsHub.hub.shops.delete', data),
     onSuccess: () => {
-      hubShopsQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['hub-shops'] });
       setDeleteShopId(null);
-    }
+    },
   });
 
-  const createServiceMutation = trpc.dmsHub.hub.services.create.useMutation({
+  const createServiceMutation = useMutation({
+    mutationFn: (data: { hubId: number } & typeof serviceForm) => trpcMutate('dmsHub.hub.services.create', data),
     onSuccess: () => {
-      hubServicesQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['hub-services'] });
       setIsServiceDialogOpen(false);
       resetServiceForm();
-    }
+    },
   });
 
-  const updateServiceMutation = trpc.dmsHub.hub.services.update.useMutation({
+  const updateServiceMutation = useMutation({
+    mutationFn: (data: { id: number } & typeof serviceForm) => trpcMutate('dmsHub.hub.services.update', data),
     onSuccess: () => {
-      hubServicesQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['hub-services'] });
       setIsServiceDialogOpen(false);
       setEditingService(null);
       resetServiceForm();
-    }
+    },
   });
 
-  const deleteServiceMutation = trpc.dmsHub.hub.services.delete.useMutation({
+  const deleteServiceMutation = useMutation({
+    mutationFn: (data: { id: number }) => trpcMutate('dmsHub.hub.services.delete', data),
     onSuccess: () => {
-      hubServicesQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['hub-services'] });
       setDeleteServiceId(null);
-    }
+    },
   });
 
   // Reset form functions

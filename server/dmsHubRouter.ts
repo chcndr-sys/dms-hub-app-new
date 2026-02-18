@@ -215,7 +215,7 @@ export const dmsHubRouter = router({
           })).optional(),
         }),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
@@ -307,7 +307,7 @@ export const dmsHubRouter = router({
           "IMPORT_SLOT_EDITOR",
           "market",
           Number(marketId),
-          ctx.user?.uid || null,
+          ctx.user?.openId || null,
           null,
           {
             marketName: input.marketName,
@@ -584,8 +584,8 @@ export const dmsHubRouter = router({
   // ============================================
   
   vendors: router({
-    // Lista tutti gli operatori
-    list: publicProcedure.query(async () => {
+    // Lista tutti gli operatori (richiede autenticazione - dati personali)
+    list: protectedProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
 
@@ -791,8 +791,8 @@ export const dmsHubRouter = router({
         };
       }),
 
-    // Lista prenotazioni attive
-    listActive: publicProcedure.query(async () => {
+    // Lista prenotazioni attive (richiede autenticazione)
+    listActive: protectedProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
 
@@ -1127,8 +1127,8 @@ export const dmsHubRouter = router({
         return { success: true, inspectionId };
       }),
 
-    // Lista controlli
-    list: publicProcedure.query(async () => {
+    // Lista controlli (richiede autenticazione)
+    list: protectedProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
 
@@ -1181,8 +1181,8 @@ export const dmsHubRouter = router({
         return { success: true, violationId };
       }),
 
-    // Lista verbali
-    list: publicProcedure.query(async () => {
+    // Lista verbali (richiede autenticazione)
+    list: protectedProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
 
@@ -1578,8 +1578,8 @@ export const dmsHubRouter = router({
   // ============================================
   
   concessions: router({
-    // Lista concessioni
-    list: publicProcedure
+    // Lista concessioni (richiede autenticazione)
+    list: protectedProcedure
       .input(z.object({
         marketId: z.number().optional(),
         vendorId: z.number().optional(),
@@ -1604,8 +1604,8 @@ export const dmsHubRouter = router({
         return await query.orderBy(desc(schema.concessions.createdAt));
       }),
     
-    // Dettaglio concessione
-    getById: publicProcedure
+    // Dettaglio concessione (richiede autenticazione)
+    getById: protectedProcedure
       .input(z.number())
       .query(async ({ input }) => {
         const db = await getDb();

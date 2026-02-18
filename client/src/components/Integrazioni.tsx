@@ -39,7 +39,8 @@ import {
   Search
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { trpcQuery, trpcMutate } from '@/lib/trpcHttp';
 
 export default function Integrazioni() {
   const [activeTab, setActiveTab] = useState('api-dashboard');
@@ -142,8 +143,11 @@ function APIDashboard() {
     total: number;
   }>({ active: 0, backup: 0, total: 0 });
   
-  const utils = trpc.useUtils();
-  const { data: apiStats } = trpc.integrations.apiStats.today.useQuery();
+  const queryClient = useQueryClient();
+  const { data: apiStats } = useQuery({
+    queryKey: ['integrations-apiStats-today'],
+    queryFn: () => trpcQuery<any>('integrations.apiStats.today'),
+  });
   
   // Fetch dynamic endpoint count from backend Hetzner
   useEffect(() => {
@@ -532,15 +536,15 @@ function APIDashboard() {
         // ============================================
         case '/api/trpc/dmsHub.markets.importAuto':
         case '/api/dmsHub/markets/importAuto':
-          data = await utils.client.dmsHub.markets.importAuto.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.markets.importAuto", parsedBody);
           break;
         case '/api/trpc/dmsHub.markets.list':
         case '/api/dmsHub/markets/list':
-          data = await utils.client.dmsHub.markets.list.query();
+          data = await trpcQuery("dmsHub.markets.list");
           break;
         case '/api/trpc/dmsHub.markets.getById':
         case '/api/dmsHub/markets/getById':
-          data = await utils.client.dmsHub.markets.getById.query(parsedBody);
+          data = await trpcQuery("dmsHub.markets.getById", parsedBody);
           break;
           
         // ============================================
@@ -548,15 +552,15 @@ function APIDashboard() {
         // ============================================
         case '/api/trpc/dmsHub.stalls.listByMarket':
         case '/api/dmsHub/stalls/listByMarket':
-          data = await utils.client.dmsHub.stalls.listByMarket.query(parsedBody);
+          data = await trpcQuery("dmsHub.stalls.listByMarket", parsedBody);
           break;
         case '/api/trpc/dmsHub.stalls.updateStatus':
         case '/api/dmsHub/stalls/updateStatus':
-          data = await utils.client.dmsHub.stalls.updateStatus.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.stalls.updateStatus", parsedBody);
           break;
         case '/api/trpc/dmsHub.stalls.getStatuses':
         case '/api/dmsHub/stalls/getStatuses':
-          data = await utils.client.dmsHub.stalls.getStatuses.query(parsedBody);
+          data = await trpcQuery("dmsHub.stalls.getStatuses", parsedBody);
           break;
           
         // ============================================
@@ -564,19 +568,19 @@ function APIDashboard() {
         // ============================================
         case '/api/trpc/dmsHub.vendors.list':
         case '/api/dmsHub/vendors/list':
-          data = await utils.client.dmsHub.vendors.list.query();
+          data = await trpcQuery("dmsHub.vendors.list");
           break;
         case '/api/trpc/dmsHub.vendors.create':
         case '/api/dmsHub/vendors/create':
-          data = await utils.client.dmsHub.vendors.create.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.vendors.create", parsedBody);
           break;
         case '/api/trpc/dmsHub.vendors.update':
         case '/api/dmsHub/vendors/update':
-          data = await utils.client.dmsHub.vendors.update.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.vendors.update", parsedBody);
           break;
         case '/api/trpc/dmsHub.vendors.getFullDetails':
         case '/api/dmsHub/vendors/getFullDetails':
-          data = await utils.client.dmsHub.vendors.getFullDetails.query(parsedBody);
+          data = await trpcQuery("dmsHub.vendors.getFullDetails", parsedBody);
           break;
           
         // ============================================
@@ -584,19 +588,19 @@ function APIDashboard() {
         // ============================================
         case '/api/trpc/dmsHub.bookings.create':
         case '/api/dmsHub/bookings/create':
-          data = await utils.client.dmsHub.bookings.create.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.bookings.create", parsedBody);
           break;
         case '/api/trpc/dmsHub.bookings.listActive':
         case '/api/dmsHub/bookings/listActive':
-          data = await utils.client.dmsHub.bookings.listActive.query(parsedBody);
+          data = await trpcQuery("dmsHub.bookings.listActive", parsedBody);
           break;
         case '/api/trpc/dmsHub.bookings.confirmCheckin':
         case '/api/dmsHub/bookings/confirmCheckin':
-          data = await utils.client.dmsHub.bookings.confirmCheckin.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.bookings.confirmCheckin", parsedBody);
           break;
         case '/api/trpc/dmsHub.bookings.cancel':
         case '/api/dmsHub/bookings/cancel':
-          data = await utils.client.dmsHub.bookings.cancel.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.bookings.cancel", parsedBody);
           break;
           
         // ============================================
@@ -604,11 +608,11 @@ function APIDashboard() {
         // ============================================
         case '/api/trpc/dmsHub.presences.checkout':
         case '/api/dmsHub/presences/checkout':
-          data = await utils.client.dmsHub.presences.checkout.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.presences.checkout", parsedBody);
           break;
         case '/api/trpc/dmsHub.presences.getTodayByMarket':
         case '/api/dmsHub/presences/getTodayByMarket':
-          data = await utils.client.dmsHub.presences.getTodayByMarket.query(parsedBody);
+          data = await trpcQuery("dmsHub.presences.getTodayByMarket", parsedBody);
           break;
           
         // ============================================
@@ -616,11 +620,11 @@ function APIDashboard() {
         // ============================================
         case '/api/trpc/dmsHub.inspections.create':
         case '/api/dmsHub/inspections/create':
-          data = await utils.client.dmsHub.inspections.create.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.inspections.create", parsedBody);
           break;
         case '/api/trpc/dmsHub.inspections.list':
         case '/api/dmsHub/inspections/list':
-          data = await utils.client.dmsHub.inspections.list.query();
+          data = await trpcQuery("dmsHub.inspections.list");
           break;
           
         // ============================================
@@ -628,30 +632,30 @@ function APIDashboard() {
         // ============================================
         case '/api/trpc/dmsHub.violations.create':
         case '/api/dmsHub/violations/create':
-          data = await utils.client.dmsHub.violations.create.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.violations.create", parsedBody);
           break;
         case '/api/trpc/dmsHub.violations.list':
         case '/api/dmsHub/violations/list':
-          data = await utils.client.dmsHub.violations.list.query();
+          data = await trpcQuery("dmsHub.violations.list");
           break;
           
         // ============================================
         // DMSHUB - LOCATIONS (path tRPC)
         // ============================================
         case '/api/trpc/dmsHub.locations.list':
-          data = await (utils.client.dmsHub as any).locations.list.query();
+          data = await trpcQuery("dmsHub.locations.list");
           break;
         case '/api/trpc/dmsHub.locations.getById':
-          data = await (utils.client.dmsHub as any).locations.getById.query(parsedBody);
+          data = await trpcQuery("dmsHub.locations.getById", parsedBody);
           break;
         case '/api/trpc/dmsHub.locations.create':
-          data = await (utils.client.dmsHub as any).locations.create.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.locations.create", parsedBody);
           break;
         case '/api/trpc/dmsHub.locations.update':
-          data = await (utils.client.dmsHub as any).locations.update.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.locations.update", parsedBody);
           break;
         case '/api/trpc/dmsHub.locations.delete':
-          data = await (utils.client.dmsHub as any).locations.delete.mutate(parsedBody);
+          data = await trpcMutate("dmsHub.locations.delete", parsedBody);
           break;
           
         // MIO AGENT - chiamate REST dirette
@@ -864,81 +868,81 @@ function APIDashboard() {
            
         // WALLET / PAGOPA - chiamate tRPC
         case '/api/trpc/wallet.stats':
-          data = await utils.client.wallet.stats.query();
+          data = await trpcQuery("wallet.stats");
           break;
         case '/api/trpc/wallet.list':
-          data = await utils.client.wallet.list.query();
+          data = await trpcQuery("wallet.list");
           break;
         case '/api/trpc/wallet.getById':
-          data = await utils.client.wallet.getById.query(parsedBody);
+          data = await trpcQuery("wallet.getById", parsedBody);
           break;
         case '/api/trpc/wallet.getByImpresa':
-          data = await utils.client.wallet.getByImpresa.query(parsedBody);
+          data = await trpcQuery("wallet.getByImpresa", parsedBody);
           break;
         case '/api/trpc/wallet.create':
-          data = await utils.client.wallet.create.mutate(parsedBody);
+          data = await trpcMutate("wallet.create", parsedBody);
           break;
         case '/api/trpc/wallet.updateStatus':
-          data = await utils.client.wallet.updateStatus.mutate(parsedBody);
+          data = await trpcMutate("wallet.updateStatus", parsedBody);
           break;
         case '/api/trpc/wallet.transazioni':
-          data = await utils.client.wallet.transazioni.query(parsedBody);
+          data = await trpcQuery("wallet.transazioni", parsedBody);
           break;
         case '/api/trpc/wallet.ricarica':
-          data = await utils.client.wallet.ricarica.mutate(parsedBody);
+          data = await trpcMutate("wallet.ricarica", parsedBody);
           break;
         case '/api/trpc/wallet.decurtazione':
-          data = await utils.client.wallet.decurtazione.mutate(parsedBody);
+          data = await trpcMutate("wallet.decurtazione", parsedBody);
           break;
         case '/api/trpc/wallet.generaAvvisoPagopa':
-          data = await utils.client.wallet.generaAvvisoPagopa.mutate(parsedBody);
+          data = await trpcMutate("wallet.generaAvvisoPagopa", parsedBody);
           break;
         case '/api/trpc/wallet.avviaPagamentoPagopa':
-          data = await utils.client.wallet.avviaPagamentoPagopa.mutate(parsedBody);
+          data = await trpcMutate("wallet.avviaPagamentoPagopa", parsedBody);
           break;
         case '/api/trpc/wallet.verificaPagamento':
-          data = await utils.client.wallet.verificaPagamento.query(parsedBody);
+          data = await trpcQuery("wallet.verificaPagamento", parsedBody);
           break;
         case '/api/trpc/wallet.generaPdfAvviso':
-          data = await utils.client.wallet.generaPdfAvviso.query(parsedBody);
+          data = await trpcQuery("wallet.generaPdfAvviso", parsedBody);
           break;
         case '/api/trpc/wallet.generaPdfQuietanza':
-          data = await utils.client.wallet.generaPdfQuietanza.query(parsedBody);
+          data = await trpcQuery("wallet.generaPdfQuietanza", parsedBody);
           break;
         case '/api/trpc/wallet.avvisiPagopa':
-          data = await utils.client.wallet.avvisiPagopa.query(parsedBody);
+          data = await trpcQuery("wallet.avvisiPagopa", parsedBody);
           break;
         case '/api/trpc/wallet.tariffe':
-          data = await utils.client.wallet.tariffe.query(parsedBody);
+          data = await trpcQuery("wallet.tariffe", parsedBody);
           break;
         case '/api/trpc/wallet.upsertTariffa':
-          data = await utils.client.wallet.upsertTariffa.mutate(parsedBody);
+          data = await trpcMutate("wallet.upsertTariffa", parsedBody);
           break;
         case '/api/trpc/wallet.verificaSaldoPresenza':
-          data = await utils.client.wallet.verificaSaldoPresenza.query(parsedBody);
+          data = await trpcQuery("wallet.verificaSaldoPresenza", parsedBody);
           break;
         case '/api/trpc/wallet.ricercaPagamentiGiornalieri':
-          data = await utils.client.wallet.ricercaPagamentiGiornalieri.query(parsedBody);
+          data = await trpcQuery("wallet.ricercaPagamentiGiornalieri", parsedBody);
           break;
         case '/api/trpc/wallet.reportMovimenti':
-          data = await utils.client.wallet.reportMovimenti.query(parsedBody);
+          data = await trpcQuery("wallet.reportMovimenti", parsedBody);
           break;
           
         // GUARDIAN - chiamate tRPC
         case '/api/trpc/guardian.integrations':
-          data = await utils.client.guardian.integrations.query();
+          data = await trpcQuery("guardian.integrations");
           break;
         case '/api/trpc/guardian.logs':
-          data = await utils.client.guardian.logs.query(parsedBody);
+          data = await trpcQuery("guardian.logs", parsedBody);
           break;
         case '/api/trpc/guardian.stats':
-          data = await utils.client.guardian.stats.query();
+          data = await trpcQuery("guardian.stats");
           break;
         case '/api/trpc/guardian.testEndpoint':
-          data = await utils.client.guardian.testEndpoint.mutate(parsedBody);
+          data = await trpcMutate("guardian.testEndpoint", parsedBody);
           break;
         case '/api/trpc/guardian.logApiCall':
-          data = await utils.client.guardian.logApiCall.mutate(parsedBody);
+          data = await trpcMutate("guardian.logApiCall", parsedBody);
           break;
           
         // HUB SHOPS - chiamate REST dirette a Hetzner
@@ -1160,7 +1164,7 @@ function APIDashboard() {
       
       // Log del test su Guardian
       try {
-        await utils.client.guardian.logApiCall.mutate({
+        await trpcMutate("guardian.logApiCall", {
           endpoint: endpointPath,
           method: endpointInfo?.method || 'GET',
           statusCode: 200,
@@ -1192,7 +1196,7 @@ function APIDashboard() {
       
       // Log dell'errore su Guardian
       try {
-        await utils.client.guardian.logApiCall.mutate({
+        await trpcMutate("guardian.logApiCall", {
           endpoint: endpointPath,
           method: endpointInfo?.method || 'GET',
           statusCode: 500,
@@ -1668,9 +1672,16 @@ function APIDashboard() {
 // TAB 2: CONNESSIONI ESTERNE
 // ============================================================================
 function ConnessioniEsterne() {
-  const { data: connections = [], refetch } = trpc.integrations.connections.list.useQuery();
-  const healthCheckMutation = (trpc.integrations.connections as any).healthCheck.useMutation();
-  const healthCheckAllMutation = (trpc.integrations.connections as any).healthCheckAll.useMutation();
+  const { data: connections = [], refetch } = useQuery({
+    queryKey: ['integrations-connections-list'],
+    queryFn: () => trpcQuery<any[]>('integrations.connections.list'),
+  });
+  const healthCheckMutation = useMutation({
+    mutationFn: (params: { id: number }) => trpcMutate<any>('integrations.connections.healthCheck', params),
+  });
+  const healthCheckAllMutation = useMutation({
+    mutationFn: () => trpcMutate<any>('integrations.connections.healthCheckAll'),
+  });
   
   const handleHealthCheck = async (id: number) => {
     try {
@@ -1782,10 +1793,19 @@ function ConnessioniEsterne() {
 // TAB 3: API KEYS MANAGER
 // ============================================================================
 function APIKeysManager() {
-  const { data: apiKeys = [], refetch } = trpc.integrations.apiKeys.list.useQuery();
-  const createMutation = trpc.integrations.apiKeys.create.useMutation();
-  const deleteMutation = trpc.integrations.apiKeys.delete.useMutation();
-  const regenerateMutation = trpc.integrations.apiKeys.regenerate.useMutation();
+  const { data: apiKeys = [], refetch } = useQuery({
+    queryKey: ['integrations-apiKeys-list'],
+    queryFn: () => trpcQuery<any[]>('integrations.apiKeys.list'),
+  });
+  const createMutation = useMutation({
+    mutationFn: (params: { name: string; environment?: string }) => trpcMutate<any>('integrations.apiKeys.create', params),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (params: { id: number }) => trpcMutate<any>('integrations.apiKeys.delete', params),
+  });
+  const regenerateMutation = useMutation({
+    mutationFn: (params: { id: number }) => trpcMutate<any>('integrations.apiKeys.regenerate', params),
+  });
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
@@ -1963,10 +1983,19 @@ function APIKeysManager() {
 // TAB 4: WEBHOOK MANAGER
 // ============================================================================
 function WebhookManager() {
-  const { data: webhooks = [], refetch } = trpc.integrations.webhooks.list.useQuery();
-  const createMutation = trpc.integrations.webhooks.create.useMutation();
-  const testMutation = trpc.integrations.webhooks.test.useMutation();
-  const deleteMutation = trpc.integrations.webhooks.delete.useMutation();
+  const { data: webhooks = [], refetch } = useQuery({
+    queryKey: ['integrations-webhooks-list'],
+    queryFn: () => trpcQuery<any[]>('integrations.webhooks.list'),
+  });
+  const createMutation = useMutation({
+    mutationFn: (params: { name: string; url: string; events: string[] }) => trpcMutate<any>('integrations.webhooks.create', params),
+  });
+  const testMutation = useMutation({
+    mutationFn: (params: { id: number }) => trpcMutate<any>('integrations.webhooks.test', params),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (params: { id: number }) => trpcMutate<any>('integrations.webhooks.delete', params),
+  });
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newWebhook, setNewWebhook] = useState({ name: '', url: '', events: ['market.updated', 'wallet.transaction'] });
@@ -2153,16 +2182,26 @@ function WebhookManager() {
 // ============================================================================
 function SyncStatus() {
   // Query per stato sincronizzazione
-  const { data: syncStatus, isLoading: statusLoading, refetch: refetchStatus } = (trpc.integrations as any).sync.status.useQuery();
+  const { data: syncStatus, isLoading: statusLoading, refetch: refetchStatus } = useQuery({
+    queryKey: ['integrations-sync-status'],
+    queryFn: () => trpcQuery<any>('integrations.sync.status'),
+  });
 
   // Query per job recenti
-  const { data: syncJobs, isLoading: jobsLoading, refetch: refetchJobs } = (trpc.integrations as any).sync.jobs.useQuery({ limit: 10 });
+  const { data: syncJobs, isLoading: jobsLoading, refetch: refetchJobs } = useQuery({
+    queryKey: ['integrations-sync-jobs'],
+    queryFn: () => trpcQuery<any>('integrations.sync.jobs', { limit: 10 }),
+  });
 
   // Query per configurazione
-  const { data: syncConfig, refetch: refetchConfig } = (trpc.integrations as any).sync.getConfig.useQuery();
+  const { data: syncConfig, refetch: refetchConfig } = useQuery({
+    queryKey: ['integrations-sync-config'],
+    queryFn: () => trpcQuery<any>('integrations.sync.getConfig'),
+  });
 
   // Mutation per trigger sync
-  const triggerSync = (trpc.integrations as any).sync.trigger.useMutation({
+  const triggerSync = useMutation({
+    mutationFn: () => trpcMutate<any>('integrations.sync.trigger'),
     onSuccess: (data: any) => {
       toast.success(`Sincronizzazione completata${data.simulated ? ' (simulata)' : ''}`, {
         description: `${data.results.length} entità processate`,
@@ -2176,7 +2215,8 @@ function SyncStatus() {
   });
 
   // Mutation per aggiornare config
-  const updateConfig = (trpc.integrations as any).sync.updateConfig.useMutation({
+  const updateConfig = useMutation({
+    mutationFn: (params: { frequency: string; mode: string; entities: string[] }) => trpcMutate<any>('integrations.sync.updateConfig', params),
     onSuccess: () => {
       toast.success('Configurazione salvata');
       refetchConfig();
@@ -2311,7 +2351,7 @@ function SyncStatus() {
           <div className="flex gap-2">
             <Button 
               className="bg-[#14b8a6] hover:bg-[#14b8a6]/80 text-white"
-              onClick={() => triggerSync.mutate({})}
+              onClick={() => triggerSync.mutate()}
               disabled={triggerSync.isPending}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${triggerSync.isPending ? 'animate-spin' : ''}`} />

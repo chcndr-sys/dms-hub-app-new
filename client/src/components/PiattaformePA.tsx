@@ -3,6 +3,9 @@
  *
  * Sostituisce il vecchio tab "Impostazioni" nella Dashboard PA.
  * Gestisce la configurazione e il monitoraggio delle piattaforme nazionali.
+ *
+ * NOTA: I router tRPC pdnd/appIo/piattaforme sono stati rimossi.
+ * I dati sono mock/simulati fino alla futura integrazione con le piattaforme reali.
  */
 
 import React, { useState } from 'react';
@@ -16,16 +19,94 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useMutation } from '@tanstack/react-query';
+
+// ============================================
+// Mock Data — Le piattaforme nazionali non sono ancora integrate.
+// Questi dati simulano le risposte che arriveranno da PDND, App IO, ANPR, SSO.
+// ============================================
+
+const MOCK_PDND_STATUS = {
+  connected: true,
+  mode: 'mock' as const,
+  hasPurposeId: true,
+  hasPrivateKey: false,
+};
+
+const MOCK_ESERVICES = [
+  { id: 'dms-mercati', name: 'API Mercati', description: 'Dati mercati ambulanti', version: '1.0', technology: 'REST', status: 'published' },
+  { id: 'dms-concessioni', name: 'API Concessioni', description: 'Gestione concessioni posteggi', version: '1.0', technology: 'REST', status: 'draft' },
+  { id: 'dms-operatori', name: 'API Operatori', description: 'Anagrafica operatori commercio', version: '1.0', technology: 'REST', status: 'draft' },
+];
+
+const MOCK_APPIO_STATUS = {
+  connected: true,
+  mode: 'mock' as const,
+  hasApiKey: true,
+  templatesCount: 3,
+};
+
+const MOCK_TEMPLATES = [
+  { id: 'scadenza_concessione', name: 'Scadenza Concessione', subject: 'La tua concessione sta per scadere', requiredParams: ['nome', 'data_scadenza', 'mercato'] },
+  { id: 'pagamento_canone', name: 'Avviso Pagamento', subject: 'Nuovo avviso di pagamento', requiredParams: ['importo', 'scadenza'] },
+  { id: 'comunicazione_mercato', name: 'Comunicazione Mercato', subject: 'Comunicazione importante', requiredParams: ['messaggio', 'mercato'] },
+];
+
+const MOCK_SSO_STATUS = {
+  mockMode: true,
+  providers: [
+    { provider: 'spid', isActive: true, isConfigured: true },
+    { provider: 'cie', isActive: true, isConfigured: true },
+    { provider: 'cns', isActive: false, isConfigured: false },
+    { provider: 'eidas', isActive: false, isConfigured: false },
+  ],
+};
+
+const MOCK_SSO_PROVIDERS = [
+  { provider: 'spid', name: 'SPID — Sistema Pubblico Identita\' Digitale', spidLevel: 2, isActive: true, isConfigured: true, environment: 'test', ssoUrl: 'https://idp.spid.gov.it' },
+  { provider: 'cie', name: 'CIE — Carta d\'Identita\' Elettronica', spidLevel: 3, isActive: true, isConfigured: true, environment: 'test', ssoUrl: 'https://idserver.servizicie.interno.gov.it' },
+  { provider: 'cns', name: 'CNS — Carta Nazionale dei Servizi', spidLevel: null, isActive: false, isConfigured: false, environment: 'test', ssoUrl: '' },
+  { provider: 'eidas', name: 'eIDAS — European Identity', spidLevel: null, isActive: false, isConfigured: false, environment: 'test', ssoUrl: '' },
+];
+
+const MOCK_CF_DB: Record<string, { nome: string; cognome: string; dataNascita: string; comuneNascita: string; indirizzo: string; civico: string; cap: string; comune: string; provincia: string }> = {
+  'RSSMRA85M01H501Z': { nome: 'Mario', cognome: 'Rossi', dataNascita: '01/08/1985', comuneNascita: 'Roma', indirizzo: 'Via Roma', civico: '10', cap: '00100', comune: 'Roma', provincia: 'RM' },
+  'VRDLGI90A41F205X': { nome: 'Luigia', cognome: 'Verdi', dataNascita: '01/01/1990', comuneNascita: 'Milano', indirizzo: 'Via Milano', civico: '5', cap: '20100', comune: 'Milano', provincia: 'MI' },
+  'BNCGPP75D15L219Y': { nome: 'Giuseppe', cognome: 'Bianchi', dataNascita: '15/04/1975', comuneNascita: 'Torino', indirizzo: 'Corso Torino', civico: '22', cap: '10100', comune: 'Torino', provincia: 'TO' },
+};
+
+const MOCK_AUDIT_ITEMS = [
+  { id: 1, platform: 'pdnd', action: 'getStatus', status: 'success', user_email: 'admin@dmshub.it', created_at: new Date(Date.now() - 3600000).toISOString(), duration_ms: 120 },
+  { id: 2, platform: 'appio', action: 'checkProfile', status: 'success', user_email: 'admin@dmshub.it', created_at: new Date(Date.now() - 7200000).toISOString(), duration_ms: 230 },
+  { id: 3, platform: 'anpr', action: 'verificaCF', status: 'success', user_email: 'operatore@comune.grosseto.it', created_at: new Date(Date.now() - 10800000).toISOString(), duration_ms: 450 },
+  { id: 4, platform: 'sso', action: 'testProvider (SPID)', status: 'success', user_email: 'admin@dmshub.it', created_at: new Date(Date.now() - 86400000).toISOString(), duration_ms: 180 },
+  { id: 5, platform: 'pdnd', action: 'listEServices', status: 'error', user_email: 'admin@dmshub.it', created_at: new Date(Date.now() - 172800000).toISOString(), duration_ms: 5000 },
+];
 
 // ============================================
 // Sub-componente: PDND Panel
 // ============================================
 function PdndPanel() {
-  const statusQuery = trpc.pdnd.getStatus.useQuery();
-  const eservicesQuery = trpc.pdnd.listEServices.useQuery();
-  const testMutation = trpc.pdnd.testConnection.useMutation();
-  const publishMutation = trpc.pdnd.publishEService.useMutation();
+  const statusQuery = useQuery({
+    queryKey: ['pdnd-status'],
+    queryFn: async () => MOCK_PDND_STATUS,
+  });
+  const eservicesQuery = useQuery({
+    queryKey: ['pdnd-eservices'],
+    queryFn: async () => MOCK_ESERVICES,
+  });
+  const testMutation = useMutation({
+    mutationFn: async () => {
+      await new Promise((r) => setTimeout(r, 800));
+      return { success: true, responseTimeMs: 120 };
+    },
+  });
+  const publishMutation = useMutation({
+    mutationFn: async (_params: { serviceId: string; metadata: { name: string; description: string; technology: string; version: string } }) => {
+      await new Promise((r) => setTimeout(r, 1000));
+      return { success: true };
+    },
+  });
 
   const status = statusQuery.data;
   const eservices = eservicesQuery.data;
@@ -165,11 +246,11 @@ function PdndPanel() {
                         className="border-emerald-400/30 text-emerald-400 hover:bg-emerald-400/10"
                         onClick={() =>
                           publishMutation.mutate({
-                            serviceId: service.id as "dms-mercati" | "dms-concessioni" | "dms-operatori",
+                            serviceId: service.id,
                             metadata: {
                               name: service.name,
                               description: service.description,
-                              technology: service.technology as "REST" | "SOAP",
+                              technology: service.technology,
                               version: service.version,
                             },
                           })
@@ -200,13 +281,23 @@ function PdndPanel() {
 // Sub-componente: App IO Panel
 // ============================================
 function AppIoPanel() {
-  const statusQuery = trpc.appIo.getStatus.useQuery();
-  const templatesQuery = trpc.appIo.listTemplates.useQuery();
+  const statusQuery = useQuery({
+    queryKey: ['appio-status'],
+    queryFn: async () => MOCK_APPIO_STATUS,
+  });
+  const templatesQuery = useQuery({
+    queryKey: ['appio-templates'],
+    queryFn: async () => MOCK_TEMPLATES,
+  });
   const [cfInput, setCfInput] = useState('');
-  const checkProfileMutation = trpc.appIo.checkProfile.useQuery(
-    { fiscalCode: cfInput },
-    { enabled: cfInput.length === 16 }
-  );
+  const checkProfileQuery = useQuery({
+    queryKey: ['appio-check-profile', cfInput],
+    queryFn: async () => {
+      await new Promise((r) => setTimeout(r, 300));
+      return { senderAllowed: !!MOCK_CF_DB[cfInput] };
+    },
+    enabled: cfInput.length === 16,
+  });
 
   const status = statusQuery.data;
 
@@ -327,10 +418,10 @@ function AppIoPanel() {
               className="flex-1 px-3 py-2 bg-[#0f1729] border border-[#10b981]/30 rounded-lg text-[#e8fbff] text-sm placeholder:text-[#e8fbff]/30 focus:outline-none focus:ring-1 focus:ring-[#10b981]"
             />
           </div>
-          {cfInput.length === 16 && checkProfileMutation.data && (
+          {cfInput.length === 16 && checkProfileQuery.data && (
             <div className="mt-3 p-3 bg-[#0f1729] border border-[#10b981]/20 rounded-lg">
               <div className="flex items-center gap-2">
-                {checkProfileMutation.data.senderAllowed ? (
+                {checkProfileQuery.data.senderAllowed ? (
                   <>
                     <CheckCircle className="h-5 w-5 text-emerald-400" />
                     <span className="text-emerald-400 text-sm font-medium">
@@ -360,14 +451,28 @@ function AppIoPanel() {
 function AnprPanel() {
   const [cfInput, setCfInput] = useState('');
   const [searchType, setSearchType] = useState<'cf' | 'residenza'>('cf');
-  const cfQuery = trpc.pdnd.verificaCF.useQuery(
-    { codiceFiscale: cfInput },
-    { enabled: cfInput.length === 16 && searchType === 'cf' }
-  );
-  const residenzaQuery = trpc.pdnd.verificaResidenza.useQuery(
-    { codiceFiscale: cfInput },
-    { enabled: cfInput.length === 16 && searchType === 'residenza' }
-  );
+
+  const cfQuery = useQuery({
+    queryKey: ['anpr-verifica-cf', cfInput],
+    queryFn: async () => {
+      await new Promise((r) => setTimeout(r, 400));
+      const person = MOCK_CF_DB[cfInput];
+      if (!person) return { found: false };
+      return { found: true, nome: person.nome, cognome: person.cognome, dataNascita: person.dataNascita, comuneNascita: person.comuneNascita };
+    },
+    enabled: cfInput.length === 16 && searchType === 'cf',
+  });
+
+  const residenzaQuery = useQuery({
+    queryKey: ['anpr-verifica-residenza', cfInput],
+    queryFn: async () => {
+      await new Promise((r) => setTimeout(r, 400));
+      const person = MOCK_CF_DB[cfInput];
+      if (!person) return { found: false };
+      return { found: true, indirizzo: person.indirizzo, civico: person.civico, cap: person.cap, comune: person.comune, provincia: person.provincia };
+    },
+    enabled: cfInput.length === 16 && searchType === 'residenza',
+  });
 
   return (
     <div className="space-y-4">
@@ -533,9 +638,20 @@ function AnprPanel() {
 // Sub-componente: SSO Panel
 // ============================================
 function SsoPanel() {
-  const statusQuery = trpc.piattaforme.ssoGetStatus.useQuery();
-  const providersQuery = trpc.piattaforme.ssoListProviders.useQuery();
-  const testMutation = trpc.piattaforme.ssoTestProvider.useMutation();
+  const statusQuery = useQuery({
+    queryKey: ['sso-status'],
+    queryFn: async () => MOCK_SSO_STATUS,
+  });
+  const providersQuery = useQuery({
+    queryKey: ['sso-providers'],
+    queryFn: async () => MOCK_SSO_PROVIDERS,
+  });
+  const testMutation = useMutation({
+    mutationFn: async (params: { provider: string }) => {
+      await new Promise((r) => setTimeout(r, 600));
+      return { success: params.provider === 'spid' || params.provider === 'cie', responseTimeMs: 180, errorMessage: params.provider === 'cns' || params.provider === 'eidas' ? 'Provider non configurato' : undefined };
+    },
+  });
 
   const providerIcons: Record<string, React.ReactNode> = {
     spid: <Shield className="h-5 w-5 text-[#0066cc]" />,
@@ -585,13 +701,13 @@ function SsoPanel() {
             <div className="p-3 bg-[#0f1729] rounded-lg border border-[#8b5cf6]/20">
               <span className="text-xs text-[#e8fbff]/60">Attivi</span>
               <p className="text-lg font-bold text-emerald-400 mt-1">
-                {statusQuery.data?.providers.filter(p => p.isActive).length ?? 0}
+                {statusQuery.data?.providers.filter((p: any) => p.isActive).length ?? 0}
               </p>
             </div>
             <div className="p-3 bg-[#0f1729] rounded-lg border border-[#8b5cf6]/20">
               <span className="text-xs text-[#e8fbff]/60">Configurati</span>
               <p className="text-lg font-bold text-[#8b5cf6] mt-1">
-                {statusQuery.data?.providers.filter(p => p.isConfigured).length ?? 0}
+                {statusQuery.data?.providers.filter((p: any) => p.isConfigured).length ?? 0}
               </p>
             </div>
           </div>
@@ -655,9 +771,7 @@ function SsoPanel() {
                     size="sm"
                     variant="outline"
                     className="border-[#8b5cf6]/30 text-[#8b5cf6] hover:bg-[#8b5cf6]/10 h-7 text-xs"
-                    onClick={() =>
-                      testMutation.mutate({ provider: provider.provider as "spid" | "cie" | "cns" | "eidas" })
-                    }
+                    onClick={() => testMutation.mutate({ provider: provider.provider })}
                     disabled={testMutation.isPending}
                   >
                     <RefreshCw className={`h-3 w-3 mr-1 ${testMutation.isPending ? 'animate-spin' : ''}`} />
@@ -700,12 +814,30 @@ function SsoPanel() {
 // ============================================
 function AuditTrailPanel() {
   const [platformFilter, setPlatformFilter] = useState<string | undefined>(undefined);
-  const auditQuery = trpc.piattaforme.auditList.useQuery({
-    platform: platformFilter as "pdnd" | "appio" | "anpr" | "sso" | undefined,
-    limit: 50,
-    offset: 0,
+
+  const auditQuery = useQuery({
+    queryKey: ['piattaforme-audit', platformFilter],
+    queryFn: async () => {
+      const items = platformFilter
+        ? MOCK_AUDIT_ITEMS.filter((i) => i.platform === platformFilter)
+        : MOCK_AUDIT_ITEMS;
+      return { items };
+    },
   });
-  const statsQuery = trpc.piattaforme.auditStats.useQuery();
+
+  const statsQuery = useQuery({
+    queryKey: ['piattaforme-audit-stats'],
+    queryFn: async () => ({
+      last24h: MOCK_AUDIT_ITEMS.filter((i) => Date.now() - new Date(i.created_at).getTime() < 86400000).length,
+      last7d: MOCK_AUDIT_ITEMS.length,
+      byPlatform: [
+        { platform: 'pdnd', count: MOCK_AUDIT_ITEMS.filter((i) => i.platform === 'pdnd').length },
+        { platform: 'appio', count: MOCK_AUDIT_ITEMS.filter((i) => i.platform === 'appio').length },
+        { platform: 'anpr', count: MOCK_AUDIT_ITEMS.filter((i) => i.platform === 'anpr').length },
+        { platform: 'sso', count: MOCK_AUDIT_ITEMS.filter((i) => i.platform === 'sso').length },
+      ],
+    }),
+  });
 
   const platformColors: Record<string, string> = {
     pdnd: '#3b82f6',

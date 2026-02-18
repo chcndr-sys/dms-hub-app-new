@@ -29,7 +29,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarketMapComponent } from './MarketMapComponent';
 import { PresenzeGraduatoriaPanel } from './PresenzeGraduatoriaPanel';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
 import { MarketCompaniesTab, CompanyModal, CompanyRow, CompanyFormData } from './markets/MarketCompaniesTab';
 import { MarketSettingsTab } from './markets/MarketSettingsTab';
 import { getStallStatusLabel, getStallStatusClasses, getStallMapFillColor, STALL_STATUS_OPTIONS, normalizeStallStatus } from '@/lib/stallStatus';
@@ -184,8 +184,17 @@ export default function GestioneMercati() {
   // Hook per impersonificazione - filtro mercati per comune
   const { isImpersonating, comuneNome } = useImpersonation();
 
-  // tRPC fallback: dmsHub.markets.list è publicProcedure (nessuna auth richiesta)
-  const trpcMarketsQuery = trpc.dmsHub.markets.list.useQuery();
+  // Fallback REST: carica mercati dal Neon DB via tRPC HTTP
+  const trpcMarketsQuery = useQuery({
+    queryKey: ['dmsHub-markets-list-fallback'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/api/trpc/dmsHub.markets.list`);
+      if (!res.ok) return [];
+      const json = await res.json();
+      return json?.result?.data?.json ?? json?.result?.data ?? [];
+    },
+    enabled: markets.length === 0,
+  });
 
   /** Applica filtro comune ai mercati */
   const applyFilters = (rawMarkets: Market[]) => {
@@ -1395,7 +1404,6 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   const [isSpuntaMode, setIsSpuntaMode] = useState(false);
   const [isOccupaMode, setIsOccupaMode] = useState(false);
   const [isLiberaMode, setIsLiberaMode] = useState(false);
-  const updateStallStatus = trpc.dmsHub.stalls.updateStatus.useMutation();
   const [isAnimating, setIsAnimating] = useState(false); // Animazione in corso
   const stopAnimationRef = React.useRef(false); // Flag per fermare l'animazione
   const [showCompanyModal, setShowCompanyModal] = useState(false);
