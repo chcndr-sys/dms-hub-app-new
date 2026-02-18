@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 7.0.0 (DMS Legacy Interop Completa + Piattaforme PA + PDND/AppIO/ANPR/SSO)
-> **Data:** 16 Febbraio 2026
+> **Versione:** 7.5.0 (Stacco Backend Completo)
+> **Data:** 18 Febbraio 2026
 > **Autore:** Sistema documentato da Manus AI + Claude Code
 > **Stato:** PRODUZIONE
 
@@ -30,6 +30,182 @@
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 18 Febbraio 2026 — v7.5.0 — Stacco Backend Completo (FASE 3, 4, 5)
+
+**Commit:** `4902938` (master)
+
+Questa sessione segna la **fine dello stacco del backend tRPC**. Il repository `dms-hub-app-new` è ora **frontend-only** e connette al backend REST su Hetzner tramite chiamate `fetch()` dirette.
+
+#### FASE 3: Migrazione 4 Componenti a REST (`109e41f`)
+
+- **10 chiamate tRPC rimosse** e sostituite con chiamate REST dirette al backend Hetzner.
+- **File modificati:**
+  - `GuardianIntegrations.tsx` → REST `/api/guardian/integrations`
+  - `MIOLogs.tsx` → REST `/api/mihub/logs`
+  - `useOrchestrator.ts` → REST `/api/mihub/conversations`
+  - `FraudMonitorPanel.tsx` → REST `/api/tcc/v2/fraud/*`
+
+#### FASE 4: Eliminazione ~45 Chiamate tRPC Residue (`45d0e3b`)
+
+- **~45 chiamate tRPC eliminate** dai 4 componenti rimanenti.
+- **Nuovo file**: `client/src/lib/trpcHttp.ts` (helper per chiamare tRPC via fetch).
+- **Security fix**: `bootstrapAdmin` protetto con `adminProcedure` + 6 procedure `dmsHub` protette.
+- **File modificati:** `GestioneMercati.tsx`, `GestioneHubNegozi.tsx`, `PiattaformePA.tsx`, `Integrazioni.tsx`.
+
+#### FASE 5: Pulizia Totale Backend Morto (`7784917`, `525c17f`)
+
+- **Rimozione totale dell'infrastruttura tRPC** dal frontend.
+- **Directory `server/` e `drizzle/`** → spostate in `_cantina/` come archivio.
+- **27 dipendenze backend rimosse** dal `package.json` (express, drizzle-orm, firebase-admin, @trpc/server, ecc.).
+- **-36.306 righe** di codice morto.
+- Da 104 a 77 dipendenze.
+
+#### Stato Architettura Attuale (v7.5.0)
+
+- **Frontend:** React/Vite, deployato su Vercel. **100% disaccoppiato** dal backend tRPC.
+- **Backend:** Node.js/Express, deployato su Hetzner (PM2). Espone API REST.
+- **Database:** Neon (PostgreSQL).
+- **Autenticazione:** Firebase Authentication.
+- **Comunicazione Frontend ↔ Backend:** Chiamate `fetch()` dirette dal client al server REST.
+
+**Salvataggi Stabili Creati:**
+- `v7.3.1-stable` → pre-FASE 4
+- `v7.4.0-stable` → post-FASE 4, pre-FASE 5
+
+---
+
+### Sessione 17 Febbraio 2026 (notte) — v7.3.0
+
+**Intervento:** Fix utente duplicato + Analisi dipendenze tRPC residue
+
+#### Fix Utente Duplicato chcndr@gmail.com
+
+**Problema:** L'utente admin `chcndr@gmail.com` non visualizzava i dati dell'impresa MIO TEST. Nel DB esistevano 2 record con la stessa email:
+
+| ID | Nome | Email | impresa_id | Scopo |
+|---|---|---|---|---|
+| 34 | Mio | chcndr@gmail.com | 38 (MIO TEST) | Team legacy (telefono) |
+| 42 | Andrea Checchi | chcndr@gmail.com | NULL | Admin (Firebase) |
+
+**Causa:** Il `bootstrapAdmin` di Firebase ha creato l'utente id=42 senza `impresa_id`. Il frontend trovava 2 utenti con la stessa email e usava quello senza impresa.
+
+**Fix applicata:** `UPDATE users SET email = NULL WHERE id = 34;` — Rimossa l'email dall'utente id=34, che serve solo per l'app legacy via telefono.
+
+#### Meccanismo Utenti / Imprese / App Legacy
+
+Questo meccanismo è fondamentale e va rispettato:
+
+1. **Utente Admin (id=42):** `chcndr@gmail.com`, ruolo `admin`, login via Firebase (email/password). Non ha `impresa_id` perché è admin globale.
+
+2. **Utente Team Legacy (id=34):** Nome "Mio", email NULL, `impresa_id = 38` (MIO TEST), `legacy_user_id = 24`. Questo utente serve **esclusivamente** per l'app legacy che autentica via **numero di telefono**.
+
+3. **App Legacy (tab Presenze):** Funziona così:
+   - Il titolare dell'impresa o un dipendente del team fa login con il **numero di telefono** nell'app legacy.
+   - L'app legacy cerca l'utente associato a quel numero → trova id=34 → legge `impresa_id = 38` → si abbina all'impresa MIO TEST.
+   - Il dipendente ha sul telefono **solo** l'app legacy (senza dati impresa) e fa la presenza per conto dell'impresa.
+
+4. **Regola:** Gli utenti team/legacy **non devono avere la stessa email** dell'admin Firebase, altrimenti si crea conflitto. Devono avere solo il telefono come identificativo.
+
+#### Analisi Dipendenze tRPC Residue (Pre-Stacco)
+
+**Cosa è stato già rimosso:**
+- **FASE 1 (Claude):** 12 chiamate tRPC da `DashboardPA.tsx`.
+- **Pulizia (Manus):** 6 file server (`appIoRouter`, `pdndRouter`, `piattaformeRouter` + relativi services).
+- **FASE 2 (Claude):** `useAuth.ts` eliminato, `DashboardLayout` migrato a `useFirebaseAuth`.
+
+**Cosa restava attivo (prima della FASE 3, 4, 5):**
+
+| Categoria | Quantità | Dettaglio |
+|---|---|---|
+| **Chiamate tRPC attive** | **37** | In 5 componenti principali |
+| **Fetch dirette critiche** | **3** | In `FirebaseAuthContext` (checkRoles, bootstrapAdmin, createFirebaseSession) |
+| **Infrastruttura tRPC** | **Tutta** | Client, provider, router server-side, dipendenze `package.json` |
+
+**Chiamate tRPC Attive (Reali):**
+
+| Componente | Chiamate Attive | Router tRPC Usati |
+|---|---|---|
+| `Integrazioni.tsx` | **17** | `integrations` |
+| `PiattaformePA.tsx` | **14** | `pdnd`, `appIo`, `piattaforme`, `audit` |
+| `useOrchestrator.ts` | **3** | `mihub` |
+| `GuardianIntegrations.tsx` | **2** | `guardian` |
+| `MIOLogs.tsx` | **1** | `mioAgent` |
+
+**NOTA CRITICA:** Il componente `PiattaformePA.tsx` fa **14 chiamate** a router tRPC (`pdnd`, `appIo`, `piattaforme`) che **sono stati rimossi** dal server (commit `0145c5f`). Questo significa che queste chiamate **stanno fallendo silenziosamente** o sono disabilitate. Questo è un **bug latente** da risolvere.
+
+**Fetch Dirette e Infrastruttura tRPC:**
+
+- **`FirebaseAuthContext.tsx`**: Le 3 `fetch` dirette a `auth.checkRoles`, `auth.bootstrapAdmin`, `auth.createFirebaseSession` sono **ancora attive e critiche** per l'autenticazione.
+- **Infrastruttura tRPC**: `main.tsx`, `lib/trpc.ts`, `api/trpc/[trpc].ts` e tutta la directory `server/` sono ancora presenti e necessari per far funzionare le chiamate residue.
+
+---
+
+### Sessione 17 Febbraio 2026 (sera) — v7.2.0
+
+**Commit:** `16c7c12` (master)
+
+**Intervento:** Merge FASE 2 e Fix PermissionsContext
+
+**Dettagli:**
+- **FASE 2 (auth tRPC → Firebase):** Mergiato il commit `835e57d` che migra l'autenticazione del `DashboardLayout` da `useAuth` (tRPC) a `useFirebaseAuth` (Firebase). Questo rimuove una dipendenza critica dal backend tRPC e stabilizza l'autenticazione del frontend.
+- **Fix PermissionsContext:** Mergiato il commit `cd35bd2` che risolve un race condition nel caricamento dei permessi. Aggiunto un listener all'evento `storage` per ricaricare i permessi dopo che `FirebaseAuth` ha completato il sync, garantendo che i tab della Dashboard PA vengano visualizzati correttamente.
+
+**Stato Lavori Claude:**
+
+| # | Commit | Stato | Note |
+|---|---|---|---|
+| 1 | `99e2957` | ✅ **Mergiato** | FASE 1 stacco backend (tRPC) |
+| 2 | `835e57d` | ✅ **Mergiato** | FASE 2 stacco backend (auth) |
+| 3 | `cd35bd2` | ✅ **Mergiato** | Fix PermissionsContext |
+
+**Tutti i commit di Claude sono stati mergiati in master.**
+
+---
+
+### Sessione 17 Febbraio 2026 — (v7.1.0) — Ripristino Architettura, Pulizia Codice e Fix Canone
+
+Questa sessione si è resa necessaria per risolvere un incidente notturno e ripristinare la corretta architettura di produzione, seguita da una pulizia del codice e la risoluzione di un bug critico.
+
+#### Incidente Notturno: Attivazione Backend Errato
+
+- **Problema**: Durante la notte, è stato attivato il backend tRPC (dormiente) invece del backend REST corretto. Questo ha causato la perdita di dati nella dashboard, in quanto il backend tRPC ha uno schema Drizzle non allineato con il database di produzione (25 tabelle su 73 non corrispondono).
+- **Causa**: Conflitto nel nome del processo PM2. Entrambi i backend (`mihub-backend-rest` e `dms-hub-app-new`) usavano il nome `mihub-backend`.
+- **Soluzione**: Ripristinato il backend REST corretto (`mihub-backend-rest`, commit `51fcc2f`) sulla porta 3000. Verificato che tutte le API rispondono correttamente (200 su tutti gli endpoint).
+
+#### Pulizia Codice e Architettura (`04c46bd`, `0145c5f`)
+
+| File Rimosso/Modificato | Tipo | Motivo |
+|---|---|---|
+| `server/index.ts` | Rimosso | Codice morto, non usato |
+| `server/_core/index.ts` | Modificato | Rimosso meccanismo auto-discovery porta |
+| `server/services/appIoService.ts` | Rimosso | Duplicato |
+| `server/services/pdndService.ts` | Rimosso | Duplicato |
+| `server/services/piattaformeService.ts` | Rimosso | Duplicato |
+| `server/appIoRouter.ts` | Rimosso | Duplicato |
+| `server/pdndRouter.ts` | Rimosso | Duplicato |
+| `server/piattaformeRouter.ts` | Rimosso | Duplicato |
+
+#### FASE 1 Decoupling Frontend-Backend (`ae94a37`)
+
+Rimosse 12 chiamate tRPC duplicate dal componente `DashboardPA.tsx`. Il frontend ora usa esclusivamente le API REST per i dati della dashboard. Questo è il primo passo per disaccoppiare completamente il frontend dal backend tRPC obsoleto.
+
+#### Bug Fix: Scadenze Canone Scompaiono per Admin (`5835c9f`)
+
+- **Problema**: Nel tab "Canone" del Wallet PagoPA, le scadenze apparivano brevemente e poi scomparivano per l'utente admin.
+- **Root cause**: `fetchMercatiList()` in `WalletPanel.tsx` pre-selezionava automaticamente il primo mercato ("Cervia Demo", id 12, con 0 scadenze) nel filtro `canoneFilters`. Questo causava un re-fetch con `mercato_id=12` che restituiva 0 risultati.
+- **Fix**: La pre-selezione del filtro canone avviene **solo se c'è un solo mercato** (tipico dell'impersonificazione di un comune). Se l'admin vede tutti i mercati, il filtro resta su "Tutti" mostrando tutte le 68 scadenze.
+
+#### Stato Lavori Decoupling (Archiviato)
+
+| Fase | Commit | Stato | Descrizione |
+|---|---|---|---|
+| **FASE 1** | `99e2957` (mergiato come `ae94a37`) | ✅ **MERGIATO** | Rimosse 12 chiamate tRPC duplicate da DashboardPA |
+| **FASE 2** | `835e57d` | ⏳ **IN ATTESA** | Migra auth da tRPC a Firebase direct |
+| **Fix Permessi** | `cd35bd2` | ⏳ **IN ATTESA** | Fix visibilità tab dopo sync Firebase |
+| **Fix Canone** | `eb0326c` (cherry-pick) | ✅ **ALLINEATO** | Cherry-pick della fix canone nel branch Claude |
+
+---
 
 ### Sessione 16 Febbraio 2026 — (v7.0.0) — DMS Legacy Interop Completa + Piattaforme PA
 
@@ -2348,7 +2524,7 @@ fi
 
 ---
 
-## 📊 STATO ATTUALE SISTEMA (15 Febbraio 2026)
+## 📊 STATO ATTUALE SISTEMA (17 Febbraio 2026)
 
 ### Servizi Online ✅
 
@@ -2362,7 +2538,7 @@ fi
 | TCC Security | /api/trpc/tccSecurity.* | ✅ Funzionante |
 | GDPR Router | /api/trpc/gdpr.* | ✅ Funzionante |
 | CI/CD Pipeline | GitHub Actions | ✅ Attiva |
-| PM2 | mihub-backend v1.1.0 cluster | ✅ Online (pid 711337, 168MB RAM) |
+| PM2 | mihub-backend (REST) porta 3000 | ✅ Online — Backend REST corretto ripristinato |
 
 ### Statistiche (Dati Reali 16 Feb 2026 — v6.7.0)
 
@@ -2421,7 +2597,8 @@ fi
 ### Problemi Noti
 
 - **Connection timeout sporadici:** su `security.js` verso Neon pooler (Neon cold-start su free tier) — mitigato con retry automatico e connection pool
-- **PM2 restart count:** 21 restart (autoheal funzionante)
+- **Backend tRPC dormiente:** Il backend tRPC in `dms-hub-app-new/server/` ha uno schema Drizzle non allineato (25/73 tabelle). NON deve essere attivato. Il backend corretto è `mihub-backend-rest` sulla porta 3000.
+- **Conflitto nomi PM2 risolto:** L'incidente del 17 Feb era causato da entrambi i backend che usavano il nome `mihub-backend`. Ora solo il backend REST è attivo.
 
 ---
 
