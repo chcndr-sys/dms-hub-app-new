@@ -35,6 +35,43 @@ const API_BASE = import.meta.env.DEV
   ? 'https://orchestratore.mio-hub.me/api/tcc/v2'
   : '/api/tcc/v2';
 
+// API Base URL per il backend principale (Hetzner) — usato per verifica locale qualifiche
+const MAIN_API_BASE = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io';
+
+// Helper: verifica locale qualifiche impresa dal backend principale
+// Stessa logica di WalletTCCBadge in MarketCompaniesTab — calcola stato da data_scadenza
+async function checkQualificationsLocally(impresaId: number): Promise<{ walletEnabled: boolean; label: string }> {
+  try {
+    const response = await fetch(`${MAIN_API_BASE}/api/imprese/${impresaId}/qualificazioni`);
+    if (!response.ok) return { walletEnabled: false, label: 'Errore verifica' };
+    const data = await response.json();
+    if (!data.success || !Array.isArray(data.data) || data.data.length === 0) {
+      return { walletEnabled: false, label: 'No Qualifiche' };
+    }
+    const oggi = new Date();
+    oggi.setHours(0, 0, 0, 0);
+    const hasExpired = data.data.some((q: any) => {
+      // Calcola stato DINAMICAMENTE dalla data di scadenza (stessa logica di CompanyCard)
+      // perché il DB potrebbe avere uno stato obsoleto (es. SCADUTA quando in realtà la data è valida)
+      const dataScadenza = q.data_scadenza || q.end_date;
+      if (dataScadenza) {
+        const scadenza = new Date(String(dataScadenza).split('T')[0]);
+        scadenza.setHours(23, 59, 59, 999);
+        return scadenza < oggi;
+      }
+      // Solo se non c'è data_scadenza, usa lo stato del DB come fallback
+      const stato = (q.stato || q.status || '').toUpperCase();
+      return stato === 'SCADUTA';
+    });
+    if (hasExpired) {
+      return { walletEnabled: false, label: 'Qualifiche Scadute' };
+    }
+    return { walletEnabled: true, label: 'Qualificato' };
+  } catch {
+    return { walletEnabled: false, label: 'Errore verifica' };
+  }
+}
+
 // ============================================================================
 // WALLET STATUS INDICATOR (v5.7.0)
 // Semaforo stato wallet TCC nella barra header
@@ -53,24 +90,19 @@ function WalletStatusIndicator({ operatorId, impresaId, authToken, onStatusChang
   const [impresaName, setImpresaName] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Helper per processare la risposta wallet
-  const processWalletResponse = useCallback((data: any): boolean => {
+  // Helper per processare la risposta wallet (restituisce i dati per ulteriori controlli)
+  const processWalletResponse = useCallback((data: any): { found: boolean; resolvedImpresaId?: number; denominazione?: string } => {
     if (data.success && data.wallet) {
       if (data.impresa) {
-        setImpresaName(data.impresa.denominazione);
-        if (data.qualification?.walletEnabled) {
-          setStatus('active');
-          onStatusChange?.('active', data.impresa.denominazione);
-        } else {
-          setStatus('suspended');
-          onStatusChange?.('suspended', data.impresa.denominazione);
-        }
-        setQualification(data.qualification);
-        return true;
+        return {
+          found: true,
+          resolvedImpresaId: data.impresa.id,
+          denominazione: data.impresa.denominazione,
+        };
       }
     }
-    return false;
-  }, [onStatusChange]);
+    return { found: false };
+  }, []);
 
   const fetchStatus = useCallback(async () => {
     if ((!operatorId || operatorId <= 0) && !impresaId) {
@@ -82,6 +114,9 @@ function WalletStatusIndicator({ operatorId, impresaId, authToken, onStatusChang
     setStatus('loading');
     try {
       const token = authToken || localStorage.getItem('token') || '';
+      let walletFound = false;
+      let resolvedImpresaId: number | undefined;
+      let denominazione: string | undefined;
 
       // Tentativo 1: cerca per operatorId (endpoint originale)
       if (operatorId && operatorId > 0) {
@@ -91,7 +126,12 @@ function WalletStatusIndicator({ operatorId, impresaId, authToken, onStatusChang
           });
           if (response.ok) {
             const data = await response.json();
-            if (processWalletResponse(data)) return;
+            const result = processWalletResponse(data);
+            if (result.found) {
+              walletFound = true;
+              resolvedImpresaId = result.resolvedImpresaId;
+              denominazione = result.denominazione;
+            }
           } else if (response.status >= 500) {
             console.error('Server error fetching operator wallet:', response.status);
             setStatus('error');
@@ -104,23 +144,51 @@ function WalletStatusIndicator({ operatorId, impresaId, authToken, onStatusChang
       }
 
       // Tentativo 2: cerca per impresaId (endpoint diretto impresa)
-      if (impresaId && impresaId > 0) {
+      if (!walletFound && impresaId && impresaId > 0) {
         try {
           const response = await fetch(`${API_BASE}/impresa/${impresaId}/wallet`, {
             headers: { 'Authorization': `Bearer ${token}` },
           });
           if (response.ok) {
             const data = await response.json();
-            if (processWalletResponse(data)) return;
+            const result = processWalletResponse(data);
+            if (result.found) {
+              walletFound = true;
+              resolvedImpresaId = result.resolvedImpresaId;
+              denominazione = result.denominazione;
+            }
           }
         } catch (err) {
           console.warn('Impresa wallet lookup failed:', err);
         }
       }
 
-      // Nessun wallet trovato con nessuna strategia
-      setStatus('none');
-      onStatusChange?.('none');
+      if (!walletFound) {
+        setStatus('none');
+        onStatusChange?.('none');
+        return;
+      }
+
+      // Wallet trovato — ora verifica qualifiche LOCALMENTE dal backend principale
+      // Questo evita il problema di dati stale/disconnessi sull'orchestratore
+      setImpresaName(denominazione || null);
+      const checkId = resolvedImpresaId || (impresaId && impresaId > 0 ? impresaId : null);
+      if (checkId) {
+        const localCheck = await checkQualificationsLocally(checkId);
+        setQualification({ walletEnabled: localCheck.walletEnabled, label: localCheck.label });
+        if (localCheck.walletEnabled) {
+          setStatus('active');
+          onStatusChange?.('active', denominazione || null);
+        } else {
+          setStatus('suspended');
+          onStatusChange?.('suspended', denominazione || null);
+        }
+      } else {
+        // Nessun impresaId disponibile — default attivo (wallet esiste ma non possiamo verificare qualifiche)
+        setQualification(null);
+        setStatus('active');
+        onStatusChange?.('active', denominazione || null);
+      }
     } catch (error) {
       console.error('Error fetching wallet status:', error);
       setStatus('error');
@@ -367,7 +435,14 @@ export default function HubOperatore() {
         if (data.impresa?.denominazione) {
           setImpresaNome(data.impresa.denominazione);
         }
-        setWalletEnabled(data.qualification?.walletEnabled ?? true);
+        // Verifica qualifiche LOCALMENTE dal backend principale (stessa logica del semaforo card imprese)
+        const checkId = data.impresa?.id || operatore.impresaId;
+        if (checkId) {
+          const localCheck = await checkQualificationsLocally(checkId);
+          setWalletEnabled(localCheck.walletEnabled);
+        } else {
+          setWalletEnabled(data.qualification?.walletEnabled ?? true);
+        }
       } else {
         setApiConnected(true);
       }
