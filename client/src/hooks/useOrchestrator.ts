@@ -8,7 +8,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { callOrchestrator } from '@/api/orchestratorClient';
+import { MIHUB_API_BASE_URL } from '@/config/api';
 
 export type AgentId = 'mio_dev' | 'abacus' | 'zapier' | 'manus_worker';
 export type Mode = 'auto' | 'manual';
@@ -36,35 +38,35 @@ export interface OrchestratorResponse {
 }
 
 /**
- * Hook principale orchestratore
+ * Hook principale orchestratore — usa REST client diretto
  */
 export function useOrchestrator(userId: string = 'user_dashboard') {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mutation per inviare messaggio
-  const orchestratorMutation = trpc.mihub.orchestrator.useMutation();
-
   /**
-   * Invia messaggio all'orchestratore
+   * Invia messaggio all'orchestratore via REST
    */
   const sendMessage = async (request: OrchestratorRequest): Promise<OrchestratorResponse | null> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await orchestratorMutation.mutateAsync({
+      const response = await callOrchestrator({
         message: request.message,
-        userId,
-        mode: request.mode,
-        targetAgent: request.targetAgent,
-        context: {
-          dashboardTab: 'mio',
-        },
+        mode: request.mode === 'manual' ? 'direct' : 'auto',
+        targetAgent: request.targetAgent as any,
+        meta: { userId, dashboardTab: 'mio' },
       });
 
       setIsLoading(false);
-      return response as OrchestratorResponse;
+      return {
+        success: response.success,
+        message: response.message || '',
+        agentsUsed: [response.agent] as AgentId[],
+        conversationId: response.conversationId || '',
+        timestamp: new Date().toISOString(),
+      };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Errore sconosciuto';
       setError(errorMessage);
@@ -82,20 +84,26 @@ export function useOrchestrator(userId: string = 'user_dashboard') {
 }
 
 /**
- * Hook per conversazione singolo agente
+ * Hook per conversazione singolo agente — REST polling
  */
 export function useAgentConversation(agentId: AgentId, userId: string = 'user_dashboard') {
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // Query per recuperare conversazione
-  const conversationQuery = trpc.mihub.getConversation.useQuery(
-    { userId, agentId, limit: 50 },
-    { refetchInterval: 5000 } // Polling ogni 5 secondi
-  );
+  const conversationQuery = useQuery({
+    queryKey: ['mihub-conversation', userId, agentId],
+    queryFn: async () => {
+      const params = new URLSearchParams({ userId, agentId, limit: '50' });
+      const res = await fetch(`${MIHUB_API_BASE_URL}/api/mihub/conversations?${params}`);
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+      return res.json();
+    },
+    refetchInterval: 5000,
+  });
 
   useEffect(() => {
     if (conversationQuery.data) {
-      const formattedMessages: Message[] = conversationQuery.data.map((msg: any) => ({
+      const rawMessages = Array.isArray(conversationQuery.data) ? conversationQuery.data : conversationQuery.data.messages || [];
+      const formattedMessages: Message[] = rawMessages.map((msg: any) => ({
         id: msg.id,
         sender: msg.sender,
         content: msg.content,
@@ -115,7 +123,7 @@ export function useAgentConversation(agentId: AgentId, userId: string = 'user_da
 }
 
 /**
- * Hook per tutte le conversazioni (4 agenti)
+ * Hook per tutte le conversazioni (4 agenti) — REST polling
  */
 export function useAllConversations(userId: string = 'user_dashboard') {
   const [conversations, setConversations] = useState<Record<AgentId, Message[]>>({
@@ -125,11 +133,16 @@ export function useAllConversations(userId: string = 'user_dashboard') {
     manus_worker: [],
   });
 
-  // Query per recuperare tutte le conversazioni
-  const allConversationsQuery = trpc.mihub.getAllConversations.useQuery(
-    { userId },
-    { refetchInterval: 5000 } // Polling ogni 5 secondi
-  );
+  const allConversationsQuery = useQuery({
+    queryKey: ['mihub-all-conversations', userId],
+    queryFn: async () => {
+      const params = new URLSearchParams({ userId });
+      const res = await fetch(`${MIHUB_API_BASE_URL}/api/mihub/conversations/all?${params}`);
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+      return res.json();
+    },
+    refetchInterval: 5000,
+  });
 
   useEffect(() => {
     if (allConversationsQuery.data) {

@@ -6,7 +6,8 @@
  */
 
 import { useState } from 'react';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { MIHUB_API_BASE_URL } from '@/config/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +23,14 @@ import { Input } from '@/components/ui/input';
 // ============================================================================
 
 function FraudStatsCards() {
-  const { data: stats, isLoading } = trpc.tccSecurity.fraudStats.useQuery();
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['tcc-fraud-stats'],
+    queryFn: async () => {
+      const res = await fetch(`${MIHUB_API_BASE_URL}/api/tcc/v2/fraud/stats`);
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+      return res.json();
+    },
+  });
 
   if (isLoading || !stats) {
     return (
@@ -129,14 +137,28 @@ function FraudEventsList() {
   const [severity, setSeverity] = useState<string>('all');
   const [showResolved, setShowResolved] = useState(false);
 
-  const { data, isLoading, refetch } = trpc.tccSecurity.fraudEvents.useQuery({
-    limit: 50,
-    offset: 0,
-    severity: severity !== 'all' ? severity as "low" | "medium" | "high" | "critical" : undefined,
-    resolved: showResolved ? undefined : false,
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['tcc-fraud-events', severity, showResolved],
+    queryFn: async () => {
+      const params = new URLSearchParams({ limit: '50', offset: '0' });
+      if (severity !== 'all') params.append('severity', severity);
+      if (!showResolved) params.append('resolved', 'false');
+      const res = await fetch(`${MIHUB_API_BASE_URL}/api/tcc/v2/fraud/events?${params}`);
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+      return res.json();
+    },
   });
 
-  const resolveMutation = trpc.tccSecurity.resolveFraud.useMutation({
+  const resolveMutation = useMutation({
+    mutationFn: async (params: { eventId: number; resolution: string; notes: string }) => {
+      const res = await fetch(`${MIHUB_API_BASE_URL}/api/tcc/v2/fraud/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+      return res.json();
+    },
     onSuccess: () => {
       refetch();
     },
@@ -276,14 +298,18 @@ function AuditTrailSearch() {
   const [searchEmail, setSearchEmail] = useState('');
   const [searchUserId, setSearchUserId] = useState('');
 
-  const { data, isLoading, refetch } = trpc.tccSecurity.auditTrail.useQuery(
-    {
-      email: searchEmail || undefined,
-      userId: searchUserId ? parseInt(searchUserId) : undefined,
-      limit: 30,
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['tcc-audit-trail', searchEmail, searchUserId],
+    queryFn: async () => {
+      const params = new URLSearchParams({ limit: '30' });
+      if (searchEmail) params.append('email', searchEmail);
+      if (searchUserId) params.append('userId', searchUserId);
+      const res = await fetch(`${MIHUB_API_BASE_URL}/api/tcc/v2/audit?${params}`);
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+      return res.json();
     },
-    { enabled: false } // Query manuale
-  );
+    enabled: false, // Query manuale
+  });
 
   const handleSearch = () => {
     if (searchEmail || searchUserId) {

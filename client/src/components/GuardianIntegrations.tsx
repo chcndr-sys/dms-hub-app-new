@@ -28,7 +28,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { MIHUB_API_BASE_URL } from '@/config/api';
 
 export default function GuardianIntegrations() {
   const [selectedEndpoint, setSelectedEndpoint] = useState<any>(null);
@@ -38,19 +39,29 @@ export default function GuardianIntegrations() {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  // Query per ottenere l'inventario API da Guardian
-  const { data: inventoryData, isLoading: isLoadingInventory, error: inventoryError } = trpc.guardian.integrations.useQuery(undefined, {
-    retry: 1,
-    onError: (err) => {
-      console.error('[GuardianIntegrations] Errore caricamento inventario:', err);
+  // Query REST per ottenere l'inventario API da Guardian
+  const { data: inventoryData, isLoading: isLoadingInventory, error: inventoryError } = useQuery({
+    queryKey: ['guardian-integrations'],
+    queryFn: async () => {
+      const res = await fetch(`${MIHUB_API_BASE_URL}/api/guardian/integrations`);
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+      return res.json();
     },
-    onSuccess: (data) => {
-      console.log('[GuardianIntegrations] Inventario caricato:', data);
+    retry: 1,
+  });
+
+  // Mutation REST per testare un endpoint
+  const testEndpointMutation = useMutation({
+    mutationFn: async (params: { endpoint: string; method: string; params: any }) => {
+      const res = await fetch(`${MIHUB_API_BASE_URL}/api/guardian/debug/testEndpoint`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+      return res.json();
     },
   });
-  
-  // Mutation per testare un endpoint
-  const testEndpointMutation = trpc.guardian.testEndpoint.useMutation();
 
   const endpoints = inventoryData?.endpoints || [];
   const stats = inventoryData?.stats || null;

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, FileText, Clock, HardDrive } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { MIHUB_API_BASE_URL } from '@/config/api';
 
 type LogFile = {
   filename: string;
@@ -15,8 +16,16 @@ type LogFile = {
 export default function MIOLogs() {
   const [selectedLog, setSelectedLog] = useState<LogFile | null>(null);
 
-  // Query tRPC per recuperare i log
-  const { data: logs = [], isLoading, error } = trpc.mioAgent.getLogs.useQuery();
+  // Query REST per recuperare i log agente
+  const { data: logs = [], isLoading, error } = useQuery<LogFile[]>({
+    queryKey: ['mio-agent-logs'],
+    queryFn: async () => {
+      const res = await fetch(`${MIHUB_API_BASE_URL}/api/mihub/logs`);
+      if (!res.ok) throw new Error(`Errore ${res.status}: ${res.statusText}`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : data.logs || [];
+    },
+  });
 
   if (isLoading) {
     return (
