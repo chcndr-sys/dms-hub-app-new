@@ -960,7 +960,13 @@ export default function ComuniPanel() {
       telefono: comune.telefono || '',
       sito_web: comune.sito_web || '',
       indirizzo: comune.indirizzo || '',
-      logo_url: comune.logo_url || ''
+      logo_url: comune.logo_url || '',
+      codice_fiscale: (comune as any).codice_fiscale || '',
+      tipologia: (comune as any).tipologia || '',
+      sindaco_nome: (comune as any).sindaco_nome || '',
+      sindaco_cognome: (comune as any).sindaco_cognome || '',
+      sindaco_titolo: (comune as any).sindaco_titolo || '',
+      acronimo: (comune as any).acronimo || ''
     });
     setShowComuneForm(true);
   };
@@ -1014,8 +1020,8 @@ export default function ComuniPanel() {
   }
 
   // Calcola statistiche
-  const totalSettori = comuni.reduce((acc, c) => acc + (parseInt(c.num_settori) || 0), 0);
-  const comuniConSettori = comuni.filter(c => (parseInt(c.num_settori) || 0) > 0).length;
+  const totalSettori = comuni.reduce((acc, c) => acc + (Number(c.num_settori) || 0), 0);
+  const comuniConSettori = comuni.filter(c => (Number(c.num_settori) || 0) > 0).length;
 
   return (
     <div className="space-y-6">
@@ -1078,7 +1084,7 @@ export default function ComuniPanel() {
               setComuneForm({
                 nome: '', provincia: '', regione: '', cap: '', codice_istat: '',
                 codice_catastale: '', codice_ipa: '', pec: '', email: '', telefono: '', sito_web: '',
-                indirizzo: '', logo_url: ''
+                indirizzo: '', logo_url: '', codice_fiscale: '', tipologia: '', sindaco_nome: '', sindaco_cognome: '', sindaco_titolo: '', acronimo: ''
               });
               setShowComuneForm(true);
             }}

@@ -46,6 +46,7 @@ export function RouteLayer({ userLocation, destination, mode }: RouteLayerProps)
       fitSelectedRoutes: true,
       show: false, // Nascondi pannello istruzioni
       addWaypoints: false,
+      // @ts-expect-error leaflet-routing-machine types
       draggableWaypoints: false,
       routeWhileDragging: false, // Disabilita routing durante drag
       collapsible: false, // Non collassabile

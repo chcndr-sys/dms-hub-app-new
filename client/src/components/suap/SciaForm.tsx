@@ -278,7 +278,7 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
         setImpresaStalls(stallsData);
         
         // Filtra mercati dove il CEDENTE ha posteggi
-        const marketIds = [...new Set(stallsData.map(s => s.marketId))];
+        const marketIds = Array.from(new Set(stallsData.map(s => s.marketId)));
         if (marketIds.length > 0) {
           setFilteredMarkets(markets.filter(m => marketIds.includes(m.id)));
         } else {

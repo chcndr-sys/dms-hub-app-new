@@ -34,7 +34,7 @@ export function useMapAnimation({ center, zoom, trigger, bounds, isMarketView }:
           // P20 FIX: Corner a filo schermo
           // Calcola lo zoom ottimale per i bounds SENZA padding
           // così i corner dell'area arrivano esattamente ai bordi dello schermo
-          const rawZoom = map.getBoundsZoom(latLngBounds, false, [0, 0]);
+          const rawZoom = map.getBoundsZoom(latLngBounds, false, L.point(0, 0));
           // Arrotonda a 0.25 più vicino per quarti di scatto (la mappa ha zoomSnap: 0.25)
           const roundedToQuarter = Math.round(rawZoom * 4) / 4;
           const forcedZoom = Math.min(roundedToQuarter, 19);

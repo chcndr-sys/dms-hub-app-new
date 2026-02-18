@@ -92,6 +92,7 @@ interface HubShop {
   contact_email?: string;
   description?: string;
   vetrina_url?: string;
+  owner_id?: number;
 }
 
 interface HubMarketMapComponentProps {
@@ -122,7 +123,7 @@ interface HubMarketMapComponentProps {
     mode: 'walking' | 'cycling' | 'driving';
   };
   // Props per Vista Italia (Gemello Digitale)
-  allMarkets?: Array<{ id: number; name: string; latitude: number; longitude: number }>;
+  allMarkets?: Array<{ id: number; name: string; latitude: number; longitude: number; comune?: string; giorno?: string; posteggi_totali?: number }>;
   onMarketClick?: (marketId: number) => void;
   showItalyView?: boolean;
   viewTrigger?: number;
@@ -529,8 +530,8 @@ export function HubMarketMapComponent({
           {/* Marker "M" per tutti i mercati (Vista Italia) */}
           {allMarkets.length > 0 && allMarkets.map((market) => {
             // Converti le coordinate da stringa a numero
-            const marketLat = parseFloat(market.latitude) || 0;
-            const marketLng = parseFloat(market.longitude) || 0;
+            const marketLat = Number(market.latitude) || 0;
+            const marketLng = Number(market.longitude) || 0;
             if (!marketLat || !marketLng) return null;
             return (
             <Marker
@@ -620,8 +621,8 @@ export function HubMarketMapComponent({
           {/* ============ MARKER HUB (Vista Italia/Regione/Provincia) ============ */}
           {mode === 'hub' && allHubs.length > 0 && allHubs.map((hub) => {
             // Converti le coordinate da stringa a numero
-            const hubLat = parseFloat(hub.lat || hub.latitude) || 0;
-            const hubLng = parseFloat(hub.lng || hub.longitude) || 0;
+            const hubLat = Number(hub.lat || hub.latitude) || 0;
+            const hubLng = Number(hub.lng || hub.longitude) || 0;
             if (!hubLat || !hubLng) return null;
             
             // Determina colore in base al livello
@@ -752,8 +753,8 @@ export function HubMarketMapComponent({
           {mode === 'hub' && selectedHub && selectedHub.shops && selectedHub.shops.map((shop) => {
             const shopColor = shop.status === 'active' ? '#10b981' : shop.status === 'closed' ? '#ef4444' : '#6b7280';
             // Converti le coordinate da stringa a numero
-            const shopLat = parseFloat(shop.lat) || 0;
-            const shopLng = parseFloat(shop.lng) || 0;
+            const shopLat = Number(shop.lat) || 0;
+            const shopLng = Number(shop.lng) || 0;
             if (!shopLat || !shopLng) return null;
             return (
               <Marker
@@ -953,8 +954,8 @@ export function HubMarketMapComponent({
             const isSelected = String(selectedStallNumber) === String(props.number);
             
             // Recupera dati aggiornati dal database
-            const dbStall = stallsByNumber.get(props.number);
-            const displayStatus = dbStall?.status || 'libero'; // USA SOLO stallsData!
+            const dbStall = stallsByNumber.get(String(props.number));
+            const displayStatus: string = dbStall?.status || 'libero'; // USA SOLO stallsData!
             
             const displayVendor = dbStall?.vendor_name || props.vendor_name || '-';
             
@@ -987,7 +988,7 @@ export function HubMarketMapComponent({
                   eventHandlers={{
                     click: () => {
                       if (onStallClick) {
-                        onStallClick(props.number);
+                        onStallClick(Number(props.number));
                       }
                     },
                   }}

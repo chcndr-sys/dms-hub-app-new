@@ -173,7 +173,7 @@ export const MapModal: React.FC<MapModalProps> = ({ isOpen, onClose }) => {
             <CardContent>
               <div className="bg-[#0b1220] rounded-lg border border-[#14b8a6]/20 overflow-hidden">
                 <MarketMapComponent
-                  marketId={1}
+                  mapData={{ center: { lat: 42.7635, lng: 11.1127 }, stalls_geojson: { type: 'FeatureCollection', features: [] } }}
                   onStallClick={(stallId) => console.log('Stall clicked:', stallId)}
                 />
               </div>

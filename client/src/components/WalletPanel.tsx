@@ -43,6 +43,7 @@ interface WalletItem {
   type: 'SPUNTA' | 'CONCESSIONE';
   balance: number;
   status: 'ACTIVE' | 'BLOCKED' | 'LOW_BALANCE';
+  market_id?: number;
   market_name?: string;
   concession_code?: string;
   stall_number?: string;
