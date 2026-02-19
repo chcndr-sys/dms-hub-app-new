@@ -368,9 +368,11 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
 
   // Verifica se l'utente ha un permesso specifico
   const hasPermission = useCallback((code: string): boolean => {
-    // Se stiamo ancora caricando, non bloccare l'accesso
+    // Se stiamo ancora caricando, BLOCCARE l'accesso (secure by default).
+    // I tab appariranno una volta che i permessi sono caricati.
+    // Questo previene il flash dove i cittadini vedono tutti i tab PA.
     if (loading) {
-      return true;
+      return false;
     }
     // Se non ci sono permessi caricati, nega l'accesso (tranne per super admin NON in impersonazione)
     if (permissionCodes.length === 0) {
@@ -395,14 +397,14 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
 
   // Verifica se l'utente ha almeno uno dei permessi
   const hasAnyPermission = useCallback((codes: string[]): boolean => {
-    if (loading) return true;
+    if (loading) return false;
     if (permissionCodes.length === 0) return false;
     return codes.some(code => permissionCodes.includes(code));
   }, [permissionCodes, loading]);
 
   // Verifica se l'utente ha tutti i permessi
   const hasAllPermissions = useCallback((codes: string[]): boolean => {
-    if (loading) return true;
+    if (loading) return false;
     if (permissionCodes.length === 0) return false;
     return codes.every(code => permissionCodes.includes(code));
   }, [permissionCodes, loading]);

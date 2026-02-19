@@ -52,6 +52,7 @@ import CivicReportsPanel from '@/components/CivicReportsPanel';
 import GamingRewardsPanel from '@/components/GamingRewardsPanel';
 import { BusHubEditor } from '@/components/bus-hub';
 import { ProtectedTab, ProtectedQuickAccess } from '@/components/ProtectedTab';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { MessageContent } from '@/components/MessageContent';
 import { callOrchestrator } from '@/api/orchestratorClient';
 import { sendAgentMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient';
@@ -539,6 +540,30 @@ const mockData = {
 };
 
 export default function DashboardPA() {
+  const [location, setLocation] = useLocation();
+  const { loading: permissionsLoading, canViewTab } = usePermissions();
+
+  // Guard: se i permessi sono caricati e l'utente non puo' vedere nemmeno il tab 'dashboard',
+  // redirect alla home (e' un cittadino o utente senza permessi PA)
+  useEffect(() => {
+    if (!permissionsLoading && !canViewTab('dashboard')) {
+      console.warn('[DashboardPA] Utente senza permessi PA — redirect a /');
+      setLocation('/');
+    }
+  }, [permissionsLoading, canViewTab, setLocation]);
+
+  // Mostra loading spinner mentre i permessi si caricano
+  if (permissionsLoading) {
+    return (
+      <div className="min-h-screen bg-[#0b1220] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[#14b8a6]/30 border-t-[#14b8a6] rounded-full animate-spin" />
+          <span className="text-[#e8fbff]/60 text-sm">Caricamento permessi...</span>
+        </div>
+      </div>
+    );
+  }
+
   // MIO TEST: chcndr@gmail.com su smartphone → redirect a dashboard impresa
   useEffect(() => {
     const MOBILE_BREAKPOINT = 768;
@@ -1582,8 +1607,6 @@ export default function DashboardPA() {
     return () => clearInterval(interval);
   }, [isAnimating]);
 
-  const [location, setLocation] = useLocation();
-  
   // Read URL param ?tab=mio and set activeTab
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

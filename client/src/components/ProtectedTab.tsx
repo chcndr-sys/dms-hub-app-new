@@ -34,11 +34,11 @@ interface ProtectedTabProps {
  * </ProtectedTab>
  * ```
  */
-export function ProtectedTab({ 
-  tabId, 
-  children, 
-  showWhileLoading = true,
-  fallback = null 
+export function ProtectedTab({
+  tabId,
+  children,
+  showWhileLoading = false,
+  fallback = null
 }: ProtectedTabProps) {
   const { canViewTab, loading } = usePermissions();
 
@@ -69,11 +69,11 @@ interface ProtectedQuickAccessProps {
   fallback?: ReactNode;
 }
 
-export function ProtectedQuickAccess({ 
-  quickId, 
-  children, 
-  showWhileLoading = true,
-  fallback = null 
+export function ProtectedQuickAccess({
+  quickId,
+  children,
+  showWhileLoading = false,
+  fallback = null
 }: ProtectedQuickAccessProps) {
   const { canViewQuickAccess, loading } = usePermissions();
 
@@ -95,10 +95,10 @@ export function ProtectedQuickAccess({
  */
 export function useTabVisibility(tabId: string): boolean {
   const { canViewTab, loading } = usePermissions();
-  
-  // Durante il caricamento, considera il tab visibile
-  if (loading) return true;
-  
+
+  // Durante il caricamento, nascondi il tab (secure by default)
+  if (loading) return false;
+
   return canViewTab(tabId);
 }
 
@@ -107,10 +107,10 @@ export function useTabVisibility(tabId: string): boolean {
  */
 export function useQuickAccessVisibility(quickId: string): boolean {
   const { canViewQuickAccess, loading } = usePermissions();
-  
-  // Durante il caricamento, considera il quick access visibile
-  if (loading) return true;
-  
+
+  // Durante il caricamento, nascondi il quick access (secure by default)
+  if (loading) return false;
+
   return canViewQuickAccess(quickId);
 }
 
