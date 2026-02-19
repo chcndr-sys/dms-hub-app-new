@@ -800,7 +800,7 @@ export default function DashboardPA() {
         // Usa l'endpoint originale per le statistiche nazionali
         const [statsResponse, transactionsResponse] = await Promise.all([
           fetch(`${TCC_API}/api/tcc/v2/fund/stats`),
-          fetch(`${TCC_API}/api/tcc/v2/fund/transactions`)
+          fetch(`${TCC_API}/api/tcc/v2/fund/transactions?limit=500`)
         ]);
         const statsData = await statsResponse.json();
         const transactionsData = await transactionsResponse.json();

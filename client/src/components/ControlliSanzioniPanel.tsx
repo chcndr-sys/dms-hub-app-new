@@ -3115,10 +3115,10 @@ function SegnalazioniPMSubtab({ comuneId }: { comuneId: number }) {
         const statsData = await statsRes.json();
         if (statsData.success) setStats(statsData.data);
 
-        // Carica lista segnalazioni
-        const reportsRes = await fetch(`${MIHUB_API}/civic-reports?comune_id=${comuneId}&limit=50`);
+        // Carica lista segnalazioni - storico completo
+        const reportsRes = await fetch(`${MIHUB_API}/civic-reports?comune_id=${comuneId}&limit=200`);
         const reportsData = await reportsRes.json();
-        if (reportsData.success) setReports(reportsData.data);
+        if (reportsData.success) setReports(reportsData.data || []);
       } catch (error) {
         console.error('Errore caricamento segnalazioni:', error);
       } finally {
@@ -3149,11 +3149,15 @@ function SegnalazioniPMSubtab({ comuneId }: { comuneId: number }) {
       const res = await fetch(`${MIHUB_API}/civic-reports/${reportId}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resolution_notes: 'Risolto da PM' })
+        body: JSON.stringify({ resolution_notes: 'Risolto da PM', credit_tcc: true })
       });
       const data = await res.json();
       if (data.success) {
         setReports(prev => prev.map(r => r.id === reportId ? { ...r, status: 'resolved' } : r));
+        // Aggiorna stats dopo risoluzione
+        const statsRes = await fetch(`${MIHUB_API}/civic-reports/stats?comune_id=${comuneId}`);
+        const statsData = await statsRes.json();
+        if (statsData.success) setStats(statsData.data);
       }
     } catch (error) {
       console.error('Errore risoluzione:', error);

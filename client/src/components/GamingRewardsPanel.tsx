@@ -41,8 +41,14 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// URL API REST Backend Hetzner
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+// URL API REST Gaming Rewards — in produzione usa proxy Vercel (/api/gaming-rewards/* → orchestratore.mio-hub.me)
+// In sviluppo usa l'URL diretto dell'orchestratore
+const API_BASE_URL = import.meta.env.DEV
+  ? 'https://orchestratore.mio-hub.me'
+  : '';
+
+// URL API Hetzner per civic-reports (servite da api.mio-hub.me)
+const HETZNER_API_URL = 'https://api.mio-hub.me';
 
 // Coordinate centri comuni
 const COMUNI_COORDS: Record<number, { lat: number; lng: number; nome: string }> = {
@@ -782,35 +788,49 @@ export default function GamingRewardsPanel() {
   }, [comuneQueryParam]);
 
   // Funzione per caricare le segnalazioni civiche
-  // v1.3.2: Carica TUTTI i dati senza filtro comune — filtro è solo client-side
+  // v1.3.6: Carica TUTTE le segnalazioni (non solo stats.recent) per storico completo
   const loadCivicReports = useCallback(async () => {
     if (!config.civic_enabled) {
       setCivicReports([]);
       return;
     }
     try {
-      let url = `${API_BASE_URL}/api/civic-reports/stats`;
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data?.recent) {
-          const points: HeatmapPoint[] = data.data.recent
-            .filter((r: any) => r.lat && r.lng)
-            .map((r: any) => ({
-              id: r.id,
-              lat: parseFloat(r.lat),
-              lng: parseFloat(r.lng),
-              name: r.type || 'Segnalazione',
-              type: 'civic' as const,
-              tcc_earned: r.tcc_reward || 0,
-              tcc_spent: 0,
-              transactions: 1,
-              created_at: r.created_at || r.resolved_at || undefined, // v1.3.12: data/ora segnalazione
-              comune_id: r.comune_id ? parseInt(r.comune_id) : undefined, // v1.3.3
-            }));
-          setCivicReports(points);
+      // Carica lista completa segnalazioni, fallback su stats.recent
+      const [reportsRes, statsRes] = await Promise.all([
+        fetch(`${HETZNER_API_URL}/api/civic-reports?limit=200`).catch(() => null),
+        fetch(`${HETZNER_API_URL}/api/civic-reports/stats`).catch(() => null),
+      ]);
+
+      let rawReports: any[] = [];
+      if (reportsRes?.ok) {
+        const reportsData = await reportsRes.json();
+        if (reportsData.success && Array.isArray(reportsData.data)) {
+          rawReports = reportsData.data;
         }
       }
+      // Fallback: se la lista completa non disponibile, usa stats.recent
+      if (rawReports.length === 0 && statsRes?.ok) {
+        const data = await statsRes.json();
+        if (data.success && data.data?.recent) {
+          rawReports = data.data.recent;
+        }
+      }
+
+      const points: HeatmapPoint[] = rawReports
+        .filter((r: any) => r.lat && r.lng)
+        .map((r: any) => ({
+          id: r.id,
+          lat: parseFloat(r.lat),
+          lng: parseFloat(r.lng),
+          name: r.type || 'Segnalazione',
+          type: 'civic' as const,
+          tcc_earned: r.tcc_reward || 0,
+          tcc_spent: 0,
+          transactions: 1,
+          created_at: r.created_at || r.resolved_at || undefined,
+          comune_id: r.comune_id ? parseInt(r.comune_id) : undefined,
+        }));
+      setCivicReports(points);
     } catch (error) {
       console.error('Errore caricamento segnalazioni:', error);
     }

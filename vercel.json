@@ -48,6 +48,18 @@
       "destination": "https://api.mio-hub.me/api/imprese/:path*"
     },
     {
+      "source": "/api/civic-reports/:path*",
+      "destination": "https://api.mio-hub.me/api/civic-reports/:path*"
+    },
+    {
+      "source": "/api/citizens/:path*",
+      "destination": "https://orchestratore.mio-hub.me/api/citizens/:path*"
+    },
+    {
+      "source": "/api/citizens",
+      "destination": "https://orchestratore.mio-hub.me/api/citizens"
+    },
+    {
       "source": "/api/gaming-rewards/:path*",
       "destination": "https://orchestratore.mio-hub.me/api/gaming-rewards/:path*"
     },

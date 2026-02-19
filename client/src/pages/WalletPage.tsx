@@ -383,7 +383,7 @@ export default function WalletPage() {
         }
       }
 
-      const txRes = await fetch(`${API_BASE}/api/tcc/wallet/${userId}/transactions`, {
+      const txRes = await fetch(`${API_BASE}/api/tcc/wallet/${userId}/transactions?limit=500`, {
         headers: authHeaders,
       });
       if (txRes.ok) {

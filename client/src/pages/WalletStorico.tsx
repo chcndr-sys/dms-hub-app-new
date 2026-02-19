@@ -62,7 +62,7 @@ export default function WalletStorico() {
   useEffect(() => {
     if (currentUser?.id) {
       // Carica transazioni
-      const txPromise = fetch(`${API_BASE}/api/tcc/wallet/${currentUser.id}/transactions`)
+      const txPromise = fetch(`${API_BASE}/api/tcc/wallet/${currentUser.id}/transactions?limit=500`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {

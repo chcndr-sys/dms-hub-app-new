@@ -45,23 +45,33 @@ interface CivicConfig {
 
 export default function CivicReportsPanel() {
   const [stats, setStats] = useState<CivicStats | null>(null);
+  const [allReports, setAllReports] = useState<any[]>([]);
   const [config, setConfig] = useState<CivicConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const { comuneId: impersonatedComuneId } = useImpersonation();
   const { setSelectedReport } = useCivicReports();
   const comuneId = impersonatedComuneId ? parseInt(impersonatedComuneId) : 1;
 
-  // Carica statistiche
+  // Carica statistiche + lista completa segnalazioni
   const loadStats = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/civic-reports/stats?comune_id=${comuneId}`);
-      const data = await response.json();
+      const [statsRes, reportsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/civic-reports/stats?comune_id=${comuneId}`),
+        fetch(`${API_BASE_URL}/api/civic-reports?comune_id=${comuneId}&limit=200`)
+      ]);
+      const data = await statsRes.json();
       if (data.success) {
         setStats(data.data);
+      }
+      const reportsData = await reportsRes.json();
+      if (reportsData.success && reportsData.data) {
+        setAllReports(reportsData.data);
+      } else if (data.success && data.data?.recent) {
+        setAllReports(data.data.recent);
       }
     } catch (error) {
       console.error('Errore caricamento stats:', error);
@@ -241,10 +251,10 @@ export default function CivicReportsPanel() {
             </div>
           )}
 
-          {/* Lista segnalazioni recenti */}
+          {/* Lista segnalazioni - storico completo */}
           <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
-            {stats?.recent && stats.recent.length > 0 ? (
-              stats.recent.map((report: any) => (
+            {allReports.length > 0 ? (
+              allReports.map((report: any) => (
                 <div key={report.id} className="p-4 bg-[#0b1220] rounded-lg flex items-center justify-between cursor-pointer hover:bg-[#0b1220]/80 transition-colors" onClick={() => { if (report.lat && report.lng) { setSelectedReport({ id: report.id, lat: parseFloat(report.lat), lng: parseFloat(report.lng), type: report.type }); toast.info(`Centrato su: ${report.type}`); } }}>
                   <div className="flex-1">
                     <div className="text-[#e8fbff] font-semibold">{report.type}</div>
