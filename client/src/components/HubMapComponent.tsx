@@ -102,6 +102,17 @@ function MapCenterController(props: MapControllerProps) {
 // FUNZIONI HELPER
 // ============================================================================
 
+// Verifica se coordinate sono valide (non null, non NaN, range Italia plausibile)
+const isValidCoord = (lat: string | number | null | undefined, lng: string | number | null | undefined): boolean => {
+  if (lat == null || lng == null || lat === '' || lng === '') return false;
+  const latNum = typeof lat === 'number' ? lat : parseFloat(lat);
+  const lngNum = typeof lng === 'number' ? lng : parseFloat(lng);
+  if (isNaN(latNum) || isNaN(lngNum)) return false;
+  // Range plausibile per l'Italia (con margine)
+  if (latNum < 35 || latNum > 48 || lngNum < 6 || lngNum > 19) return false;
+  return true;
+};
+
 // Colore in base alla categoria del negozio
 const getShopCategoryColor = (category: string): string => {
   const colors: Record<string, string> = {
@@ -228,7 +239,7 @@ export function HubMapComponent({
           />
 
           {/* ========== VISTA ITALIA: Marker "H" per tutti gli HUB ========== */}
-          {showItalyView && allHubs.map((hub) => (
+          {showItalyView && allHubs.filter((hub) => isValidCoord(hub.lat, hub.lng)).map((hub) => (
             <Marker
               key={`hub-marker-${hub.id}`}
               position={[parseFloat(hub.lat), parseFloat(hub.lng)]}
@@ -364,7 +375,7 @@ export function HubMapComponent({
               </Marker>
 
               {/* ========== NEGOZI COME PUNTI (MARKERS) ========== */}
-              {hubData.shops && hubData.shops.map((shop) => {
+              {hubData.shops && hubData.shops.filter((shop) => isValidCoord(shop.lat, shop.lng)).map((shop) => {
                 const isSelected = selectedShopId === shop.id;
                 const shopColor = getShopStatusColor(shop.status);
                 const categoryIcon = getCategoryIcon(shop.category);

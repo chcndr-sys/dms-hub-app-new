@@ -21,6 +21,10 @@ interface HubLocation {
   name: string;
   city: string;
   address: string;
+  lat?: string;
+  lng?: string;
+  center_lat?: string;
+  center_lng?: string;
 }
 
 interface NuovoNegozioFormProps {
@@ -112,6 +116,11 @@ export default function NuovoNegozioForm({ onSuccess, onCancel }: NuovoNegozioFo
     setIsLoading(true);
 
     try {
+      // Recupera coordinate dell'HUB selezionato come default per il negozio
+      const selectedHub = hubs.find(h => h.id === parseInt(hubId));
+      const hubLat = selectedHub?.center_lat || selectedHub?.lat || null;
+      const hubLng = selectedHub?.center_lng || selectedHub?.lng || null;
+
       const response = await fetch(`${API_BASE_URL}/api/hub/shops/create-with-impresa`, {
         method: 'POST',
         headers: {
@@ -126,6 +135,8 @@ export default function NuovoNegozioForm({ onSuccess, onCancel }: NuovoNegozioFo
           telefono: telefono.trim() || null,
           email: email.trim() || null,
           hubId: parseInt(hubId),
+          lat: hubLat,
+          lng: hubLng,
         }),
       });
 

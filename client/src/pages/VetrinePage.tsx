@@ -192,21 +192,31 @@ export default function VetrinePage() {
     toast.success(`Prodotto "${product.name}" prenotato! Ritira in negozio.`);
   };
 
+  // Helper: verifica se le coordinate sono valide (non null/NaN, range Italia)
+  const isValidCoord = (lat: any, lng: any): boolean => {
+    if (lat == null || lng == null || lat === '' || lng === '') return false;
+    const latNum = parseFloat(String(lat));
+    const lngNum = parseFloat(String(lng));
+    if (isNaN(latNum) || isNaN(lngNum)) return false;
+    if (latNum < 35 || latNum > 48 || lngNum < 6 || lngNum > 19) return false;
+    return true;
+  };
+
   const handleNavigate = async (impresa: Impresa) => {
     try {
       // 1. Prima cerca se l'impresa ha un negozio HUB (tramite owner_id)
       const hubShopsResponse = await fetch(`${API_BASE_URL}/api/hub/shops`);
       const hubShopsResult = await hubShopsResponse.json();
-      
+
       if (hubShopsResult.success && hubShopsResult.data) {
         // Trova negozio HUB dell'impresa (owner_id = impresa.id)
         const hubShop = hubShopsResult.data.find((shop: any) => shop.owner_id === impresa.id);
-        
-        if (hubShop && hubShop.lat && hubShop.lng) {
-          // Negozio HUB trovato - usa le sue coordinate
+
+        if (hubShop && isValidCoord(hubShop.lat, hubShop.lng)) {
+          // Negozio HUB trovato con coordinate valide
           const params = new URLSearchParams({
-            destinationLat: hubShop.lat.toString(),
-            destinationLng: hubShop.lng.toString(),
+            destinationLat: String(parseFloat(hubShop.lat)),
+            destinationLng: String(parseFloat(hubShop.lng)),
             destinationName: `${impresa.denominazione} - Negozio HUB`,
             marketName: 'Hub Centro Grosseto'
           });
@@ -214,27 +224,29 @@ export default function VetrinePage() {
           return;
         }
       }
-      
+
       // 2. Se non è un negozio HUB, cerca nei posteggi del mercato
       const response = await fetch(`${API_BASE_URL}/api/markets/1/stalls`);
       const result = await response.json();
-      
+
       if (result.success && result.data) {
         // Trova posteggio dell'impresa
         const stall = result.data.find((s: any) => s.impresa_id === impresa.id);
-        
-        if (stall && stall.latitude && stall.longitude) {
+
+        if (stall && isValidCoord(stall.latitude, stall.longitude)) {
           // Passa coordinate GPS + info negozio
           const params = new URLSearchParams({
-            destinationLat: stall.latitude.toString(),
-            destinationLng: stall.longitude.toString(),
+            destinationLat: String(parseFloat(stall.latitude)),
+            destinationLng: String(parseFloat(stall.longitude)),
             destinationName: `${impresa.denominazione} - Posteggio #${stall.number}`,
             marketName: 'Mercato Grosseto'
           });
           navigate(`/route?${params.toString()}`);
-        } else {
+        } else if (impresa.indirizzo) {
           // Fallback: usa solo indirizzo
-          navigate(`/route?destination=${encodeURIComponent(impresa.indirizzo || '')}`);
+          navigate(`/route?destination=${encodeURIComponent(impresa.indirizzo)}`);
+        } else {
+          toast.error('Nessuna posizione disponibile per questa impresa');
         }
       }
     } catch (error) {
