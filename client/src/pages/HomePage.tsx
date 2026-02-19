@@ -39,12 +39,30 @@ export default function HomePage() {
   // Permessi utente per controllare visibilità tab
   const { canViewTab, canViewQuickAccess, loading: permissionsLoading } = usePermissions();
 
+  // Determina il ruolo utente per mostrare i tasti giusti
+  const [userRole, setUserRole] = useState<'citizen' | 'business' | 'admin' | null>(null);
+
   // Controlla autenticazione all'avvio
   useEffect(() => {
     const checkAuth = () => {
       const userStr = localStorage.getItem('user');
       const token = localStorage.getItem('token');
       setIsAuthenticated(!!(userStr && token));
+      // Determina ruolo utente
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user.is_super_admin || user.base_role === 'admin') {
+            setUserRole('admin');
+          } else if (user.base_role === 'business') {
+            setUserRole('business');
+          } else {
+            setUserRole('citizen');
+          }
+        } catch { setUserRole('citizen'); }
+      } else {
+        setUserRole(null);
+      }
     };
     checkAuth();
     window.addEventListener('storage', checkAuth);
@@ -427,74 +445,66 @@ export default function HomePage() {
             </Button>
           </div>
 
-          {/* Tab Impresa - Riga 2 (v4.3.4 - Presenze in fondo, col-span-2) */}
+          {/* Tab Impresa - Riga 2: visibile per utenti business, admin, o con permessi impresa */}
+          {(userRole === 'business' || userRole === 'admin' || canViewTab('wallet_impresa')) && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap md:justify-center gap-2 sm:gap-4 w-full max-w-4xl px-2">
             {/* Wallet Impresa - pagamenti PagoPA */}
-            {(permissionsLoading || canViewTab('wallet_impresa')) && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => handleProtectedNavigation('/app/impresa/wallet')}
-                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
-              >
-                <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span className="text-xs sm:text-sm">Wallet Imp.</span>
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => handleProtectedNavigation('/app/impresa/wallet')}
+              className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+            >
+              <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Wallet Imp.</span>
+            </Button>
             {/* Hub Operatore */}
-            {(permissionsLoading || canViewQuickAccess('hub_operatore')) && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => handleProtectedNavigation('/hub-operatore')}
-                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
-              >
-                <Activity className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span className="text-xs sm:text-sm">Hub Op.</span>
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => handleProtectedNavigation('/hub-operatore')}
+              className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+            >
+              <Activity className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Hub Op.</span>
+            </Button>
             {/* Notifiche */}
-            {(permissionsLoading || canViewQuickAccess('notifiche')) && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => handleProtectedNavigation('/app/impresa/notifiche')}
-                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 relative"
-              >
-                <Bell className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span className="text-xs sm:text-sm">Notifiche</span>
-                {unreadNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                  </span>
-                )}
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => handleProtectedNavigation('/app/impresa/notifiche')}
+              className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 relative"
+            >
+              <Bell className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Notifiche</span>
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                </span>
+              )}
+            </Button>
             {/* Anagrafica */}
-            {(permissionsLoading || canViewTab('anagrafica')) && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => handleProtectedNavigation('/app/impresa/anagrafica')}
-                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
-              >
-                <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span className="text-xs sm:text-sm">Anagrafica</span>
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => handleProtectedNavigation('/app/impresa/anagrafica')}
+              className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30"
+            >
+              <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Anagrafica</span>
+            </Button>
             {/* Presenze - in fondo, grande come Vetrine (col-span-2 su mobile) */}
-            {(permissionsLoading || canViewTab('presenze')) && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => handleProtectedNavigation('/app/impresa/presenze')}
-                className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 col-span-2 sm:col-span-1"
-              >
-                <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span className="text-xs sm:text-sm">Presenze</span>
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => handleProtectedNavigation('/app/impresa/presenze')}
+              className="h-16 sm:h-24 sm:w-36 flex-col gap-1 sm:gap-2 bg-card/80 backdrop-blur-sm hover:bg-primary/20 border-primary/30 col-span-2 sm:col-span-1"
+            >
+              <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-xs sm:text-sm">Presenze</span>
+            </Button>
           </div>
+          )}
         </main>
 
         {/* Footer globale gestito da App.tsx GlobalFooter */}

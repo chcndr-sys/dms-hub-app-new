@@ -552,18 +552,6 @@ export default function DashboardPA() {
     }
   }, [permissionsLoading, canViewTab, setLocation]);
 
-  // Mostra loading spinner mentre i permessi si caricano
-  if (permissionsLoading) {
-    return (
-      <div className="min-h-screen bg-[#0b1220] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[#14b8a6]/30 border-t-[#14b8a6] rounded-full animate-spin" />
-          <span className="text-[#e8fbff]/60 text-sm">Caricamento permessi...</span>
-        </div>
-      </div>
-    );
-  }
-
   // MIO TEST: chcndr@gmail.com su smartphone → redirect a dashboard impresa
   useEffect(() => {
     const MOBILE_BREAKPOINT = 768;
@@ -1951,6 +1939,19 @@ export default function DashboardPA() {
       </div>
     );
   };
+
+  // Mostra loading spinner mentre i permessi si caricano
+  // NOTA: questo check DEVE stare dopo tutti gli hooks per evitare React error #300
+  if (permissionsLoading) {
+    return (
+      <div className="min-h-screen bg-[#0b1220] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[#14b8a6]/30 border-t-[#14b8a6] rounded-full animate-spin" />
+          <span className="text-[#e8fbff]/60 text-sm">Caricamento permessi...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0b1220] overflow-x-hidden" role="main" aria-label="Dashboard Pubblica Amministrazione">
