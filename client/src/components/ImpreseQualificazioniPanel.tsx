@@ -45,179 +45,7 @@ export interface QualificazioneDTO {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
 
-// ============================================================================
-// DATI MOCK (usati come fallback se API non disponibili)
-// ============================================================================
-
-const MOCK_IMPRESE: ImpresaDTO[] = [
-  {
-    id: 1,
-    id_impresa: 1,
-    denominazione: 'Mercato Centrale S.r.l.',
-    ragione_sociale: 'Mercato Centrale S.r.l.',
-    partita_iva: '01234567890',
-    piva: '01234567890',
-    codice_fiscale: '01234567890',
-    comune: 'Bologna',
-    settore: 'Commercio al dettaglio',
-    num_qualificazioni_attive: 3
-  },
-  {
-    id: 2,
-    id_impresa: 2,
-    denominazione: 'Alimentari Rossi & C.',
-    ragione_sociale: 'Alimentari Rossi & C.',
-    partita_iva: '09876543210',
-    piva: '09876543210',
-    codice_fiscale: '09876543210',
-    comune: 'Modena',
-    settore: 'Alimentari',
-    num_qualificazioni_attive: 2
-  },
-  {
-    id: 3,
-    id_impresa: 3,
-    denominazione: 'Distribuzione Emilia S.p.A.',
-    ragione_sociale: 'Distribuzione Emilia S.p.A.',
-    partita_iva: '11223344556',
-    piva: '11223344556',
-    codice_fiscale: '11223344556',
-    comune: 'Parma',
-    settore: 'Logistica e distribuzione',
-    num_qualificazioni_attive: 5
-  },
-  {
-    id: 4,
-    id_impresa: 4,
-    denominazione: 'Bio Market Italia',
-    ragione_sociale: 'Bio Market Italia',
-    partita_iva: '66778899001',
-    piva: '66778899001',
-    codice_fiscale: '66778899001',
-    comune: 'Reggio Emilia',
-    settore: 'Biologico',
-    num_qualificazioni_attive: 1
-  }
-];
-
-const MOCK_QUALIFICAZIONI: Record<number, QualificazioneDTO[]> = {
-  1: [
-    {
-      id_qualificazione: 101,
-      id_impresa: 1,
-      tipo: 'CONCESSIONE MERCATO',
-      ente_rilascio: 'Comune di Bologna',
-      data_rilascio: '2023-01-15',
-      data_scadenza: '2025-01-15',
-      stato: 'ATTIVA',
-      note: 'Concessione per area mercato coperto settore alimentare'
-    },
-    {
-      id_qualificazione: 102,
-      id_impresa: 1,
-      tipo: 'DURC',
-      ente_rilascio: 'INPS',
-      data_rilascio: '2024-11-01',
-      data_scadenza: '2025-02-01',
-      stato: 'ATTIVA',
-      note: 'Documento Unico Regolarità Contributiva'
-    },
-    {
-      id_qualificazione: 103,
-      id_impresa: 1,
-      tipo: 'ISO 9001',
-      ente_rilascio: 'Bureau Veritas',
-      data_rilascio: '2022-06-10',
-      data_scadenza: '2025-06-10',
-      stato: 'ATTIVA',
-      note: 'Certificazione qualità sistema gestione'
-    }
-  ],
-  2: [
-    {
-      id_qualificazione: 201,
-      id_impresa: 2,
-      tipo: 'HACCP',
-      ente_rilascio: 'ASL Modena',
-      data_rilascio: '2024-03-20',
-      data_scadenza: '2026-03-20',
-      stato: 'ATTIVA',
-      note: 'Certificazione igiene alimentare'
-    },
-    {
-      id_qualificazione: 202,
-      id_impresa: 2,
-      tipo: 'DURC',
-      ente_rilascio: 'INPS',
-      data_rilascio: '2024-10-15',
-      data_scadenza: '2024-12-01',
-      stato: 'IN_VERIFICA',
-      note: 'In attesa di rinnovo'
-    }
-  ],
-  3: [
-    {
-      id_qualificazione: 301,
-      id_impresa: 3,
-      tipo: 'CONCESSIONE MERCATO',
-      ente_rilascio: 'Comune di Parma',
-      data_rilascio: '2021-05-10',
-      data_scadenza: '2024-11-30',
-      stato: 'SCADUTA',
-      note: 'Necessario rinnovo urgente'
-    },
-    {
-      id_qualificazione: 302,
-      id_impresa: 3,
-      tipo: 'ISO 14001',
-      ente_rilascio: 'TÜV Italia',
-      data_rilascio: '2023-09-01',
-      data_scadenza: '2026-09-01',
-      stato: 'ATTIVA',
-      note: 'Certificazione ambientale'
-    },
-    {
-      id_qualificazione: 303,
-      id_impresa: 3,
-      tipo: 'DURC',
-      ente_rilascio: 'INPS',
-      data_rilascio: '2024-11-20',
-      data_scadenza: '2025-02-20',
-      stato: 'ATTIVA'
-    },
-    {
-      id_qualificazione: 304,
-      id_impresa: 3,
-      tipo: 'HACCP',
-      ente_rilascio: 'ASL Parma',
-      data_rilascio: '2024-01-10',
-      data_scadenza: '2026-01-10',
-      stato: 'ATTIVA'
-    },
-    {
-      id_qualificazione: 305,
-      id_impresa: 3,
-      tipo: 'ISO 22000',
-      ente_rilascio: 'DNV',
-      data_rilascio: '2023-07-15',
-      data_scadenza: '2026-07-15',
-      stato: 'ATTIVA',
-      note: 'Sicurezza alimentare'
-    }
-  ],
-  4: [
-    {
-      id_qualificazione: 401,
-      id_impresa: 4,
-      tipo: 'BIOLOGICO EU',
-      ente_rilascio: 'ICEA',
-      data_rilascio: '2024-02-01',
-      data_scadenza: '2025-02-01',
-      stato: 'ATTIVA',
-      note: 'Certificazione prodotti biologici'
-    }
-  ]
-};
+// NOTA: Dati mock rimossi. Se l'API non risponde, mostrare stato vuoto.
 
 // ============================================================================
 // COMPONENTE PRINCIPALE
@@ -248,13 +76,11 @@ export default function ImpreseQualificazioniPanel() {
           }));
           setImprese(mappedImprese);
         } else {
-          // Fallback a dati mock
-          setImprese(MOCK_IMPRESE);
+          setImprese([]);
         }
       } catch (error) {
         console.error('Error fetching imprese:', error);
-        // Fallback a dati mock
-        setImprese(MOCK_IMPRESE);
+        setImprese([]);
       } finally {
         setLoading(false);
       }
@@ -273,13 +99,11 @@ export default function ImpreseQualificazioniPanel() {
           if (data.success) {
             setQualificazioni(data.data);
           } else {
-            // Fallback a dati mock
-            setQualificazioni(MOCK_QUALIFICAZIONI[selectedImpresa.id_impresa || selectedImpresa.id] || []);
+            setQualificazioni([]);
           }
         } catch (error) {
           console.error('Error fetching qualificazioni:', error);
-          // Fallback a dati mock
-          setQualificazioni(MOCK_QUALIFICAZIONI[selectedImpresa.id_impresa || selectedImpresa.id] || []);
+          setQualificazioni([]);
         } finally {
           setLoading(false);
         }
