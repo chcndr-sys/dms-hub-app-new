@@ -180,22 +180,12 @@ export default function DashboardImpresa() {
           }
         }
 
-        // Strategia 3: Cerca per email su orchestratore
-        if (!impresaData && effectiveUser.email) {
-          try {
-            const response = await fetch(
-              `${ORCHESTRATORE_API_BASE_URL}/api/imprese?email=${encodeURIComponent(effectiveUser.email)}`
-            );
-            if (response.ok) {
-              const data = await response.json();
-              if (data.success && data.data && data.data.length > 0) {
-                impresaData = data.data[0];
-              }
-            }
-          } catch (err) {
-            console.warn('[DashboardImpresa] Lookup per email fallito:', err);
-          }
-        }
+        // Strategia 3: RIMOSSA - La ricerca per email è stata rimossa perché l'email
+        // dell'impresa è l'email DI CONTATTO dell'azienda, NON l'email del proprietario.
+        // Cercando per email si associavano erroneamente imprese a utenti cittadini
+        // che condividevano la stessa email (es. checchi@me.com era email di contatto
+        // dell'impresa Alimentare Rossi, ma l'utente è un cittadino).
+        // Il match corretto avviene tramite impresa_id (Strategia 1-2) o user_id (Strategia 5).
 
         // Strategia 4: Cerca per codice fiscale su orchestratore (fallback originale)
         if (!impresaData && effectiveUser.fiscalCode) {

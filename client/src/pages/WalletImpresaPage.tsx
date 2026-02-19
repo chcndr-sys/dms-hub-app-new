@@ -193,32 +193,13 @@ export default function WalletImpresaPage() {
         return;
       }
 
-      // Strategia 3: cerca impresa per email su MIHUB
-      if (userEmail) {
-        try {
-          const res = await fetch(`${MIHUB_URL}/api/imprese?email=${encodeURIComponent(userEmail)}`);
-          if (res.ok) {
-            const data = await res.json();
-            const list = data.success ? data.data : (Array.isArray(data) ? data : null);
-            if (list && list.length > 0 && list[0].id) {
-              impresaId = list[0].id;
-            }
-          }
-        } catch { /* ignore */ }
-      }
-
-      // Strategia 4: cerca impresa per email su orchestratore
-      if (!impresaId && userEmail) {
-        try {
-          const res = await fetch(`${ORCHESTRATORE_URL}/api/imprese?email=${encodeURIComponent(userEmail)}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && data.data && data.data.length > 0) {
-              impresaId = data.data[0].id;
-            }
-          }
-        } catch { /* ignore */ }
-      }
+      // Strategia 3-4: RIMOSSE - La ricerca per email è stata rimossa perché l'email
+      // dell'impresa è l'email DI CONTATTO dell'azienda, NON l'email del proprietario.
+      // Cercando per email si associavano erroneamente imprese a utenti cittadini
+      // che condividevano la stessa email (es. checchi@me.com era email di contatto
+      // di un'impresa, ma l'utente è un cittadino).
+      // Il match corretto avviene tramite impresaId da localStorage (Strategia 1-2)
+      // o user_id (Strategia 5).
 
       // Strategia 5: cerca per user_id su orchestratore
       if (!impresaId && userId) {

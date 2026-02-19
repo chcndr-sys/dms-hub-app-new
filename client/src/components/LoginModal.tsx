@@ -84,6 +84,7 @@ export default function LoginModal({ isOpen, onClose, redirectRoute }: LoginModa
   const handleClose = () => {
     setUserType(null);
     setError('');
+    setLoading(false);
     setShowEmailForm(false);
     setIsRegistering(false);
     setShowResetPassword(false);
@@ -108,9 +109,11 @@ export default function LoginModal({ isOpen, onClose, redirectRoute }: LoginModa
     setError('');
     try {
       await signInWithGoogle();
+      // NON resettare loading qui: il sync backend è ancora in corso.
+      // Il loading sarà resettato dal useEffect quando isAuthenticated diventa true,
+      // oppure da handleClose se l'utente chiude manualmente il popup.
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore durante il login con Google');
-    } finally {
       setLoading(false);
     }
   };
@@ -120,9 +123,9 @@ export default function LoginModal({ isOpen, onClose, redirectRoute }: LoginModa
     setError('');
     try {
       await signInWithApple();
+      // NON resettare loading: sync backend in corso (vedi handleGoogleLogin)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore durante il login con Apple');
-    } finally {
       setLoading(false);
     }
   };
@@ -136,9 +139,12 @@ export default function LoginModal({ isOpen, onClose, redirectRoute }: LoginModa
     setError('');
     try {
       await signInWithEmail(emailForm.email, emailForm.password);
+      // NON resettare loading: il sync backend (lookupLegacyUser, checkNeonRoles,
+      // createFirebaseSession) è ancora in corso. Lo spinner resta visibile finché
+      // isAuthenticated diventa true (e il useEffect chiude il modal),
+      // oppure finché l'utente chiude manualmente con la X.
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Credenziali non valide');
-    } finally {
       setLoading(false);
     }
   };
@@ -164,9 +170,9 @@ export default function LoginModal({ isOpen, onClose, redirectRoute }: LoginModa
     setError('');
     try {
       await signUpWithEmail(emailForm.email, emailForm.password, emailForm.name);
+      // NON resettare loading: sync backend in corso (vedi handleEmailLogin)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore durante la registrazione');
-    } finally {
       setLoading(false);
     }
   };
