@@ -381,78 +381,61 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
   // un'impresa in modo affidabile.
 
   // ============================================
-  // STEP 2: Sync con backend Firebase (Vercel serverless function)
-  // URL RELATIVO: va a Vercel (dove gira il client), NON a Hetzner
-  // Include trackLogin per registrare il login nel DB
+  // STEPS 2-5 IN PARALLELO: Vercel sync, Neon RBAC, sessione JWT
+  // Eseguiti in parallelo per ridurre il tempo di login da ~6s a ~2s
   // ============================================
-  let backendSyncData: any = null;
-  try {
-    const response = await fetch(`/api/auth/firebase/sync`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`,
-      },
-      body: JSON.stringify({
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        provider,
-        role,
-        // Login tracking data
-        trackLogin: true,
-        legacyUserId: legacyUser?.id || 0,
-        userName: legacyUser?.name || firebaseUser.displayName || '',
-        userEmail: firebaseUser.email || email,
-      }),
-    });
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.user) {
-        backendSyncData = data.user;
+  const vercelSyncPromise = (async (): Promise<any> => {
+    try {
+      const response = await fetch(`/api/auth/firebase/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          provider,
+          role,
+          trackLogin: true,
+          legacyUserId: legacyUser?.id || 0,
+          userName: legacyUser?.name || firebaseUser.displayName || '',
+          userEmail: firebaseUser.email || email,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) return data.user;
       }
-      if (data.loginTracked) {
-        console.warn('[FirebaseAuth] Login tracciato con successo nel DB');
-      }
+    } catch (err) {
+      console.warn('[FirebaseAuth] Backend sync fallito:', err);
     }
-  } catch (err) {
-    console.warn('[FirebaseAuth] Backend sync fallito:', err);
-  }
+    return null;
+  })();
 
-  // ============================================
-  // STEP 3: Registra evento di login nel sistema di sicurezza
-  // ============================================
-  if (legacyUser) {
-    trackLoginEvent(legacyUser.id, email, provider, true);
-  }
+  const neonRolesPromise = email
+    ? checkNeonRoles(email)
+    : Promise.resolve({ roles: [] as any[], isAdmin: false });
 
-  // ============================================
-  // STEP 4: Controlla ruoli nel Neon DB (il vero RBAC system)
-  // Il Neon DB ha user_role_assignments che è la fonte di verità.
-  // L'orchestratore legacy è un fallback.
-  // Firebase conosce solo il ruolo scelto alla registrazione ('citizen').
-  // ============================================
-  let neonAdmin = false;
-  let neonRoles: any[] = [];
+  const sessionPromise = createFirebaseSession(idToken);
+
+  // Esegui le 3 chiamate in parallelo (risparmia ~4s di latenza)
+  const [backendSyncData, neonResult] = await Promise.all([
+    vercelSyncPromise,
+    neonRolesPromise,
+    sessionPromise,
+  ]);
+
+  const neonAdmin = neonResult.isAdmin;
+  const neonRoles = neonResult.roles;
   const hasImpresa = !!legacyUser?.impresa_id;
 
-  if (email) {
-    const neonResult = await checkNeonRoles(email);
-    neonAdmin = neonResult.isAdmin;
-    neonRoles = neonResult.roles;
-
-    // Se non e' admin nel Neon DB E ha un'impresa associata,
-    // assicura che sia admin (ensureAdmin e' idempotente)
-    if (!neonAdmin && hasImpresa) {
-      const bootstrapped = await tryBootstrapAdmin(email);
-      if (bootstrapped) {
-        const recheck = await checkNeonRoles(email);
-        neonAdmin = recheck.isAdmin;
-        neonRoles = recheck.roles;
-      }
-    }
+  // Track login event in background (fire-and-forget, non blocca il login)
+  if (legacyUser) {
+    trackLoginEvent(legacyUser.id, email, provider, true);
   }
 
   const isLegacyAdmin = legacyUser?.is_super_admin === true ||
@@ -461,10 +444,8 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
       (r: { role_id: number }) => r.role_id === 1
     );
 
-  // Admin se Neon DB O orchestratore legacy lo dicono
   const isAdmin = neonAdmin || isLegacyAdmin;
 
-  // Merge ruoli: Neon DB ha la priorità, poi legacy
   const mergedRoles = neonRoles.length > 0
     ? neonRoles.map((r: any) => ({
         role_id: r.role_id,
@@ -476,18 +457,17 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
     : legacyUser?.assigned_roles || [];
 
   // ============================================
-  // STEP 5: Crea sessione JWT sul backend (cookie app_session_id)
-  // Senza questo cookie, tutte le protectedProcedure tRPC falliscono con 401.
-  // ============================================
-  await createFirebaseSession(idToken);
-
-  // ============================================
   // STEP 6: Costruisci il MioHubUser con tutti i dati
   // ============================================
 
-  // Determina ruolo effettivo: admin > RBAC esplicito > business (ha impresa) > Firebase > citizen
-  // Il ruolo RBAC dal Neon DB (user_role_assignments) ha priorità sull'associazione impresa,
-  // perché un utente può avere la stessa email di contatto di un'impresa senza esserne titolare.
+  // Determina ruolo effettivo:
+  // 1. Admin (Neon o legacy) → pa
+  // 2. RBAC esplicito citizen nel Neon DB → citizen
+  // 3. Utente ha scelto "Cittadino" al login (role='citizen') → citizen
+  //    NON promuovere a 'business' solo perché impresa_id esiste nel DB legacy.
+  //    impresa_id può essere un'associazione vecchia, errata, o da email di contatto.
+  // 4. Ha impresa e ha scelto "Impresa" al login → business
+  // 5. Fallback → ruolo dal backend o scelta utente
   const hasExplicitCitizenRole = neonRoles.length > 0 && neonRoles.some(
     (r: any) => r.role_code === 'citizen' || r.role_code === 'cittadino'
   );
@@ -495,7 +475,10 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
   if (isAdmin) {
     effectiveRole = 'pa';
   } else if (hasExplicitCitizenRole) {
-    // L'utente ha un ruolo citizen esplicito nel RBAC - rispettarlo
+    effectiveRole = 'citizen';
+  } else if (role === 'citizen') {
+    // L'utente ha scelto "Cittadino" al login - rispettare la scelta.
+    // NON sovrascrivere a 'business' solo per impresa_id nel DB legacy.
     effectiveRole = 'citizen';
   } else if (hasImpresa) {
     effectiveRole = 'business';
@@ -503,11 +486,7 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
     effectiveRole = backendSyncData?.role || role;
   }
 
-  // NOTA: impresaId viene settato SOLO se il ruolo effettivo NON è citizen.
-  // Un utente citizen con impresa_id nel DB (es. stessa email di contatto dell'impresa)
-  // NON deve ricevere impresaId perché causerebbe l'iniezione di permessi impresa
-  // nel PermissionsContext e la visualizzazione errata di tab impresa.
-  // Il ruolo RBAC esplicito (citizen) ha priorità sull'associazione impresa nel DB.
+  // impresaId viene settato SOLO se il ruolo effettivo NON è citizen.
   const shouldSetImpresa = effectiveRole !== 'citizen' && !!legacyUser?.impresa_id;
 
   const miohubUser: MioHubUser = {
@@ -519,7 +498,6 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
     role: effectiveRole,
     fiscalCode: backendSyncData?.fiscalCode || undefined,
     verified: firebaseUser.emailVerified,
-    // Dati dal DB legacy (orchestratore) - questi sono i dati critici
     miohubId: legacyUser?.id || backendSyncData?.id || 0,
     impresaId: shouldSetImpresa ? legacyUser!.impresa_id : undefined,
     walletBalance: legacyUser?.wallet_balance || 0,
