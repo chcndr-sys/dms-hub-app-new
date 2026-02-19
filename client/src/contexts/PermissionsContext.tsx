@@ -100,6 +100,29 @@ const IMPRESA_ONLY_PERMISSION_CODES = [
   'quick.view.notifiche',
 ];
 
+// MIO TEST: Email dell'account admin che su smartphone vede solo vista impresa
+const MOBILE_IMPRESA_TEST_EMAIL = 'chcndr@gmail.com';
+const MOBILE_BREAKPOINT = 768;
+
+/**
+ * Controlla se siamo in modalita' test mobile-impresa:
+ * l'utente e' chcndr@gmail.com E il viewport e' smartphone (< 768px)
+ */
+function isMobileImpresaTestMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+  if (!isMobile) return false;
+
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return false;
+  try {
+    const user = JSON.parse(userStr);
+    return user.email === MOBILE_IMPRESA_TEST_EMAIL;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Genera permessi extra basati sui dati utente in localStorage.
  * Questi si aggiungono ai permessi caricati dall'orchestratore.
@@ -120,6 +143,15 @@ function getClientSidePermissions(isImpersonating: boolean): Permission[] {
     const user = JSON.parse(userStr);
     const extraPerms: Permission[] = [];
     let id = 9000;
+
+    // MIO TEST: chcndr@gmail.com su smartphone → solo permessi impresa
+    if (isMobileImpresaTestMode()) {
+      console.warn('[PermissionsContext] MIO TEST: modalita mobile-impresa per', user.email);
+      for (const code of IMPRESA_ONLY_PERMISSION_CODES) {
+        extraPerms.push({ id: id++, code, name: code, category: code.startsWith('tab') ? 'tab' : 'quick', is_sensitive: false });
+      }
+      return extraPerms;
+    }
 
     // Admin / Super admin → TUTTI i permessi (28 tab PA + 11 quick + tab impresa)
     if (user.base_role === 'admin' || user.is_super_admin) {
@@ -274,10 +306,18 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
       const clientPerms = getClientSidePermissions(impersonating);
       const serverCodes = new Set(serverPerms.map((p: Permission) => p.code));
       const extraPerms = clientPerms.filter(p => !serverCodes.has(p.code));
-      const allPerms = [...serverPerms, ...extraPerms];
+      let allPerms = [...serverPerms, ...extraPerms];
 
       if (extraPerms.length > 0) {
         console.warn(`[PermissionsContext] Aggiunti ${extraPerms.length} permessi client-side: ${extraPerms.map(p => p.code).join(', ')}`);
+      }
+
+      // MIO TEST: chcndr@gmail.com su smartphone → filtra SOLO permessi impresa
+      // Necessario perche' il server restituisce tutti i permessi super_admin
+      if (isMobileImpresaTestMode()) {
+        const impresaCodes = new Set(IMPRESA_ONLY_PERMISSION_CODES);
+        allPerms = allPerms.filter(p => impresaCodes.has(p.code));
+        console.warn(`[PermissionsContext] MIO TEST: filtrati a ${allPerms.length} permessi impresa`);
       }
 
       setPermissions(allPerms);

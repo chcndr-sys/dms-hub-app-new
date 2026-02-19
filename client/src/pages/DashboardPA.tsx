@@ -539,10 +539,26 @@ const mockData = {
 };
 
 export default function DashboardPA() {
+  // MIO TEST: chcndr@gmail.com su smartphone → redirect a dashboard impresa
+  useEffect(() => {
+    const MOBILE_BREAKPOINT = 768;
+    if (window.innerWidth >= MOBILE_BREAKPOINT) return;
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return;
+      const user = JSON.parse(userStr);
+      if (user.email === 'chcndr@gmail.com') {
+        console.warn('[DashboardPA] MIO TEST: redirect mobile a /dashboard-impresa');
+        window.location.href = '/dashboard-impresa';
+        return;
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   // 🆘 FORZATURA DI EMERGENZA: Ripristino conversation_id storico
   useEffect(() => {
     const TARGET_ID = 'dfab3001-0969-4d6d-93b5-e6f69eecb794';
-    
+
     if (localStorage.getItem('mihub_global_conversation_id') !== TARGET_ID) {
       console.warn('[DashboardPA] Ripristino chat storica');
       localStorage.setItem('mihub_global_conversation_id', TARGET_ID);
