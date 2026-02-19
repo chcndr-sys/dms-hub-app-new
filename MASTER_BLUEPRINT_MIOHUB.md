@@ -33,7 +33,7 @@
 
 ### Sessione 19 Febbraio 2026 (sera) — v7.9.0 — Fix Backend Dismesso + Migrazione URL + Savepoint
 
-**Commit finale:** `91689d4` (master) — **Tag stabile: `v7.9.0-stable`**
+**Commit finale:** `65ae452` (master) — **Tag stabile: `v7.9.0-stable`**
 
 Sessione dedicata a: fix impersonazione Grosseto, migrazione da api.mio-hub.me dismesso, storico wallet/sanzioni, e creazione savepoint stabile.
 
@@ -66,18 +66,21 @@ Sessione dedicata a: fix impersonazione Grosseto, migrazione da api.mio-hub.me d
 - **Tag `v7.9.0-stable`** creato su commit `b880e51` come punto di ripristino sicuro.
 - Rollback: `git reset --hard v7.9.0-stable && git push origin master --force`
 
-#### Stato Migrazione URL api.mio-hub.me
+#### 10. Migrazione Massiva URL api.mio-hub.me → MIHUB_API_BASE_URL (commit `65ae452`)
 
-Analisi completa dei riferimenti residui nel codice sorgente:
+- **23 file modificati**, 39 riferimenti `https://api.mio-hub.me` sostituiti con `MIHUB_API_BASE_URL`.
+- `Integrazioni.tsx` NON toccato (32 riferimenti sono corretti — dashboard test/inventario).
+- File principali: DashboardPA (5), WalletImpresaPage (2), WalletPanel (3), realEndpoints (3), GamingRewardsPanel (2), NotificationsPanel (2), TransportContext (2), SharedWorkspace (2), utils/api (1), e altri 14 file con 1 riferimento ciascuno.
+
+**File modificati:** 23 file, +64/-40 righe
+
+#### Stato Migrazione URL api.mio-hub.me — COMPLETATA ✅
 
 | Tipo URL | Riferimenti | File | Stato |
 |----------|-------------|------|-------|
-| `api.mio-hub.me` (da migrare) | 39 | 24 | ⚠️ Pendente (commit `a67857d` pronto) |
+| `api.mio-hub.me` (da migrare) | ~~39~~ → **0** | 0 | ✅ COMPLETATO |
 | `api.mio-hub.me` in Integrazioni.tsx | 32 | 1 | ✅ OK — dashboard test/inventario |
-| `mihub.157-90-29-66.nip.io` (diretto) | 15 | 9 | ✅ OK |
-| `MIHUB_API_BASE_URL` (corretto) | 75 | 27 | ✅ OK |
-
-**Nota:** `api.mio-hub.me` funziona ancora perché nginx fa proxy a porta 3000, ma è il dominio del vecchio backend e va eliminato dal codice.
+| `MIHUB_API_BASE_URL` (corretto) | ~114 | ~50 | ✅ OK |
 
 ---
 
