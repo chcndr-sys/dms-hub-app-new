@@ -396,7 +396,8 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Tab Pubblici - Riga 1 (v4.3.6 - card più larghe, gap ridotto, font più grande) */}
+          {/* Tab Pubblici - Riga 1: nascosti per utenti impresa/admin (vedono solo tab Impresa) */}
+          {userRole !== 'business' && userRole !== 'admin' && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap md:justify-center gap-2 sm:gap-4 w-full max-w-4xl px-2">
             <Button
               variant="outline"
@@ -444,6 +445,7 @@ export default function HomePage() {
               <span className="text-xs sm:text-sm">Vetrine</span>
             </Button>
           </div>
+          )}
 
           {/* Tab Impresa - Riga 2: visibile per utenti business, admin, o con permessi impresa */}
           {(userRole === 'business' || userRole === 'admin' || canViewTab('wallet_impresa')) && (
