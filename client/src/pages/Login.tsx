@@ -1,56 +1,36 @@
 /**
  * Login Page
- * Pagina di login con SPID/CIE/CNS via ARPA Regione Toscana
- * E Social Login (Google/Apple) o Email/Password per cittadini
+ * Pagina di login con Firebase Authentication (Email, Google, Apple)
+ * e SPID/CIE/CNS via ARPA Regione Toscana
+ *
+ * IMPORTANTE: Tutti i metodi di login per cittadini (email, Google, Apple)
+ * passano attraverso FirebaseAuthContext.syncUserWithBackend() che:
+ * 1. Cerca l'utente nel DB legacy (orchestratore) per recuperare ruoli
+ * 2. Controlla i ruoli RBAC nel Neon DB (isAdmin, assigned_roles)
+ * 3. Crea una sessione JWT sul backend tRPC
+ * 4. Determina il ruolo effettivo (admin → pa, citizen, business)
+ *
+ * Questo garantisce che un admin che accede come "Cittadino" con email
+ * venga correttamente riconosciuto e reindirizzato a /dashboard-pa.
  */
 
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { startLogin, isAuthenticated, getAuthConfig, type AuthConfig } from '@/api/authClient';
-import { getLoginUrl } from '@/const';
+import { useFirebaseAuth, type UserRole } from '@/contexts/FirebaseAuthContext';
+import { startLogin } from '@/api/authClient';
 import { Loader2, Shield, CreditCard, Key, AlertCircle, Users, Building2, Landmark, Mail, Eye, EyeOff } from 'lucide-react';
 
 type UserType = 'citizen' | 'business' | 'pa' | null;
 type CitizenMode = 'login' | 'register';
-
-// API per registrazione e login cittadino
-const API_BASE = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
-
-async function registerCitizen(email: string, password: string, name: string) {
-  const response = await fetch(`${API_BASE}/api/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, name })
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'Errore durante la registrazione');
-  }
-  return data;
-}
-
-async function loginCitizen(email: string, password: string) {
-  const response = await fetch(`${API_BASE}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'Errore durante il login');
-  }
-  return data;
-}
 
 export default function Login() {
   const [, navigate] = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
-  const [config, setConfig] = useState<AuthConfig | null>(null);
   const [userType, setUserType] = useState<UserType>(null);
   const [citizenMode, setCitizenMode] = useState<CitizenMode>('login');
-  
+
   // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,106 +39,60 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [gdprConsent, setGdprConsent] = useState(false);
 
+  // Firebase Auth context - gestisce TUTTO il flusso di autenticazione
+  const {
+    signInWithEmail,
+    signUpWithEmail,
+    signInWithGoogle,
+    signInWithApple,
+    setUserRole,
+    isAuthenticated,
+    user,
+    error: authError,
+    clearError,
+  } = useFirebaseAuth();
+
   // Leggi returnUrl dai query params
   const searchParams = new URLSearchParams(window.location.search);
-  const returnUrl = searchParams.get('returnUrl') || '/wallet';
+  const returnUrl = searchParams.get('returnUrl');
 
+  // Redirect dopo login Firebase riuscito - basato sul ruolo effettivo
   useEffect(() => {
-    // Verifica se già autenticato
-    isAuthenticated().then(authenticated => {
-      if (authenticated) {
-        navigate(returnUrl, { replace: true });
-      }
-    });
+    if (isAuthenticated && user) {
+      const targetRoute = returnUrl || getRedirectForRole(user.role);
+      console.warn(`[Login] Autenticato come ${user.role} (admin=${user.isSuperAdmin}) → redirect a ${targetRoute}`);
+      navigate(targetRoute, { replace: true });
+    }
+  }, [isAuthenticated, user]);
 
-    // Carica configurazione
-    getAuthConfig()
-      .then(setConfig)
-      .catch(err => {
-        console.error('Errore caricamento config:', err);
-      });
-  }, [navigate, returnUrl]);
-
-  const handleSPIDLogin = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const authUrl = await startLogin(returnUrl);
-      window.location.href = authUrl;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore durante il login');
+  // Mostra errori dal Firebase context
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
       setLoading(false);
+    }
+  }, [authError]);
+
+  function getRedirectForRole(role: UserRole): string {
+    switch (role) {
+      case 'pa': return '/dashboard-pa';
+      case 'business': return '/dashboard-impresa';
+      case 'citizen': return '/wallet';
+      default: return '/wallet';
+    }
+  }
+
+  // Quando l'utente seleziona un tipo, setta il ruolo nel context Firebase
+  const handleSelectUserType = (type: UserType) => {
+    setUserType(type);
+    if (type) {
+      setUserRole(type as UserRole);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const loginUrl = getLoginUrl();
-      window.location.href = loginUrl;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore durante il login con Google');
-      setLoading(false);
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const loginUrl = getLoginUrl();
-      window.location.href = loginUrl;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore durante il login con Apple');
-      setLoading(false);
-    }
-  };
-
-  const handleEmailRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    // Validazione
-    if (!name.trim()) {
-      setError('Inserisci il tuo nome');
-      return;
-    }
-    if (!email.trim()) {
-      setError('Inserisci la tua email');
-      return;
-    }
-    if (password.length < 8) {
-      setError('La password deve essere di almeno 8 caratteri');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Le password non coincidono');
-      return;
-    }
-    if (!gdprConsent) {
-      setError('Devi accettare la Privacy Policy per registrarti');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await registerCitizen(email, password, name);
-      setSuccess('Registrazione completata! Ora puoi accedere.');
-      // Salva token e reindirizza
-      localStorage.setItem('auth_token', result.token);
-      localStorage.setItem('user', JSON.stringify(result.user));
-      setTimeout(() => {
-        navigate('/wallet', { replace: true });
-      }, 1500);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore durante la registrazione');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ============================================
+  // FIREBASE AUTH HANDLERS
+  // ============================================
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,19 +110,94 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const result = await loginCitizen(email, password);
-      // Salva token e reindirizza
-      localStorage.setItem('auth_token', result.token);
-      localStorage.setItem('user', JSON.stringify(result.user));
-      navigate('/wallet', { replace: true });
+      await signInWithEmail(email, password);
+      // NON resettare loading: il sync backend (lookupLegacyUser, checkNeonRoles,
+      // createFirebaseSession) è ancora in corso. Lo spinner resta visibile finché
+      // isAuthenticated diventa true e il useEffect effettua il redirect.
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore durante il login');
-    } finally {
+      setError(err instanceof Error ? err.message : 'Credenziali non valide');
       setLoading(false);
     }
   };
 
-  // Schermata selezione tipo utente
+  const handleEmailRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!name.trim()) {
+      setError('Inserisci il tuo nome');
+      return;
+    }
+    if (!email.trim()) {
+      setError('Inserisci la tua email');
+      return;
+    }
+    if (password.length < 6) {
+      setError('La password deve essere di almeno 6 caratteri');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Le password non coincidono');
+      return;
+    }
+    if (!gdprConsent) {
+      setError('Devi accettare la Privacy Policy per registrarti');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await signUpWithEmail(email, password, name);
+      // NON resettare loading: sync backend in corso (vedi handleEmailLogin)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore durante la registrazione');
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await signInWithGoogle();
+      // NON resettare loading: sync backend in corso
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore durante il login con Google');
+      setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await signInWithApple();
+      // NON resettare loading: sync backend in corso
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore durante il login con Apple');
+      setLoading(false);
+    }
+  };
+
+  // SPID/CIE/CNS: redirect a ARPA (non Firebase)
+  const handleSPIDLogin = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const targetRoute = returnUrl || getRedirectForRole(userType as UserRole);
+      const authUrl = await startLogin(targetRoute);
+      window.location.href = authUrl;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore durante il login');
+      setLoading(false);
+    }
+  };
+
+  // ============================================
+  // RENDER: Selezione tipo utente
+  // ============================================
+
   if (!userType) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -210,7 +219,7 @@ export default function Login() {
           <div className="grid md:grid-cols-3 gap-6">
             {/* Cittadino */}
             <button
-              onClick={() => setUserType('citizen')}
+              onClick={() => handleSelectUserType('citizen')}
               className="group p-8 bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl hover:border-teal-500 hover:bg-slate-800 transition-all text-left"
             >
               <div className="w-16 h-16 bg-teal-500/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-teal-500/30 transition-colors">
@@ -229,7 +238,7 @@ export default function Login() {
 
             {/* Commerciante/Impresa */}
             <button
-              onClick={() => setUserType('business')}
+              onClick={() => handleSelectUserType('business')}
               className="group p-8 bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl hover:border-amber-500 hover:bg-slate-800 transition-all text-left"
             >
               <div className="w-16 h-16 bg-amber-500/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-amber-500/30 transition-colors">
@@ -251,7 +260,7 @@ export default function Login() {
 
             {/* PA */}
             <button
-              onClick={() => setUserType('pa')}
+              onClick={() => handleSelectUserType('pa')}
               className="group p-8 bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl hover:border-purple-500 hover:bg-slate-800 transition-all text-left"
             >
               <div className="w-16 h-16 bg-purple-500/20 rounded-xl flex items-center justify-center mb-4 group-hover:bg-purple-500/30 transition-colors">
@@ -283,7 +292,10 @@ export default function Login() {
     );
   }
 
-  // Schermata login Cittadino (Email/Password + Social Login)
+  // ============================================
+  // RENDER: Login Cittadino (Email/Password + Social Login via Firebase)
+  // ============================================
+
   if (userType === 'citizen') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -427,11 +439,12 @@ export default function Login() {
                   setCitizenMode(citizenMode === 'login' ? 'register' : 'login');
                   setError('');
                   setSuccess('');
+                  clearError();
                 }}
                 className="text-teal-400 hover:text-teal-300 text-sm"
               >
-                {citizenMode === 'login' 
-                  ? 'Non hai un account? Registrati' 
+                {citizenMode === 'login'
+                  ? 'Non hai un account? Registrati'
                   : 'Hai già un account? Accedi'}
               </button>
             </div>
@@ -498,6 +511,7 @@ export default function Login() {
               setCitizenMode('login');
               setError('');
               setSuccess('');
+              clearError();
             }}
             className="mt-6 w-full text-center text-gray-400 hover:text-white transition-colors"
           >
@@ -508,7 +522,10 @@ export default function Login() {
     );
   }
 
-  // Schermata login Impresa/PA (Solo SPID)
+  // ============================================
+  // RENDER: Login Impresa/PA (Solo SPID)
+  // ============================================
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="max-w-md w-full mx-4">
@@ -581,7 +598,7 @@ export default function Login() {
           {/* Info */}
           <div className="mt-6 p-4 bg-slate-700/50 rounded-lg">
             <p className="text-xs text-gray-400">
-              {userType === 'business' 
+              {userType === 'business'
                 ? 'Per accedere come impresa è necessaria l\'identità digitale (SPID, CIE o CNS). Il sistema verificherà automaticamente la tua associazione con l\'impresa.'
                 : 'Per accedere come operatore PA è necessaria l\'identità digitale e un ruolo assegnato dall\'amministratore.'}
             </p>
@@ -590,7 +607,10 @@ export default function Login() {
 
         {/* Back button */}
         <button
-          onClick={() => setUserType(null)}
+          onClick={() => {
+            setUserType(null);
+            clearError();
+          }}
           className="mt-6 w-full text-center text-gray-400 hover:text-white transition-colors"
         >
           ← Torna alla selezione
