@@ -503,6 +503,13 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
     effectiveRole = backendSyncData?.role || role;
   }
 
+  // NOTA: impresaId viene settato SOLO se il ruolo effettivo NON è citizen.
+  // Un utente citizen con impresa_id nel DB (es. stessa email di contatto dell'impresa)
+  // NON deve ricevere impresaId perché causerebbe l'iniezione di permessi impresa
+  // nel PermissionsContext e la visualizzazione errata di tab impresa.
+  // Il ruolo RBAC esplicito (citizen) ha priorità sull'associazione impresa nel DB.
+  const shouldSetImpresa = effectiveRole !== 'citizen' && !!legacyUser?.impresa_id;
+
   const miohubUser: MioHubUser = {
     uid: firebaseUser.uid,
     email: firebaseUser.email,
@@ -514,7 +521,7 @@ async function syncUserWithBackend(firebaseUser: FirebaseUser, role: UserRole): 
     verified: firebaseUser.emailVerified,
     // Dati dal DB legacy (orchestratore) - questi sono i dati critici
     miohubId: legacyUser?.id || backendSyncData?.id || 0,
-    impresaId: legacyUser?.impresa_id || undefined,
+    impresaId: shouldSetImpresa ? legacyUser!.impresa_id : undefined,
     walletBalance: legacyUser?.wallet_balance || 0,
     assignedRoles: mergedRoles,
     openId: legacyUser?.openId || undefined,

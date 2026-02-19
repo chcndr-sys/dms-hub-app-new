@@ -77,7 +77,7 @@ const ALL_QUICK_ACCESS_CODES = [
   'quick.view.gestionale',
 ];
 
-// Permessi COMPLETI: tutti i 28 tab + 11 quick access + tab impresa
+// Permessi COMPLETI: tutti i 28 tab + 11 quick access + tab impresa (solo per admin/super_admin)
 const FULL_ACCESS_PERMISSION_CODES = [
   ...ALL_DASHBOARD_TAB_CODES,
   ...ALL_QUICK_ACCESS_CODES,
@@ -89,6 +89,15 @@ const FULL_ACCESS_PERMISSION_CODES = [
   'tab.view.commercio',
   'tab.view.hub',
   'tab.view.controlli',
+];
+
+// Permessi SOLO IMPRESA: tab specifici per utenti business (NON tutti i tab PA)
+const IMPRESA_ONLY_PERMISSION_CODES = [
+  'tab.view.wallet_impresa',
+  'tab.view.anagrafica',
+  'tab.view.presenze',
+  'quick.view.hub_operatore',
+  'quick.view.notifiche',
 ];
 
 /**
@@ -112,12 +121,24 @@ function getClientSidePermissions(isImpersonating: boolean): Permission[] {
     const extraPerms: Permission[] = [];
     let id = 9000;
 
-    // Utenti con impresa_id o base_role business/admin → TUTTI i permessi (28 tab + 11 quick)
-    if (user.impresa_id || user.base_role === 'business' || user.base_role === 'admin' || user.is_super_admin) {
+    // Admin / Super admin → TUTTI i permessi (28 tab PA + 11 quick + tab impresa)
+    if (user.base_role === 'admin' || user.is_super_admin) {
       for (const code of FULL_ACCESS_PERMISSION_CODES) {
         extraPerms.push({ id: id++, code, name: code, category: code.startsWith('tab') ? 'tab' : 'quick', is_sensitive: false });
       }
     }
+    // Business (ruolo esplicito business) → solo tab impresa (NON tab PA)
+    // NOTA: prima qualsiasi utente con impresa_id riceveva TUTTI i permessi,
+    // causando tab PA visibili per utenti citizen con impresa_id associata nel DB
+    // (es. checchi@me.com vedeva 28 tab PA + tab impresa di Alimentare Rossi)
+    else if (user.base_role === 'business') {
+      for (const code of IMPRESA_ONLY_PERMISSION_CODES) {
+        extraPerms.push({ id: id++, code, name: code, category: code.startsWith('tab') ? 'tab' : 'quick', is_sensitive: false });
+      }
+    }
+    // Citizen → nessun permesso extra (anche se ha impresa_id nel DB).
+    // Il ruolo RBAC (citizen/business/pa) è la fonte di verità per i permessi,
+    // non la presenza di impresa_id che può essere un'associazione di dati.
 
     return extraPerms;
   } catch {
