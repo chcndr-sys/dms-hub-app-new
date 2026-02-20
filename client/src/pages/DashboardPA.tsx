@@ -868,12 +868,16 @@ export default function DashboardPA() {
     return () => clearInterval(interval);
   }, []); // Carica una volta all'avvio, non dipende dal comune selezionato
   
-  // Carica statistiche imprese (REST + fallback tRPC)
+  // Carica statistiche imprese (REST leggero + fallback tRPC)
   useEffect(() => {
-    fetch('/api/imprese')
+    fetch('/api/imprese?stats_only=true')
       .then(r => r.json())
       .then(data => {
-        if (data.success && data.data) {
+        if (data.success && data.stats) {
+          // Endpoint ottimizzato: restituisce solo stats senza payload 2.2MB
+          setImpreseStats(data.stats);
+        } else if (data.success && data.data) {
+          // Fallback: se il backend non supporta stats_only, calcola client-side
           const imprese = data.data;
           const totalConcessioni = imprese.reduce((acc: number, i: any) => acc + (i.concessioni_attive?.length || 0), 0);
           const comuniUnici = Array.from(new Set(imprese.map((i: any) => i.comune).filter(Boolean))).length;
@@ -884,20 +888,17 @@ export default function DashboardPA() {
       .catch(err => console.error('Error loading imprese stats from REST:', err));
   }, []);
 
-  // Fallback tRPC per impreseStats: usa dati da shops/markets del Neon DB
+  // Fallback: usa dati overview REST se la chiamata /api/imprese fallisce
   useEffect(() => {
-    if (impreseStats.total === 0 && realData.shops.length > 0) {
-      const comuni = new Set(realData.markets.map((m: any) => m.city || m.municipality).filter(Boolean));
+    if (impreseStats.total === 0 && realData.overview) {
       setImpreseStats({
-        total: realData.shops.length,
-        concessioni: realData.shops.length,
-        comuni: comuni.size,
-        media: realData.markets.length > 0
-          ? (realData.shops.length / realData.markets.length).toFixed(1)
-          : '0',
+        total: realData.overview.imprese || realData.overview.totalShops || 0,
+        concessioni: realData.overview.autorizzazioni || 0,
+        comuni: realData.overview.comuni || 0,
+        media: '0',
       });
     }
-  }, [realData.shops, realData.markets, impreseStats.total]);
+  }, [realData.overview, impreseStats.total]);
   
   // Multi-Agent Chat state
   const [showMultiAgentChat, setShowMultiAgentChat] = useState(true);  // 🎯 FIX: Mostra Vista 4 Agenti di default
@@ -1259,8 +1260,8 @@ export default function DashboardPA() {
       })
       .catch(err => console.error('Hub fetch error:', err));
     
-    // Fetch lista imprese
-    fetch('/api/imprese')
+    // Fetch lista imprese (con limit per ridurre payload)
+    fetch('/api/imprese?limit=200&fields=id,denominazione,partita_iva,codice_fiscale,comune')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {
