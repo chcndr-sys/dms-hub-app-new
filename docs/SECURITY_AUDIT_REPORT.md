@@ -568,3 +568,279 @@ SEZIONE 8 — ARCHITETTURA TARGET (dopo dismissione orchestratore)
               +---- [Council AI] (iframe)
 
 Un solo backend, un solo dominio, un solo punto di manutenzione.
+
+
+========================================================================
+SEZIONE 9 — ANALISI SCAN PRODUZIONE MANUS (19 Feb 2026)
+========================================================================
+
+Fonte: Blueprint Unificato v7.9 (dms-system-blueprint)
+Scan eseguito da Manus il 19/02/2026 alle 21:22
+Backend scansionato: mihub-backend-rest su Hetzner (157.90.29.66:3000)
+
+
+SOMMARIO INVENTARIO BACKEND:
+
+  Endpoint totali: 635
+  File route: 70
+  GET: 328, POST: 214, PUT: 48, DELETE: 36, PATCH: 9
+
+
+RISULTATI TEST GET IN PRODUZIONE:
+
+  200 OK .............. 265 (funzionanti)
+  400 Bad Request ...... 12 (parametri mancanti — atteso)
+  401 Unauthorized ...... 6 (auth richiesta — atteso)
+  404 Not Found ........ 22 (record test non esiste — atteso)
+  500 Server Error ..... 22 (BUG REALI)
+  Timeout ............... 1 (connessione lenta/bloccata)
+
+
+========================================================================
+SEZIONE 9.1 — I 22 ENDPOINT CON ERRORE 500 (analisi incrociata)
+========================================================================
+
+Per ogni endpoint riporto: il file backend, se il frontend lo chiama,
+e la priorita' di fix.
+
+
+--- GRUPPO 1: USATI DAL FRONTEND (fix urgente) ---
+
+ENDPOINT: /api/autorizzazioni/next-number
+  File backend: autorizzazioni.js
+  Usato dal frontend: SI
+  File frontend: client/src/components/suap/AutorizzazioneForm.tsx (riga 166)
+  Contesto: Chiamato quando si crea una nuova Autorizzazione Commercio.
+    Genera il prossimo numero progressivo. Se fallisce, il frontend
+    usa un fallback (timestamp) ma il numero non e' sequenziale.
+  Priorita': ALTA — l'utente PA crea autorizzazioni regolarmente
+
+ENDPOINT: /api/suap/pratiche/1
+  File backend: suap.js
+  Usato dal frontend: SI
+  File frontend: client/src/api/suap.ts (riga 108)
+                 client/src/pages/DashboardImpresa.tsx (riga 230)
+                 client/src/components/Integrazioni.tsx (riga 733)
+  Contesto: Carica il dettaglio di una pratica SUAP per ID.
+    Usato nella dashboard impresa, nel dettaglio SUAP, e nel test
+    integrazioni. Se fallisce, la pratica non si apre.
+  Priorita': CRITICA — workflow SUAP completamente bloccato
+
+ENDPOINT: /api/suap/pratiche/1/azioni
+  File backend: suap.js
+  Usato dal frontend: SI (indirettamente, via Integrazioni.tsx)
+  Contesto: Lista azioni eseguibili su una pratica SUAP.
+  Priorita': ALTA
+
+ENDPOINT: /api/suap/pratiche/1/checks
+  File backend: suap.js
+  Usato dal frontend: SI (indirettamente, via Integrazioni.tsx)
+  Contesto: Verifiche automatiche sulla pratica SUAP.
+  Priorita': ALTA
+
+ENDPOINT: /api/suap/pratiche/1/documenti
+  File backend: suap.js
+  Usato dal frontend: SI (indirettamente)
+  Contesto: Lista documenti allegati alla pratica SUAP.
+  Priorita': ALTA
+
+ENDPOINT: /api/suap/pratiche/1/eventi
+  File backend: suap.js
+  Usato dal frontend: SI (indirettamente)
+  Contesto: Storico eventi della pratica SUAP.
+  Priorita': MEDIA
+
+ENDPOINT: /api/suap/documenti/1/download
+  File backend: suap.js
+  Usato dal frontend: SI (configurato in realEndpoints.ts)
+  Contesto: Download di un documento allegato alla pratica.
+  Priorita': ALTA — impossibile scaricare documenti
+
+ENDPOINT: /api/tcc/merchant/1/reimbursements
+  File backend: tcc.js
+  Usato dal frontend: SI
+  File frontend: client/src/pages/WalletPage.tsx (riga 488)
+  Contesto: Mostra i rimborsi di un merchant nella sezione wallet.
+    Se fallisce, la lista rimborsi resta vuota.
+  Priorita': MEDIA — feature wallet TCC
+
+ENDPOINT: /api/tcc/v2/impresa/1/wallet/transactions
+  File backend: tcc-v2.js
+  Usato dal frontend: SI
+  File frontend: client/src/components/markets/MarketCompaniesTab.tsx (riga 1601)
+  Contesto: Mostra il wallet TCC di un'impresa nella vista mercato.
+    Se fallisce, il wallet dell'impresa non si carica.
+  Priorita': MEDIA — feature wallet TCC v2
+
+ENDPOINT: /api/inspections/1
+  File backend: inspections.js
+  Usato dal frontend: SI
+  File frontend: client/src/components/ControlliSanzioniPanel.tsx (riga 857)
+  Contesto: Crea/carica ispezioni nel pannello Controlli e Sanzioni.
+    Il pannello usa anche /api/inspections/stats (riga 355).
+    Se /api/inspections/1 fallisce, il dettaglio ispezione non si apre.
+  Priorita': ALTA — tab Controlli della dashboard PA
+
+
+--- GRUPPO 2: NON USATI DAL FRONTEND (fix quando possibile) ---
+
+ENDPOINT: /api/bandi/matching/1
+  File backend: bandi.js
+  Usato dal frontend: NO
+  Contesto: Matching bando-imprese. Feature pianificata ma non collegata al frontend.
+  Priorita': BASSA — nessun impatto utente
+
+ENDPOINT: /api/documents
+ENDPOINT: /api/documents/1
+ENDPOINT: /api/documents/1/download
+  File backend: documents.js
+  Usato dal frontend: NO (il frontend non chiama mai /api/documents)
+  Contesto: Sistema documenti generico. Il frontend SUAP usa
+    /api/suap/documenti/* (diverso). Questi endpoint sono per un
+    sistema di storage S3/R2 non ancora configurato (vedi blueprint
+    sezione "S3 Storage — DA CONFIGURARE").
+  Priorita': BASSA — S3 non configurato, feature futura
+  Nota: Gli errori 500 sono probabilmente dovuti alla mancanza
+    delle variabili R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY.
+
+ENDPOINT: /api/mihub/chats/1
+  File backend: chats.js
+  Usato dal frontend: SOLO nel test Integrazioni (riga 765)
+  Contesto: Chat room per il sistema MIO multi-agente.
+    Il frontend principale usa l'orchestratore, non le chat dirette.
+  Priorita': BASSA — solo per debug/test
+
+ENDPOINT: /api/presenze/storico/dettaglio/1/1
+ENDPOINT: /api/storico/dettaglio/1/1
+  File backend: presenze.js
+  Usato dal frontend: NO (il frontend usa /api/graduatoria/mercato/:id
+    e /api/presenze/mercato/:id, non /storico/dettaglio)
+  Contesto: Sono endpoint duplicati (presenze.js monta sia /api/presenze/*
+    che /api/* senza prefisso). Entrambi danno 500 sullo stesso codice.
+    Il frontend non li chiama direttamente. PresenzeGraduatoriaPanel
+    usa solo /api/graduatoria/mercato/:id e /api/presenze/mercato/:id.
+  Priorita': BASSA — nessun impatto utente
+  Nota: Pero' indicano un bug nel codice di presenze.js che potrebbe
+    affettare anche altri endpoint dello stesso file. Da investigare.
+
+ENDPOINT: /api/qualificazioni/durc/1
+ENDPOINT: /api/qualificazioni/suap/1
+  File backend: qualificazioni.js
+  Usato dal frontend: NO (solo in realEndpoints.ts come documentazione)
+  Contesto: Caricamento qualificazioni DURC e SUAP per impresa.
+    Il frontend usa /api/imprese/:id/qualificazioni (endpoint diverso
+    in imprese.js) per caricare le qualificazioni. Questi endpoint
+    in qualificazioni.js sono una duplicazione non collegata.
+  Priorita': BASSA — nessun impatto utente
+
+ENDPOINT: /api/security/threats/alerts
+ENDPOINT: /api/security/threats/patterns
+  File backend: security.js
+  Usato dal frontend: NO
+  Contesto: Sistema threat detection avanzato. Feature security
+    pianificata ma non ancora collegata al frontend.
+  Priorita': BASSA — nessun impatto utente
+
+ENDPOINT: /api/verbali/impresa/1
+  File backend: verbali.js
+  Usato dal frontend: NO (il frontend usa POST /api/verbali per creare,
+    e GET /api/verbali/:id per leggere un singolo verbale.
+    L'endpoint /api/verbali/impresa/:id per listarli per impresa
+    non e' chiamato dal frontend attuale.)
+  Contesto: Lista verbali per impresa. Potenzialmente utile per
+    la dashboard impresa ma non ancora collegato.
+  Priorita': BASSA — nessun impatto utente
+
+
+========================================================================
+SEZIONE 9.2 — ENDPOINT TIMEOUT
+========================================================================
+
+ENDPOINT: /api/imprese (GET)
+  File backend: imprese.js
+  Usato dal frontend: SI (pesantemente)
+  File frontend:
+    client/src/components/markets/MarketCompaniesTab.tsx
+    client/src/components/suap/AutorizzazioneForm.tsx
+    client/src/components/suap/SciaForm.tsx
+    client/src/components/suap/ConcessioneForm.tsx
+    client/src/components/suap/DomandaSpuntaForm.tsx
+  Contesto: Carica la lista completa di tutte le imprese.
+    Il timeout e' probabilmente dovuto a una query senza LIMIT
+    su una tabella grande. Il cold start di Neon (5 min inattivita')
+    puo' peggiorare la situazione.
+  Priorita': CRITICA — se questo va in timeout, i form SUAP non
+    possono caricare la lista imprese per l'autocomplete.
+  Suggerimento: Aggiungere LIMIT 100 + paginazione, o usare
+    un parametro ?search= per filtrare lato server.
+
+
+========================================================================
+SEZIONE 9.3 — RIEPILOGO PRIORITA' FIX BACKEND
+========================================================================
+
+CRITICO (blocca funzionalita' principali):
+  1. /api/suap/pratiche/:id — workflow SUAP bloccato
+  2. /api/imprese (timeout) — form SUAP non caricano imprese
+
+ALTO (degrada l'esperienza utente):
+  3. /api/autorizzazioni/next-number — numerazione autorizzazioni
+  4. /api/suap/pratiche/:id/azioni — azioni sulle pratiche
+  5. /api/suap/pratiche/:id/checks — verifiche automatiche
+  6. /api/suap/pratiche/:id/documenti — documenti pratica
+  7. /api/suap/documenti/:docId/download — download documenti
+  8. /api/inspections/:id — dettaglio ispezioni
+
+MEDIO (feature secondarie):
+  9. /api/suap/pratiche/:id/eventi — storico eventi
+  10. /api/tcc/merchant/:shopId/reimbursements — rimborsi TCC
+  11. /api/tcc/v2/impresa/:id/wallet/transactions — wallet impresa TCC
+
+BASSO (non usati dal frontend):
+  12-22. Tutti gli altri (bandi, documents, chats, presenze/storico,
+         qualificazioni, security/threats, verbali/impresa)
+
+
+========================================================================
+SEZIONE 9.4 — CAUSE PROBABILI E SUGGERIMENTI DIAGNOSTICI
+========================================================================
+
+PER GLI ENDPOINT SUAP (500):
+  I 6 endpoint /api/suap/* con errore 500 sono tutti in suap.js.
+  Probabilmente condividono la stessa causa root.
+  Diagnostica:
+    pm2 logs mihub-backend --lines 100 | grep -i "suap\|error\|500"
+  Cause possibili:
+    a) Tabella suap_pratiche mancante o schema non aggiornato
+    b) Query con colonne non esistenti (es. del_pec aggiunta di recente)
+    c) JOIN su tabelle inesistenti
+
+PER /api/inspections/:id (500):
+  Diagnostica:
+    curl https://orchestratore.mio-hub.me/api/inspections/stats
+    (stats funziona? Se si', e' un problema con il getById)
+  Cause possibili:
+    a) Tabella inspections mancante
+    b) Query con colonna non esistente
+
+PER /api/documents (500):
+  Causa quasi certa: S3/R2 non configurato.
+  Il codice tenta di connettersi a Cloudflare R2 ma le variabili
+  R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY non sono
+  configurate. Vedi blueprint sezione "S3 Storage — DA CONFIGURARE".
+  Non e' urgente perche' il frontend non li usa.
+
+PER /api/presenze/storico/dettaglio (500):
+  Diagnostica:
+    curl https://orchestratore.mio-hub.me/api/presenze/mercato/1
+    (questo funziona? Se si', il bug e' solo in storico/dettaglio)
+  Il frontend NON usa storico/dettaglio, usa graduatoria/mercato
+  e presenze/mercato. Ma il bug indica un problema nel file
+  presenze.js che potrebbe espandersi.
+
+PER /api/imprese (TIMEOUT):
+  Diagnostica:
+    curl -v --max-time 30 https://orchestratore.mio-hub.me/api/imprese
+  Se va in timeout anche con 30 secondi, la query e' troppo pesante.
+  Fix: aggiungere LIMIT alla query SELECT in imprese.js,
+  o aggiungere un indice sulla tabella imprese.
