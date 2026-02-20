@@ -419,7 +419,29 @@ export default function NuovoVerbalePage() {
       const result = await response.json();
       
       if (result.success) {
-        alert(`✅ Verbale ${result.data.verbale_code} emesso con successo!\n\nNotifica inviata all'impresa.`);
+        // Invio notifica automatica all'impresa/trasgressore
+        let notificaInviata = false;
+        try {
+          await fetch(`${MIHUB_API}/notifiche/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              mittente_tipo: 'POLIZIA_MUNICIPALE',
+              mittente_id: 1,
+              mittente_nome: agentName || 'Polizia Municipale',
+              titolo: `Verbale ${result.data.verbale_code} emesso`,
+              messaggio: `È stato emesso il verbale ${result.data.verbale_code} per infrazione ${selectedInfrazione?.code || ''}. Importo: €${parseFloat(amount || '0').toFixed(2)}. ${violationDescription || ''}`.trim(),
+              tipo_messaggio: 'SANZIONE',
+              target_tipo: 'TRASGRESSORE',
+              target_id: result.data.id,
+              target_nome: transgressorName
+            })
+          });
+          notificaInviata = true;
+        } catch (notifErr) {
+          console.error('Errore invio notifica automatica:', notifErr);
+        }
+        alert(`✅ Verbale ${result.data.verbale_code} emesso con successo!${notificaInviata ? '\n\nNotifica inviata.' : '\n\n⚠️ Notifica non inviata (errore di rete).'}`);
         setLocationPath('/dashboard-pa?tab=controlli');
       } else {
         alert('❌ Errore: ' + (result.error || 'Errore sconosciuto'));

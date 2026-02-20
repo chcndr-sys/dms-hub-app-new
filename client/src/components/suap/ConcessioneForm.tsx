@@ -727,11 +727,39 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode 
       });
       
       console.log('[ConcessioneForm] Response status:', response.status);
-      
-      const result = await response.json();
-      
+
+      // Verifica status HTTP prima di parsare JSON
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('[ConcessioneForm] Risposta non-JSON:', text.substring(0, 200));
+          toast.error(`Errore server (${response.status})`, {
+            description: response.status === 404
+              ? 'Endpoint non trovato. Verifica che il backend sia attivo.'
+              : `Il server ha risposto con errore ${response.status}`,
+            duration: 8000
+          });
+          setSaving(false);
+          return;
+        }
+      }
+
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseErr) {
+        console.error('[ConcessioneForm] Errore parsing JSON:', parseErr);
+        toast.error('Errore nella risposta del server', {
+          description: 'La risposta non è in formato JSON valido. Riprova.',
+          duration: 6000
+        });
+        setSaving(false);
+        return;
+      }
+
       console.log('[ConcessioneForm] Response body:', result);
-      
+
       if (result.success) {
         toast.success(isEditMode ? 'Concessione aggiornata con successo!' : 'Concessione creata con successo!');
         onSubmit(result.data);

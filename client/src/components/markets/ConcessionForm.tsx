@@ -212,8 +212,16 @@ export function ConcessionForm({
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Errore durante il salvataggio');
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          throw new Error(data.error || `Errore server (${response.status})`);
+        }
+        throw new Error(
+          response.status === 404
+            ? 'Endpoint non trovato. Verifica che il backend sia attivo.'
+            : `Errore server (${response.status})`
+        );
       }
 
       onSaved();

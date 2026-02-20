@@ -1,7 +1,38 @@
 # SECURITY AUDIT & ARCHITECTURE REPORT — DMS Hub
-> Data: 20 Febbraio 2026
+> Data: 20 Febbraio 2026 (aggiornato)
 > Autore: Claude (Security Review)
 > Branch: claude/review-production-fixes-3sUvQ
+
+---
+
+## 0. BUG FUNZIONALI FIXATI (20 Feb 2026)
+
+### Fix applicati (frontend)
+
+| # | Bug | File | Fix | Stato |
+|---|-----|------|-----|-------|
+| 1 | **Dashboard PA si ricarica/flickera** per i permessi | `PermissionsContext.tsx` | Storage event listener ora ricarica SOLO se il ruolo utente cambia (debounce 300ms + confronto ruolo) | FIXATO |
+| 2 | **Notifiche non partono** da NuovoVerbalePage | `NuovoVerbalePage.tsx` | Aggiunta chiamata `POST /api/notifiche/send` dopo creazione verbale (prima diceva "notifica inviata" senza inviarla) | FIXATO |
+| 3 | **Errore generazione concessione SUAP** | `ConcessioneForm.tsx` | Aggiunto check `response.ok` + gestione risposta non-JSON (404 HTML) + error parsing robusto | FIXATO |
+| 4 | **Errore concessione markets** | `ConcessionForm.tsx` | Stesso fix: check content-type prima di JSON.parse su errore | FIXATO |
+
+### Bug backend (NON fixabili dal frontend)
+
+| # | Bug | Causa | Azione richiesta |
+|---|-----|-------|------------------|
+| 5 | **Report storico Grosseto a zero** dopo Simula Mercato | La simulazione chiama `/api/test-mercato/avvia-spunta` ma il report legge da `/api/graduatoria/mercato/{id}` e `/api/presenze/mercato/{id}`. Sono tabelle/endpoint DIVERSI sul backend Hetzner. La simulazione non scrive nelle tabelle che il report legge. | Fix richiesto sul backend Hetzner: `/api/test-mercato/*` deve scrivere nelle stesse tabelle di graduatoria/presenze |
+| 6 | **~30 endpoint Integrazioni falliscono** il test | Gli endpoint sono registrati nell'inventario ma i rispettivi servizi backend non rispondono o ritornano errore. Guardian li mostra come "down". | Verificare su Hetzner quali servizi REST sono attivi e quali vanno riavviati/rimossi dall'inventario |
+| 7 | **Concessione SUAP: endpoint potenzialmente mancante** | `POST /api/concessions` sull'orchestratore potrebbe non esistere o aspettare campi diversi. Il fix frontend mostra l'errore reale ma il backend va verificato. | Testare: `curl -X POST https://orchestratore.mio-hub.me/api/concessions -H "Content-Type: application/json" -d '{}'` |
+
+### Fix sicurezza (sessione precedente)
+
+| # | Fix | File |
+|---|-----|------|
+| 8 | Data leak impersonazione ClientiTab | `ClientiTab.tsx` — aggiunto `addComuneIdToUrl()` |
+| 9 | Data leak impersonazione NotificationsPanel | `NotificationsPanel.tsx` — filtro comune_id |
+| 10 | Data leak impersonazione ImpreseQualificazioniPanel | `ImpreseQualificazioniPanel.tsx` — filtro comune_id |
+| 11 | Route admin non protette | `App.tsx` + `ProtectedRoute.tsx` — auth guard su 12 route |
+| 12 | CORS wildcard Firebase sync | `api/auth/firebase/sync.ts` — da `*` a whitelist domini |
 
 ---
 

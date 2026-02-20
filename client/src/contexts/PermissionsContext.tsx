@@ -342,20 +342,40 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     }
   }, []);
 
-  // Carica permessi all'avvio, quando cambia l'URL (impersonificazione),
-  // e quando FirebaseAuthContext finisce il sync (evento 'storage')
+  // Carica permessi all'avvio e quando cambia l'URL (impersonificazione).
+  // L'evento 'storage' ricarica SOLO se il ruolo utente e' cambiato,
+  // per evitare il flicker (doppio loading) quando FirebaseAuthContext
+  // aggiorna localStorage.user dopo il sync.
   useEffect(() => {
+    // Salva il ruolo iniziale per confronto
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        sessionStorage.setItem('_perms_last_user_role', `${!!u.is_super_admin}:${u.base_role || ''}`);
+      } catch { /* ignore */ }
+    }
     loadUserPermissions();
 
-    // Ricarica quando cambia l'URL (per impersonificazione)
     const handleUrlChange = () => {
       loadUserPermissions();
     };
 
-    // Ricarica quando FirebaseAuthContext aggiorna localStorage.user
-    // (dispatcha new Event('storage') dopo il sync)
+    // Ricarica SOLO se il ruolo utente e' effettivamente cambiato.
+    // Questo previene il doppio ciclo loading->loaded che causa il flicker.
+    let storageTimer: ReturnType<typeof setTimeout> | null = null;
     const handleStorageChange = () => {
-      loadUserPermissions();
+      if (storageTimer) clearTimeout(storageTimer);
+      storageTimer = setTimeout(() => {
+        const currentUserStr = localStorage.getItem('user');
+        const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
+        const newRoleKey = `${!!currentUser?.is_super_admin}:${currentUser?.base_role || ''}`;
+        const prevRoleKey = sessionStorage.getItem('_perms_last_user_role');
+        if (prevRoleKey !== newRoleKey) {
+          sessionStorage.setItem('_perms_last_user_role', newRoleKey);
+          loadUserPermissions();
+        }
+      }, 300);
     };
 
     window.addEventListener('popstate', handleUrlChange);
@@ -363,6 +383,7 @@ export function PermissionsProvider({ children }: PermissionsProviderProps) {
     return () => {
       window.removeEventListener('popstate', handleUrlChange);
       window.removeEventListener('storage', handleStorageChange);
+      if (storageTimer) clearTimeout(storageTimer);
     };
   }, [loadUserPermissions]);
 
