@@ -173,7 +173,7 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
     }
   }, [stalls]);
 
-  const fetchGraduatoria = async () => {
+  const fetchGraduatoria = async (forceTestMode?: boolean) => {
     if (!marketId) return;
     setLoading(true);
     try {
@@ -183,10 +183,12 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
         'straordinari': 'STRAORDINARIO'
       };
       const tipo = tipoMap[activeTab] || 'all';
-      
-      const response = await fetch(`${API_BASE}/api/graduatoria/mercato/${marketId}?tipo=${tipo}`);
+      const isTest = forceTestMode || testMercatoActive;
+      const testParam = isTest ? '&include_test=true' : '';
+
+      const response = await fetch(`${API_BASE}/api/graduatoria/mercato/${marketId}?tipo=${tipo}${testParam}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setGraduatoria(data.data);
       }
@@ -197,7 +199,7 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
     }
   };
 
-  const fetchPresenze = async () => {
+  const fetchPresenze = async (forceTestMode?: boolean) => {
     if (!marketId) return;
     try {
       const tipoMap: Record<string, string> = {
@@ -206,10 +208,12 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
         'straordinari': 'STRAORDINARIO'
       };
       const tipo = tipoMap[activeTab] || 'all';
-      
-      const response = await fetch(`${API_BASE}/api/presenze/mercato/${marketId}?tipo=${tipo}`);
+      const isTest = forceTestMode || testMercatoActive;
+      const testParam = isTest ? '&include_test=true' : '';
+
+      const response = await fetch(`${API_BASE}/api/presenze/mercato/${marketId}?tipo=${tipo}${testParam}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setPresenze(data.data);
       }
@@ -219,13 +223,16 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
   };
 
   // Fetch spuntisti con wallet SPUNTA dal nuovo endpoint
-  const fetchSpuntisti = async () => {
+  const fetchSpuntisti = async (forceTestMode?: boolean) => {
     if (!marketId) return;
     setLoadingSpuntisti(true);
     try {
-      const response = await fetch(`${API_BASE}/api/spuntisti/mercato/${marketId}`);
+      const isTest = forceTestMode || testMercatoActive;
+      const testParam = isTest ? '?include_test=true' : '';
+
+      const response = await fetch(`${API_BASE}/api/spuntisti/mercato/${marketId}${testParam}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setSpuntisti(data.data);
       } else {
@@ -268,8 +275,8 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
         setTestMercatoActive(true);
         setSpuntaActive(false);
         fetchTestMercatoStato();
-        fetchGraduatoria();
-        fetchPresenze();
+        fetchGraduatoria(true);
+        fetchPresenze(true);
         if (onRefreshStalls) await onRefreshStalls();
       } else {
         toast.error(data.error);
@@ -294,8 +301,8 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
           toast.info(`💰 Addebitato €${data.data.costo_posteggio.toFixed(2)} - Nuovo saldo: €${data.data.nuovo_saldo_wallet?.toFixed(2)}`);
         }
         fetchTestMercatoStato();
-        fetchGraduatoria();
-        fetchPresenze();
+        fetchGraduatoria(true);
+        fetchPresenze(true);
         if (onRefreshStalls) await onRefreshStalls();
       } else {
         toast.error(data.error);
@@ -318,9 +325,9 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
         toast.success(`🏁 ${data.message}`);
         setSpuntaActive(true);
         fetchTestMercatoStato();
-        fetchSpuntisti();
-        fetchGraduatoria();
-        fetchPresenze();
+        fetchSpuntisti(true);
+        fetchGraduatoria(true);
+        fetchPresenze(true);
         if (onRefreshStalls) await onRefreshStalls();
       } else {
         toast.error(data.error);
@@ -345,8 +352,8 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
           toast.info(`💰 Addebitato €${data.data.costo_posteggio.toFixed(2)} - Nuovo saldo: €${data.data.nuovo_saldo_wallet?.toFixed(2)}`);
         }
         fetchTestMercatoStato();
-        fetchSpuntisti();
-        fetchGraduatoria();
+        fetchSpuntisti(true);
+        fetchGraduatoria(true);
         if (onRefreshStalls) await onRefreshStalls();
       } else {
         toast.error(data.error);
@@ -371,9 +378,9 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
         setTestMercatoActive(false);
         setSpuntaActive(false);
         fetchTestMercatoStato();
-        fetchGraduatoria();
-        fetchPresenze();
-        fetchSpuntisti();
+        fetchGraduatoria(false);
+        fetchPresenze(false);
+        fetchSpuntisti(false);
         if (onRefreshStalls) await onRefreshStalls();
       } else {
         toast.error(data.error);

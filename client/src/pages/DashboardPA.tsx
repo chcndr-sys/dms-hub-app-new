@@ -868,12 +868,16 @@ export default function DashboardPA() {
     return () => clearInterval(interval);
   }, []); // Carica una volta all'avvio, non dipende dal comune selezionato
   
-  // Carica statistiche imprese (REST + fallback tRPC)
+  // Carica statistiche imprese (REST leggero + fallback tRPC)
   useEffect(() => {
-    fetch('/api/imprese')
+    fetch('/api/imprese?stats_only=true')
       .then(r => r.json())
       .then(data => {
-        if (data.success && data.data) {
+        if (data.success && data.stats) {
+          // Endpoint ottimizzato: restituisce solo stats senza payload 2.2MB
+          setImpreseStats(data.stats);
+        } else if (data.success && data.data) {
+          // Fallback: se il backend non supporta stats_only, calcola client-side
           const imprese = data.data;
           const totalConcessioni = imprese.reduce((acc: number, i: any) => acc + (i.concessioni_attive?.length || 0), 0);
           const comuniUnici = Array.from(new Set(imprese.map((i: any) => i.comune).filter(Boolean))).length;
@@ -1259,8 +1263,8 @@ export default function DashboardPA() {
       })
       .catch(err => console.error('Hub fetch error:', err));
     
-    // Fetch lista imprese
-    fetch('/api/imprese')
+    // Fetch lista imprese (con limit per ridurre payload)
+    fetch('/api/imprese?limit=200&fields=id,denominazione,partita_iva,codice_fiscale,comune')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data) {

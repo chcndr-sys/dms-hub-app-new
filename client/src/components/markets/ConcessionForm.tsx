@@ -109,6 +109,19 @@ export function ConcessionForm({
     comune_rilascio: concession?.comune_rilascio || '',
     notes: concession?.notes || '',
     scia_id: concession?.scia_id?.toString() || '',
+    // Dati Cedente (per subingresso)
+    cedente_impresa_id: '',
+    cedente_cf: '',
+    cedente_partita_iva: '',
+    cedente_ragione_sociale: '',
+    // Autorizzazione precedente (per subingresso/rinnovo/voltura)
+    autorizzazione_precedente_pg: '',
+    autorizzazione_precedente_data: '',
+    autorizzazione_precedente_intestatario: '',
+    // SCIA precedente (per subingresso)
+    scia_precedente_numero: '',
+    scia_precedente_data: '',
+    scia_precedente_comune: '',
   });
 
   const [saving, setSaving] = useState(false);
@@ -175,7 +188,7 @@ export function ConcessionForm({
 
       const method = concession ? 'PATCH' : 'POST';
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         impresa_id: formData.company_id,
         stall_id: formData.stall_id,
         market_id: marketId,
@@ -203,6 +216,22 @@ export function ConcessionForm({
         comune_rilascio: formData.comune_rilascio,
         notes: formData.notes,
         scia_id: formData.scia_id ? parseInt(formData.scia_id) : null,
+        // Dati Cedente (per subingresso)
+        ...(formData.tipo_concessione === 'subingresso' && {
+          cedente_impresa_id: formData.cedente_impresa_id ? parseInt(formData.cedente_impresa_id) : null,
+          cedente_cf: formData.cedente_cf || null,
+          cedente_partita_iva: formData.cedente_partita_iva || null,
+          cedente_ragione_sociale: formData.cedente_ragione_sociale || null,
+          scia_precedente_numero: formData.scia_precedente_numero || null,
+          scia_precedente_data: formData.scia_precedente_data || null,
+          scia_precedente_comune: formData.scia_precedente_comune || null,
+        }),
+        // Autorizzazione precedente (per subingresso/rinnovo/voltura/conversione)
+        ...(['subingresso', 'rinnovo', 'voltura', 'conversione'].includes(formData.tipo_concessione) && {
+          autorizzazione_precedente_pg: formData.autorizzazione_precedente_pg || null,
+          autorizzazione_precedente_data: formData.autorizzazione_precedente_data || null,
+          autorizzazione_precedente_intestatario: formData.autorizzazione_precedente_intestatario || null,
+        }),
       };
 
       const response = await fetch(url, {
@@ -474,7 +503,150 @@ export function ConcessionForm({
             </div>
           </div>
 
-          {/* SEZIONE 4: Dati Posteggio */}
+          {/* SEZIONE 4: Dati Cedente (solo per subingresso) */}
+          {formData.tipo_concessione === 'subingresso' && (
+            <div className="bg-gray-800/30 rounded-xl p-6 border border-red-700/50">
+              <h4 className="text-red-400 font-semibold mb-6 flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Dati Cedente (Subingresso)
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">Impresa Cedente</label>
+                  <select
+                    value={formData.cedente_impresa_id}
+                    onChange={(e) => {
+                      const cedenteId = e.target.value;
+                      const cedente = companies.find(c => c.id === cedenteId);
+                      if (cedente) {
+                        setFormData({
+                          ...formData,
+                          cedente_impresa_id: cedenteId,
+                          cedente_partita_iva: cedente.partita_iva || '',
+                          cedente_cf: cedente.codice_fiscale || '',
+                          cedente_ragione_sociale: cedente.denominazione || '',
+                        });
+                      } else {
+                        setFormData({ ...formData, cedente_impresa_id: cedenteId });
+                      }
+                    }}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                  >
+                    <option value="">Seleziona impresa cedente...</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.denominazione} - P.IVA: {company.partita_iva || 'N/A'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">P.IVA Cedente</label>
+                  <input
+                    type="text"
+                    value={formData.cedente_partita_iva}
+                    onChange={(e) => setFormData({ ...formData, cedente_partita_iva: e.target.value })}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                    placeholder="Partita IVA cedente"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">C.F. Cedente</label>
+                  <input
+                    type="text"
+                    value={formData.cedente_cf}
+                    onChange={(e) => setFormData({ ...formData, cedente_cf: e.target.value.toUpperCase() })}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                    placeholder="Codice fiscale cedente"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">Ragione Sociale Cedente</label>
+                  <input
+                    type="text"
+                    value={formData.cedente_ragione_sociale}
+                    onChange={(e) => setFormData({ ...formData, cedente_ragione_sociale: e.target.value })}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                    placeholder="Ragione sociale cedente"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">SCIA Precedente N.</label>
+                  <input
+                    type="text"
+                    value={formData.scia_precedente_numero}
+                    onChange={(e) => setFormData({ ...formData, scia_precedente_numero: e.target.value })}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                    placeholder="Numero SCIA precedente"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">Data SCIA Precedente</label>
+                  <input
+                    type="date"
+                    value={formData.scia_precedente_data}
+                    onChange={(e) => setFormData({ ...formData, scia_precedente_data: e.target.value })}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">Comune SCIA Precedente</label>
+                  <input
+                    type="text"
+                    value={formData.scia_precedente_comune}
+                    onChange={(e) => setFormData({ ...formData, scia_precedente_comune: e.target.value })}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                    placeholder="Es. Grosseto"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SEZIONE 4B: Autorizzazione Precedente (subingresso/rinnovo/voltura/conversione) */}
+          {['subingresso', 'rinnovo', 'voltura', 'conversione'].includes(formData.tipo_concessione) && (
+            <div className="bg-gray-800/30 rounded-xl p-6 border border-yellow-700/50">
+              <h4 className="text-yellow-400 font-semibold mb-6 flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Autorizzazione Precedente
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">N. Protocollo Precedente</label>
+                  <input
+                    type="text"
+                    value={formData.autorizzazione_precedente_pg}
+                    onChange={(e) => setFormData({ ...formData, autorizzazione_precedente_pg: e.target.value })}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500"
+                    placeholder="N. protocollo autorizzazione"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">Data Autorizzazione</label>
+                  <input
+                    type="date"
+                    value={formData.autorizzazione_precedente_data}
+                    onChange={(e) => setFormData({ ...formData, autorizzazione_precedente_data: e.target.value })}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 uppercase tracking-wide mb-2">Intestatario Precedente</label>
+                  <input
+                    type="text"
+                    value={formData.autorizzazione_precedente_intestatario}
+                    onChange={(e) => setFormData({ ...formData, autorizzazione_precedente_intestatario: e.target.value })}
+                    className="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500"
+                    placeholder="Nome intestatario precedente"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SEZIONE 5: Dati Posteggio */}
           <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
             <h4 className="text-purple-400 font-semibold mb-6 flex items-center gap-2">
               <MapPin className="w-5 h-5" />

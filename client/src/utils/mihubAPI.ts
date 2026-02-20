@@ -310,9 +310,14 @@ export const mihubAPI = {
  */
 export const impreseAPI = {
   /**
-   * Lista tutte le imprese
+   * Lista imprese con paginazione opzionale
    */
-  getImprese: async () => {
+  getImprese: async (params?: { limit?: number; offset?: number; search?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.offset) searchParams.set('offset', String(params.offset));
+    if (params?.search) searchParams.set('search', params.search);
+    const qs = searchParams.toString();
     return fetchMIHUB<{
       success: boolean;
       data: Array<{
@@ -326,7 +331,8 @@ export const impreseAPI = {
         updated_at: string;
       }>;
       count: number;
-    }>('/api/imprese');
+      pagination?: { total: number; limit: number; offset: number };
+    }>(`/api/imprese${qs ? `?${qs}` : ''}`);
   },
 
   /**

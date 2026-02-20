@@ -58,13 +58,15 @@ export default function ImpreseQualificazioniPanel() {
   const [qualificazioni, setQualificazioni] = useState<QualificazioneDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 50;
 
   // Carica lista imprese da API
   useEffect(() => {
     const fetchImprese = async () => {
       setLoading(true);
       try {
-        const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/imprese`));
+        const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/imprese?limit=200`));
         const data = await response.json();
         if (data.success && data.data) {
           // Mappa i campi dall'API ai nomi usati nel frontend
@@ -160,6 +162,15 @@ export default function ImpreseQualificazioniPanel() {
     );
   });
 
+  // Paginazione client-side
+  const totalPages = Math.ceil(filteredImprese.length / PAGE_SIZE);
+  const paginatedImprese = filteredImprese.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Reset pagina quando cambia la ricerca
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   return (
     <div className="space-y-6 p-6">
       {/* Statistiche */}
@@ -241,6 +252,7 @@ export default function ImpreseQualificazioniPanel() {
                 {searchQuery ? `Nessuna impresa trovata per "${searchQuery}"` : 'Nessuna impresa registrata'}
               </div>
             ) : (
+              <>
               <div className="overflow-auto max-h-[500px]">
                 <Table>
                   <TableHeader>
@@ -252,7 +264,7 @@ export default function ImpreseQualificazioniPanel() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredImprese.map((impresa) => (
+                    {paginatedImprese.map((impresa) => (
                     <TableRow
                       key={impresa.id || impresa.id_impresa}
                       className={`cursor-pointer hover:bg-gray-50 ${
@@ -279,6 +291,33 @@ export default function ImpreseQualificazioniPanel() {
                 </TableBody>
               </Table>
             </div>
+            {/* Controlli paginazione */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 px-2">
+                <span className="text-sm text-gray-400">
+                  {filteredImprese.length} imprese totali — Pagina {currentPage} di {totalPages}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Precedente
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Successiva
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
           )}
         </CardContent>
       </Card>
