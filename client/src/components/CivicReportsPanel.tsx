@@ -55,14 +55,22 @@ export default function CivicReportsPanel() {
 
   const { comuneId: impersonatedComuneId } = useImpersonation();
   const { setSelectedReport } = useCivicReports();
-  const comuneId = impersonatedComuneId ? parseInt(impersonatedComuneId) : 1;
+  // Se impersonato: filtra per comune. Se admin globale: mostra tutte le segnalazioni
+  const comuneId = impersonatedComuneId ? parseInt(impersonatedComuneId) : null;
+  const comuneParam = comuneId ? `comune_id=${comuneId}` : '';
 
   // Carica statistiche + lista completa segnalazioni
   const loadStats = async () => {
     try {
+      const statsUrl = comuneParam 
+        ? `${API_BASE_URL}/api/civic-reports/stats?${comuneParam}` 
+        : `${API_BASE_URL}/api/civic-reports/stats`;
+      const reportsUrl = comuneParam 
+        ? `${API_BASE_URL}/api/civic-reports?${comuneParam}&limit=200` 
+        : `${API_BASE_URL}/api/civic-reports?limit=200`;
       const [statsRes, reportsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/civic-reports/stats?comune_id=${comuneId}`),
-        fetch(`${API_BASE_URL}/api/civic-reports?comune_id=${comuneId}&limit=200`)
+        fetch(statsUrl),
+        fetch(reportsUrl)
       ]);
       const data = await statsRes.json();
       if (data.success) {
@@ -82,7 +90,10 @@ export default function CivicReportsPanel() {
   // Carica configurazione TCC
   const loadConfig = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/civic-reports/config?comune_id=${comuneId}`);
+      const configUrl = comuneId 
+        ? `${API_BASE_URL}/api/civic-reports/config?comune_id=${comuneId}` 
+        : `${API_BASE_URL}/api/civic-reports/config?comune_id=1`;
+      const response = await fetch(configUrl);
       const data = await response.json();
       if (data.success) {
         setConfig(data.data);
