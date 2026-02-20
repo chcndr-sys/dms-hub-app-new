@@ -1,8 +1,8 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 7.9.0 (Fix Multipli + Migrazione URL + Allineamento Completo)
-> **Data:** 19 Febbraio 2026 (sera)
-> **Autore:** Sistema documentato da Manus AI + Claude Code
+> **Versione:** 8.4.0 (Semaforo Rate + Fix Segnalazioni Civiche Admin Globale)  
+> **Data:** 21 Febbraio 2026  
+> **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
 
 ---
@@ -15,928 +15,95 @@
 4. [Servizi e Componenti](#servizi-e-componenti)
 5. [MIO Agent - Sistema Multi-Agente](#mio-agent---sistema-multi-agente)
 6. [Knowledge Base DMS](#knowledge-base-dms)
-7. [Guardian - Sistema di Monitoraggio](#guardian---sistema-di-monitoraggio)
-8. [Database e Storage](#database-e-storage)
+7. [Guardian - Sistema di Monitoraggio](#guardian---sistema-di-monitoraggio## 8. Database e Storage
+
+### Nuova Tabella: `storico_titolarita_posteggio`
+
+Questa tabella traccia la timeline completa di ogni posteggio, registrando ogni cambio di titolarità (subingresso, rinnovo, cessazione) come un evento. È fondamentale per la graduatoria Bolkestein e per la documentazione legale.
+
+| Colonna | Tipo | Descrizione |
+|---|---|---|
+| `id` | `SERIAL PRIMARY KEY` | ID univoco dell'evento |
+| `data_evento` | `TIMESTAMP WITH TIME ZONE` | Data e ora dell'evento (subingresso, rinnovo, etc.) |
+| `tipo_evento` | `VARCHAR(255)` | Tipo di evento: `SUBINGRESSO`, `RINNOVO`, `CREAZIONE`, `CESSAZIONE` |
+| `comune_id` | `INTEGER` | ID del comune per filtro di sicurezza |
+| `mercato_id` | `INTEGER` | ID del mercato |
+| `posteggio_id` | `INTEGER` | ID del posteggio |
+| `concessione_cedente_id` | `INTEGER` | ID della concessione del dante causa (cedente) |
+| `concessione_subentrante_id` | `INTEGER` | ID della nuova concessione del subentrante |
+| `impresa_cedente_id` | `INTEGER` | ID dell'impresa del dante causa |
+| `impresa_subentrante_id` | `INTEGER` | ID dell'impresa del subentrante |
+| `riferimento_precedente_tipo` | `VARCHAR(255)` | Tipo di riferimento precedente: `AUTORIZZAZIONE`, `SCIA`, `CONCESSIONE` |
+| `riferimento_precedente_id` | `INTEGER` | ID del riferimento precedente |
+| `riferimento_attuale_tipo` | `VARCHAR(255)` | Tipo di riferimento attuale: `AUTORIZZAZIONE`, `SCIA`, `CONCESSIONE` |
+| `riferimento_attuale_id` | `INTEGER` | ID del riferimento attuale |
+| `dati_archiviati` | `JSONB` | Fotografia completa dei dati del dante causa: presenze, graduatoria, scadenze |
+](#database-e-storage)
 9. [API Endpoints](#api-endpoints)
 10. [SSO SUAP - Modulo SCIA](#sso-suap---modulo-scia)
 11. [Deploy e CI/CD](#deploy-e-cicd)
 12. [Architettura di Autenticazione (v2.0 - Firebase)](#architettura-di-autenticazione-v20---firebase)
-13. [GDPR Compliance e Privacy](#gdpr-compliance-e-privacy)
-14. [Test Suite e Quality Assurance](#test-suite-e-quality-assurance)
-15. [Credenziali e Accessi](#credenziali-e-accessi)
-16. [Troubleshooting](#troubleshooting)
-17. [Regole per Agenti AI](#regole-per-agenti-ai)
+13. [Credenziali e Accessi](#credenziali-e-accessi)
+14. [Troubleshooting](#troubleshooting)
+15. [Regole per Agenti AI](#regole-per-agenti-ai)
 
 ---
 
 ## 📝 CHANGELOG RECENTE
 
-### Sessione 19 Febbraio 2026 (sera) — v7.9.0 — Fix Backend Dismesso + Migrazione URL + Savepoint
+### Sessione 21 Febbraio 2026 (v8.3.0 → v8.4.0)
+- ✅ **Semaforo Rate con Badge Colorati:** Riscritto il sistema di visualizzazione rate nelle schede impresa della sezione "Lista Imprese per Mercato" (tab Canone). Ora mostra badge colorati: **rosso** per rate in mora (scadute e non pagate), **giallo** per rate da pagare (non ancora scadute), **verde** per rate già pagate. Prima mostrava solo un conteggio generico "scadenze non pagate" che escludeva le rate IN_MORA.
+- ✅ **Fix Backend Query `imprese-concessioni`:** La query SQL ora conta sia `NON_PAGATO` che `IN_MORA` nel campo `scadenze_non_pagate`. Aggiunti 2 nuovi campi nella response: `scadenze_in_mora` (rate scadute non pagate) e `scadenze_pagate` (rate saldate). Aggiornata anche la sotto-query SPUNTA per coerenza.
+- ✅ **Fix Segnalazioni Civiche Admin Globale:** Il componente `CivicReportsPanel.tsx` aveva un fallback hardcoded `comune_id = 1` (Grosseto) quando l'admin non era in impersonalizzazione. Ora, senza impersonalizzazione, le API vengono chiamate senza `comune_id` → restituiscono tutte le 44 segnalazioni di tutti i comuni. Con impersonalizzazione, filtra per il comune specifico.
+- ✅ **File backend modificato:** `routes/canone-unico.js` (query imprese-concessioni + mapping risultati).
+- ✅ **File frontend modificati:** `client/src/components/WalletPanel.tsx` (badge colorati + alert info), `client/src/components/CivicReportsPanel.tsx` (rimozione fallback comune_id=1).
+
+### Sessione 21 Febbraio 2026 (v8.2.3 → v8.3.0)
+- ✅ **Rimosso Selettore Mercato da Lista Imprese:** Nella sezione "Lista Imprese per Mercato" del tab Canone, rimosso il dropdown "Seleziona un mercato" che non funzionava. Il mercato viene ora determinato automaticamente dal comune impersonato e le imprese si caricano immediatamente.
+- ✅ **Fix Proxy Vercel `/api/markets`:** Aggiunta regola di rewrite in `vercel.json` per il proxy di `/api/markets` → `https://api.mio-hub.me/api/markets`. Prima mancava e la chiamata veniva catturata dal catch-all, restituendo HTML invece di JSON.
+- ✅ **Rigenerazione Canone per 3 Concessioni Mancanti:** Identificate 3 concessioni (55, 60, 74) create dopo la generazione canone annuo del 10 gennaio. Ri-eseguito "Genera Canone Annuo" che ha creato le scadenze mancanti grazie alla protezione anti-duplicati.
+- ✅ **File frontend modificato:** `client/src/components/WalletPanel.tsx`, `vercel.json`.
+
+### Sessione 20 Febbraio 2026 - Notte (v8.2.2 → v8.2.3)
+- ✅ **Fix Auto-selezione Mercato Canone (definitivo):** Il fix precedente (v8.2.2) non funzionava a causa di un problema di **closure React**: la funzione `fetchMercatiList` catturava il valore di `selectedMercatoId` al momento della definizione, non il valore aggiornato. Soluzione: creato un **`useEffect` dedicato** con dipendenze esplicite `[subTab, mercatiList, selectedMercatoId]` che reagisce correttamente quando `mercatiList` viene caricata. La logica rimane invariata: auto-seleziona il primo mercato **solo quando impersonalizzato** come un comune specifico, evitando il bug Cervia Demo per admin non impersonalizzati.
+- ✅ **File frontend modificato:** `client/src/components/WalletPanel.tsx`.
+
+### Sessione 20 Febbraio 2026 - Notte (v8.2.1 → v8.2.2)
+- ✅ **Visualizzazione Timeline a Catena:** Riscritto il componente `StoricoTitolarita.tsx` per mostrare lo storico raggruppato per posteggio con timeline verticale a catena. Ogni posteggio mostra un header compatto con la mini-catena di titolarità (es. "Bio Market Italia → Alimentari Rossi & C.") e un badge con il numero di passaggi. Cliccando si espande la timeline con pallini numerati, linea verticale, e per ogni nodo: data, tipo evento, cedente → subentrante, saldo trasferito, riferimento SCIA. In fondo alla catena appare il nodo "Titolare attuale" evidenziato in verde.
+- ✅ **Fix Auto-selezione Mercato Canone:** Corretto il bug nella sezione "Lista Imprese per Mercato" del tab Canone (Wallet/PagoPA). Il selettore mercato ora si auto-seleziona **solo quando l'admin è impersonalizzato** come un comune specifico (es. Grosseto), evitando il bug precedente che mostrava le scadenze di Cervia Demo quando non impersonalizzato.
+- ✅ **File frontend modificati:** `client/src/components/suap/StoricoTitolarita.tsx`, `client/src/components/WalletPanel.tsx`.
+
+### Sessione 20 Febbraio 2026 - Sera (v8.2.0 → v8.2.1)
+- ✅ **Back-filling Storico Titolarità**: Creato ed eseguito uno script una tantum (`backfill_storico.js`) per popolare la tabella `storico_titolarita_posteggio` con i dati dei subingressi avvenuti prima dell'implementazione dello storico. Lo script ricostruisce la catena di titolarità basandosi sulle concessioni CESSATE e sui dati SCIA disponibili. Le presenze storiche non sono state recuperate in quanto eliminate permanentemente dal vecchio codice.
+
+### Sessione 20 Febbraio 2026 - Sera (v8.1.5 → v8.2.0)
+- ✅ **Nuova Funzionalità - Storico Titolarità Posteggio:** Implementato sistema completo per l'archiviazione storica dei cambi di titolarità.
+  - **Nuova tabella `storico_titolarita_posteggio`:** Traccia ogni evento (SUBINGRESSO, RINNOVO, CREAZIONE, CESSAZIONE) come una timeline per ogni posteggio.
+  - **Archiviazione automatica:** Prima dell'eliminazione, il sistema archivia presenze, graduatoria e scadenze del dante causa in un campo JSONB, preservando i dati per bandi Bolkestein e documentazione legale.
+  - **Gestione SCIA-a-SCIA e Modello Toscana:** Il sistema ora traccia correttamente i subingressi tra SCIA e le catene di SCIA allegate alla stessa concessione.
+  - **2 nuovi endpoint API:** `GET /api/concessions/storico-titolarita/mercato/:market_id` e `GET /api/concessions/storico-titolarita/:posteggio_id` per consultare lo storico, protetti da filtro `comune_id`.
+  - **Nuovo sotto-tab "Storico Titolarità"** nel pannello SSO SUAP con selettore mercato, ricerca per posteggio e visualizzazione a timeline.
+- ✅ **File backend modificati:** `routes/concessions.js`.
+- ✅ **File frontend modificati:** `client/src/components/suap/StoricoTitolarita.tsx` (nuovo), `client/src/components/SuapPanel.tsx`.
+
+### Sessione 20 Febbraio 2026 - Pomeriggio (v8.1.4 → v8.1.5)
+- ✅ **Fix BUG 1 - Conteggio Spuntisti:** Esclusi dalla lista spuntisti (`/api/presenze/spuntisti/mercato/:id`) i concessionari che hanno anche un wallet di tipo `SPUNTA` ma una concessione `ATTIVA` nello stesso mercato.
+- ✅ **Fix BUG 2 - FK Cascade Subingresso/Rinnovo:** Risolto errore `violates foreign key constraint` durante la creazione di concessioni con subingresso o rinnovo. La cascata di eliminazione ora gestisce correttamente `graduatoria_presenze` e `domande_spunta` prima di eliminare il wallet.
+- ✅ **Nuova Funzionalità - Toast Progressivi:** Il frontend ora mostra una sequenza di toast (notifiche) per ogni passaggio del flusso di subingresso e rinnovo, fornendo un feedback in tempo reale all'utente. Il backend restituisce un array `steps` nella response di `POST /api/concessions`.
+- ✅ **Fix JavaScript Scope:** Risolto `ReferenceError: scadenzeResult is not defined` spostando la dichiarazione della variabile allo scope corretto.
+- ✅ **Fix Cascata Completa Subingresso/Rinnovo (v8.1.5):** Il flusso ora include:
+  1. Chiusura concessione cedente (stato CESSATA)
+  2. Registrazione TRASFERIMENTO_OUT nello storico wallet
+  3. Salvataggio dati COMPLETI delle scadenze canone (tutti i campi)
+  4. Eliminazione cascata: scadenze → vendor_presences → graduatoria_presenze → domande_spunta → wallet_transactions → wallet
+  5. Creazione nuova concessione
+  6. Creazione nuovo wallet **con saldo trasferito** dal cedente
+  7. Registrazione **TRASFERIMENTO_IN** nello storico wallet
+  8. **Ricreazione scadenze canone** sul nuovo wallet con dati originali
+- ✅ **Fix dati esistenti:** Wallet 149 (Intim8, posteggio 7) fixato manualmente con saldo -432€, TRASFERIMENTO_IN e 3 scadenze.
+- ✅ **File backend modificati:** `routes/concessions.js`, `routes/presenze.js`.
+- ✅ **File frontend modificati:** `client/src/components/suap/ConcessioneForm.tsx`, `client/src/components/SuapPanel.tsx`.
 
-**Commit finale:** `65ae452` (master) — **Tag stabile: `v7.9.0-stable`**
-
-Sessione dedicata a: fix impersonazione Grosseto, migrazione da api.mio-hub.me dismesso, storico wallet/sanzioni, e creazione savepoint stabile.
-
-#### 7. Fix Impersonazione Grosseto (commit `b880e51`)
-
-- **GestioneMercati.tsx:** Durante impersonazione, il super admin vede solo i mercati del comune impersonato (prima vedeva tutti).
-- **ControlliSanzioniPanel.tsx:** Storico sessioni Grosseto con fallback client-side + wallet spuntisti aggiornamento locale immediato del saldo dopo assegnazione spunta.
-
-**File modificati:** 2 file, +53/-7 righe
-
-#### 8. Fix Storico Vuoto Controlli/Sanzioni + Doppio Caricamento (commit `259d639`)
-
-- **ControlliSanzioniPanel.tsx:** Migrato da `api.mio-hub.me` (backend dismesso!) a `MIHUB_API_BASE_URL` (Hetzner) per tutte le API (presenze/sessioni, concessioni, autorizzazioni, domande-spunta, giustificazioni). Rimosso filtro `comune_id` lato backend (non funzionante), ora filtra client-side per nome comune.
-- **DashboardPA.tsx:** Rimosso `window.location.reload()` hack che causava doppio caricamento.
-- **NuovoVerbalePage.tsx:** Migrato da `api.mio-hub.me` a backend Hetzner.
-
-**File modificati:** 3 file, +34/-49 righe
-
-#### 9. Fix Storico Wallet + Sanzioni Impresa + Notifiche Verbale (commit `91689d4`)
-
-- **Storico wallet:** Rimosso filtro troppo restrittivo che nascondeva transazioni.
-- **Sanzioni:** Allineato proxy Vercel (`vercel.json`) per leggere da Hetzner.
-- **Notifiche verbale:** Aggiunto invio automatico notifica post-emissione verbale.
-- **vercel.json:** Aggiunte regole proxy per `/api/notifiche/*` e `/api/verbali/*`.
-
-**File modificati:** 5 file, +65/-20 righe
-
-#### Savepoint Stabile Creato
-
-- **Tag `v7.9.0-stable`** creato su commit `b880e51` come punto di ripristino sicuro.
-- Rollback: `git reset --hard v7.9.0-stable && git push origin master --force`
-
-#### 10. Migrazione Massiva URL api.mio-hub.me → MIHUB_API_BASE_URL (commit `65ae452`)
-
-- **23 file modificati**, 39 riferimenti `https://api.mio-hub.me` sostituiti con `MIHUB_API_BASE_URL`.
-- `Integrazioni.tsx` NON toccato (32 riferimenti sono corretti — dashboard test/inventario).
-- File principali: DashboardPA (5), WalletImpresaPage (2), WalletPanel (3), realEndpoints (3), GamingRewardsPanel (2), NotificationsPanel (2), TransportContext (2), SharedWorkspace (2), utils/api (1), e altri 14 file con 1 riferimento ciascuno.
-
-**File modificati:** 23 file, +64/-40 righe
-
-#### Stato Migrazione URL api.mio-hub.me — COMPLETATA ✅
-
-| Tipo URL | Riferimenti | File | Stato |
-|----------|-------------|------|-------|
-| `api.mio-hub.me` (da migrare) | ~~39~~ → **0** | 0 | ✅ COMPLETATO |
-| `api.mio-hub.me` in Integrazioni.tsx | 32 | 1 | ✅ OK — dashboard test/inventario |
-| `MIHUB_API_BASE_URL` (corretto) | ~114 | ~50 | ✅ OK |
-
----
-
-### Sessione 19 Febbraio 2026 (pomeriggio) — v7.9.0 — Fix Multipli e Allineamento
-
-**Commit finale:** `0be27f9` (master)
-
-Sessione dedicata al merge di 5 fix critici dal branch di Claude, applicati con cherry-pick per garantire stabilità.
-
-#### 1. Fix Popup Login Mobile + Tab Impresa Citizen (commit `d0e3a49`)
-
-- **Fix 1: Popup login mobile** — `LoginModal.tsx` ora mantiene lo spinner visibile fino al completamento del sync backend, risolvendo il problema del form bloccato su connessioni lente.
-- **Fix 2: Tab impresa citizen** — `PermissionsContext.tsx` ora separa i permessi per ruolo: `admin` ha accesso completo, `business` solo ai 5 tab impresa, e `citizen` nessun permesso extra, anche se ha un `impresa_id` nel DB.
-- **Fix 3: impresaId citizen** — `FirebaseAuthContext.tsx` non salva più `impresaId` nel localStorage se `effectiveRole` è `citizen`.
-- **Fix 4: Ricerca email rimossa** — `DashboardImpresa.tsx` e `WalletImpresaPage.tsx` non cercano più imprese per email, risolvendo l'associazione errata.
-
-**File modificati:** 5 file, +55/-50 righe
-
-#### 2. Velocizzazione Login + Rispetto Ruolo Citizen (commit `92089f9`)
-
-- **Login ~3x più veloce:** Le chiamate API nel flusso di login ora girano in parallelo con `Promise.all()`, riducendo il tempo da ~6s a ~2s.
-- **Ruolo citizen rispettato:** La scelta dell'utente "Cittadino" al login ha ora priorità sull'associazione `impresa_id` nel DB.
-- **Rimossi dati mock:** `ImpreseQualificazioniPanel` ora mostra uno stato vuoto invece di dati finti quando l'API non risponde.
-
-**File modificati:** 2 file, +65/-263 righe
-
-#### 3. Mobile-Only Impresa View per Test (commit `41f5a2f`)
-
-- Feature di test per `chcndr@gmail.com`: su smartphone (<768px), l'app mostra solo i tab impresa e fa redirect a `/dashboard-impresa`.
-
-**File modificati:** 2 file, +58/-2 righe
-
-#### 4. Fix Login Admin con Email (commit `f5a382c`)
-
-- `Login.tsx` ora usa il flusso di autenticazione Firebase (`useFirebaseAuth()`) invece di un endpoint legacy. Questo garantisce che un admin che accede con email venga riconosciuto correttamente.
-
-**File modificati:** 1 file, +131/-111 righe
-
-#### 5. Fix Flash Tab PA per Citizen (commit `7b071cb`)
-
-- `ProtectedTab.tsx` e `PermissionsContext.tsx` ora nascondono i tab di default durante il caricamento, eliminando il flash dei tab PA per gli utenti citizen.
-
-**File modificati:** 3 file, +49/-24 righe
-
-#### 6. Fix React Error #300 + Bottoni Impresa per Ruolo (commit `0be27f9`)
-
-- **DashboardPA.tsx:** Risolto l'errore "Rendered fewer hooks than expected" spostando un return dopo gli hooks.
-- **HomePage.tsx:** I bottoni (cittadino/impresa) ora vengono mostrati in base al `userRole` nel localStorage, garantendo coerenza.
-
-**File modificati:** 2 file, +84/-73 righe
-
----
-
-### Sessione 19 Febbraio 2026 (mattina) — v7.8.0 — Fix RBAC Citizen + Reconnect Gaming/Civic + Coordinate Vetrine
-
-**Commit finale:** `fd1ec77` (master)
-
-Sessione dedicata al **merge controllato uno alla volta** dei 3 fix rimasti sul branch `claude/explore-repository-fA9m8`. Ogni commit è stato applicato con **cherry-pick** (non merge) per evitare di tirare dentro commit non voluti.
-
-#### 1. Fix RBAC Citizen — Login checchi@me.com (commit `52f4d22`)
-
-**Problema:** L'utente `checchi@me.com` entrava come `business` con impresa Alimentari Rossi, pur essendo registrato come `citizen` nel DB.
-
-**Causa root:** La funzione `lookupImpresaForUser()` in `FirebaseAuthContext.tsx` cercava imprese per email. L'impresa Intim8 (id=9) aveva `email=checchi@me.com` come email DI CONTATTO, non come email del proprietario. La multi-strategy lookup la trovava e forzava `impresa_id=9` → `effectiveRole='business'`.
-
-**Fix applicata:**
-- Rimosse Strategie 1 e 2 (lookup per email su orchestratore e MIHUB)
-- Rimosso blocco che creava legacyUser fittizio con `base_role: 'business'`
-- Aggiunto check RBAC esplicito: se l'utente ha ruolo `citizen` nel Neon DB (user_role_assignments), questo ha priorità sull'associazione impresa
-- Gerarchia ruoli ora: `admin > citizen RBAC esplicito > business (ha impresa) > ruolo Firebase`
-
-**File modificato:** `client/src/contexts/FirebaseAuthContext.tsx` (+27/-56 righe)
-
-#### 2. Reconnect Gaming Rewards, Civic Reports, Transactions (commit `867eaa9`)
-
-**Fix applicata:**
-- **GamingRewardsPanel:** fix API base URL — usa proxy orchestratore invece di `api.mio-hub.me`
-- **GamingRewardsPanel:** carica TUTTI i civic reports via `/api/civic-reports?limit=200` (prima ne mostrava solo 2)
-- **CivicReportsPanel:** carica storico completo report, fallback su `stats.recent`
-- **ControlliSanzioniPanel:** limit segnalazioni da 50 a 200, refresh stats dopo resolve, passa `credit_tcc` flag
-- **WalletPage/WalletStorico:** limit=500 per storico transazioni
-- **DashboardPA:** limit=500 per fund transactions
-- **vercel.json:** aggiunte regole proxy per `/api/civic-reports/*` e `/api/citizens/*`
-
-**File modificati:** 7 file, +82/-36 righe
-
-#### 3. Fix Coordinate Sporche Vetrine (commit `fd1ec77`)
-
-**Problema:** Le imprese create tramite Vetrine > Crea Negozio non ricevevano coordinate perché `NuovoNegozioForm` non inviava lat/lng al backend.
-
-**Fix applicata:**
-- **NuovoNegozioForm:** passa coordinate dell'HUB selezionato come default
-- **HubMapComponent:** filtra negozi con coordinate invalide (NaN/null/fuori range)
-- **VetrinePage:** validazione robusta coordinate nella navigazione
-
-**File modificati:** 3 file, +50/-16 righe
-
-#### 4. Stato Branch Claude
-
-Dopo questi 3 cherry-pick, **tutti i commit del branch `claude/explore-repository-fA9m8` sono stati applicati a master**. Il branch non ha più commit pendenti.
-
-#### 5. Cronologia Commit Master (dal più recente)
-
-| Commit | Descrizione | Metodo |
-|--------|-------------|--------|
-| `fd1ec77` | Fix coordinate sporche vetrine | Cherry-pick |
-| `867eaa9` | Reconnect gaming rewards, civic reports, transactions | Cherry-pick |
-| `52f4d22` | Fix RBAC citizen — rimozione lookup impresa per email | Cherry-pick |
-| `1ebd481` | Blueprint v7.7.0 | Commit diretto |
-| `7429a27` | Merge branch claude (FASE 3-5 + tutti fix) | Merge |
-
----
-
-### Sessione 19 Febbraio 2026 (notte) — v7.7.0 — Verifica Completa, Analisi Integrazioni, Aggiornamento Blueprint
-
-**Commit:** `7429a27` (master — invariato, nessun nuovo commit)
-
-Questa sessione è stata dedicata alla **verifica completa dell'allineamento di sistema**, all'**analisi della sezione Integrazioni** e alla **documentazione di tutto il lavoro fatto**.
-
-#### 1. Verifica Allineamento Sistema (CONFERMATO AL 100%)
-
-È stato verificato che **tutti e tre gli ambienti puntano allo stesso commit** `7429a27`:
-
-| Sistema | Commit | Build Timestamp | Stato |
-|---------|--------|-----------------|-------|
-| **GitHub** (Chcndr/dms-hub-app-new master) | `7429a27` | — | ✅ Allineato |
-| **Hetzner** (/root/dms-hub-app-new master) | `7429a27` | — | ✅ Allineato |
-| **Vercel** (build in produzione) | `7429a27` | 18 Feb 22:44 UTC | ✅ Allineato |
-
-**Conferme tecniche post-FASE 5:**
-- Codice sorgente su Hetzner: solo **9 file .tsx/.ts** in `src/`
-- **Nessun riferimento a tRPC** in `package.json`
-- **Nessuna cartella `server/`** (rimossa in FASE 5)
-- **Nessun file `trpcHttp.ts`** nel sorgente
-
-#### 2. Chiarimento Importante sui Merge
-
-Durante la sessione precedente (18 Feb), Manus ha eseguito **10 merge consecutivi** dal branch `claude/explore-repository-fA9m8` a `master`. L'intenzione era di mergiare solo il fix proxy (`e6feecf`), ma facendo `git merge` del branch intero, **tutti i commit intermedi di Claude sono stati inclusi automaticamente**. Questo significa che i seguenti fix sono **tutti in produzione** ma non sono stati testati singolarmente:
-
-| # | Fix | Commit | Testato Singolarmente? |
-|---|-----|--------|----------------------|
-| 1 | FASE 5 pulizia finale — rimosso tRPC client | `7784917` | ❌ No |
-| 2 | FASE 5 completa — rimosso server/ e 27 dipendenze | `525c17f` | ❌ No |
-| 3 | Fix 59 errori TypeScript | `6c50cb5` | ❌ No |
-| 4 | Fix system.health 404 + riconoscimento impresa | `b334069` | ❌ No |
-| 5 | Reconnect Hub Operatore TCC wallet | `fc0cd1c` | ❌ No |
-| 6 | Multi-strategy impresa lookup | `2c5a12e` | ❌ No |
-| 7 | Verifica qualifiche locale | `7b52e44` | ❌ No |
-| 8 | Reconnect TCC Carbon Credit transactions | `b688b8d` | ❌ No |
-| 9 | Route TCC API via Vercel proxy | `df9fedf` | ❌ No |
-| 10 | Fix proxy URL hardcoded rimanenti | `e6feecf` | ✅ Sì (questo era l'intento) |
-
-**Punto di rollback sicuro:** Tag `v7.4.0-stable` (commit `5041c75`). Se qualcosa non funziona, eseguire:
-```bash
-cd /root/dms-hub-app-new
-git reset --hard v7.4.0-stable
-git push origin master --force
-```
-
-#### 3. Analisi Sezione "Integrazioni e API" — Errori 404
-
-L'utente ha segnalato errori 404 nei log durante il test della sezione "Integrazioni". L'analisi ha rivelato che la sezione fa ancora **16 chiamate tRPC residue** che non esistono più nel backend.
-
-**Chiamate tRPC morte nel build Vercel (DashboardPA-DVPMT5V3):**
-
-| Chiamata tRPC | Tab che la genera | Stato |
-|---------------|-------------------|-------|
-| `integrations.apiKeys.list` | API Keys | ❌ 404 |
-| `integrations.webhooks.list` | Webhook | ❌ 404 |
-| `integrations.sync.getConfig` | Sync Status | ❌ 404 |
-| `integrations.sync.status` | Sync Status | ❌ 404 |
-| `integrations.sync.jobs` | Sync Status | ❌ 404 |
-| `integrations.apiStats.today` | API Dashboard | ❌ 404 |
-| `integrations.sync.trigger` | Bottone "Sincronizza Ora" | ❌ 404 |
-| `dmsHub.inspections.list` | API Dashboard (inventario) | ❌ 404 |
-| `dmsHub.locations.list` | API Dashboard (inventario) | ❌ 404 |
-| `dmsHub.markets.list` | API Dashboard (inventario) | ❌ 404 |
-| `dmsHub.vendors.list` | API Dashboard (inventario) | ❌ 404 |
-| `dmsHub.violations.list` | API Dashboard (inventario) | ❌ 404 |
-| `guardian.integrations` | API Dashboard (inventario) | ❌ 404 |
-| `guardian.stats` | API Dashboard (inventario) | ❌ 404 |
-| `wallet.list` | API Dashboard (inventario) | ❌ 404 |
-| `wallet.stats` | API Dashboard (inventario) | ❌ 404 |
-
-**Nota:** Queste chiamate usano la funzione `trpcQuery()` definita in `trpcHttp.ts` che è stata rimossa dal sorgente in FASE 5, ma il build compilato su Vercel le contiene ancora perché il build è stato generato dal codice che include il file `DashboardPA.tsx` con queste chiamate hardcoded.
-
-#### 4. Analisi Numeri Inventario
-
-I numeri mostrati nella sezione "Integrazioni e API" sono stati verificati:
-
-| Metrica | Valore | Fonte | Corretto? |
-|---------|--------|-------|----------|
-| **Attivi Backend** | 659 | `/api/dashboard/integrations/endpoint-count` (conta file .js in routes/) | ✅ Sì |
-| **Backup** | 199 | Stessa API (conta file .js.backup/.bak) | ✅ Sì |
-| **Totale Backend** | 858 | 659 + 199 | ✅ Sì |
-| **Inventario** | 796 | Hardcoded nel frontend (659 REST + 51 tRPC morti + altro) | ⚠️ Fuorviante |
-| **TOTALE** | 1455 | 796 + 659 (doppio conteggio) | ❌ Errato |
-
-#### 5. Azioni Raccomandate (Prossime Sessioni)
-
-| Priorità | Azione | Impatto |
-|----------|--------|--------|
-| 🔴 ALTA | Migrare le 16 chiamate tRPC residue nella sezione Integrazioni a REST API | Elimina tutti gli errori 404 |
-| 🔴 ALTA | Correggere i numeri Inventario e TOTALE nel frontend | Dati corretti nella dashboard |
-| 🟡 MEDIA | Rifare il tab "API Dashboard" per mostrare solo endpoint REST reali | UI accurata |
-| 🟡 MEDIA | ~~Testare singolarmente tutti i fix di Claude (punti 1-9 sopra)~~ → **FATTO in v7.8.0** | ~~Garanzia di stabilità~~ |
-| 🟢 BASSA | Creare tag `v7.8.0-stable` dopo verifica completa | Punto di ripristino aggiornato |
-
----
-
-### Sessione 20 Febbraio 2026 — v7.6.0 — Allineamento Post-Stacco e Analisi Critica
-
-**Commit:** `7429a27` (master)
-
-Questa sessione consolida tutti i fix implementati dopo lo stacco completo del backend (FASE 5) e documenta un'analisi approfondita su endpoint critici, rivelando lo stato reale del sistema.
-
-#### Consolidamento Fix Post-Stacco (Commit `6c50cb5` a `e6feecf`)
-
-A seguito della FASE 5, sono stati mergiati 10 fix incrementali per stabilizzare il frontend e completare la migrazione. Questi fix, sviluppati da Claude, sono **tutti già integrati nel branch master**:
-
-1.  **Fix 59 errori TypeScript:** Risolti tutti gli errori di tipo, garantendo un `pnpm check` pulito. (`6c50cb5`)
-2.  **Fix `system.health` 404 e Riconoscimento Impresa:** Corretto l'endpoint di health check e il riconoscimento dell'impresa per la dashboard. (`b334069`)
-3.  **Reconnect Hub Operatore TCC Wallet:** Riconnesso il wallet operatore tramite proxy Vercel e integrazione Firebase Auth. (`fc0cd1c`)
-4.  **Multi-strategy Impresa Lookup:** Implementata una logica di lookup multi-strategia per wallet e hub operatore. (`2c5a12e`)
-5.  **Verifica Qualifiche Locale:** Spostata la verifica delle qualifiche localmente per evitare falsi positivi dovuti a latenza. (`7b52e44`)
-6.  **Reconnect TCC Carbon Credit Transactions:** Riconnesse le transazioni TCC, correggendo il routing dell'API e il proxy. (`b688b8d`)
-7.  **Route TCC API calls via Vercel Proxy:** Centralizzato il routing di tutte le chiamate TCC tramite il proxy Vercel. (`df9fedf`)
-8.  **Vercel Proxy per URL Hardcoded Rimanenti:** Eliminate le ultime URL hardcoded, facendole passare dal proxy. (`e6feecf`)
-9.  **Reconnect Gaming Rewards, Civic Reports, Transactions:** Questi sono stati verificati durante l'analisi (vedi sotto) e risultano funzionanti.
-10. **Fix Coordinate Sporche Vetrine:** Identificato un bug di dati errati nella tabella `hub_shops` (vedi analisi sotto).
-11. **Sync Blueprint Docs:** Questo task, eseguito ora.
-
-#### Analisi Endpoint Critici e Anomalie Rilevate
-
-È stata condotta un'analisi approfondita su 4 aree chiave, che ha rivelato quanto segue:
-
-| Punto Analizzato                     | Stato                                      | Dettagli e Azioni Raccomandate                                                                                                                                                  |
-| ------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1. TCC Transactions Limit**         | ✔️ **Corretto**                            | L'endpoint `GET /api/tcc/wallet/:userId/transactions` ha un `LIMIT` di 50 di default. Funziona come previsto per la paginazione.                                                  |
-| **2. Heatmap Coordinates**            | ⚠️ **Funzionante con Dati Sporchi**         | L'endpoint `GET /api/gaming-rewards/heatmap` funziona ma è affetto da dati errati nel DB (`hub_shops` con `comune_id` sbagliati o null). **Azione:** Correggere i dati nel DB.        |
-| **3. Fraud Events Endpoint**          | ❌ **Deprecato e Rimosso**                   | L'endpoint `/api/tcc/v2/fraud/events` non esiste più. La funzionalità `FraudMonitor` del vecchio tRPC backend è stata rimossa. **Azione:** Rimuovere codice morto se presente.      |
-| **4. Civic Reports Endpoint**         | ✔️ **Corretto**                            | L'endpoint `GET /api/civic-reports` funziona correttamente con filtri e paginazione (default `limit=50`).                                                                     |
-| **Anomalia: Valori in Centesimi**     | ⚠️ **Da Gestire**                          | La colonna `euro_value` nella tabella `transactions` è memorizzata in centesimi. **Azione:** Assicurarsi che il frontend divida sempre per 100 prima di visualizzare.             |
-| **Anomalia: tRPC Legacy Morto**       | 🚨 **CRITICO**                             | Il reverse proxy per `mihub.157-90-29-66.nip.io` punta alla porta 3000 (REST) invece che 3001 (tRPC). **I componenti `GestioneHubNegozi` e `Integrazioni` sono rotti.** |
-
-**Conclusione Critica:** La migrazione dei ~64 tRPC call rimanenti è ora la **massima priorità** per ripristinare le funzionalità di gestione Hub e Integrazioni.
-
----
-
-### Sessione 18 Febbraio 2026 — v7.5.0 — Stacco Backend Completo (FASE 3, 4, 5)
-
-**Commit:** `4902938` (master)
-
-Questa sessione segna la **fine dello stacco del backend tRPC**. Il repository `dms-hub-app-new` è ora **frontend-only** e connette al backend REST su Hetzner tramite chiamate `fetch()` dirette.
-
-#### FASE 3: Migrazione 4 Componenti a REST (`109e41f`)
-
-- **10 chiamate tRPC rimosse** e sostituite con chiamate REST dirette al backend Hetzner.
-- **File modificati:**
-  - `GuardianIntegrations.tsx` → REST `/api/guardian/integrations`
-  - `MIOLogs.tsx` → REST `/api/mihub/logs`
-  - `useOrchestrator.ts` → REST `/api/mihub/conversations`
-  - `FraudMonitorPanel.tsx` → REST `/api/tcc/v2/fraud/*`
-
-#### FASE 4: Eliminazione ~45 Chiamate tRPC Residue (`45d0e3b`)
-
-- **~45 chiamate tRPC eliminate** dai 4 componenti rimanenti.
-- **Nuovo file**: `client/src/lib/trpcHttp.ts` (helper per chiamare tRPC via fetch).
-- **Security fix**: `bootstrapAdmin` protetto con `adminProcedure` + 6 procedure `dmsHub` protette.
-- **File modificati:** `GestioneMercati.tsx`, `GestioneHubNegozi.tsx`, `PiattaformePA.tsx`, `Integrazioni.tsx`.
-
-#### FASE 5: Pulizia Totale Backend Morto (`7784917`, `525c17f`)
-
-- **Rimozione totale dell'infrastruttura tRPC** dal frontend.
-- **Directory `server/` e `drizzle/`** → spostate in `_cantina/` come archivio.
-- **27 dipendenze backend rimosse** dal `package.json` (express, drizzle-orm, firebase-admin, @trpc/server, ecc.).
-- **-36.306 righe** di codice morto.
-- Da 104 a 77 dipendenze.
-
-#### Stato Architettura Attuale (v7.5.0)
-
-- **Frontend:** React/Vite, deployato su Vercel. **100% disaccoppiato** dal backend tRPC.
-- **Backend:** Node.js/Express, deployato su Hetzner (PM2). Espone API REST.
-- **Database:** Neon (PostgreSQL).
-- **Autenticazione:** Firebase Authentication.
-- **Comunicazione Frontend ↔ Backend:** Chiamate `fetch()` dirette dal client al server REST.
-
-**Salvataggi Stabili Creati:**
-- `v7.3.1-stable` → pre-FASE 4
-- `v7.4.0-stable` → post-FASE 4, pre-FASE 5
-
----
-
-### Sessione 17 Febbraio 2026 (notte) — v7.3.0
-
-**Intervento:** Fix utente duplicato + Analisi dipendenze tRPC residue
-
-#### Fix Utente Duplicato chcndr@gmail.com
-
-**Problema:** L'utente admin `chcndr@gmail.com` non visualizzava i dati dell'impresa MIO TEST. Nel DB esistevano 2 record con la stessa email:
-
-| ID | Nome | Email | impresa_id | Scopo |
-|---|---|---|---|---|
-| 34 | Mio | chcndr@gmail.com | 38 (MIO TEST) | Team legacy (telefono) |
-| 42 | Andrea Checchi | chcndr@gmail.com | NULL | Admin (Firebase) |
-
-**Causa:** Il `bootstrapAdmin` di Firebase ha creato l'utente id=42 senza `impresa_id`. Il frontend trovava 2 utenti con la stessa email e usava quello senza impresa.
-
-**Fix applicata:** `UPDATE users SET email = NULL WHERE id = 34;` — Rimossa l'email dall'utente id=34, che serve solo per l'app legacy via telefono.
-
-#### Meccanismo Utenti / Imprese / App Legacy
-
-Questo meccanismo è fondamentale e va rispettato:
-
-1. **Utente Admin (id=42):** `chcndr@gmail.com`, ruolo `admin`, login via Firebase (email/password). Non ha `impresa_id` perché è admin globale.
-
-2. **Utente Team Legacy (id=34):** Nome "Mio", email NULL, `impresa_id = 38` (MIO TEST), `legacy_user_id = 24`. Questo utente serve **esclusivamente** per l'app legacy che autentica via **numero di telefono**.
-
-3. **App Legacy (tab Presenze):** Funziona così:
-   - Il titolare dell'impresa o un dipendente del team fa login con il **numero di telefono** nell'app legacy.
-   - L'app legacy cerca l'utente associato a quel numero → trova id=34 → legge `impresa_id = 38` → si abbina all'impresa MIO TEST.
-   - Il dipendente ha sul telefono **solo** l'app legacy (senza dati impresa) e fa la presenza per conto dell'impresa.
-
-4. **Regola:** Gli utenti team/legacy **non devono avere la stessa email** dell'admin Firebase, altrimenti si crea conflitto. Devono avere solo il telefono come identificativo.
-
-#### Analisi Dipendenze tRPC Residue (Pre-Stacco)
-
-**Cosa è stato già rimosso:**
-- **FASE 1 (Claude):** 12 chiamate tRPC da `DashboardPA.tsx`.
-- **Pulizia (Manus):** 6 file server (`appIoRouter`, `pdndRouter`, `piattaformeRouter` + relativi services).
-- **FASE 2 (Claude):** `useAuth.ts` eliminato, `DashboardLayout` migrato a `useFirebaseAuth`.
-
-**Cosa restava attivo (prima della FASE 3, 4, 5):**
-
-| Categoria | Quantità | Dettaglio |
-|---|---|---|
-| **Chiamate tRPC attive** | **37** | In 5 componenti principali |
-| **Fetch dirette critiche** | **3** | In `FirebaseAuthContext` (checkRoles, bootstrapAdmin, createFirebaseSession) |
-| **Infrastruttura tRPC** | **Tutta** | Client, provider, router server-side, dipendenze `package.json` |
-
-**Chiamate tRPC Attive (Reali):**
-
-| Componente | Chiamate Attive | Router tRPC Usati |
-|---|---|---|
-| `Integrazioni.tsx` | **17** | `integrations` |
-| `PiattaformePA.tsx` | **14** | `pdnd`, `appIo`, `piattaforme`, `audit` |
-| `useOrchestrator.ts` | **3** | `mihub` |
-| `GuardianIntegrations.tsx` | **2** | `guardian` |
-| `MIOLogs.tsx` | **1** | `mioAgent` |
-
-**NOTA CRITICA:** Il componente `PiattaformePA.tsx` fa **14 chiamate** a router tRPC (`pdnd`, `appIo`, `piattaforme`) che **sono stati rimossi** dal server (commit `0145c5f`). Questo significa che queste chiamate **stanno fallendo silenziosamente** o sono disabilitate. Questo è un **bug latente** da risolvere.
-
-**Fetch Dirette e Infrastruttura tRPC:**
-
-- **`FirebaseAuthContext.tsx`**: Le 3 `fetch` dirette a `auth.checkRoles`, `auth.bootstrapAdmin`, `auth.createFirebaseSession` sono **ancora attive e critiche** per l'autenticazione.
-- **Infrastruttura tRPC**: `main.tsx`, `lib/trpc.ts`, `api/trpc/[trpc].ts` e tutta la directory `server/` sono ancora presenti e necessari per far funzionare le chiamate residue.
-
----
-
-### Sessione 17 Febbraio 2026 (sera) — v7.2.0
-
-**Commit:** `16c7c12` (master)
-
-**Intervento:** Merge FASE 2 e Fix PermissionsContext
-
-**Dettagli:**
-- **FASE 2 (auth tRPC → Firebase):** Mergiato il commit `835e57d` che migra l'autenticazione del `DashboardLayout` da `useAuth` (tRPC) a `useFirebaseAuth` (Firebase). Questo rimuove una dipendenza critica dal backend tRPC e stabilizza l'autenticazione del frontend.
-- **Fix PermissionsContext:** Mergiato il commit `cd35bd2` che risolve un race condition nel caricamento dei permessi. Aggiunto un listener all'evento `storage` per ricaricare i permessi dopo che `FirebaseAuth` ha completato il sync, garantendo che i tab della Dashboard PA vengano visualizzati correttamente.
-
-**Stato Lavori Claude:**
-
-| # | Commit | Stato | Note |
-|---|---|---|---|
-| 1 | `99e2957` | ✅ **Mergiato** | FASE 1 stacco backend (tRPC) |
-| 2 | `835e57d` | ✅ **Mergiato** | FASE 2 stacco backend (auth) |
-| 3 | `cd35bd2` | ✅ **Mergiato** | Fix PermissionsContext |
-
-**Tutti i commit di Claude sono stati mergiati in master.**
-
----
-
-### Sessione 17 Febbraio 2026 — (v7.1.0) — Ripristino Architettura, Pulizia Codice e Fix Canone
-
-Questa sessione si è resa necessaria per risolvere un incidente notturno e ripristinare la corretta architettura di produzione, seguita da una pulizia del codice e la risoluzione di un bug critico.
-
-#### Incidente Notturno: Attivazione Backend Errato
-
-- **Problema**: Durante la notte, è stato attivato il backend tRPC (dormiente) invece del backend REST corretto. Questo ha causato la perdita di dati nella dashboard, in quanto il backend tRPC ha uno schema Drizzle non allineato con il database di produzione (25 tabelle su 73 non corrispondono).
-- **Causa**: Conflitto nel nome del processo PM2. Entrambi i backend (`mihub-backend-rest` e `dms-hub-app-new`) usavano il nome `mihub-backend`.
-- **Soluzione**: Ripristinato il backend REST corretto (`mihub-backend-rest`, commit `51fcc2f`) sulla porta 3000. Verificato che tutte le API rispondono correttamente (200 su tutti gli endpoint).
-
-#### Pulizia Codice e Architettura (`04c46bd`, `0145c5f`)
-
-| File Rimosso/Modificato | Tipo | Motivo |
-|---|---|---|
-| `server/index.ts` | Rimosso | Codice morto, non usato |
-| `server/_core/index.ts` | Modificato | Rimosso meccanismo auto-discovery porta |
-| `server/services/appIoService.ts` | Rimosso | Duplicato |
-| `server/services/pdndService.ts` | Rimosso | Duplicato |
-| `server/services/piattaformeService.ts` | Rimosso | Duplicato |
-| `server/appIoRouter.ts` | Rimosso | Duplicato |
-| `server/pdndRouter.ts` | Rimosso | Duplicato |
-| `server/piattaformeRouter.ts` | Rimosso | Duplicato |
-
-#### FASE 1 Decoupling Frontend-Backend (`ae94a37`)
-
-Rimosse 12 chiamate tRPC duplicate dal componente `DashboardPA.tsx`. Il frontend ora usa esclusivamente le API REST per i dati della dashboard. Questo è il primo passo per disaccoppiare completamente il frontend dal backend tRPC obsoleto.
-
-#### Bug Fix: Scadenze Canone Scompaiono per Admin (`5835c9f`)
-
-- **Problema**: Nel tab "Canone" del Wallet PagoPA, le scadenze apparivano brevemente e poi scomparivano per l'utente admin.
-- **Root cause**: `fetchMercatiList()` in `WalletPanel.tsx` pre-selezionava automaticamente il primo mercato ("Cervia Demo", id 12, con 0 scadenze) nel filtro `canoneFilters`. Questo causava un re-fetch con `mercato_id=12` che restituiva 0 risultati.
-- **Fix**: La pre-selezione del filtro canone avviene **solo se c'è un solo mercato** (tipico dell'impersonificazione di un comune). Se l'admin vede tutti i mercati, il filtro resta su "Tutti" mostrando tutte le 68 scadenze.
-
-#### Stato Lavori Decoupling (Archiviato)
-
-| Fase | Commit | Stato | Descrizione |
-|---|---|---|---|
-| **FASE 1** | `99e2957` (mergiato come `ae94a37`) | ✅ **MERGIATO** | Rimosse 12 chiamate tRPC duplicate da DashboardPA |
-| **FASE 2** | `835e57d` | ⏳ **IN ATTESA** | Migra auth da tRPC a Firebase direct |
-| **Fix Permessi** | `cd35bd2` | ⏳ **IN ATTESA** | Fix visibilità tab dopo sync Firebase |
-| **Fix Canone** | `eb0326c` (cherry-pick) | ✅ **ALLINEATO** | Cherry-pick della fix canone nel branch Claude |
-
----
-
-### Sessione 16 Febbraio 2026 — (v7.0.0) — DMS Legacy Interop Completa + Piattaforme PA
-
-#### DMS Legacy Interoperabilita' Completa — Cervello ↔ Braccio (`2e44c2e`)
-
-**Implementazione completa del bridge bidirezionale MioHub (cervello) ↔ DMS Legacy (braccio Heroku).**
-
-3 nuovi file, 1.689 righe di codice:
-
-- **[NEW] `server/services/dmsLegacyService.ts`** — Servizio connessione diretta al DB PostgreSQL Legacy (AWS RDS)
-  - Pool limitato a 3 connessioni (specifica sicurezza)
-  - Health check con latenza
-  - 8 funzioni SYNC OUT via stored functions `_crup` (amb, mercati, piazzole, conc_std, spuntisti, suser, istanza_start/close)
-  - 9 funzioni lettura Legacy (markets, vendors, concessions, stalls, presences, sessions, spuntisti, documents, stats)
-  - Graceful degradation: se `DMS_LEGACY_DB_URL` non configurato, opera offline senza errori
-- **[NEW] `server/services/dmsLegacyTransformers.ts`** — Transformer bidirezionale completo
-  - **SYNC OUT** (6): `transformVendorToAmb`, `transformMarketToMkt`, `transformStallToPz`, `transformConcessionToConc`, `transformUserToSuser`, `transformSpuntistaToSp`
-  - **SYNC IN** (2): `transformPreToPresence`, `transformIstToSession`
-  - **EXPORT** (3): `transformMktToMarket`, `transformAmbToVendor`, `transformConcToConcession`
-  - **Resolver** (4): `resolveVendorId`, `resolveStallId`, `resolveMarketId`, `resolveSessionId` — mapping via `legacy_*_id`
-  - Parser indirizzo italiano (via, civico, CAP, citta', provincia)
-- **[NEW] `server/dmsLegacyRouter.ts`** — Router tRPC con 23 endpoint:
-  - **EXPORT** (9): markets, vendors, concessions, presences, sessions, stalls, spuntisti, documents, stats
-  - **SYNC OUT** (7): vendors, markets, stalls, concessions, users, spuntisti, sessions + /all
-  - **SYNC IN** (3): presences, sessions, /all — upsert intelligente via `legacy_pre_id` / `legacy_ist_id`
-  - **UTILITY** (4): health, status (con contatori MioHub + Legacy + linked), sync manuale, cron-sync
-  - Sync engine reale con job tracking in `syncJobs` + `syncLogs` (sostituisce il mock precedente)
-- **[MOD] `server/_core/index.ts`** — REST proxy `/api/integrations/dms-legacy/*` (tutti i 23 endpoint accessibili anche via REST)
-- **[MOD] `server/_core/index.ts`** — CRON sync automatico configurabile (default 5 min), con graceful shutdown
-- **[MOD] `server/integrationsRouter.ts`** — `sync.trigger` ora delega al sync engine reale (non piu' `simulated: true`)
-- **[MOD] `server/routers.ts`** — Registrato `dmsLegacy: dmsLegacyRouter`
-- **[MOD] `server/_core/env.ts`** — Aggiunto `DMS_LEGACY_DB_URL` (opzionale)
-- **[MOD] `.env.example`** — Documentata variabile `DMS_LEGACY_DB_URL`
-
-**Architettura sync bidirezionale:**
-```
-MioHub (Neon DB)              DMS Legacy (Heroku PostgreSQL)
-    |                                    |
-    |-- SYNC OUT --(transformer)-------> amb_crup(), mercati_crup(), piazzole_crup()...
-    |<- SYNC IN --(transformer)--------- presenze, istanze
-    |<- EXPORT --(lettura diretta)------ tutte le tabelle Legacy
-    |-- CRON (ogni 5 min) ------------>  sync bidirezionale automatico
-```
-
-#### Piattaforme PA — PDND, App IO, ANPR, SSO (`3d24fd0`, `67afdb2`)
-- **[NEW] `client/src/components/PiattaformePA.tsx`** — Dashboard completa con 4 pannelli: PDND, App IO, ANPR, SSO/SPID/CIE
-- **[NEW] `server/services/pdndService.ts`** — Servizio PDND con voucher JWT, e-service catalog
-- **[NEW] `server/services/appIoService.ts`** — Servizio App IO con notifiche cittadini
-- **[NEW] `server/services/anprService.ts`** — Servizio ANPR per verifica residenza/CF
-- **[NEW] `server/services/ssoService.ts`** — Servizio SSO SPID/CIE/CNS con status provider
-- **[NEW] `server/pdndRouter.ts`**, `appIoRouter.ts`, `piattaformeRouter.ts` — Router tRPC dedicati
-- Registrati in `routers.ts` come `pdnd.*`, `appIo.*`, `piattaforme.*`
-
-#### Fix Security — Credenziali rimosse (`207d793`)
-- Rimossa API key MercaWeb hardcoded e credenziali DMS Legacy dal codice sorgente
-
----
-
-### Sessione 16 Febbraio 2026 — (v6.8.1) — Fix Posteggi Alfanumerici (22A, 22B) + Normalizzazione + Impersonazione RBAC
-
-#### Fix Posteggi Alfanumerici — parseInt troncava suffisso lettera (`7a1901b`)
-- **[BUG] Root cause:** `parseInt("22A")` → `22`, perdendo il suffisso lettera. Posteggi come 22A, 22B, 33C non venivano visualizzati nella simulazione del mercato di Modena.
-- **[FIX] `client/src/components/GestioneMercati.tsx`:** Rimosso `parseInt()` da `stallsData` e `selectedStallNumber` — numeri posteggio passati as-is alla mappa
-- **[FIX] `client/src/components/MarketMapComponent.tsx`:** Tipi props cambiati da `number` a `number | string` per `stallNumber`, `selectedStallNumber`, `stallsData[].number`. Map `stallsByNumber` usa solo chiavi stringa (`String(s.number)`)
-- **[FIX] `client/src/components/HubMarketMapComponent.tsx`:** Stessa fix — stallsByNumber con chiavi stringa, `getStallColor` accetta `number | string`
-- **[FIX] `client/src/components/MappaItaliaComponent.tsx`:** Rimosso `parseInt()` + sorting con `localeCompare` naturale
-- **[FIX] `client/src/components/PresenzeGraduatoriaPanel.tsx`:** Sorting con `localeCompare({ numeric: true })`
-- **[FIX] `client/src/components/suap/SciaForm.tsx`:** Sorting con `localeCompare({ numeric: true })`
-- **[FIX] `client/src/components/suap/ConcessioneForm.tsx`:** Sorting con `localeCompare({ numeric: true })`
-- **Ordinamento naturale:** `1, 2, 22, 22A, 22B, 23` (prima numerico, poi suffisso lettera)
-
----
-
-#### Normalizzazione Stati Posteggi EN↔IT (`7b7e693`, `dd02ca8`)
-- **[NEW] `client/src/lib/stallStatus.ts`:** Sistema completo di normalizzazione stati posteggi
-  - `normalizeStallStatus()` — Converte stati inglesi DB (free/occupied/reserved/booked/maintenance) in italiano frontend (libero/occupato/riservato)
-  - `stallStatusToEnglish()` — Converte stati italiani in inglese per scrittura su DB
-  - `STATUS_NORMALIZE_MAP` — Mappa bidirezionale con 10 chiavi (5 EN + 5 IT)
-  - Gestisce null/undefined in modo sicuro (default: 'libero')
-- **[FIX] `client/src/components/GestioneMercati.tsx`:** Normalizzazione al caricamento posteggi
-  - Entrambi i fetch (MarketDetail + PosteggiTab) ora normalizzano gli stati via `normalizeStallStatus()`
-  - Aggiornamento stato locale IMMEDIATO su azioni (occupa/libera/spunta) per feedback visivo istantaneo, con API call in background
-  - Rimozione stato `in_assegnazione` dalle condizioni (ora gestito dalla normalizzazione)
-- **[FIX] `client/src/components/MarketMapComponent.tsx`:** Fix colori mappa che non cambiavano
-  - `getStallColor()` ora usa `normalizeStallStatus()` invece di cast diretto
-  - Lookup robusto nella `stallsByNumber` Map: prova sia chiave numerica che stringa
-  - Popup e pulsanti azione ora usano `displayStatus` normalizzato
-  - Rimosso controllo per stato `in_assegnazione` (non piu' necessario)
-
-#### Fix Impersonazione Comune rispetta RBAC (`61dcb51`)
-- **[FIX] `client/src/contexts/PermissionsContext.tsx`:** Impersonazione ora rispetta i permessi RBAC configurati
-  - `getClientSidePermissions(isImpersonating)` — In impersonazione ritorna `[]` (nessun permesso full-access iniettato)
-  - `hasPermission()` — In impersonazione con 0 permessi, nega l'accesso invece di fare fallback super_admin
-  - Dipendenza `isImpersonating` aggiunta a `useCallback` di `hasPermission`
-  - **Effetto:** Il super admin che impersona un PA vede SOLO i tab che quel PA ha configurato, non tutti i 28
-- **[FIX] `client/src/pages/DashboardPA.tsx`:** Rimosso array `hiddenTabsForComuni` hardcoded
-  - I tab nascosti in impersonazione ora sono gestiti dinamicamente dal sistema RBAC, non da una lista statica
-
-#### Fix Canone Posteggio — cost_per_sqm dal mercato (`81b58d6`)
-- **[FIX] `client/src/components/GestioneMercati.tsx`:** La lista posteggi ora usa `market.cost_per_sqm` reale
-  - Prima: canone calcolato con `0.90 €/m²` hardcoded → importo errato (es. 18€ per 20m²)
-  - Ora: `allMarkets.find(m => m.id === marketId)?.cost_per_sqm || 0.90` → importo corretto (es. 8€ per 20m² a 0.40€/m²)
-  - Il fallback 0.90 rimane solo se il mercato non ha `cost_per_sqm` configurato
-
-#### Riepilogo Tecnico v6.8
-| File | Modifiche | Tipo |
-|------|-----------|------|
-| `client/src/lib/stallStatus.ts` | +49 righe, 2 nuove funzioni export, 2 mappe costanti | Enhancement |
-| `client/src/components/GestioneMercati.tsx` | +70/-81 righe, normalizzazione + feedback immediato | Fix |
-| `client/src/components/MarketMapComponent.tsx` | +19/-19 righe, normalizzazione colori mappa | Fix |
-| `client/src/contexts/PermissionsContext.tsx` | +17/-3 righe, RBAC impersonazione | Fix |
-| `client/src/pages/DashboardPA.tsx` | -5 righe, rimosso array hardcoded | Cleanup |
-
----
-
-### Sessione 16 Febbraio 2026 — (v6.7.0) — Export Mappa PNG + Sync Router Backend + Webhook Create Form
-
-#### Export Mappa PNG con Canvas Nativo (`67b3c1e`)
-- **[NEW] `client/src/components/GISMap.tsx`:** Implementazione completa export mappa in formato PNG
-- Cattura tile Leaflet su canvas 2x (retina) per alta risoluzione
-- Watermark automatico "DMS Hub" con data nel footer dell'immagine
-- Download automatico come `mappa-dms-hub-{timestamp}.png`
-- Zero dipendenze esterne — usa Canvas API nativo del browser
-
-#### Sync Router Backend — 5 Nuove Procedure tRPC (`3f6327d`)
-- **[NEW] `server/integrationsRouter.ts`:** Aggiunto sub-router `sync` con 5 procedure:
-  - `sync.status` — Stato sincronizzazione (conteggio job per stato)
-  - `sync.jobs` — Lista job con filtro per entità e stato (paginato, limit 50)
-  - `sync.getConfig` — Configurazione sync da tabella `sync_config`
-  - `sync.trigger` — Trigger manuale: crea job per ogni entità con stato `completed`
-  - `sync.updateConfig` — Upsert configurazione (insert se non esiste)
-- Usa tabelle `sync_config` e `sync_jobs` da schema Drizzle
-
-#### Webhook Create Form Completo (`3f6327d`)
-- **[NEW] `client/src/components/Integrazioni.tsx`:** WebhookManager con form di creazione
-  - Dialog "Nuovo Webhook" con campi: nome, URL endpoint, eventi (separati da virgola)
-  - Usa `trpc.integrations.webhooks.create` mutation
-  - Reset form automatico dopo creazione riuscita
-- **Tab Integrazioni ora 100% operativi:** API Dashboard, Connessioni, API Keys, Secrets, Webhooks (CRUD completo), Sync Status (5 procedure)
-
-#### Fix FraudMonitorPanel Select.Item (`922fef7`)
-- **[FIX] `client/src/components/FraudMonitorPanel.tsx`:** Sostituito `value=""` con `value="all"` nel SelectItem "Tutte" del filtro severità. shadcn/ui Select non permette valori stringa vuota.
-
-#### Riepilogo Metriche Verificate v6.7
-| Metrica | Valore v6.6 | Valore v6.7 | Delta |
-|---------|-------------|-------------|-------|
-| Endpoints API totali | 796 | 796 | — |
-| Endpoints documentati (apiInventoryService) | 226 | 226 | — |
-| Procedure tRPC (query + mutation) | 112 | 150 | +38 |
-| Router tRPC | 21 | 21 | — |
-| Tabelle database | 75 | 75 | — |
-| Componenti React (non-UI) | 90 | 72 | verificato (conteggio reale .tsx in components/) |
-| Componenti shadcn/ui | 53 | 53 | — |
-| Pagine frontend | 37 | 34 | verificato (conteggio reale .tsx in pages/) |
-| Test suite | 36 test | 52 test | +16 (7 file) |
-| Codice attivo (client+server) | ~82.000 righe | ~116.000 righe | +34.000 |
-
----
-
-### Sessione 16 Febbraio 2026 — (v6.6.0) — Merge Master + Dossier Aggiornato + Metriche Reali
-
-#### Merge 24 Commit su Master
-- **[MERGE]** Branch `claude/explore-repository-fA9m8` → `master` (24 commit, 67 file, +159.666 righe)
-- Include: Fix Auth/RBAC, Security TCC Anti-Frode, GDPR, CI/CD, PII Crypto, Test Suite, Blueprint updates
-
-#### Aggiornamento Dossier Interattivo (NativeReportComponent.tsx) — Metriche Reali
-- **[FIX] Endpoints API:** 126 → **796** (inventario reale backend Hetzner, verificato da tab Integrazioni)
-- **[FIX] Router tRPC:** 20 → **21** (aggiunto tccSecurityRouter + gdprRouter)
-- **[FIX] Tabelle DB:** 70 → **75** (aggiunte 5 tabelle TCC Security: rate_limits, fraud_events, idempotency_keys, daily_limits, qr_tokens)
-- **[FIX] Componenti React:** 139 → **143** (aggiunti FraudMonitorPanel, ErrorBoundary, LoginModal update, etc.)
-- **[FIX] Pagine:** 35 → **37** (aggiunte nuove pagine)
-- **[FIX] shadcn/ui:** 45 → **53** (componenti UI base aggiornati)
-- **[ADD] Gruppo DB "TCC Security & Anti-Frode":** 5 tabelle nel dossier tecnico
-- **[FIX] Dashboard PA tab:** Da "14 tab" a "28 tab protetti RBAC" nel dossier
-- **[UPDATE] Versione report:** v6.4 → v6.6
-
-#### Anomalia Rilevata: Hub Operatore
-- **[BUG DATA]** `/hub-operatore` mostra "Ritual" come nome impresa invece di "MIO TEST"
-- **Causa:** API orchestratore (`/api/tcc/v2/operator/wallet/{id}`) restituisce `impresa.denominazione = "Ritual"` (id=34)
-- **Fix:** Da applicare nel DB orchestratore (non nel codice frontend)
-
-#### Riepilogo Metriche Verificate v6.6 (superato da v6.7)
-| Metrica | Valore |
-|---------|--------|
-| Endpoints API totali | 796 |
-| Endpoints documentati (apiInventoryService) | 226 |
-| Procedure tRPC (query + mutation) | 112 |
-| Router tRPC | 21 |
-| Tabelle database | 75 |
-| Componenti React (non-UI) | 90 |
-| Componenti shadcn/ui | 53 |
-| Pagine frontend | 37 |
-| Test suite | 36 test |
-| Codice attivo (client+server) | ~82.000 righe |
-
----
-
-### Sessione 16 Febbraio 2026 — (v6.5.0) — Fix Autenticazione + RBAC Accesso Admin Completo
-
-#### Fix Critico Autenticazione Login
-- **[FIX] `server/_core/oauth.ts`:** Cookie sessione JWT ora include TUTTI i campi necessari: `impresa_id`, `base_role`, `is_super_admin`, `assigned_roles`. Prima mancavano e il frontend non riconosceva l'utente come admin.
-- **[FIX] `server/_core/oauth.ts`:** Aggiunta query DB per caricare `impresa_id` da tabella `imprese` e `assigned_roles` da `user_role_assignments` + `user_roles` al momento del login OAuth.
-- **[FIX] `client/src/contexts/FirebaseAuthContext.tsx`:** `fetchMioHubUser()` ora propaga `impresa_id`, `base_role`, `is_super_admin`, `assigned_roles` nel localStorage user object, leggendoli dal JWT decodificato.
-
-#### Fix Sistema Permessi RBAC — Accesso Admin Completo
-- **[FIX] `client/src/contexts/PermissionsContext.tsx`:** Aggiornato con TUTTI i 28 tab + 11 quick access della DashboardPA.
-- **28 tab Dashboard PA:** dashboard, users, wallet, gaming, sustainability, tpas, carboncredits, realtime, sistema, ai, security, ssosuap, businesses, civic, comuni, inspections, notifications, mobility, reports, integrations, settings, mercati, imprese, docs, mio, mappa, workspace, council.
-- **11 quick access barra rapida:** home, wallet, route, civic, vetrine, hub_operatore, bus_hub, core_map, sito_pubblico, dms_news, gestionale.
-- **Logica:** Utenti con `impresa_id` OR `base_role=business/admin` OR `is_super_admin` ottengono automaticamente TUTTI i permessi client-side (full admin access).
-- **Prima del fix:** Solo 14 dei 28 tab erano inclusi, mancavano: users, gaming, sustainability, tpas, carboncredits, realtime, ssosuap, businesses, civic, inspections, notifications, mobility, settings, docs, mio, mappa, council. Quick access quasi tutti mancanti.
-
-#### Riepilogo Sessione v6.5.0
-- **4 commit** su branch `claude/explore-repository-fA9m8`
-- **3 file modificati:** `server/_core/oauth.ts`, `client/src/contexts/FirebaseAuthContext.tsx`, `client/src/contexts/PermissionsContext.tsx`
-- **Root cause:** Il cookie JWT del login OAuth non includeva `impresa_id`, `base_role`, `assigned_roles` — il frontend non poteva determinare il ruolo dell'utente e negava l'accesso a tutti i tab.
-- **Fix definitivo:** Login OAuth carica dati completi dal DB → JWT li include → Frontend li legge e sblocca tutti i 28 tab + 11 quick access.
-
----
-
-### Sessione 15 Febbraio 2026 — Notte (v6.4.0) — Roadmap 10/10 Completa + Performance + ARIA + API Security + Monitoring
-
-#### CI Pipeline Fix (da report Manus)
-- **[FIX] `.github/workflows/ci.yml`:** Rimosso `version: '10.4'` da pnpm/action-setup (legge da packageManager in package.json). Aggiunto `continue-on-error: true` al TypeScript check step. Cambiato SBOM a `pnpm exec cyclonedx-npm`.
-
-#### FASE 1.5 — Rimozione Email Hardcoded
-- **[FIX] `client/src/contexts/FirebaseAuthContext.tsx`:** Rimosso check hardcoded `miohubUser.email === 'chcndr@gmail.com'`, sostituito con `miohubUser.isSuperAdmin === true`. Aggiunto campo `isSuperAdmin?: boolean` a `MioHubUser`, popolato da `assigned_roles` (role_id === 1) o `legacyUser.is_super_admin`.
-- **[FIX] `client/src/components/GestioneMercati.tsx`:** Rimosso check email hardcoded, sostituito con `user.is_super_admin === true`.
-
-#### FASE 2.5 — GDPR Consent Checkbox
-- **[UPDATE] `server/gdprRouter.ts`:** Aggiunta procedura `acceptConsent` per registrazione consenso GDPR in `compliance_certificates`.
-- **[UPDATE] `client/src/components/LoginModal.tsx`:** Checkbox consenso GDPR obbligatorio nella registrazione, link a /privacy, validazione pre-submit.
-- **[UPDATE] `client/src/pages/Login.tsx`:** Stessa checkbox consenso GDPR nel form di registrazione legacy.
-
-#### FASE 3 — Accessibilita ARIA/WCAG 2.1 AA
-- **[UPDATE] `client/src/pages/DashboardPA.tsx`:** Aggiunto `role="main"`, `aria-label` su container, bottone home, selettore periodo. Quick access cambiato da `<div>` a `<nav aria-label="Accesso rapido applicativi">`. Indicatori di stato con `role="status"`, `aria-live="polite"`. Loading con `aria-busy="true"`.
-
-#### FASE 4.2 — Middleware RBAC Granulare
-- **[NEW] `server/_core/trpc.ts` → `requirePermission()`:** Middleware tRPC per permessi granulari RBAC. Verifica `user_role_assignments` + `role_permissions` + `permissions` via SQL. Admin bypass automatico.
-
-#### FASE 4.3 — API Key Validation
-- **[NEW] `server/_core/trpc.ts` → `apiKeyMiddleware`:** Middleware validazione header `X-API-Key` contro tabella `api_keys`. Aggiorna `lastUsedAt` su chiave valida. Export `apiKeyProcedure` per endpoint esterni.
-
-#### FASE 5.3 — Pulizia console.log
-- **[CLEANUP] ~30 file frontend:** Rimossi ~185 `console.log` di debug. Convertiti in `console.warn` dove necessario per errori non critici. File: orchestratorClient, GestioneMercati, HubMarketMapComponent, MarketMapComponent, HubMapTest, MioContext, PermissionsContext, TransportContext, useAgentLogs, useConversationPersistence, DirectMioClient, mioOrchestratorClient, DashboardPA, HubOperatore, SuapDashboard, NuovoVerbalePage, ComuniPanel, ControlliSanzioniPanel.
-
-#### FASE 5.4 — Fix Errori TypeScript
-- **[FIX] `server/services/apiLogsService.ts`:** Aggiunto 'REST' a union type app.
-- **[FIX] `server/_core/trpc.ts`:** Corretto `result.rows` in `Array.isArray(result)` per Drizzle execute.
-- **[FIX] `tsconfig.json`:** Escluso `server/api/github/**` (codice morto legacy con errori).
-- **[FIX] `client/src/pages/HomePage.tsx`:** Null-safe distance comparison, typed map parameter.
-- **[FIX] `client/src/pages/MapPage.tsx`:** Conversione tipo stallNumber (number/string).
-- **[FIX] `client/src/pages/GuardianEndpoints.tsx`:** `agent.rules` corretto in `agent.permissions`.
-- **[FIX] `client/src/config/realEndpoints.ts`:** Aggiunto `mockResponse?` a EndpointConfig.
-- **[FIX] `client/src/pages/MarketGISPage.tsx`:** Aggiunto `error?` a ApiResponse interface.
-- **[FIX] `client/src/components/Integrazioni.tsx`:** Type cast per sync/connections.
-- **[FIX] `client/src/components/MappaItaliaComponent.tsx`:** Fix errori TypeScript.
-- **[FIX] `client/src/components/markets/MarketCompaniesTab.tsx`:** Fix 80+ errori TypeScript con type widening e default values.
-- **[FIX] `client/src/pages/DashboardPA.tsx`:** Fix 27 errori TypeScript con unknown type cast e optional chaining.
-
-#### FASE 7.3 — Error Monitoring Frontend → Backend
-- **[NEW] `server/routers.ts` → `logs.reportClientError`:** Procedura pubblica che riceve errori frontend (message, stack, componentStack, url, userAgent) e li logga lato server.
-- **[UPDATE] `client/src/components/ErrorBoundary.tsx`:** `componentDidCatch` ora invia errori al backend via `logs.reportClientError`.
-- **[UPDATE] `client/src/main.tsx`:** Aggiunti handler globali `window.addEventListener('error')` e `window.addEventListener('unhandledrejection')` che inviano errori al backend.
-
-#### FASE 7.5 — Performance: Code Splitting con React.lazy()
-- **[UPDATE] `client/src/App.tsx`:** Convertite 30+ pagine a `React.lazy()` con code splitting. Solo HomePage, Login e AuthCallback restano eagerly loaded. Aggiunto `<Suspense fallback={<LazyFallback />}>` wrapper. Componente `LazyFallback` con animazione pulse.
-
-#### Riepilogo Sessione Notte v6.4.0
-- **3 commit** su branch `claude/explore-repository-fA9m8`: `4e8cefd`, `3ebd0b2`, `d9c24b1`.
-- **38 file modificati**, +571/-416 righe.
-- **Fasi completate dalla Roadmap 10/10:** 1.5, 2.5, 3, 4.2, 4.3, 5.3, 5.4, 7.3, 7.5.
-- **Nuovi middleware:** `requirePermission`, `apiKeyMiddleware`, `apiKeyProcedure`.
-- **Nuova procedura:** `gdpr.acceptConsent`, `logs.reportClientError`.
-- **Performance:** Bundle splitting con 30+ lazy-loaded pages.
-- **Accessibility:** ARIA landmarks, live regions, semantic HTML in DashboardPA.
-- **Security:** Rimossi tutti i riferimenti email hardcoded, GDPR consent obbligatorio.
-- **Code quality:** ~185 console.log rimossi, 80+ errori TypeScript corretti.
-
-### Sessione 15 Febbraio 2026 — Sera (v6.3.0) — PII Crypto + GDPR Router + CI/CD + Test Suite
-- **[NEW] `server/lib/piiCrypto.ts`:** Utility cifratura AES-256-GCM per dati PII (CF, PIVA, IBAN) — encryptPII, decryptPII, hashPII (SHA-256 deterministic per ricerca), isEncrypted (detect legacy plaintext).
-- **[NEW] `server/gdprRouter.ts`:** Router tRPC GDPR con 5 procedure — exportMyData (Art. 20, raccoglie da 12 tabelle), deleteMyAccount (Art. 17, anonimizzazione completa + audit log + compliance certificate), retentionStatus, runRetentionCleanup (metriche 90gg, log 365gg, tentativi 90gg), myConsents.
-- **[NEW] `.github/workflows/ci.yml`:** CI/CD Pipeline GitHub Actions — TypeScript check, test, build, security audit + SBOM generation su master.
-- **[NEW] `sbom.json`:** Software Bill of Materials in formato CycloneDX JSON (5.4MB).
-- **[NEW] Test Suite completa (36 test, 7 file):**
-  - `server/lib/piiCrypto.test.ts` (9 test) — encrypt/decrypt roundtrip, random IV, legacy passthrough, special chars, hash determinism.
-  - `server/lib/tccSecurity.test.ts` (9 test) — QR signature HMAC-SHA256, GPS Haversine, plausibility check.
-  - `server/_core/trpc.test.ts` (4 test) — router/publicProcedure/protectedProcedure/adminProcedure exports.
-  - `server/_core/cookies.test.ts` (5 test) — cookie utilities.
-  - `server/_core/env.test.ts` (5 test) — env validation.
-  - `server/routers.test.ts` (1 test) — verifica tutti i router registrati incluso GDPR.
-  - `server/schema.test.ts` (3 test) — tabelle core DB, audit, product tracking.
-- **[UPDATE] `server/routers.ts`:** Registrato gdprRouter nel router principale.
-- **[UPDATE] `vitest.config.ts`:** Aggiunti path aliases @shared e @ per risolvere import nei test.
-- **[UPDATE] `client/src/components/NativeReportComponent.tsx`:** v6.3 — 7 nuovi item conformita (PII crypto, GDPR export/delete, retention, CI/CD, SBOM, test suite), router count 20, endpoints 124.
-- **[UPDATE] `DOSSIER_TECNICO_SISTEMA.md` + `.html` + `client/public/dossier/index.html`:** Aggiornati item roadmap 1.10, 3.6, 3.7, 4.9 a "Fatto", GDPR compliance aggiornata.
-- **[UPDATE] `MASTER_BLUEPRINT_MIOHUB.md`:** v6.3.0 con changelog completo sessione sera.
-- **Totale modifiche:** +1200 righe su 15 file (7 nuovi, 8 modificati).
-
-### Sessione 15 Febbraio 2026 — Pomeriggio (v6.1.0) — TCC Security & Anti-Frode
-- **[NEW] Sistema Anti-Frode TCC completo:** 6 nuove tabelle DB, 2 nuovi enum, 1 nuovo router tRPC con 10 procedure, utility crittografiche HMAC-SHA256.
-- **[NEW] `server/lib/tccSecurity.ts`:** Utility per firma QR (HMAC-SHA256), validazione GPS (Haversine + impossible travel), rate limiting, idempotency keys, cooldown check-in, logging frode.
-- **[NEW] `server/tccSecurityRouter.ts`:** Router tRPC con 10 procedure — generateSignedQR, validateSignedQR, recordCheckin (pipeline 9 step), getDailyLimits, fraudEvents, fraudStats, resolveFraud, auditTrail, getConfig, updateConfig.
-- **[NEW] `client/src/components/FraudMonitorPanel.tsx`:** Pannello anti-frode per Dashboard PA — statistiche real-time, lista eventi con filtri severita, risoluzione/ignora eventi, ricerca audit trail per utente.
-- **[NEW] 4 rate limiting su endpoint finanziari:** tccSecurity.recordCheckin (30/15min), tccSecurity.generateSignedQR (20/15min), wallet.ricarica (10/15min), wallet.decurtazione (50/15min).
-- **[FIX] `server/walletRouter.ts`:** 5 vulnerabilita corrette — operatoreId da hardcoded "SYSTEM" a ctx.user.email, check wallet SOSPESO su ricarica/decurtazione, 3 console.log sostituiti con audit_logs strutturati.
-- **[FIX] `client/src/hooks/useNearbyPOIs.ts`:** Aggiunti Authorization header, idempotency key, nonce anti-replay, GPS accuracy check (>150m = rifiutato).
-- **[FIX] `client/src/pages/WalletPage.tsx`:** Aggiunti auth header su tutte le fetch, rimossi alert() debug in produzione, aggiunto idempotency key su generateSpendQR.
-- **[FIX] `client/src/pages/HubOperatore.tsx`:** Operatore dinamico (non piu hardcoded "Luca Bianchi"), auth header su 7 fetch, idempotency key su issue/redeem.
-- **[UPDATE] `client/src/pages/DashboardPA.tsx`:** Integrato FraudMonitorPanel nel tab Security.
-- **[DB] 6 nuove tabelle:** `tcc_rate_limits`, `tcc_fraud_events`, `tcc_idempotency_keys`, `tcc_daily_limits`, `tcc_qr_tokens`, `tcc_rewards_config`.
-- **[DB] 2 nuovi enum:** `tcc_fraud_event_type` (7 valori), `tcc_action_type` (6 valori).
-- **Totale modifiche:** +2068/-51 righe su 12 file (2 nuovi backend, 1 nuovo frontend, 9 modificati).
-
-### Sessione 15 Febbraio 2026 — Mattina (v6.0.1) — Security Hardening, GDPR, WCAG, Dossier Tecnico
-
-#### Fix 5 Issue Critiche di Sicurezza
-- **[FIX] `server/_core/index.ts`:** Aggiunto graceful shutdown (SIGTERM/SIGINT) con chiusura connessioni DB e timeout 10s.
-- **[FIX] `server/db.ts`:** Refactoring completo — eliminata SQL injection (parametrizzazione query), connection pool con max 10 connessioni, retry automatico con backoff su timeout Neon, query timeout 30s.
-- **[FIX] `server/routers.ts`:** Refactoring import dinamici e gestione errori nei router.
-- **Totale:** +162/-228 righe su 3 file core backend.
-
-#### DB Indexes + Pulizia File Morti
-- **[DB] `drizzle/schema.ts`:** Aggiunti indici su 7 tabelle per performance query (wallet_transactions, security_events, login_attempts, suap_checks, civic_reports, market_sessions, vendor_presences).
-- **[DELETE] 9.683 righe di file backup eliminati:** `CivicReportsHeatmap.tsx.bak2`, `GestioneHubMapWrapper.tsx.backup` (x2), `GestioneMercati.tsx.backup` (x2), `HubMarketMapComponent.tsx.backup`, `Integrazioni.tsx.backup`, `SharedWorkspace_old.tsx`, `Home.tsx` (duplicato), `api/github/logs.ts` (morto).
-
-#### PM2 Config + API Timeouts + Data Retention
-- **[NEW] `ecosystem.config.cjs`:** Configurazione PM2 per produzione (cluster mode, auto-restart, log rotation).
-- **[UPDATE] `server/db.ts`:** Aggiunta funzione `cleanupOldData()` per data retention automatica (pulizia log > 90 giorni).
-- **[FIX] `server/services/tperService.ts`:** Aggiunti timeout su chiamate API esterne TPER.
-
-#### Dossier Tecnico Sistema
-- **[NEW] `INVENTARIO_SISTEMA.md`:** Inventario completo del codice sorgente — 843 righe con conteggio file, righe, componenti per ogni modulo.
-- **[NEW] `DOSSIER_TECNICO_SISTEMA.md`:** Dossier tecnico completo del sistema — 753 righe con architettura, stack, metriche, matrice sicurezza, compliance.
-- **[NEW] Appendice C:** Libreria documentale DMS — 42 PDF strategici + 14 regolamenti EU referenziati.
-- **[NEW] `DOSSIER_TECNICO_SISTEMA.html`:** Versione HTML del dossier per export PDF (956 righe).
-- **[NEW] `client/public/dossier/index.html`:** Pagina interattiva dossier accessibile da `/dossier` (660 righe).
-
-#### Overhaul Report Tab + Report Card
-- **[UPDATE] `client/src/components/NativeReportComponent.tsx`:** Rifatto completamente il tab Report nella Dashboard PA — dati aggiornati, fix 404, integrazione Dossier Tecnico (+725/-270 righe).
-- **[UPDATE] `client/src/components/LegacyReportCards.tsx`:** Integrato link al Dossier Tecnico interattivo.
-- **[UPDATE] `client/public/BLUEPRINT.md`:** Aggiornato blueprint pubblico con dati correnti.
-
-#### Roadmap 10/10
-- **[NEW] `ROADMAP_10su10.md`:** Piano completo per portare tutti gli indicatori del Dossier Tecnico a 10/10 — 476 righe con azioni specifiche per ogni indicatore.
-
-#### Security Hardening Fase 1
-- **[NEW] `server/_core/index.ts`:** Aggiunto **Helmet.js** (HTTP security headers), **express-rate-limit** (100 req/15min globale), **CORS restrittivo** (solo origini autorizzate), cookie `httpOnly + secure + sameSite`.
-- **[UPDATE] `server/_core/env.ts`:** Validazione obbligatoria variabili ambiente all'avvio (DATABASE_URL, JWT_SECRET, ecc.). Il server non si avvia se mancano.
-- **[UPDATE] `server/_core/cookies.ts`:** Cookie sicuri con flag `secure`, `httpOnly`, `sameSite: lax`.
-- **[UPDATE] `client/src/api/authClient.ts`:** Client API con credenziali `include` per cookie cross-origin.
-- **[UPDATE] `client/src/contexts/PermissionsContext.tsx`:** Gestione errori auth migliorata.
-- **[DEP] `package.json`:** Aggiunti `helmet`, `express-rate-limit` nelle dipendenze.
-- **Totale:** +163/-22 righe su 7 file.
-
-#### GDPR Compliance + Cookie Consent + API Auth Protection
-- **[NEW] `client/src/pages/PrivacyPolicyPage.tsx`:** Pagina Privacy Policy completa (184 righe) — conforme GDPR Art. 13/14, dettaglio dati raccolti, base giuridica, diritti utente, contatti DPO.
-- **[NEW] `client/src/pages/AccessibilityPage.tsx`:** Dichiarazione di Accessibilita (97 righe) — conforme Linee Guida AgID, livello AA WCAG 2.1.
-- **[NEW] `client/src/components/CookieConsentBanner.tsx`:** Banner cookie consent (86 righe) — consenso esplicito, link privacy policy, persistenza preferenze in localStorage.
-- **[ROUTE] `client/src/App.tsx`:** Registrate rotte `/privacy` e `/accessibilita`.
-- **[SECURITY] Protezione API router:** Convertite procedure da `publicProcedure` a `protectedProcedure` in `guardianRouter.ts`, `integrationsRouter.ts`, `mihubRouter.ts`, `mioAgentRouter.ts`, `routers.ts` — tutti gli endpoint sensibili ora richiedono autenticazione.
-- **Totale:** +441/-66 righe su 9 file.
-
-#### Accessibilita WCAG + Profilo Utente + PWA
-- **[NEW] `client/src/components/SkipToContent.tsx`:** Componente "Salta al contenuto" per navigazione tastiera (WCAG 2.4.1).
-- **[NEW] `client/src/components/GlobalFooter.tsx`:** Footer globale con link Privacy, Accessibilita, contatti (24 righe).
-- **[NEW] `client/src/pages/ProfiloPage.tsx`:** Pagina profilo utente completa (195 righe) — dati account, ruolo, preferenze, logout.
-- **[NEW] `client/public/manifest.json`:** PWA manifest per installazione su mobile (20 righe).
-- **[UPDATE] `client/src/components/ErrorBoundary.tsx`:** Migliorato con fallback UI accessibile.
-- **[UPDATE] `client/src/index.css`:** Stili focus-visible per navigazione tastiera, reduced-motion media query.
-- **[UPDATE] `client/index.html`:** Meta tags PWA, lang="it", theme-color.
-- **[NEW] `server/_core/cookies.test.ts`:** Test unitari per cookie (58 righe).
-- **[NEW] `server/_core/env.test.ts`:** Test unitari per validazione env (62 righe).
-- **Totale:** +418/-13 righe su 11 file.
-
-#### GlobalFooter + 404 Italiano + PWA Service Worker
-- **[NEW] `client/public/sw.js`:** Service Worker per PWA — cache offline, strategia network-first (69 righe).
-- **[NEW] `client/public/offline.html`:** Pagina offline per PWA (66 righe).
-- **[UPDATE] `client/src/main.tsx`:** Registrazione Service Worker all'avvio.
-- **[UPDATE] `client/src/App.tsx`:** GlobalFooter integrato in tutte le pagine.
-- **[UPDATE] `client/src/pages/NotFound.tsx`:** Pagina 404 riscritta in italiano con navigazione.
-- **[UPDATE] `client/src/pages/HomePage.tsx`:** Link Privacy e Accessibilita nel footer + profilo in header.
-
-#### Report Compliance 10/10
-- **[UPDATE] `client/src/components/NativeReportComponent.tsx`:** Aggiornati tutti i punteggi degli indicatori a 10/10 nel report interattivo.
-- **[UPDATE] `DOSSIER_TECNICO_SISTEMA.md` + `.html` + `client/public/dossier/index.html`:** Matrice di Sicurezza aggiornata a 10/10 su tutti gli indicatori nei 3 file statici del dossier.
-
-#### Protezione Procedure tRPC
-- **[SECURITY] `server/dmsHubRouter.ts`:** 23 procedure convertite da `publicProcedure` a `protectedProcedure` — tutte le operazioni su mercati, posteggi, operatori, concessioni, presenze ora richiedono autenticazione.
-- **[SECURITY] `server/walletRouter.ts`:** 21 procedure convertite da `publicProcedure` a `protectedProcedure` — tutte le operazioni wallet (ricarica, decurtazione, storico, scadenze) ora richiedono autenticazione.
-- **Totale:** +44/-44 righe su 2 file (nessuna logica cambiata, solo livello auth).
-
-#### Riepilogo Sessione 15 Feb Mattina
-- **18 commit** con lavoro su **sicurezza, compliance GDPR, accessibilita WCAG, PWA, dossier tecnico, report, e pulizia codebase**.
-- **Nuove pagine:** `/privacy`, `/accessibilita`, `/profilo`, `/dossier`.
-- **Nuovi componenti:** CookieConsentBanner, SkipToContent, GlobalFooter, ProfiloPage, PrivacyPolicyPage, AccessibilityPage, ErrorBoundary migliorato.
-- **File eliminati:** 8 file .backup/.bak (9.683 righe morte).
-- **Nuove dipendenze:** `helmet`, `express-rate-limit`.
-- **Nuovi test:** `cookies.test.ts`, `env.test.ts`.
-- **Totale stimato sessione:** ~+5.500/-10.400 righe su ~50 file.
-
-### Sessione 14 Febbraio 2026 (v6.0.0) — Inventario Completo + Documentazione Agenti + CI/CD
-#### Inventario Completo (Manus AI)
-- **Inventario completo Database Neon:** 149 tabelle, 2.021 colonne, 372.143 righe, 409 indici, 9 trigger, 37 funzioni — dati reali verificati via psql da Manus.
-- **Inventario completo Backend Hetzner:** 82 file route, 70 endpoint montati in index.js, 31 variabili ambiente categorizzate, PM2 status verificato.
-- **Aggiornamento sezione Database:** Da 81 tabelle generiche a 149 tabelle reali con conteggio righe aggiornato al 14 Feb 2026.
-- **Aggiornamento sezione API Endpoints:** 70 endpoint montati reali con path e file sorgente.
-- **Aggiornamento sezione Variabili Ambiente:** 31 variabili reali categorizzate (DB, Auth, API Keys, Server, Features).
-- **Nuova sezione Trigger e Funzioni DB:** 9 trigger BEFORE UPDATE + 37 funzioni (pgcrypto + update_updated_at).
-- **File di riferimento:** `DATABASE_INVENTORY_COMPLETO.md` (3.937 righe, 182KB) con dettaglio colonne per ogni tabella.
-
-#### Documentazione Completa per Agenti AI
-- **[UPDATE] `CLAUDE.md`:** Ampliato da guida base a guida operativa completa (+241 righe) — stack tecnologico, comandi essenziali, struttura progetto, regole inviolabili, flusso feature/bugfix, router tRPC, pagine frontend, checklist pre-commit, errori comuni.
-- **[NEW] `docs/API.md`:** Registro endpoint e convenzioni API (212 righe).
-- **[NEW] `docs/ARCHITECTURE.md`:** Architettura sistema dettagliata con RBAC, impersonazione per comune, multi-ruolo (225+85 righe).
-- **[NEW] `docs/DATABASE.md`:** Schema DB, convenzioni, regole Drizzle ORM (209 righe).
-- **[NEW] `docs/OPERATIONS.md`:** Deploy, monitoring, troubleshooting (221 righe).
-- **[NEW] `docs/SCALING.md`:** Strategia di scaling a 8.000 mercati (247 righe).
-- **[NEW] `CONTESTO.md`:** Documento contesto completo con DMS Legacy, Bus Hub, credenziali, interoperabilita (764 righe).
-- **[NEW] `CONTEXT-PROMPT.md`:** Prompt condensato per nuove conversazioni AI (274 righe).
-- **[NEW] `scripts/db-maintenance.sh`:** Script manutenzione DB automatica (128 righe).
-- **[NEW] `scripts/health-check.sh`:** Script health check sistema (81 righe).
-- **[UPDATE] `.env.example`:** Ampliato con tutte le 31+ variabili ambiente documentate (+78 righe).
-- **Totale documentazione:** +1.638 righe su 9 file nuovi/aggiornati.
-
-#### CI/CD Auto-Deploy Hetzner
-- **[NEW] `.github/workflows/deploy-workflow-for-mihub-backend.yml`:** GitHub Actions workflow per auto-deploy su Hetzner via SSH (65 righe).
-- **[NEW] `docs/hetzner-autodeploy/SETUP_GITHUB_SECRET.md`:** Istruzioni setup secret GitHub per deploy (27 righe).
-- **[NEW] `MESSAGGIO_PER_ALTRA_SESSIONE.md`:** Istruzioni per sessione backend Hetzner (83 righe).
-
-#### Inventario Frontend
-- **[NEW] `SYSTEM_INVENTORY_FRONTEND.md`:** Inventario completo frontend — componenti, pagine, hooks, contexts, file per modulo (243 righe).
-- **[NEW] `MESSAGGIO_SESSIONE_BACKEND.md`:** Istruzioni operative per sessione backend Manus (156 righe).
 
 ### Sessione 13 Febbraio 2026 — Sera (v5.3.0)
 - ✅ **Diagnosi e fix 8 issue (Round 2):** Wallet Grosseto, notifiche SUAP, watchlist errata, storico limite 100, posteggi +1, deposito rifiuti, graduatoria spunta.
@@ -977,7 +144,7 @@ MioHub (Neon DB)              DMS Legacy (Heroku PostgreSQL)
 |-------|------------|
 | **Frontend** | React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui |
 | **Autenticazione** | Firebase Auth (Google, Apple, Email) + ARPA Toscana (SPID/CIE/CNS) |
-| **Backend** | Node.js + Express (REST API) — tRPC rimosso in FASE 5 |
+| **Backend** | Node.js + Express + tRPC |
 | **Database** | PostgreSQL (Neon) |
 | **AI/LLM** | Google Gemini API |
 | **Hosting Frontend** | Vercel |
@@ -1004,8 +171,8 @@ MioHub (Neon DB)              DMS Legacy (Heroku PostgreSQL)
 │               │         │ mio-hub.me      │         │                 │
 │ ┌───────────┐ │         │ ┌─────────────┐ │         │ ┌─────────────┐ │
 │ │ React App │ │         │ │ Express API │ │         │ │ 542 mercati │ │
-│ │ + fetch() │ │         │ │ + PM2       │ │         │ │ + logs      │ │
-│ │ REST API  │ │         │ │ (REST only) │ │         │ │ + agents    │ │
+│ │ + tRPC    │ │         │ │ + PM2       │ │         │ │ + logs      │ │
+│ │ client    │ │         │ │             │ │         │ │ + agents    │ │
 │ └───────────┘ │         │ └─────────────┘ │         │ └─────────────┘ │
 └───────────────┘         └─────────────────┘         └─────────────────┘
         │                           │
@@ -1071,7 +238,7 @@ MioHub (Neon DB)              DMS Legacy (Heroku PostgreSQL)
 |---|---|
 | **Piattaforma** | Heroku (app `lapsy-dms`) |
 | **URL Gestionale** | `https://lapsy-dms.herokuapp.com/index.html` |
-| **Credenziali Gestionale** | Vedi variabili d'ambiente `DMS_LEGACY_USER` / `DMS_LEGACY_PASS` |
+| **Credenziali Gestionale** | `checchi@me.com` / `Dms2022!` (accesso frontend) |
 | **Backend** | Node.js + Express — **thin layer** sopra stored functions |
 | **Database** | PostgreSQL su AWS RDS (`eu-west-1`) — **25 tabelle, 117 stored functions** |
 | **URI Database** | `postgres://u4gjr63u7b0f3k:p813...scl.eu-west-1.rds.amazonaws.com:5432/d18d7n7ncg8ao7` |
@@ -1259,33 +426,25 @@ Tutti gli endpoint sono prefissati con `/api/integrations/dms-legacy/`.
 
 > **Nota:** Questi endpoint servono anche per l'interoperabilità con **MercaWeb** (software Polizia Municipale Grosseto). Vedi sezione 9.5 per i dettagli completi dell'integrazione MercaWeb.
 
-#### 9.2 SYNC OUT (MioHub → Legacy) — ✅ IMPLEMENTATI (v7.0.0)
+#### 9.2 SYNC OUT (MioHub → Legacy) — DA IMPLEMENTARE
 
-| # | Metodo | Endpoint | Stored Function Legacy | Descrizione | Stato |
-|---|---|---|---|---|---|
-| 10 | `POST` | `/sync-out/vendors` | `amb_crup(json)` | Manda imprese al Legacy | ✅ Implementato |
-| 11 | `POST` | `/sync-out/markets` | `mercati_crup(json)` | Manda mercati al Legacy | ✅ Implementato |
-| 12 | `POST` | `/sync-out/stalls` | `piazzole_crup(json)` | Manda piazzole al Legacy | ✅ Implementato |
-| 13 | `POST` | `/sync-out/concessions` | `conc_std_crup(json)` | Manda concessioni al Legacy | ✅ Implementato |
-| 14 | `POST` | `/sync-out/spuntisti` | `spuntisti_crup(json)` | Manda autorizzazioni spunta | ✅ Implementato |
-| 15 | `POST` | `/sync-out/users` | `suser_crup(json)` | Manda operatori | ✅ Implementato |
-| 16 | `POST` | `/sync-out/sessions` | `istanza_start/close` | Gestione sessioni mercato | ✅ Implementato |
-| — | `POST` | `/sync-out/all` | Tutte le `_crup` | Sync completa tutte le entita' | ✅ Implementato |
+| # | Metodo | Endpoint | Stored Function Legacy | Descrizione |
+|---|---|---|---|---|
+| 10 | `POST` | `/sync-out/vendors` | `amb_crup(json)` | Manda imprese al Legacy |
+| 11 | `POST` | `/sync-out/markets` | `mercati_crup(json)` | Manda mercati al Legacy |
+| 12 | `POST` | `/sync-out/stalls` | `piazzole_crup(json)` | Manda piazzole al Legacy |
+| 13 | `POST` | `/sync-out/concessions` | `conc_std_crup(json)` | Manda concessioni al Legacy |
+| 14 | `POST` | `/sync-out/spuntisti` | `spuntisti_crup(json)` | Manda autorizzazioni spunta |
+| 15 | `POST` | `/sync-out/users` | `suser_crup(json)` | Manda operatori |
+| 16 | `POST` | `/sync-out/all` | Tutte le `_crup` | Sincronizzazione completa |
 
-**File sorgente:** `server/dmsLegacyRouter.ts` → `syncOut.*`
-**Transformer:** `server/services/dmsLegacyTransformers.ts` → `transformVendorToAmb()`, `transformMarketToMkt()`, etc.
+#### 9.3 SYNC IN (Legacy → MioHub) — DA IMPLEMENTARE
 
-#### 9.3 SYNC IN (Legacy → MioHub) — ✅ IMPLEMENTATI (v7.0.0)
-
-| # | Metodo | Endpoint | Azione | Descrizione | Stato |
-|---|---|---|---|---|---|
-| 17 | `POST` | `/sync-in/presences` | Importa presenze | Upsert via `legacy_pre_id` | ✅ Implementato |
-| 18 | `POST` | `/sync-in/sessions` | Importa sessioni | Upsert via `legacy_ist_id` | ✅ Implementato |
-| 19 | `POST` | `/sync-in/all` | Sync completa | Presenze + sessioni | ✅ Implementato |
-
-**File sorgente:** `server/dmsLegacyRouter.ts` → `syncIn.*`
-**Transformer:** `server/services/dmsLegacyTransformers.ts` → `transformPreToPresence()`, `transformIstToSession()`
-**Resolver ID:** `resolveVendorId()`, `resolveStallId()`, `resolveMarketId()`, `resolveSessionId()`
+| # | Metodo | Endpoint | Stored Function Legacy | Descrizione |
+|---|---|---|---|---|
+| 17 | `POST` | `/sync-in/presences` | `presenze_get(json)` | Riceve presenze dal campo |
+| 18 | `POST` | `/sync-in/market-sessions` | `instanze_mercato(json)` | Riceve stato giornate |
+| 19 | `POST` | `/sync-in/all` | Tutte le `_get` presenze | Sincronizzazione completa in ingresso |
 
 #### 9.4 UTILITY — ✅ ATTIVI
 
@@ -1296,24 +455,22 @@ Tutti gli endpoint sono prefissati con `/api/integrations/dms-legacy/`.
 | 22 | `POST` | `/sync` | Sync manuale on-demand | ✅ Testato |
 | 23 | `POST` | `/cron-sync` | Sync CRON periodica (60 min) | ✅ Attivo |
 
-### 10. Campi Interoperabilita' nel DB MioHub (Neon) — ✅ TUTTI PRESENTI
+### 10. Campi da Creare nel DB MioHub (Neon)
 
-Tutti i campi sono gia' nello schema `drizzle/schema.ts` e operativi:
+Per completare l'interoperabilità, questi campi vanno aggiunti alle nostre tabelle:
 
-| Tabella | Campo | Tipo | Scopo | Stato |
-|---|---|---|---|---|
-| `vendors` | `legacy_amb_id` | `integer` | ID ambulante nel Legacy | ✅ Presente |
-| `markets` | `legacy_mkt_id` | `integer` | ID mercato nel Legacy | ✅ Presente |
-| `stalls` | `legacy_pz_id` | `integer` | ID piazzola nel Legacy | ✅ Presente |
-| `concessions` | `legacy_conc_id` | `integer` | ID concessione nel Legacy | ✅ Presente |
-| `users` | `cie_id` | `varchar(32)` | ID CIE (sostituisce badge NFC) | ✅ Presente |
-| `vendor_presences` | `legacy_pre_id` | `integer` | ID presenza nel Legacy | ✅ Presente + indice |
-| `vendor_presences` | `rifiutata` | `boolean DEFAULT false` | Presenza rifiutata dal Legacy | ✅ Presente |
-| `vendor_presences` | `tipo_presenza` | `varchar(50)` | CONCESSIONARIO, SPUNTISTA, ABUSIVO | ✅ Presente |
-| `vendor_presences` | `orario_deposito_rifiuti` | `timestamp` | Timestamp deposito spazzatura | ✅ Presente |
-| `vendor_presences` | `importo_addebitato` | `numeric(10,2)` | Importo calcolato (mq x tariffa) | ✅ Presente |
-| `market_sessions` | `legacy_ist_id` | `integer` | ID istanza nel Legacy | ✅ Presente + indice |
-| `spuntisti` | `legacy_sp_id` | `integer` | ID spuntista nel Legacy | ✅ Presente + indice |
+| Tabella | Campo | Tipo | Scopo |
+|---|---|---|---|
+| `imprese` | `fido` | `numeric(8,2) DEFAULT 0` | Fido/credito concesso, compatibilità con `amb_fido` |
+| `imprese` | `legacy_amb_id` | `integer` | ID ambulante nel Legacy per tracciare la corrispondenza |
+| `markets` | `data_creazione` | `date` | Data inizio attività mercato, compatibilità con `mkt_dal` |
+| `markets` | `data_scadenza` | `date NULL` | Data fine attività mercato, compatibilità con `mkt_al` |
+| `markets` | `legacy_mkt_id` | `integer` | ID mercato nel Legacy |
+| `stalls` | `legacy_pz_id` | `integer` | ID piazzola nel Legacy |
+| `concessions` | `legacy_conc_id` | `integer` | ID concessione nel Legacy |
+| `users` | `cie_id` | `varchar(32)` | ID Carta d'Identità Elettronica (sostituisce badge NFC) |
+| `vendor_presences` | `legacy_pre_id` | `integer` | ID presenza nel Legacy |
+| `vendor_presences` | `rifiutata` | `boolean DEFAULT false` | Se la presenza è stata rifiutata dal Legacy |
 
 ### 11. Sicurezza
 
@@ -1323,24 +480,20 @@ Tutti i campi sono gia' nello schema `drizzle/schema.ts` e operativi:
 | **Pool Limitato** | Max 3 connessioni simultanee per non sovraccaricare il DB Legacy |
 | **Dati MAI trasferiti** | Password (`suser_password`), OTP (`suser_otp`, `suser_otp_creation`) |
 | **Scrittura controllata** | Solo tramite stored functions `_crup` (mai INSERT/UPDATE diretti) |
-| **Guard SYNC OUT** | Flag `syncConfig.enabled` nella tabella `sync_config` |
-| **Guard SYNC IN** | Flag `syncConfig.enabled` nella tabella `sync_config` |
-| **Logging** | Ogni operazione di sync viene loggata in `sync_jobs` + `sync_logs` con timestamp e risultato |
-| **Graceful Degradation** | Se `DMS_LEGACY_DB_URL` non configurato, opera in modalita' offline senza errori |
-| **CRON Sync** | Intervallo configurabile (default 5 min), avvio dopo 10s per stabilizzazione server |
+| **Guard SYNC OUT** | Flag `SYNC_CONFIG.syncOut.enabled` per abilitare/disabilitare |
+| **Guard SYNC IN** | Flag `SYNC_CONFIG.syncIn.enabled` per abilitare/disabilitare |
+| **Logging** | Ogni operazione di sync viene loggata con timestamp e risultato |
 
 ### 12. Monitoraggio Guardian
 
 | # | Endpoint | Metodo | Categoria | Stato |
 |---|---|---|---|---|
 | 1-9 | `/api/integrations/dms-legacy/*` (export) | GET | DMS Legacy Integration | ✅ Attivo |
-| 10-16 | `/api/integrations/dms-legacy/sync-out/*` | POST | DMS Legacy Sync Out | ✅ Attivo (v7.0.0) |
-| 17-19 | `/api/integrations/dms-legacy/sync-in/*` | POST | DMS Legacy Sync In | ✅ Attivo (v7.0.0) |
+| 10-16 | `/api/integrations/dms-legacy/sync-out/*` | POST | DMS Legacy Sync Out | Da registrare |
+| 17-19 | `/api/integrations/dms-legacy/sync-in/*` | POST | DMS Legacy Sync In | Da registrare |
 | 20-23 | `/api/integrations/dms-legacy/health,status,sync,cron` | GET/POST | DMS Legacy Utility | ✅ Attivo |
 
-**Totale endpoint DMS Legacy:** 23 (tutti attivi e implementati)
-
-**Accesso duale:** Ogni endpoint e' accessibile sia via tRPC (`dmsLegacy.export.markets`) che via REST (`GET /api/integrations/dms-legacy/markets`)
+**Totale endpoint DMS Legacy:** 23 (di cui 13 attivi, 10 da implementare)
 
 ### 13. Frontend — Tab Connessioni
 
@@ -1364,27 +517,14 @@ Nella Dashboard PA → Integrazioni → Tab Connessioni:
 
 | Fase | Descrizione | Stato | Completata |
 |---|---|---|---|
-| **Fase 1** | Schema DB: colonne `legacy_*_id`, tabelle `market_sessions`, `spuntisti`, `sync_*` | ✅ **COMPLETATA** | Pre-esistente |
-| **Fase 2** | Servizio connessione Legacy DB (`dmsLegacyService.ts`) | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
-| **Fase 3** | Transformer bidirezionale (`dmsLegacyTransformers.ts`) — 15 funzioni | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
-| **Fase 4** | Router tRPC 23 endpoint (`dmsLegacyRouter.ts`) — EXPORT + SYNC OUT + SYNC IN + UTILITY | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
-| **Fase 5** | REST proxy `/api/integrations/dms-legacy/*` per compatibilita' | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
-| **Fase 6** | Sync engine reale con job tracking (`syncJobs` + `syncLogs`) | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
-| **Fase 7** | CRON sync automatico (configurabile, default 5 min) | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
-| **Fase 8** | Registrazione router + env vars + frontend gia' pronto | ✅ **COMPLETATA** | 16 Feb 2026 (v7.0.0) |
-| **Fase 9** | Test con DB Legacy reale su Hetzner | 🔶 **DA FARE** | Richiede `DMS_LEGACY_DB_URL` in produzione |
+| **Fase 1** | Endpoint EXPORT (lettura Legacy) | ✅ **COMPLETATA** | Pre-esistente |
+| **Fase 2** | Transformer bidirezionale + endpoint SYNC OUT (scrittura verso Legacy) | ✅ **COMPLETATA** | 12 Feb 2026 |
+| **Fase 3** | Endpoint SYNC IN (ricezione presenze dal campo) | ✅ **COMPLETATA** | 12 Feb 2026 |
+| **Fase 4** | Campi nuovi nel DB Neon + migrazione dati (8 colonne legacy_*_id + indici) | ✅ **COMPLETATA** | 12 Feb 2026 |
+| **Fase 5** | Registrazione Guardian + aggiornamento frontend | ✅ **GIÀ FATTO** | Pre-esistente |
+| **Fase 6** | Test integrato con dati reali + connessione a Heroku | ✅ **COMPLETATA** | 12 Feb 2026 |
 
-> **Fasi 1-8 completate.** Il codice e' pronto e compila senza errori. Per attivare la connessione reale, aggiungere `DMS_LEGACY_DB_URL` su Hetzner.
-
-**File sorgente principali:**
-| File | Descrizione |
-|------|-------------|
-| `server/dmsLegacyRouter.ts` | Router tRPC con 23 endpoint (EXPORT + SYNC OUT + SYNC IN + UTILITY) |
-| `server/services/dmsLegacyService.ts` | Connessione Legacy DB + stored functions + lettura tabelle |
-| `server/services/dmsLegacyTransformers.ts` | 15 transformer bidirezionali + 4 resolver ID |
-| `server/routers.ts` | Registrazione router `dmsLegacy.*` |
-| `server/_core/index.ts` | REST proxy + CRON sync |
-| `server/integrationsRouter.ts` | Sync trigger aggiornato (non piu' mock) |
+> **Tutte le 6 fasi completate.** Tag stabile: `v5.5.0-full-sync-tested`. Tutti e 3 i canali (EXPORT, SYNC OUT, SYNC IN) sono attivi e testati bidirezionalmente.
 
 ### 15. Interoperabilità con MercaWeb (Abaco S.p.A.)
 
@@ -1407,31 +547,17 @@ Per le specifiche tecniche complete da consegnare ad Abaco S.p.A., fare riferime
 
 ```
 dms-hub-app-new/
-├── .github/workflows/      # CI/CD Pipeline
-│   └── ci.yml             # Quality Gate (TypeScript + Test + Build + SBOM)
 ├── client/                 # Frontend React
 │   ├── src/
 │   │   ├── pages/         # Pagine dashboard
-│   │   ├── components/    # Componenti UI (139+)
-│   │   ├── contexts/      # State management (Auth, Permissions, MIO)
-│   │   ├── hooks/         # Custom hooks (useAuth, usePermissions, etc.)
-│   │   └── lib/           # Utilities (trpc client, firebase)
-│   └── public/            # Asset statici + PWA + Dossier
-├── server/                 # Backend tRPC
-│   ├── _core/             # Core: index.ts, trpc.ts, oauth.ts, env.ts, cookies.ts
-│   ├── lib/               # Utilities: piiCrypto.ts (AES-256), tccSecurity.ts (HMAC)
-│   ├── services/          # Servizi: TPER, E-FIL PagoPA, API logs
-│   ├── routers.ts         # Router principale (20 router registrati)
-│   ├── gdprRouter.ts      # GDPR: export, oblio, retention, consents
-│   ├── dmsHubRouter.ts    # Mercati, posteggi, operatori, concessioni
-│   ├── walletRouter.ts    # Borsellino elettronico + PagoPA
-│   ├── tccSecurityRouter.ts # Anti-frode TCC (QR, GPS, audit)
-│   ├── guardianRouter.ts  # Monitoring e debug
-│   └── *.test.ts          # Test suite (36 test, 7 file)
-├── drizzle/schema.ts       # Schema DB (source of truth, 69+ tabelle)
-├── shared/                 # Tipi condivisi frontend/backend
-├── sbom.json               # SBOM CycloneDX (Software Bill of Materials)
-└── vitest.config.ts        # Configurazione test
+│   │   ├── components/    # Componenti UI
+│   │   └── lib/           # Utilities
+│   └── public/            # Asset statici
+├── server/                 # Backend tRPC (Vercel)
+│   ├── routers.ts         # Router principale
+│   ├── guardianRouter.ts  # Guardian API
+│   └── services/          # Servizi business
+└── shared/                 # Tipi condivisi
 
 mihub-backend-rest/
 ├── routes/
@@ -1638,150 +764,22 @@ POST /api/guardian/debug/testEndpoint
 ### Database Neon (PostgreSQL)
 
 **Connection String:** Vedi variabile `DATABASE_URL` o `NEON_POSTGRES_URL`
-**Host:** `ep-bold-silence-adftsojg-pooler.c-2.us-east-1.aws.neon.tech`
-**Database:** `neondb` | **User:** `neondb_owner` | **SSL:** require
 
-### Riepilogo Database (Dati Reali - 14 Febbraio 2026)
+### Tabelle Principali (Dati Reali - 2 Gennaio 2026)
 
-| Metrica | Valore |
-|---------|--------|
-| **Tabelle totali** | 155 (149 + 6 TCC Security v6.1.0) |
-| **Colonne totali** | 2.021 |
-| **Righe totali (stima)** | 372.143 |
-| **Indici totali** | 409 |
-| **Trigger** | 9 |
-| **Funzioni** | 37 |
-| **Tabelle con dati** | ~60 |
-| **Tabelle vuote (predisposte)** | ~89 |
+| Tabella | Descrizione | Records |
+|---------|-------------|-----------------||
+| `markets` | Mercati | **2** |
+| `stalls` | Posteggi | **564** |
+| `imprese` | Imprese | **13** |
+| `vendors` | Operatori | **11** |
+| `concessions` | Concessioni | **34** |
+| `agent_messages` | Chat agenti | ~500 |
+| `mio_agent_logs` | Log API | ~1500 |
+| `suap_pratiche` | Pratiche SUAP | **9** |
+| `suap_eventi` | Eventi SUAP | variabile |
 
-> **Dettaglio completo:** Vedi `DATABASE_INVENTORY_COMPLETO.md` per colonne, tipi, indici di ogni tabella.
-
-### Tabelle Principali con Dati (Top 60 — 14 Febbraio 2026)
-
-| # | Tabella | Righe | Descrizione |
-|---|---------|-------|-------------|
-| 1 | `mio_agent_logs` | 326.543 | Log chiamate API MIO Agent |
-| 2 | `gtfs_stops` | 23.930 | Fermate trasporto pubblico (GTFS) |
-| 3 | `mobility_data` | 9.554 | Dati mobilita cittadini |
-| 4 | `agent_messages` | 3.850 | Messaggi chat agenti AI |
-| 5 | `cultural_pois` | 1.127 | Punti di Interesse culturali |
-| 6 | `wallet_transactions` | 1.058 | Transazioni wallet TCC |
-| 7 | `notifiche_destinatari` | 938 | Destinatari notifiche |
-| 8 | `stalls` | 583 | Posteggi mercato |
-| 9 | `market_session_details` | 500 | Dettagli sessioni mercato |
-| 10 | `agent_conversations` | 415 | Conversazioni agenti AI |
-| 11 | `market_sessions` | 394 | Sessioni mercato |
-| 12 | `security_events` | 364 | Eventi sicurezza |
-| 13 | `notifiche` | 337 | Notifiche sistema |
-| 14 | `role_permissions` | 285 | Permessi per ruolo |
-| 15 | `login_attempts` | 270 | Tentativi di login |
-| 16 | `suap_checks` | 232 | Controlli SCIA/SUAP |
-| 17 | `wallet_history` | 132 | Storico movimenti wallet |
-| 18 | `province` | 107 | Anagrafica province italiane |
-| 19 | `transactions` | 106 | Transazioni generiche |
-| 20 | `permissions` | 102 | Definizioni permessi |
-| 21 | `settori_comune` | 94 | Settori merceologici per comune |
-| 22 | `wallets` | 89 | Wallet TCC imprese |
-| 23 | `hub_locations` | 79 | Localizzazioni HUB |
-| 24 | `wallet_scadenze` | 68 | Scadenze canone wallet |
-| 25 | `user_sessions` | 66 | Sessioni utente attive |
-| 26 | `graduatoria_presenze` | 52 | Graduatoria presenze spunta |
-| 27 | `vendor_presences` | 52 | Presenze operatori al mercato |
-| 28 | `spend_qr_tokens` | 49 | Token QR per spesa TCC |
-| 29 | `suap_eventi` | 48 | Eventi workflow SUAP |
-| 30 | `qualificazioni` | 42 | Qualificazioni imprese (DURC, HACCP...) |
-| 31 | `gtfs_routes` | 37 | Linee trasporto pubblico |
-| 32 | `civic_reports` | 36 | Segnalazioni civiche cittadini |
-| 33 | `sanctions` | 36 | Sanzioni a operatori |
-| 34 | `imprese` | 34 | Anagrafica imprese |
-| 35 | `pm_watchlist` | 32 | Watchlist Polizia Municipale |
-| 36 | `market_transgressions` | 31 | Trasgressioni al mercato |
-| 37 | `concessions` | 30 | Concessioni posteggio |
-| 38 | `domande_spunta` | 29 | Domande per spunta giornaliera |
-| 39 | `suap_pratiche` | 28 | Pratiche SCIA/SUAP |
-| 40 | `fund_transactions` | 24 | Transazioni fondi |
-| 41 | `servizi_associazioni` | 24 | Servizi delle associazioni |
-| 42 | `suap_decisioni` | 22 | Decisioni pratiche SUAP |
-| 43 | `operator_daily_wallet` | 21 | Wallet giornaliero operatore |
-| 44 | `infraction_types` | 20 | Tipi di infrazione |
-| 45 | `regioni` | 20 | Anagrafica regioni italiane |
-| 46 | `regolarita_imprese` | 20 | Stato regolarita imprese |
-| 47 | `cultural_visits` | 18 | Visite ai POI culturali |
-| 48 | `operator_transactions` | 16 | Transazioni operatore |
-| 49 | `user_roles` | 14 | Ruoli utente sistema |
-| 50 | `vendors` | 14 | Operatori ambulanti |
-| 51 | `mobility_checkins` | 13 | Check-in mobilita sostenibile |
-| 52 | `formazione_iscrizioni` | 10 | Iscrizioni corsi formazione |
-| 53 | `richieste_servizi` | 10 | Richieste servizi associazioni |
-| 54 | `comuni` | 9 | Anagrafica comuni attivi |
-| 55 | `gaming_rewards_config` | 9 | Configurazione gaming/rewards |
-| 56 | `hub_shops` | 9 | Negozi nei HUB |
-| 57 | `agents` | 8 | Agenti AI registrati |
-| 58 | `bandi_catalogo` | 8 | Catalogo bandi disponibili |
-| 59 | `users` | 8 | Utenti sistema |
-| 60 | `markets` | 3 | Mercati ambulanti |
-
-### Tabelle Vuote / Predisposte (89 tabelle)
-
-Le seguenti tabelle sono create e pronte ma ancora senza dati: `agent_brain`, `agent_context`, `agent_projects`, `agent_tasks`, `api_keys`, `api_metrics`, `audit_logs`, `bookings`, `business_analytics`, `carbon_footprint`, `challenge_participations`, `chat_messages_old`, `checkins`, `compliance_certificates`, `comune_contratti`, `comune_fatture`, `concession_payments`, `custom_areas`, `custom_markers`, `data_bag`, `dima_mappe`, `dms_durc_snapshots`, `ecocredits`, `enterprise_employees`, `enterprise_qualifications`, `external_connections`, `hub_services`, `inspections_detailed`, `ip_blacklist`, `market_tariffs`, `notifications`, `product_tracking`, `products`, `reimbursements`, `security_delegations`, `suap_azioni`, `suap_documenti`, `suap_regole`, `sustainability_metrics`, `system_events`, `system_logs`, `user_analytics`, `vendor_documents`, `violations`, `wallet_balance_snapshots`, `webhook_logs`, `webhooks`, `zapier_webhook_logs`.
-
-### Tabelle TCC Security (v6.1.0 — 15 Febbraio 2026)
-
-Le seguenti 6 tabelle e 2 enum sono state aggiunte per il sistema anti-frode TCC. Richiedono `pnpm db:push` per essere create nel database.
-
-| Tabella | Colonne | Descrizione |
-|---------|---------|-------------|
-| `tcc_rate_limits` | id, user_id, action_type, count, window_start, created_at | Rate limiting per utente e tipo azione TCC |
-| `tcc_fraud_events` | id, user_id, event_type, severity, details, ip_address, user_agent, resolved, resolved_by, resolved_at, resolution_notes, created_at | Log eventi sospetti con workflow risoluzione admin |
-| `tcc_idempotency_keys` | id, idempotency_key, user_id, endpoint, request_hash, response_data, created_at, expires_at | Prevenzione transazioni duplicate via chiave UUID |
-| `tcc_daily_limits` | id, user_id, date, checkin_count, tcc_earned, tcc_spent, transaction_count, created_at, updated_at | Contatori giornalieri per limiti anti-frode |
-| `tcc_qr_tokens` | id, user_id, qr_type, token_hash, payload, amount, used, used_at, used_by_operator_id, expires_at, created_at | QR firmati HMAC-SHA256 con scadenza e uso singolo |
-| `tcc_rewards_config` | id, comune_id, max_daily_tcc_per_user, max_daily_checkins, max_monthly_tcc, max_single_transaction, qr_expiry_seconds, gps_radius_meters, cooldown_minutes, + 15 colonne rewards per tipo | Configurazione limiti e rewards per comune |
-
-Enum:
-- `tcc_fraud_event_type`: gps_spoofing, rate_exceeded, duplicate_checkin, invalid_qr, amount_anomaly, impossible_travel, suspicious_pattern
-- `tcc_action_type`: checkin_culture, checkin_mobility, scan, referral, spend, issue
-
-### Tabelle Backup (da ignorare)
-
-| Tabella | Note |
-|---------|------|
-| `agent_logs_backup_20251204_174125` | 360 righe — backup migrazione dicembre 2025 |
-| `agent_messages_backup_20251204_174125` | 745 righe — backup migrazione dicembre 2025 |
-| `carbon_credits_config_backup_20260203` | 1 riga — backup 3 febbraio 2026 |
-| `carbon_credits_rules_backup_20260203` | 3 righe — backup 3 febbraio 2026 |
-| `civic_config_backup_20260203` | 5 righe — backup 3 febbraio 2026 |
-
-### Views Materializzate
-
-| View | Righe | Descrizione |
-|------|-------|-------------|
-| `v_enterprise_compliance` | 14 | Compliance imprese aggregata |
-| `v_tcc_circulation_by_comune` | 2 | Circolazione TCC per comune |
-| `v_top_merchants_by_comune` | 2 | Top commercianti per comune |
-| `v_fund_stats_by_comune` | 1 | Statistiche fondi per comune |
-| `v_burn_rate_by_comune` | 0 | Tasso bruciatura TCC per comune |
-
-### Trigger Database
-
-| Trigger | Tabella | Timing | Evento |
-|---------|---------|--------|--------|
-| `update_qualification_types_updated_at` | `qualification_types` | BEFORE | UPDATE |
-| `update_enterprise_employees_updated_at` | `enterprise_employees` | BEFORE | UPDATE |
-| `update_enterprise_qualifications_updated_at` | `enterprise_qualifications` | BEFORE | UPDATE |
-| `update_imprese_updated_at` | `imprese` | BEFORE | UPDATE |
-| `update_qualificazioni_updated_at` | `qualificazioni` | BEFORE | UPDATE |
-| `update_markets_updated_at` | `markets` | BEFORE | UPDATE |
-| `update_stalls_updated_at` | `stalls` | BEFORE | UPDATE |
-| `update_vendors_updated_at` | `vendors` | BEFORE | UPDATE |
-| `update_concessions_updated_at` | `concessions` | BEFORE | UPDATE |
-
-> Tutti i trigger chiamano la funzione `update_updated_at_column()` per aggiornare automaticamente il campo `updated_at`.
-
-### Funzioni Database
-
-- **pgcrypto extension:** `digest`, `hmac`, `crypt`, `gen_salt`, `encrypt`, `decrypt`, `encrypt_iv`, `decrypt_iv`, `gen_random_bytes`, `gen_random_uuid`, `pgp_sym_encrypt`, `pgp_sym_decrypt`, `pgp_pub_encrypt`, `pgp_pub_decrypt`, `pgp_key_id`, `armor`, `dearmor`, `pgp_armor_headers`
-- **Custom:** `update_updated_at_column()` — usata da tutti i 9 trigger
+**Totale tabelle nel database:** 81
 
 ### Storage S3
 
@@ -1793,103 +791,24 @@ Enum:
 
 ## 🔌 API ENDPOINTS
 
-### Backend Hetzner: mihub-backend-rest v1.1.0
+### Endpoint Index (799 endpoint totali)
 
-- **82 file route** in `/root/mihub-backend-rest/routes/`
-- **70 endpoint montati** in `index.js`
-- **10 file service/transformer** importati indirettamente
-- **PM2:** `mihub-backend` online, cluster mode, pid 711337, 168MB RAM
-
-### Endpoint Montati in index.js (70 — Dati Reali 14 Feb 2026)
-
-| # | Path | File Route | Categoria |
-|---|------|-----------|-----------|
-| 1 | `/api/logs` | `logs.js` | Logging |
-| 2 | `/api/mihub` | `mihub.js` | MIO Hub core |
-| 3 | `/api/mihub` | `orchestrator.js` | Orchestratore AI |
-| 4 | `/api/mihub` | `orchestratorMock.js` | Orchestratore mock |
-| 5 | `/api/guardian` | `guardian.js` | Guardian monitoring |
-| 6 | `/api/mihub` | `guardianSync.js` | Guardian sync |
-| 7 | `/admin` | `admin.js` | Admin panel |
-| 8 | `/api/admin/secrets` | `adminSecrets.js` | Admin secrets |
-| 9 | `/api/secrets` | `apiSecrets.js` | API secrets |
-| 10 | `/api/gis` | `gis.js` | GIS / mappe |
-| 11 | `/api/markets` | `markets.js` | Mercati |
-| 12 | `/api/stalls` | `stalls.js` | Posteggi |
-| 13 | `/api/vendors` | `vendors.js` | Operatori |
-| 14 | `/api/concessions` | `concessions.js` | Concessioni |
-| 15 | `/api/autorizzazioni` | `autorizzazioni.js` | Autorizzazioni |
-| 16 | `/api/domande-spunta` | `domande-spunta.js` | Domande spunta |
-| 17 | `/api/imprese` | `imprese.js` | Imprese |
-| 18 | `/api/suap` | `suap.js` | SUAP pratiche |
-| 19 | `/api/qualificazioni` | `qualificazioni.js` | Qualificazioni |
-| 20 | `/api/regioni` | `regioni.js` | Regioni/territori |
-| 21 | `/api/documents` | `documents.js` | Documenti |
-| 22 | `/api/comuni` | `comuni.js` | Comuni |
-| 23 | `/api/ipa` | `ipa.js` | IndicePA import |
-| 24 | `/api/tariffs` | `tariffs.js` | Tariffe |
-| 25 | `/api/wallets` | `wallets.js` | Wallet TCC |
-| 26 | `/api/wallet-history` | `wallet-history.js` | Storico wallet |
-| 27 | `/api/wallet-scadenze` | `wallet-scadenze.js` | Scadenze canone |
-| 28 | `/api/canone-unico` | `canone-unico.js` | Canone unico |
-| 29 | `/api/presenze` | `presenze.js` | Presenze mercato |
-| 30 | `/api` | `presenze.js` | Graduatoria |
-| 31 | `/api/collaboratori` | `collaboratori.js` | Collaboratori impresa |
-| 32 | `/api/giustificazioni` | `giustificazioni.js` | Giustificazioni uscite |
-| 33 | `/api/test-mercato` | `test-mercato.js` | Test mercato simulazione |
-| 34 | `/api/market-settings` | `market-settings.js` | Impostazioni mercato |
-| 35 | `/api/hub` | `hub.js` | Hub locations |
-| 36 | `/api/routing` | `routing.js` | Routing/navigazione |
-| 37 | `/api/dmsHub` | `dmsHub.js` | DMS Hub connector |
-| 38 | `/api/abacus/github` | `abacusGithub.js` | Abacus GitHub |
-| 39 | `/api/mio` | `mioAgent.js` | MIO Agent AI |
-| 40 | `/api/hooks` | `webhooks.js` | Webhooks |
-| 41 | `/webhook` | `webhook.js` | Deploy webhook |
-| 42 | `/api/abacus/sql` | `abacusSql.js` | Abacus SQL query |
-| 43 | `/api/admin` | `adminMigrate.js` | Admin migrazioni |
-| 44 | `/api/admin` | `migratePDND.js` | Migrazione PDND |
-| 45 | `/api/admin` | `adminDeploy.js` | Admin deploy |
-| 46 | `/api/mihub/chats` | `chats.js` | Chat MIO |
-| 47 | `/api/system` | `system.js` | System management |
-| 48 | `/api/health` | `health-monitor.js` | Health monitor |
-| 49 | `/api/workspace` | `workspace.js` | Workspace snapshots |
-| 50 | `/api/dashboard/integrations` | `integrations.js` | Dashboard integrazioni |
-| 51 | `/api/stats` | `stats.js` | Statistiche |
-| 52 | `/api/stats/qualificazione` | `stats-qualificazione.js` | Stats qualificazione |
-| 53 | `/api/formazione` | `formazione.js` | Formazione enti |
-| 54 | `/api/bandi` | `bandi.js` | Bandi/finanziamenti |
-| 55 | `/api/notifiche` | `notifiche.js` | Notifiche |
-| 56 | `/api/security` | `security.js` | Security |
-| 57 | `/api/auth` | `auth.js` | Autenticazione |
-| 58 | `/api/citizens` | `citizens.js` | Cittadini |
-| 59 | `/api/tcc` | `tcc.js` | TCC v1 |
-| 60 | `/api/tcc/v2` | `tcc-v2.js` | TCC v2 wallet-impresa |
-| 61 | `/api/public` | `public-search.js` | Ricerca pubblica |
-| 62 | `/api/inspections` | `inspections.js` | Ispezioni |
-| 63 | `/api/sanctions` | `sanctions.js` | Sanzioni |
-| 64 | `/api/watchlist` | `watchlist.js` | Watchlist PM |
-| 65 | `/api/verbali` | `verbali.js` | Verbali |
-| 66 | `/api/civic-reports` | `civic-reports.js` | Segnalazioni civiche |
-| 67 | `/api/gtfs` | `gtfs.js` | GTFS trasporto pubblico |
-| 68 | `/api/gaming-rewards` | `gaming-rewards.js` | Gaming & rewards |
-| 69 | `/api/integrations/dms-legacy` | `dms-legacy.js` | DMS Legacy Heroku |
-| 70 | `/api/integrations/mercaweb` | `mercaweb.js` | MercaWeb Abaco |
-
-### File Service/Transformer (non montati direttamente)
-
-`dms-legacy-service.js`, `dms-legacy-transformer.js`, `internalTraces.js`, `mercaweb-transformer.js`, `monitoring-debug.js`, `monitoring-logs.js`, `panic.js`, `system-logs.js`, `toolsManus.js`, `verbali_invia_new.js`
+Gli endpoint sono documentati in:
+```
+/home/ubuntu/dms-hub-app-new/client/public/api-index.json
+```
 
 ### API Dashboard (Frontend)
 
-La sezione `Integrazioni -> API Dashboard` del frontend Vercel include:
+La sezione `Integrazioni → API Dashboard` del frontend Vercel è stata potenziata per migliorare l'usabilità e l'esperienza di test:
 
 | Funzionalità | Descrizione |
 |---|---|
-| **Container Scrollabile** | Box con altezza fissa (`max-h-[600px]`) e scroll verticale |
-| **Barra di Ricerca** | Filtro in tempo reale per categoria, path o descrizione |
-| **Filtri Rapidi (Pill)** | 9 categorie: DmsHub, DMS Legacy, MercaWeb, Wallet, Imprese, Guardian, SUAP, Security, Comuni PA |
-| **Test Endpoint (Playground)** | Chiamata reale con risposta JSON nel pannello API Playground |
-| **Gestione API Key** | Header automatici (`X-MercaWeb-API-Key` per MercaWeb) |
+| **Container Scrollabile** | La lista degli endpoint è ora contenuta in un box con altezza fissa (`max-h-[600px]`) e scroll verticale, evitando che la pagina diventi eccessivamente lunga. |
+| **Barra di Ricerca** | È stata aggiunta una barra di ricerca che permette di filtrare in tempo reale gli endpoint per categoria, path o descrizione. |
+| **Filtri Rapidi (Pill)** | Sono presenti dei filtri rapidi (pill/chip) per le 9 categorie principali (DmsHub, DMS Legacy, MercaWeb, Wallet, Imprese, Guardian, SUAP, Security, Comuni PA), che permettono di isolare rapidamente un gruppo di endpoint. Un click attiva il filtro, un secondo click lo rimuove. |
+| **Test Endpoint (Playground)** | Sono state aggiunte le categorie **DMS Legacy (Heroku)** e **MercaWeb — Abaco S.p.A.** alla lista degli endpoint testabili. Cliccando sul pulsante ▶, viene eseguita una chiamata reale all'endpoint e la risposta JSON viene mostrata nel pannello API Playground a destra. |
+| **Gestione API Key** | Il Playground gestisce automaticamente l'invio degli header di autenticazione necessari, come `X-MercaWeb-API-Key` per gli endpoint MercaWeb. |
 
 ### Categorie Principali
 
@@ -1905,12 +824,8 @@ La sezione `Integrazioni -> API Dashboard` del frontend Vercel include:
 | **SUAP** | `/api/suap/*` | pratiche, stats, evaluate, notifiche-pm |
 | **Test Mercato** | `/api/test-mercato/*` | inizia-mercato, avvia-spunta, assegna-posteggio, chiudi-spunta, registra-rifiuti, chiudi-mercato |
 | **TCC v2** | `/api/tcc/v2/*` | wallet-impresa, qualifiche, settlement |
-| **TCC Security** | `/api/trpc/tccSecurity.*` | Anti-frode, QR firmati, rate limiting, audit trail (v6.1.0) |
-| **GDPR** | `/api/trpc/gdpr.*` | exportMyData, deleteMyAccount, retentionStatus, runRetentionCleanup, myConsents (v6.3.0) |
 | **DMS Legacy** | `/api/integrations/dms-legacy/*` | markets, vendors, concessions, presences, sync |
 | **MercaWeb** | `/api/integrations/mercaweb/*` | import/ambulanti, import/mercati, export/presenze, health |
-| **Integrations Sync** | `/api/trpc/integrations.sync.*` | status, jobs, getConfig, trigger, updateConfig (v6.7.0) |
-| **Integrations Webhooks** | `/api/trpc/integrations.webhooks.*` | list, create, test, delete (CRUD completo v6.7.0) |
 
 ---
 
@@ -2103,132 +1018,6 @@ Response: { customer_name, wallet_balance, tcc_amount, euro_amount }
 - ✅ **Autocomplete Off:** Rimosso popup password Safari sui campi input
 - ✅ **Numeri in Batch:** I batch rimborsi mostrano i settlement numbers
 
-## 🛡️ TCC SECURITY — SISTEMA ANTI-FRODE (v6.1.0)
-
-### Cos'e il Sistema TCC Security?
-
-Il sistema **TCC Security** e' il layer di protezione anti-frode per tutte le operazioni TCC (Token Carbon Credit). Implementa validazione crittografica QR, rate limiting per utente, rilevamento GPS spoofing, prevenzione transazioni duplicate e monitoraggio eventi sospetti con dashboard admin.
-
-### Architettura di Sicurezza
-
-```
-Richiesta utente
-  |
-  v
-[1. Express Rate Limiting] -- 4 tier per endpoint (30/20/10/50 req per 15min)
-  |
-  v
-[2. tRPC Auth Middleware] -- protectedProcedure / adminProcedure
-  |
-  v
-[3. Idempotency Check] -- UUID key per prevenire duplicati
-  |
-  v
-[4. Rate Limit DB] -- Contatore per utente/azione nel periodo
-  |
-  v
-[5. GPS Validation] -- Accuracy check + Haversine impossible travel
-  |
-  v
-[6. Cooldown Check] -- Tempo minimo tra check-in stesso POI
-  |
-  v
-[7. Daily Limits] -- Max TCC/check-in/transazioni per giorno
-  |
-  v
-[8. Operazione TCC] -- Insert transazione + aggiorna saldi
-  |
-  v
-[9. Audit Log] -- Scrittura strutturata in audit_logs
-```
-
-### Procedure tRPC (Router: tccSecurity)
-
-| Procedura | Tipo | Auth | Descrizione |
-|-----------|------|------|-------------|
-| `generateSignedQR` | mutation | protectedProcedure | Genera QR firmato HMAC-SHA256 con scadenza (default 5 min) |
-| `validateSignedQR` | mutation | protectedProcedure | Valida firma, verifica scadenza, marca come usato (single-use) |
-| `recordCheckin` | mutation | protectedProcedure | Pipeline 9 step: idempotency, rate limit, GPS accuracy, GPS plausibility, cooldown, daily limits, insert, audit, save key |
-| `getDailyLimits` | query | protectedProcedure | Limiti giornalieri correnti per utente autenticato |
-| `fraudEvents` | query | adminProcedure | Lista eventi sospetti con filtri severita/risoluzione |
-| `fraudStats` | query | adminProcedure | Statistiche: critici aperti, non risolti, oggi, ultimi 30gg |
-| `resolveFraud` | mutation | adminProcedure | Risolvi/ignora evento con note admin |
-| `auditTrail` | query | adminProcedure | Cerca audit trail per email o userId |
-| `getConfig` | query | adminProcedure | Configurazione rewards e limiti per comune |
-| `updateConfig` | mutation | adminProcedure | Aggiorna configurazione limiti/rewards |
-
-### Firma QR HMAC-SHA256
-
-| Parametro | Valore |
-|-----------|--------|
-| Algoritmo | HMAC-SHA256 |
-| Segreto | JWT_SECRET (variabile ambiente) |
-| Formato token | base64url(HMAC) |
-| Payload firmato | userId + qrType + amount + nonce + expiresAt |
-| Scadenza default | 300 secondi (5 minuti) |
-| Uso singolo | Si — marcato `used=true` dopo prima validazione |
-
-### Validazione GPS
-
-| Controllo | Soglia | Azione |
-|-----------|--------|--------|
-| Accuracy GPS | > 150 metri | Rifiuto check-in + errore utente |
-| Impossible travel | > 200 km/h tra ultimo check-in | Log frode `impossible_travel` + rifiuto |
-| Distanza Haversine | Formula standard (raggio Terra 6371km) | Calcolo distanza tra coordinate |
-
-### Rate Limiting Express (4 tier)
-
-| Endpoint | Max richieste | Finestra |
-|----------|---------------|----------|
-| `tccSecurity.recordCheckin` | 30 | 15 minuti |
-| `tccSecurity.generateSignedQR` | 20 | 15 minuti |
-| `wallet.ricarica` | 10 | 15 minuti |
-| `wallet.decurtazione` | 50 | 15 minuti |
-
-### Limiti Giornalieri Default (configurabili per comune)
-
-| Limite | Valore default |
-|--------|----------------|
-| Max TCC per utente/giorno | 500 |
-| Max check-in per giorno | 10 |
-| Max TCC per mese | 5.000 |
-| Max singola transazione | 200 TCC |
-| Cooldown stesso POI | 30 minuti |
-| Max referral per giorno | 3 |
-| Soglia high-value | 5.000 centesimi (50 EUR) |
-
-### Componenti Frontend
-
-| File | Descrizione |
-|------|-------------|
-| `FraudMonitorPanel.tsx` | Pannello anti-frode nella Dashboard PA (tab Security) |
-| `FraudStatsCards` | 4 card statistiche: critici, non risolti, oggi, 30gg |
-| `FraudEventsList` | Lista eventi filtrabili per severita, con azioni risolvi/ignora |
-| `AuditTrailSearch` | Ricerca audit trail per email o userId |
-| `SeverityBadge` | Badge colorato per severita (low/medium/high/critical) |
-
-### File Backend
-
-| File | Descrizione |
-|------|-------------|
-| `server/lib/tccSecurity.ts` | Utility crittografiche e validazione (circa 350 righe) |
-| `server/tccSecurityRouter.ts` | Router tRPC con 10 procedure (circa 450 righe) |
-
-### Vulnerabilita Corrette (v6.1.0)
-
-| File | Vulnerabilita | Fix |
-|------|---------------|-----|
-| `walletRouter.ts` | operatoreId hardcoded "SYSTEM" | Usa ctx.user.email dalla sessione autenticata |
-| `walletRouter.ts` | Nessun check wallet SOSPESO su ricarica | Aggiunto controllo status prima di operare |
-| `walletRouter.ts` | console.log per eventi critici | Sostituiti con insert strutturati in audit_logs |
-| `useNearbyPOIs.ts` | Fetch senza Authorization header | Aggiunto Bearer token da localStorage |
-| `useNearbyPOIs.ts` | Check-in senza idempotency | Aggiunto UUID idempotency key + nonce anti-replay |
-| `WalletPage.tsx` | alert() debug in produzione | Rimossi, sostituiti con console.warn |
-| `HubOperatore.tsx` | Operatore hardcoded "Luca Bianchi" ID:1 | Operatore dinamico da localStorage user data |
-| `HubOperatore.tsx` | 7 fetch senza auth header | Aggiunti Authorization: Bearer su tutte |
-
----
-
 ## 📋 SSO SUAP - MODULO SCIA
 
 ### Cos'è SSO SUAP?
@@ -2354,6 +1143,26 @@ Il `POST /api/concessions` rileva automaticamente un subingresso quando:
    - Aggiorna lo stato del posteggio
 3. Se NON subingresso ma esiste overlap → errore 409
 
+#### Response con Toast Progressivi (v8.1.4)
+
+La response del `POST /api/concessions` ora include un array `steps` che il frontend usa per mostrare toast progressivi:
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Subingresso completato...",
+  "steps": [
+    { "tipo": "success", "msg": "Concessione cedente #39 chiusa" },
+    { "tipo": "info", "msg": "Posteggio in trasferimento..." },
+    { "tipo": "success", "msg": "Nuova concessione #78 creata" },
+    { "tipo": "success", "msg": "Wallet #148 creato con saldo €0" },
+    { "tipo": "success", "msg": "Subingresso completato con successo!" }
+  ]
+}
+```
+```
+
 #### Campi Supportati (60+ campi)
 
 | Categoria | Campi |
@@ -2446,58 +1255,18 @@ POST /api/concessions
             └─────────────┘           └─────────────┘           └─────────────┘
 ```
 
-### CI/CD Pipeline — Quality Gate (v6.3.0)
-
-File: `.github/workflows/ci.yml`
-
-La pipeline si attiva automaticamente su **push** a `master`, `main`, e branch `claude/**`, e su **pull request** verso `master`/`main`.
-
-**Job: quality-gate** (ubuntu-latest, timeout 10 min)
-
-| Step | Comando | Descrizione |
-|------|---------|-------------|
-| 1 | `actions/checkout@v4` | Checkout codice |
-| 2 | `actions/setup-node@v4` | Setup Node.js 18 |
-| 3 | `pnpm/action-setup@v4` | Setup pnpm 10.4 |
-| 4 | `pnpm install --frozen-lockfile` | Installazione dipendenze |
-| 5 | `pnpm check` | TypeScript type check (`tsc --noEmit`) |
-| 6 | `pnpm test` | Test suite Vitest (36 test, 7 file) |
-| 7 | `pnpm build` | Build frontend (Vite) + backend (esbuild) |
-| 8 | `pnpm audit --audit-level=high` | Security audit dipendenze |
-
-**Job: sbom** (solo su push a master)
-
-| Step | Descrizione |
-|------|-------------|
-| 1 | Genera SBOM CycloneDX JSON (`sbom.json`) |
-| 2 | Upload artifact con retention 90 giorni |
-
-### SBOM — Software Bill of Materials
-
-- **Formato:** CycloneDX JSON (standard OWASP)
-- **File:** `sbom.json` (5.4 MB)
-- **Generazione:** Automatica su push a master via GitHub Actions
-- **Contenuto:** Inventario completo di tutte le dipendenze npm con versioni, licenze, hash
-- **Uso:** Compliance supply chain, audit di sicurezza, trasparenza PA
-
 ### Procedura Corretta
 
 ```bash
 # 1. Modifica codice
-# 2. Verifica locale
-pnpm check && pnpm test
-
-# 3. Commit
+# 2. Commit
 git add .
 git commit -m "feat: descrizione modifica"
 
-# 4. Push (triggera CI/CD + auto-deploy)
+# 3. Push (triggera auto-deploy)
 git push origin master
 
-# 5. Verifica CI (GitHub Actions)
-# La pipeline esegue: TypeScript check → Test → Build → Audit
-
-# 6. Verifica deploy (dopo 2-3 minuti)
+# 4. Verifica (dopo 2-3 minuti)
 curl https://orchestratore.mio-hub.me/api/health
 ```
 
@@ -2543,193 +1312,18 @@ La nuova architettura si basa sui seguenti componenti:
 
 ---
 
-## 🛡️ GDPR COMPLIANCE E PRIVACY (v6.3.0)
-
-### Panoramica
-
-Il sistema implementa la conformita GDPR attraverso un router tRPC dedicato (`server/gdprRouter.ts`) con 5 procedure e una utility di cifratura PII (`server/lib/piiCrypto.ts`).
-
-### Cifratura PII — AES-256-GCM
-
-**File:** `server/lib/piiCrypto.ts`
-
-Utility per la protezione crittografica dei dati PII (Personally Identifiable Information) nel database.
-
-| Funzione | Descrizione |
-|----------|-------------|
-| `encryptPII(plaintext)` | Cifra con AES-256-GCM + IV random per ogni operazione. Restituisce `iv:authTag:ciphertext` (Base64) |
-| `decryptPII(ciphertext)` | Decifra verificando l'auth tag. Supporta legacy plaintext passthrough |
-| `hashPII(value)` | Hash SHA-256 deterministico per ricerca indicizzata senza decifrare |
-| `isEncrypted(value)` | Rileva se un valore e' gia cifrato (pattern `base64:base64:base64`) |
-
-**Chiave:** Derivata da `PII_ENCRYPTION_KEY` env var (o fallback `JWT_SECRET`).
-
-### Router GDPR — Endpoint
-
-**File:** `server/gdprRouter.ts` — Registrato in `server/routers.ts`
-
-| Procedura | Tipo | Articolo GDPR | Descrizione |
-|-----------|------|---------------|-------------|
-| `exportMyData` | protectedProcedure | Art. 20 (Portabilita) | Raccoglie dati utente da 12 tabelle: users, extendedUsers, vendors, transactions, checkins, complianceCertificates, concessions, vendorDocuments, vendorPresences. Restituisce JSON completo |
-| `deleteMyAccount` | protectedProcedure | Art. 17 (Oblio) | Anonimizza dati in users, extendedUsers, vendors. Crea audit log e compliance certificate. Richiede conferma email |
-| `retentionStatus` | adminProcedure | Art. 5(1)(e) | Mostra conteggio record scaduti per ogni categoria con politica di retention |
-| `runRetentionCleanup` | adminProcedure | Art. 5(1)(e) | Elimina dati scaduti: apiMetrics >90gg, systemLogs >365gg, loginAttempts >90gg |
-| `myConsents` | protectedProcedure | Art. 7 | Restituisce i certificati di compliance dell'utente |
-
-### Politica Data Retention
-
-| Categoria | Retention | Tabella | Colonna timestamp |
-|-----------|-----------|---------|-------------------|
-| Metriche API | 90 giorni | `api_metrics` | `createdAt` |
-| Log di sistema | 365 giorni | `system_logs` | `createdAt` |
-| Tentativi login | 90 giorni | `login_attempts` | `createdAt` |
-| Audit log | 5 anni | `audit_logs` | Non eliminato automaticamente |
-
-### Flusso Anonimizzazione (deleteMyAccount)
-
-1. Verifica che l'email confermata corrisponda all'utente autenticato
-2. Anonimizza `users`: name → "DELETED_USER_xxxxx", email → hash, phone → null
-3. Anonimizza `extendedUsers`: codiceFiscale, partitaIva, pec, iban → "***REDACTED***"
-4. Anonimizza `vendors`: denominazione → "ANONIMIZZATO", cf/piva → null
-5. Crea record `audit_logs` con `entityType: "gdpr_deletion"`
-6. Crea `compliance_certificate` di tipo "gdpr_deletion"
-
----
-
-## 🧪 TEST SUITE E QUALITY ASSURANCE (v6.3.0)
-
-### Panoramica
-
-Il sistema dispone di una test suite automatizzata basata su **Vitest** con 36 test distribuiti su 7 file.
-I test vengono eseguiti automaticamente nella CI/CD pipeline ad ogni push.
-
-### Comandi
-
-```bash
-pnpm test        # Esegui tutti i test (vitest run)
-pnpm check       # TypeScript type check (tsc --noEmit)
-```
-
-### File di Test e Copertura
-
-| File | Test | Copertura |
-|------|------|-----------|
-| `server/lib/piiCrypto.test.ts` | 9 | Cifratura AES-256-GCM: encrypt/decrypt roundtrip, random IV univoci, legacy plaintext passthrough, caratteri speciali/unicode, hash SHA-256 deterministico |
-| `server/lib/tccSecurity.test.ts` | 9 | Anti-frode TCC: firma QR HMAC-SHA256, validazione firma, firma forgiata, token alterato, nonce univoco, distanza Haversine (Bologna vicino, stesse coordinate, Bologna-Roma), plausibilita GPS |
-| `server/_core/trpc.test.ts` | 4 | Core tRPC: export router/publicProcedure/protectedProcedure/adminProcedure, creazione router validi con ciascun tipo di procedura |
-| `server/_core/cookies.test.ts` | 5 | Cookie utilities: creazione, parsing, opzioni di sicurezza |
-| `server/_core/env.test.ts` | 5 | Validazione variabili ambiente: rilevamento mancanti, valori corretti |
-| `server/routers.test.ts` | 1 | Registrazione router: verifica tutti i 20 router registrati inclusi endpoint GDPR, >50 endpoint totali |
-| `server/schema.test.ts` | 3 | Schema DB: tabelle core (users, markets, shops, transactions, checkins), tabelle audit (auditLogs, systemLogs, notifications, inspections), tabelle product tracking |
-
-### Configurazione Vitest
-
-**File:** `vitest.config.ts`
-
-```typescript
-// Path aliases per risolvere import nei test
-resolve: {
-  alias: {
-    "@shared": path.resolve(import.meta.dirname, "shared"),
-    "@": path.resolve(import.meta.dirname, "client/src"),
-  }
-}
-```
-
-### Mocking Strategy
-
-I test usano `vi.mock()` per isolare le dipendenze:
-
-- **Database:** `server/db` mockato con `getDb: vi.fn().mockResolvedValue(null)` — test senza connessione DB
-- **API Logs:** `server/services/apiLogsService` mockato per evitare side-effects
-- **Environment:** `process.env` impostato nel `beforeAll` con valori di test
-
-### Come Aggiungere Nuovi Test
-
-1. Crea file `*.test.ts` nella stessa directory del file da testare
-2. Importa da `vitest`: `describe`, `it`, `expect`, `vi`, `beforeAll`
-3. Mocka le dipendenze esterne con `vi.mock()`
-4. Imposta env vars nel `beforeAll` se necessario
-5. Esegui `pnpm test` per verificare
-
----
-
 ## 🔐 CREDENZIALI E ACCESSI
 
-### Variabili d'Ambiente Backend Hetzner (31 — Dati Reali 14 Feb 2026)
-
-> Variabili lette direttamente dal file `.env` su Hetzner. Solo nomi, senza valori.
-
-**DATABASE (6)**
+### Variabili d'Ambiente Backend
 
 | Variabile | Descrizione |
 |-----------|-------------|
-| `DATABASE_URL` | Connection string principale Neon |
-| `NEON_POSTGRES_URL` | URL Neon alternativa |
-| `POSTGRES_URL` | URL PostgreSQL generica |
-| `DB_HOST` | Host database |
-| `DB_NAME` | Nome database |
-| `DB_PASSWORD` | Password database |
-| `DB_PORT` | Porta database |
-| `DB_SSL` | Flag SSL |
-| `DB_USER` | Utente database |
-
-**AUTH/SECURITY (2)**
-
-| Variabile | Descrizione |
-|-----------|-------------|
-| `JWT_SECRET` | Secret per token JWT |
-| `MIOHUB_SECRETS_KEY` | Chiave crittografia secrets |
-
-**API KEYS (5)**
-
-| Variabile | Descrizione |
-|-----------|-------------|
-| `GEMINI_API_KEY` | API key Google Gemini (AI) |
-| `MANUS_API_KEY` | API key Manus AI |
-| `MERCAWEB_API_KEY` | API key MercaWeb (Abaco) |
-| `ZAPIER_API_KEY` | API key Zapier |
-| `ZAPIER_NLA_API_KEY` | API key Zapier NLA |
-
-**GITHUB (3)**
-
-| Variabile | Descrizione |
-|-----------|-------------|
-| `GITHUB_PAT_DMS` | PAT per repo DMS |
-| `GITHUB_PERSONAL_ACCESS_TOKEN` | PAT personale |
+| `DATABASE_URL` | Connection string Neon |
+| `GEMINI_API_KEY` | API key Google Gemini |
 | `GITHUB_TOKEN` | Token GitHub per GPT Dev |
-
-**SERVER (6)**
-
-| Variabile | Descrizione |
-|-----------|-------------|
-| `BASE_URL` | URL base backend |
-| `CORS_ORIGINS` | Origini CORS permesse |
-| `LOG_FILE` | Path file log |
-| `MIO_HUB_BASE` | URL base MIO Hub |
-| `NODE_ENV` | Ambiente (production) |
-| `PORT` | Porta server |
-
-**FEATURES (4)**
-
-| Variabile | Descrizione |
-|-----------|-------------|
-| `ENABLE_AGENT_LOGS` | Abilita log agenti AI |
-| `ENABLE_GUARDIAN_LOOP` | Abilita loop Guardian |
-| `ENABLE_MIO_CHAT` | Abilita chat MIO |
-| `ENABLE_SECRETS_SYNC` | Abilita sync secrets |
-| `ORCHESTRATOR_ENABLED` | Abilita orchestratore |
-
-**GITHUB REPO (1)**
-
-| Variabile | Descrizione |
-|-----------|-------------|
-| `BLUEPRINT_REPO` | Repo GitHub per blueprint sync |
-
-### Variabili d'Ambiente Frontend (Vercel)
-
-| Variabile | Descrizione |
-|-----------|-------------|
+| `SSH_PRIVATE_KEY` | Chiave SSH per Manus |
+| `ZAPIER_WEBHOOK_URL` | Webhook Zapier |
+| `VERCEL_TOKEN` | Token deploy Vercel |
 | `VITE_FIREBASE_API_KEY` | Firebase API Key (client) |
 | `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Auth Domain (client) |
 | `VITE_FIREBASE_PROJECT_ID` | Firebase Project ID (client) |
@@ -2823,7 +1417,7 @@ fi
 
 ---
 
-## 📊 STATO ATTUALE SISTEMA (19 Febbraio 2026 — v7.7.0)
+## 📊 STATO ATTUALE SISTEMA
 
 ### Servizi Online ✅
 
@@ -2834,70 +1428,14 @@ fi
 | Database | Neon PostgreSQL | ✅ Online |
 | MIO Agent | /api/mihub/orchestrator | ✅ Funzionante |
 | Guardian | /api/guardian/* | ✅ Funzionante |
-| TCC Security | /api/tcc/* (REST) | ✅ Funzionante |
-| GDPR Router | /api/gdpr/* (REST) | ✅ Funzionante |
-| CI/CD Pipeline | GitHub Actions | ✅ Attiva |
-| PM2 | mihub-backend (REST) porta 3000 | ✅ Online — Backend REST corretto ripristinato |
 
-### Statistiche (Dati Reali 19 Feb 2026 — v7.7.0)
+### Statistiche
 
-- **Tabelle nel DB:** 155 (149 + 6 TCC Security)
-- **Righe totali:** 372.143+
-- **Router tRPC registrati:** 0 (tRPC completamente rimosso in FASE 5)
-- **Endpoint REST montati:** 659 attivi + 199 backup (858 totale)
-- **Chiamate tRPC residue nel build Vercel:** 16 (da migrare a REST)
-- **Test suite:** 52 test su 7 file (Vitest)
-- **Mercati nel DB:** 3
-- **Imprese:** 34
-- **Posteggi:** 583
-- **Concessioni:** 30
-- **POI culturali:** 1.127
-- **Fermate GTFS:** 23.930
-- **Log MIO Agent:** 326.543
-- **Agenti AI registrati:** 8
-- **Secrets configurati:** 10
-- **Variabili ambiente:** 31 (backend) + 7 (frontend)
-- **Indici DB:** 409 + 7 nuovi (performance)
-- **Trigger DB:** 9
-- **Funzioni DB:** 37
-
-### Compliance & Security (v6.3.0)
-
-| Area | Stato | Dettaglio |
-|------|-------|-----------|
-| **GDPR — Privacy Policy** | ✅ Conforme | Pagina /privacy conforme Art. 13/14 |
-| **GDPR — Cookie Consent** | ✅ Conforme | CookieConsentBanner con consenso esplicito |
-| **GDPR — Portabilita (Art. 20)** | ✅ Implementato | `gdpr.exportMyData` — export JSON da 12 tabelle |
-| **GDPR — Diritto Oblio (Art. 17)** | ✅ Implementato | `gdpr.deleteMyAccount` — anonimizzazione completa |
-| **GDPR — Data Retention** | ✅ Implementato | `gdpr.runRetentionCleanup` — metriche 90gg, log 365gg |
-| **GDPR — Cifratura PII** | ✅ Implementato | AES-256-GCM per CF/PIVA/IBAN (`piiCrypto.ts`) |
-| **WCAG 2.1 AA** | ✅ Conforme | Skip to content, focus-visible, reduced-motion, lang="it" |
-| **Security Headers** | ✅ Attivo | Helmet.js (CSP, HSTS, X-Frame-Options, etc.) |
-| **Rate Limiting** | ✅ Attivo | Globale 100/15min + 4 specifici su endpoint finanziari |
-| **Cookie Security** | ✅ Attivo | httpOnly, secure, sameSite: lax |
-| **Env Validation** | ✅ Attivo | Server non si avvia senza variabili critiche |
-| **API Auth** | ✅ Attivo | Tutte le procedure tRPC sensibili protette da autenticazione |
-| **Anti-Frode TCC** | ✅ Attivo | QR firmati HMAC-SHA256, GPS validation, rate limiting, audit trail |
-| **CI/CD Pipeline** | ✅ Attivo | GitHub Actions: TypeScript + Test + Build + Audit |
-| **SBOM** | ✅ Generato | CycloneDX JSON, generazione automatica su master |
-| **Test Suite** | ✅ Attivo | 36 test, 7 file, Vitest, esecuzione in CI |
-| **PWA** | ✅ Attivo | Service Worker, manifest.json, offline page |
-| **Graceful Shutdown** | ✅ Attivo | SIGTERM/SIGINT handler con timeout 10s |
-
-### Pagine Nuove (Sessione 15 Feb)
-
-| Rotta | Componente | Descrizione |
-|-------|-----------|-------------|
-| `/privacy` | PrivacyPolicyPage | Informativa privacy GDPR |
-| `/accessibilita` | AccessibilityPage | Dichiarazione accessibilita AgID |
-| `/profilo` | ProfiloPage | Profilo utente con dati e preferenze |
-| `/dossier` | index.html (statico) | Dossier tecnico interattivo |
-
-### Problemi Noti
-
-- **Connection timeout sporadici:** su `security.js` verso Neon pooler (Neon cold-start su free tier) — mitigato con retry automatico e connection pool
-- **Backend tRPC dormiente:** Il backend tRPC in `dms-hub-app-new/server/` ha uno schema Drizzle non allineato (25/73 tabelle). NON deve essere attivato. Il backend corretto è `mihub-backend-rest` sulla porta 3000.
-- **Conflitto nomi PM2 risolto:** L'incidente del 17 Feb era causato da entrambi i backend che usavano il nome `mihub-backend`. Ora solo il backend REST è attivo.
+- **Endpoint totali:** 153
+- **Mercati nel DB:** 2
+- **Log totali:** ~1500
+- **Agenti attivi:** 5 (MIO, GPT Dev, Manus, Abacus, Zapier)
+- **Secrets configurati:** 10/10
 
 ---
 
@@ -3737,11 +2275,10 @@ const forcedZoom = roundedToQuarter + 0.25;
 **Backend (Hetzner):**
 - ✅ Nuovo endpoint `PUT /api/security/roles/:id/permissions` per aggiornare i permessi di un ruolo
 - ✅ Nuovo endpoint `GET /api/security/permissions/tabs` per ottenere la lista dei permessi tab
-- ✅ Migration `017_add_tab_permissions.sql` con permessi iniziali
-  - 28 permessi per tab sidebar (es. `tab.view.dashboard`, `tab.view.security`, `tab.view.council`)
-  - 11 permessi per accesso rapido (es. `quick.view.home`, `quick.view.bus_hub`, `quick.view.gestionale`)
-- ✅ **v6.5.0 update:** Tutti i 28 tab + 11 quick access concessi client-side a utenti con `impresa_id`/admin/super_admin
-- ✅ Permessi sensibili: la gestione granulare per ruolo avviene tramite l'orchestratore API (server-side)
+- ✅ Migration `017_add_tab_permissions.sql` con 39 nuovi permessi:
+  - 27 permessi per tab sidebar (es. `tab.view.dashboard`, `tab.view.security`)
+  - 12 permessi per accesso rapido (es. `quick.view.home`, `quick.view.bus_hub`)
+- ✅ Permessi sensibili assegnati solo a `super_admin`: Sistema, Sicurezza, Comuni, Report, Integrazioni, Impostazioni, Documentazione, Workspace, BUS HUB
 
 **Frontend (Vercel):**
 - ✅ Nuovo `PermissionsContext` (`/contexts/PermissionsContext.tsx`) per gestire i permessi utente
@@ -5045,6 +3582,14 @@ Il form è suddiviso in sezioni logiche con auto-popolamento dai dati esistenti:
 | Rispetto Regolamento | checkbox | Impegno a rispettare regolamento comunale |
 
 ### 9. API Endpoints
+
+### Nuovi Endpoint: Storico Titolarità Posteggio
+
+| # | Metodo | Endpoint | Descrizione |
+|---|---|---|---|
+| 1 | `GET` | `/api/concessions/storico-titolarita/mercato/:market_id` | Restituisce la lista degli ultimi eventi di titolarità per un intero mercato. |
+| 2 | `GET` | `/api/concessions/storico-titolarita/:posteggio_id` | Restituisce la timeline completa di un singolo posteggio. |
+
 
 #### 9.1 Autorizzazioni
 
@@ -9866,7 +8411,7 @@ Tutti i 14 fix sono stati implementati, deployati e testati. Risultati dei test 
 
 ### 4. Verifica Visiva sul Gestionale Lapsy (12 Feb 2026)
 
-Accesso effettuato al gestionale Lapsy DMS (`https://lapsy-dms.herokuapp.com`) con credenziali da env. Tutti i dati inviati tramite SYNC OUT sono visibili e corretti nell'interfaccia.
+Accesso effettuato al gestionale Lapsy DMS (`https://lapsy-dms.herokuapp.com`) con credenziali `checchi@me.com`. Tutti i dati inviati tramite SYNC OUT sono visibili e corretti nell'interfaccia.
 
 **Sezione Ambulanti** — Tutti i record creati da MioHub sono presenti nella griglia:
 
