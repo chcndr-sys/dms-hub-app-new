@@ -888,20 +888,17 @@ export default function DashboardPA() {
       .catch(err => console.error('Error loading imprese stats from REST:', err));
   }, []);
 
-  // Fallback tRPC per impreseStats: usa dati da shops/markets del Neon DB
+  // Fallback: usa dati overview REST se la chiamata /api/imprese fallisce
   useEffect(() => {
-    if (impreseStats.total === 0 && realData.shops.length > 0) {
-      const comuni = new Set(realData.markets.map((m: any) => m.city || m.municipality).filter(Boolean));
+    if (impreseStats.total === 0 && realData.overview) {
       setImpreseStats({
-        total: realData.shops.length,
-        concessioni: realData.shops.length,
-        comuni: comuni.size,
-        media: realData.markets.length > 0
-          ? (realData.shops.length / realData.markets.length).toFixed(1)
-          : '0',
+        total: realData.overview.imprese || realData.overview.totalShops || 0,
+        concessioni: realData.overview.autorizzazioni || 0,
+        comuni: realData.overview.comuni || 0,
+        media: '0',
       });
     }
-  }, [realData.shops, realData.markets, impreseStats.total]);
+  }, [realData.overview, impreseStats.total]);
   
   // Multi-Agent Chat state
   const [showMultiAgentChat, setShowMultiAgentChat] = useState(true);  // 🎯 FIX: Mostra Vista 4 Agenti di default
