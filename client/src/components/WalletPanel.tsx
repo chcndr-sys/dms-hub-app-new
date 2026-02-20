@@ -546,15 +546,7 @@ export default function WalletPanel() {
         const mercati = data.data.map((m: any) => ({ id: m.id, name: m.name }));
         setMercatiList(mercati);
         
-        // v8.2.2 fix: Auto-seleziona mercato SOLO quando impersonalizzato come comune
-        // Quando admin vede tutti i mercati, NON pre-selezionare (evita bug Cervia Demo)
-        const { isImpersonating } = getImpersonationParams();
-        if (mercati.length > 0 && !selectedMercatoId && isImpersonating) {
-          const primoMercato = mercati[0].id.toString();
-          setSelectedMercatoId(primoMercato);
-          // Impersonalizzazione attiva: pre-seleziona anche il filtro canone
-          setCanoneFilters(prev => ({ ...prev, mercato_id: primoMercato }));
-        }
+        // v8.2.2: Non pre-selezionare qui, delegato a useEffect dedicato sotto
       }
     } catch (err) {
       console.error('Errore caricamento mercati:', err);
@@ -582,6 +574,18 @@ export default function WalletPanel() {
       setIsLoadingImprese(false);
     }
   };
+
+  // v8.2.3 fix: Auto-seleziona mercato quando impersonalizzato e mercatiList è caricata
+  // Usa useEffect separato per evitare problemi di closure con selectedMercatoId
+  useEffect(() => {
+    if (subTab !== 'canone') return;
+    const { isImpersonating } = getImpersonationParams();
+    if (isImpersonating && mercatiList.length > 0 && !selectedMercatoId) {
+      const primoMercato = mercatiList[0].id.toString();
+      setSelectedMercatoId(primoMercato);
+      setCanoneFilters(prev => ({ ...prev, mercato_id: primoMercato }));
+    }
+  }, [subTab, mercatiList, selectedMercatoId]);
 
   // Sincronizza selectedMercatoId con il filtro mercato principale (v3.57.0)
   useEffect(() => {
