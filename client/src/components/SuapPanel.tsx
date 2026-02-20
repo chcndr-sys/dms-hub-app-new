@@ -9,7 +9,7 @@ import {
   FileText, CheckCircle2, XCircle, Clock, Loader2, 
   Search, Filter, Eye, Play, User, Building2, MapPin, FileCheck, Users,
   Plus, LayoutDashboard, List, FileSearch, AlertCircle, TrendingUp, ScrollText, Stamp,
-  ArrowLeft, RefreshCw, AlertTriangle, Bell, Inbox, Edit, Trash2, CreditCard, Wallet, Calendar
+  ArrowLeft, RefreshCw, AlertTriangle, Bell, Inbox, Edit, Trash2, CreditCard, Wallet, Calendar, History
 } from 'lucide-react';
 import { 
   getSuapStats, getSuapPratiche, getSuapPraticaById, 
@@ -26,6 +26,7 @@ import ListaDomandeSpuntaSuap from '@/components/suap/ListaDomandeSpuntaSuap';
 import AutorizzazioneDetail from '@/components/suap/AutorizzazioneDetail';
 import DomandaSpuntaDetail from '@/components/suap/DomandaSpuntaDetail';
 import NotificationManager from '@/components/suap/NotificationManager';
+import StoricoTitolarita from '@/components/suap/StoricoTitolarita';
 import { toast } from 'sonner';
 import { getImpersonationParams } from '@/hooks/useImpersonation';
 import { MIHUB_API_BASE_URL } from '@/config/api';
@@ -593,6 +594,13 @@ export default function SuapPanel() {
                 {notificheNonLette}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger 
+            value="storico-titolarita"
+            className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400"
+          >
+            <History className="mr-2 h-4 w-4" />
+            Storico Titolarità
           </TabsTrigger>
         </TabsList>
 
@@ -2306,6 +2314,16 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
             mittenteId={comuneData?.id || 1}
             mittenteNome={`SUAP Comune di ${comuneData?.nome || 'Grosseto'}`}
             onNotificheUpdate={loadNotificheCount}
+          />
+        </TabsContent>
+
+        {/* ================================================================== */}
+        {/* TAB STORICO TITOLARITA */}
+        {/* ================================================================== */}
+        <TabsContent value="storico-titolarita" className="space-y-6 mt-6">
+          <StoricoTitolarita 
+            comuneId={comuneData?.id}
+            marketId={1}
           />
         </TabsContent>
       </Tabs>
