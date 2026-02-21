@@ -938,7 +938,8 @@ export default function SuapPanel() {
                       // Pre-compila il form concessione con i dati della SCIA
                       const preData = {
                         // Dati Generali - Pre-compilati dalla SCIA
-                        numero_protocollo: selectedPratica.numero_protocollo || '',
+                        // NON passare numero_protocollo: il ConcessioneForm genera automaticamente #N+1
+                        // numero_protocollo viene lasciato vuoto per triggerare l'auto-generazione
                         data_protocollazione: new Date().toISOString().split('T')[0],
                         comune_rilascio: selectedPratica.comune_presentazione || '',
                         oggetto: `Subingresso ${selectedPratica.sub_ragione_sociale || selectedPratica.richiedente_nome || ''} - Posteggio ${selectedPratica.posteggio_numero || ''}`,
@@ -1256,8 +1257,8 @@ export default function SuapPanel() {
                       ).length;
                       const failedChecks = totalChecks - passedChecks;
                       
-                      // Ricalcola score basato solo sull'ultima verifica
-                      const score = totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0;
+                      // Usa lo score dal DB (calcolato dal backend con pesi reali) per coerenza con la lista
+                      const score = selectedPratica?.score ?? (totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0);
                       const scoreColor = score >= 70 ? '#22c55e' : score >= 40 ? '#eab308' : '#ef4444';
                       
                       return (
@@ -2332,17 +2333,15 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
         </TabsContent>
       </Tabs>
 
-      {/* Modal Form SCIA */}
+      {/* Form SCIA - Modal allargato a pagina intera (come Concessione) */}
       {showSciaForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1e293b] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <SciaForm
-              onSubmit={handleSciaSubmit}
-              onCancel={() => setShowSciaForm(false)}
-              comuneNome={comuneData?.nome || ''}
-              comuneId={comuneData?.id}
-            />
-          </div>
+        <div className="fixed inset-0 z-50 bg-[#0b1220] overflow-y-auto p-4">
+          <SciaForm
+            onSubmit={handleSciaSubmit}
+            onCancel={() => setShowSciaForm(false)}
+            comuneNome={comuneData?.nome || ''}
+            comuneId={comuneData?.id}
+          />
         </div>
       )}
 
@@ -2351,38 +2350,64 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
         <div className="fixed inset-0 z-50 bg-[#0b1220] overflow-y-auto p-4">
           <ConcessioneForm 
             onSubmit={async (savedConcessione) => {
+              // IMPORTANTE: Cattura selectedPratica PRIMA di resettare gli stati
+              const praticaCorrente = selectedPratica;
+              
               setShowConcessioneForm(false);
               setConcessionePreData(null);
               setConcessioneMode('create');
               setSelectedConcessioneId(null);
               loadConcessioni(); // Ricarica le concessioni
-              // Aggiorna la pratica selezionata con il nuovo concessione_id
-              if (selectedPratica && savedConcessione?.id) {
+              
+              // Aggiorna la pratica collegata a APPROVED
+              if (praticaCorrente && savedConcessione?.id) {
                 // Aggiorna stato pratica a APPROVED nel backend
                 try {
                   await updateSuapPraticaStato(
-                    String(selectedPratica.id), 
+                    String(praticaCorrente.id), 
                     ENTE_ID, 
                     'APPROVED', 
-                    'Concessione generata - pratica approvata automaticamente'
+                    `Concessione #${savedConcessione.id} generata - pratica approvata automaticamente`
                   );
-                  toast.success('Stato pratica aggiornato a APPROVED');
+                  toast.success(`Pratica ${praticaCorrente.cui || ''} aggiornata a APPROVED`);
                 } catch (err) {
                   console.error('Errore aggiornamento stato pratica:', err);
                   toast.error('Concessione salvata ma errore aggiornamento stato pratica');
                 }
                 
                 setSelectedPratica({
-                  ...selectedPratica,
+                  ...praticaCorrente,
                   concessione_id: savedConcessione.id,
                   stato: 'APPROVED' as any
                 });
                 // Aggiorna anche nella lista pratiche
                 setPratiche(prev => prev.map(p => 
-                  p.id === selectedPratica.id 
+                  p.id === praticaCorrente.id 
                     ? { ...p, concessione_id: savedConcessione.id, stato: 'APPROVED' as any }
                     : p
                 ));
+              } else if (praticaCorrente) {
+                // Anche senza id concessione, prova ad aggiornare lo stato
+                try {
+                  await updateSuapPraticaStato(
+                    String(praticaCorrente.id), 
+                    ENTE_ID, 
+                    'APPROVED', 
+                    'Concessione generata - pratica approvata automaticamente'
+                  );
+                  toast.success(`Pratica ${praticaCorrente.cui || ''} aggiornata a APPROVED`);
+                  setSelectedPratica({
+                    ...praticaCorrente,
+                    stato: 'APPROVED' as any
+                  });
+                  setPratiche(prev => prev.map(p => 
+                    p.id === praticaCorrente.id 
+                      ? { ...p, stato: 'APPROVED' as any }
+                      : p
+                  ));
+                } catch (err) {
+                  console.error('Errore aggiornamento stato pratica:', err);
+                }
               }
               setActiveTab('concessioni'); // Vai al tab concessioni
               // Toast progressivi gestiti direttamente dal ConcessioneForm (v8.1.4)

@@ -205,40 +205,65 @@ export default function SciaForm({ onCancel, onSubmit, comuneNome = '', comuneId
   }, []);
 
   // Filtra imprese mentre si digita (autocomplete Subentrante)
-  // Mostra risultati dalla prima lettera per una ricerca più reattiva
+  // Priorità: denominazione > CF > P.IVA, minimo 2 caratteri per evitare risultati a caso
   useEffect(() => {
-    if (searchQuery.length < 1) {
+    if (searchQuery.length < 2) {
       setFilteredImprese([]);
       setShowSuggestions(false);
       return;
     }
     
-    const query = searchQuery.toUpperCase();
-    const filtered = allImprese.filter(i => 
-      i.denominazione?.toUpperCase().includes(query) ||
-      i.codice_fiscale?.toUpperCase().includes(query) ||
-      i.partita_iva?.includes(query.replace(/\D/g, ''))
-    ).slice(0, 15); // Max 15 suggerimenti per mostrare più risultati
+    const query = searchQuery.toUpperCase().trim();
+    const numericQuery = query.replace(/\D/g, '');
+    
+    // Filtra con priorità: prima per denominazione, poi per CF/P.IVA (solo se query >= 3 char)
+    const byName = allImprese.filter(i => 
+      i.denominazione?.toUpperCase().includes(query)
+    );
+    
+    let byCfPiva: typeof allImprese = [];
+    if (query.length >= 3) {
+      byCfPiva = allImprese.filter(i => 
+        !i.denominazione?.toUpperCase().includes(query) && (
+          i.codice_fiscale?.toUpperCase().includes(query) ||
+          (numericQuery.length >= 3 && i.partita_iva?.includes(numericQuery))
+        )
+      );
+    }
+    
+    const filtered = [...byName, ...byCfPiva].slice(0, 25);
     
     setFilteredImprese(filtered);
     setShowSuggestions(filtered.length > 0);
   }, [searchQuery, allImprese]);
 
   // Filtra imprese mentre si digita (autocomplete Cedente)
-  // Mostra risultati dalla prima lettera per una ricerca più reattiva
+  // Priorità: denominazione > CF > P.IVA, minimo 2 caratteri
   useEffect(() => {
-    if (cedenteSearchQuery.length < 1) {
+    if (cedenteSearchQuery.length < 2) {
       setFilteredCedenteImprese([]);
       setShowCedenteSuggestions(false);
       return;
     }
     
-    const query = cedenteSearchQuery.toUpperCase();
-    const filtered = allImprese.filter(i => 
-      i.denominazione?.toUpperCase().includes(query) ||
-      i.codice_fiscale?.toUpperCase().includes(query) ||
-      i.partita_iva?.includes(query.replace(/\D/g, ''))
-    ).slice(0, 15); // Max 15 suggerimenti per mostrare più risultati
+    const query = cedenteSearchQuery.toUpperCase().trim();
+    const numericQuery = query.replace(/\D/g, '');
+    
+    const byName = allImprese.filter(i => 
+      i.denominazione?.toUpperCase().includes(query)
+    );
+    
+    let byCfPiva: typeof allImprese = [];
+    if (query.length >= 3) {
+      byCfPiva = allImprese.filter(i => 
+        !i.denominazione?.toUpperCase().includes(query) && (
+          i.codice_fiscale?.toUpperCase().includes(query) ||
+          (numericQuery.length >= 3 && i.partita_iva?.includes(numericQuery))
+        )
+      );
+    }
+    
+    const filtered = [...byName, ...byCfPiva].slice(0, 25);
     
     setFilteredCedenteImprese(filtered);
     setShowCedenteSuggestions(filtered.length > 0);
@@ -311,11 +336,13 @@ export default function SciaForm({ onCancel, onSubmit, comuneNome = '', comuneId
           setMarkets(marketsJson.data);
         }
         
-        // Carica tutte le imprese per ricerca locale
-        const impreseRes = await fetch(`${API_URL}/api/imprese`);
+        // Carica tutte le imprese per ricerca locale (versione leggera senza immagini/subquery)
+        const lightFields = 'id,denominazione,partita_iva,codice_fiscale,comune,indirizzo_via,indirizzo_civico,indirizzo_cap,indirizzo_provincia,stato_impresa,pec,telefono,email,rappresentante_legale,rappresentante_legale_cognome,rappresentante_legale_nome,rappresentante_legale_cf,rappresentante_legale_data_nascita,rappresentante_legale_luogo_nascita,rappresentante_legale_residenza_via,rappresentante_legale_residenza_civico,rappresentante_legale_residenza_cap,rappresentante_legale_residenza_comune,rappresentante_legale_residenza_provincia';
+        const impreseRes = await fetch(`${API_URL}/api/imprese?fields=${lightFields}`);
         const impreseJson = await impreseRes.json();
         if (impreseJson.success && impreseJson.data) {
           setAllImprese(impreseJson.data);
+          console.log(`[SciaForm] Caricate ${impreseJson.data.length} imprese (modalità leggera)`);
         }
       } catch (error) {
         console.error('Errore fetch dati:', error);
