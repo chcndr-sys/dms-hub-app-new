@@ -1421,14 +1421,14 @@ function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRef
       const selectedPost = formData.posteggio_idx !== '' ? posteggiFiltrati[Number(formData.posteggio_idx)] : null;
       
       // Recupera comune_id dal market_id della concessione selezionata via API
-      let comuneId = 1;
+      let comuneId = null;
       if (selectedConc?.market_id) {
         try {
           const mktRes = await fetch(`${API_BASE_URL}/api/markets/${selectedConc.market_id}`);
           const mktData = await mktRes.json();
           const mkt = mktData?.data || mktData;
           const mktObj = Array.isArray(mkt) ? mkt[0] : mkt;
-          comuneId = mktObj?.comune_id || 1;
+          comuneId = mktObj?.comune_id || null;
         } catch { /* fallback */ }
       }
 

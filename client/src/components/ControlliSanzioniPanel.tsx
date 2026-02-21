@@ -2400,8 +2400,8 @@ export default function ControlliSanzioniPanel() {
           {/* Sezione Notifiche Manuali PM */}
           <NotificationManager 
             mittenteTipo="POLIZIA_MUNICIPALE"
-            mittenteId={isImpersonating && impersonatedComuneId ? parseInt(impersonatedComuneId) : 1}
-            mittenteNome={`Polizia Municipale${isImpersonating ? '' : ' - Comune di Grosseto'}`}
+            mittenteId={isImpersonating && impersonatedComuneId ? parseInt(impersonatedComuneId) : 0}
+            mittenteNome={`Polizia Municipale${isImpersonating && impersonatedComuneNome ? ` - Comune di ${impersonatedComuneNome}` : ''}`}
             comuneId={isImpersonating && impersonatedComuneId ? parseInt(impersonatedComuneId) : undefined}
           />
         </TabsContent>

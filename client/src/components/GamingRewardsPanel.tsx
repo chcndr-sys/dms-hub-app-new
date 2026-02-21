@@ -205,7 +205,7 @@ interface TrendDataPoint {
 
 // Default config
 const DEFAULT_CONFIG: GamingConfig = {
-  comune_id: 1,
+  comune_id: 0,
   civic_enabled: true,
   civic_tcc_default: 10,
   civic_tcc_urgent: 5,
@@ -736,7 +736,7 @@ export default function GamingRewardsPanel() {
           // Il backend ritorna struttura annidata: civic_reports, mobility, culture, shopping
           // Mappiamo correttamente i campi
           setConfig({
-            comune_id: currentComuneId || 1,
+            comune_id: currentComuneId || 0,
             // Civic Reports
             civic_enabled: cfg.civic_reports?.enabled ?? cfg.civic_enabled ?? true,
             civic_tcc_default: cfg.civic_reports?.tcc_default ?? cfg.civic_tcc_default ?? 10,

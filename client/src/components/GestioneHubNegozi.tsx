@@ -784,7 +784,7 @@ export default function GestioneHubNegozi() {
           <MarketCompaniesTab 
             marketId={currentHub?.market_id || 1}
             marketName={currentHub?.name || 'HUB'}
-            municipality={currentHub?.city || 'Grosseto'}
+            municipality={currentHub?.city || ''}
           />
         </TabsContent>
 

@@ -242,17 +242,11 @@ export default function SuapPanel() {
         return;
       }
       
-      // Default: Grosseto (id=1)
-      const response = await fetch(`${MIHUB_API}/comuni/1`);
-      const data = await response.json();
-      if (data.success && data.data) {
-        setComuneData({ id: 1, nome: data.data.nome });
-      } else {
-        setComuneData({ id: 1, nome: 'Grosseto' });
-      }
+      // Nessuna impersonalizzazione attiva - non settare un comune di default
+      setComuneData(null);
     } catch (error) {
       console.error('Error loading comune data:', error);
-      setComuneData({ id: 1, nome: 'Grosseto' });
+      setComuneData(null);
     }
   };
 
@@ -2311,8 +2305,8 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
         <TabsContent value="notifiche" className="space-y-6 mt-6">
           <NotificationManager 
             mittenteTipo="SUAP"
-            mittenteId={comuneData?.id || 1}
-            mittenteNome={`SUAP Comune di ${comuneData?.nome || 'Grosseto'}`}
+            mittenteId={comuneData?.id || 0}
+            mittenteNome={`SUAP${comuneData?.nome ? ` Comune di ${comuneData.nome}` : ''}`}
             onNotificheUpdate={loadNotificheCount}
           />
         </TabsContent>
