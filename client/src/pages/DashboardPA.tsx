@@ -1154,7 +1154,16 @@ export default function DashboardPA() {
   const [filtroMessaggiAssoc, setFiltroMessaggiAssoc] = useState<'tutti' | 'inviati' | 'ricevuti'>('tutti');
   const [messaggiInviatiEnti, setMessaggiInviatiEnti] = useState<any[]>([]);
   const [messaggiInviatiAssoc, setMessaggiInviatiAssoc] = useState<any[]>([]);
-  
+
+  // --- SCIA & Pratiche (Associazioni) ---
+  const [sciaPraticheStats, setSciaPraticheStats] = useState({ inviate: 0, inLavorazione: 0, approvate: 0, concessioni: 0 });
+  const [sciaPraticheList, setSciaPraticheList] = useState<any[]>([]);
+  const [sciaPraticheLoading, setSciaPraticheLoading] = useState(false);
+  const [sciaShowForm, setSciaShowForm] = useState<'none' | 'scia' | 'spunta'>('none');
+  const [sciaAssociatiList, setSciaAssociatiList] = useState<any[]>([]);
+  const [sciaAssociatoDetail, setSciaAssociatoDetail] = useState<any>(null);
+  const [sciaSearchFilter, setSciaSearchFilter] = useState('');
+
   // Funzione per segnare una risposta come letta
   const segnaRispostaComeLetta = async (risposta: any) => {
     if (risposta.letta) return; // Già letta
@@ -1269,7 +1278,43 @@ export default function DashboardPA() {
         }
       })
       .catch(err => console.error('Imprese fetch error:', err));
-    
+
+    // Fetch pratiche SCIA per sotto-tab associazioni
+    fetch(`${MIHUB_API}/suap/pratiche`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setSciaPraticheList(data.data);
+          const pratiche = data.data;
+          setSciaPraticheStats({
+            inviate: pratiche.length,
+            inLavorazione: pratiche.filter((p: any) => ['RECEIVED', 'PRECHECK', 'EVALUATED'].includes(p.stato)).length,
+            approvate: pratiche.filter((p: any) => p.stato === 'APPROVED').length,
+            concessioni: pratiche.filter((p: any) => p.concessione_id).length
+          });
+        }
+      })
+      .catch(err => console.error('SCIA pratiche fetch error:', err));
+
+    // Fetch lista associati per sotto-tab associazioni
+    fetch(`${MIHUB_API}/bandi/associazioni`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          // Flatten: ogni associazione ha una lista di imprese associate
+          const allAssociati: any[] = [];
+          data.data.forEach((assoc: any) => {
+            if (assoc.imprese_associate && Array.isArray(assoc.imprese_associate)) {
+              assoc.imprese_associate.forEach((imp: any) => {
+                allAssociati.push({ ...imp, associazione_nome: assoc.nome });
+              });
+            }
+          });
+          setSciaAssociatiList(allAssociati.length > 0 ? allAssociati : data.data);
+        }
+      })
+      .catch(err => console.error('Associati fetch error:', err));
+
     // Polling ogni 30 secondi per aggiornare notifiche
     const interval = setInterval(() => {
       fetch(`${MIHUB_API}/notifiche/stats`)
@@ -4707,6 +4752,10 @@ export default function DashboardPA() {
                 <TabsTrigger value="bandi" className="data-[state=active]:bg-[#10b981]/20 data-[state=active]:text-[#10b981]">
                   <Landmark className="w-4 h-4 mr-2" />
                   Associazioni & Bandi
+                </TabsTrigger>
+                <TabsTrigger value="scia-pratiche" className="data-[state=active]:bg-[#f59e0b]/20 data-[state=active]:text-[#f59e0b]">
+                  <FileText className="w-4 h-4 mr-2" />
+                  SCIA & Pratiche
                 </TabsTrigger>
               </TabsList>
 
