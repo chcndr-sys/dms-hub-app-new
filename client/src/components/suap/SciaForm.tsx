@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Search, FileText, Loader2, Building2, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, FileText, Loader2, Building2, X, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
 
 // API URL
@@ -187,7 +188,14 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
     // Sezione D - Atto Notarile
     notaio: '',
     repertorio: '',
-    data_atto: ''
+    data_atto: '',
+
+    // Sezione E - Imposta di Bollo (Fase 1 - Dichiarazione Sostitutiva)
+    bollo_1_numero: '',
+    bollo_1_data: '',
+    bollo_2_numero: '',
+    bollo_2_data: '',
+    bollo_dichiarazione_sostitutiva: false as boolean
   });
 
   // Chiudi suggerimenti quando si clicca fuori (Subentrante e Cedente)
@@ -1407,6 +1415,90 @@ export default function SciaForm({ onCancel, onSubmit }: { onCancel: () => void,
                   onChange={(e) => setFormData({...formData, data_atto: e.target.value})}
                   className="bg-[#0b1220] border-[#334155] text-[#e8fbff]"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* SEZIONE E: IMPOSTA DI BOLLO */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-[#e8fbff] border-b border-[#1e293b] pb-2 flex items-center gap-2">
+              <Stamp className="w-5 h-5 text-[#f59e0b]" />
+              E. Imposta di Bollo
+            </h3>
+            <p className="text-sm text-[#e8fbff]/60">
+              Ai sensi del D.M. 10/11/2011, sono necessarie due marche da bollo da 16,00€ ciascuna: una per la domanda di autorizzazione e una per il rilascio della concessione.
+            </p>
+
+            {/* Bollo 1 */}
+            <div className="p-4 bg-[#0b1220] rounded-lg border border-[#f59e0b]/20">
+              <h4 className="text-sm font-semibold text-[#f59e0b] mb-3">Marca da Bollo n. 1 (Domanda di autorizzazione - 16,00€)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Numero Identificativo (14 cifre) *</Label>
+                  <Input
+                    value={formData.bollo_1_numero}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 14);
+                      setFormData({...formData, bollo_1_numero: val});
+                    }}
+                    placeholder="01234567890123"
+                    maxLength={14}
+                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff] font-mono tracking-wider"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Data Emissione *</Label>
+                  <Input
+                    type="date"
+                    value={formData.bollo_1_data}
+                    onChange={(e) => setFormData({...formData, bollo_1_data: e.target.value})}
+                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Bollo 2 */}
+            <div className="p-4 bg-[#0b1220] rounded-lg border border-[#f59e0b]/20">
+              <h4 className="text-sm font-semibold text-[#f59e0b] mb-3">Marca da Bollo n. 2 (Rilascio concessione - 16,00€)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Numero Identificativo (14 cifre) *</Label>
+                  <Input
+                    value={formData.bollo_2_numero}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 14);
+                      setFormData({...formData, bollo_2_numero: val});
+                    }}
+                    placeholder="01234567890123"
+                    maxLength={14}
+                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff] font-mono tracking-wider"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[#e8fbff]">Data Emissione *</Label>
+                  <Input
+                    type="date"
+                    value={formData.bollo_2_data}
+                    onChange={(e) => setFormData({...formData, bollo_2_data: e.target.value})}
+                    className="bg-[#020817] border-[#f59e0b]/50 text-[#e8fbff]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Dichiarazione sostitutiva */}
+            <div className="p-4 bg-[#0b1220] rounded-lg border border-[#f59e0b]/30">
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="bollo_dichiarazione"
+                  checked={formData.bollo_dichiarazione_sostitutiva}
+                  onCheckedChange={(checked) => setFormData({...formData, bollo_dichiarazione_sostitutiva: checked as boolean})}
+                  className="border-[#f59e0b] data-[state=checked]:bg-[#f59e0b] data-[state=checked]:text-black mt-1"
+                />
+                <Label htmlFor="bollo_dichiarazione" className="text-[#e8fbff] text-sm leading-relaxed cursor-pointer">
+                  <strong>Dichiarazione sostitutiva di atto di notorietà</strong> (ai sensi dell'art. 47 del D.P.R. 28 dicembre 2000, n. 445) — Il/La sottoscritto/a dichiara di aver assolto l'imposta di bollo ai sensi del D.M. 10 novembre 2011, di aver annullato le marche da bollo sopra indicate apponendovi la data e la propria firma, e che le stesse non sono state e non saranno utilizzate per qualsiasi altro adempimento. Il/La sottoscritto/a è consapevole che, ai sensi dell'art. 76 del D.P.R. 445/2000, le dichiarazioni mendaci sono punite ai sensi del codice penale e delle leggi speciali in materia.
+                </Label>
               </div>
             </div>
           </div>

@@ -27,6 +27,8 @@ import { MarketMapComponent } from '@/components/MarketMapComponent';
 import CivicReportsHeatmap from '@/components/CivicReportsHeatmap';
 import { CivicReportsProvider } from '@/contexts/CivicReportsContext';
 import SuapPanel from '@/components/SuapPanel';
+import SciaForm from '@/components/suap/SciaForm';
+import DomandaSpuntaForm from '@/components/suap/DomandaSpuntaForm';
 import PiattaformePA from '@/components/PiattaformePA';
 
 import MIOAgent from '@/components/MIOAgent';
@@ -6140,6 +6142,293 @@ export default function DashboardPA() {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              {/* SOTTO-TAB: SCIA & PRATICHE (Associazioni di Categoria) */}
+              <TabsContent value="scia-pratiche" className="space-y-6">
+
+                {/* Overlay Form SCIA / Spunta */}
+                {sciaShowForm !== 'none' && (
+                  <div className="fixed inset-0 z-50 bg-black/70 flex items-start justify-center pt-8 overflow-y-auto">
+                    <div className="w-full max-w-5xl mx-4 mb-8">
+                      {sciaShowForm === 'scia' && (
+                        <SciaForm
+                          onCancel={() => setSciaShowForm('none')}
+                          onSubmit={(data: any) => {
+                            toast.success('SCIA inviata con successo', { description: `Protocollo: ${data.numero_protocollo}` });
+                            setSciaShowForm('none');
+                            // Ricarica lista pratiche
+                            const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
+                            fetch(`${MIHUB_API}/suap/pratiche`).then(r => r.json()).then(d => {
+                              if (d.success && d.data) setSciaPraticheList(d.data);
+                            }).catch(() => {});
+                          }}
+                        />
+                      )}
+                      {sciaShowForm === 'spunta' && (
+                        <DomandaSpuntaForm
+                          onCancel={() => setSciaShowForm('none')}
+                          onSubmit={(data: any) => {
+                            toast.success('Domanda Spunta inviata', { description: 'Wallet Spunta creato' });
+                            setSciaShowForm('none');
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* SEZIONE 1: KPI Dashboard Pratiche */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 text-amber-400 text-sm mb-1">
+                        <FileText className="w-4 h-4" />
+                        Pratiche Inviate
+                      </div>
+                      <div className="text-2xl font-bold text-white">{sciaPraticheStats.inviate}</div>
+                      <div className="text-xs text-[#e8fbff]/50">SCIA + Domande Spunta</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 text-blue-400 text-sm mb-1">
+                        <Clock className="w-4 h-4" />
+                        In Lavorazione
+                      </div>
+                      <div className="text-2xl font-bold text-white">{sciaPraticheStats.inLavorazione}</div>
+                      <div className="text-xs text-[#e8fbff]/50">RECEIVED / PRECHECK / EVALUATED</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 text-emerald-400 text-sm mb-1">
+                        <CheckCircle className="w-4 h-4" />
+                        Approvate
+                      </div>
+                      <div className="text-2xl font-bold text-white">{sciaPraticheStats.approvate}</div>
+                      <div className="text-xs text-[#e8fbff]/50">Stato APPROVED</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 text-purple-400 text-sm mb-1">
+                        <FileCheck className="w-4 h-4" />
+                        Concessioni Attive
+                      </div>
+                      <div className="text-2xl font-bold text-white">{sciaPraticheStats.concessioni}</div>
+                      <div className="text-xs text-[#e8fbff]/50">Generate da pratiche approvate</div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* SEZIONE 2: Azioni Rapide */}
+                <Card className="bg-[#1a2332] border-[#f59e0b]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-[#f59e0b]" />
+                      Azioni Rapide - Gestione Pratiche
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Compila e invia pratiche SCIA o Domande di Spunta per conto degli associati
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-4">
+                      <Button
+                        onClick={() => setSciaShowForm('scia')}
+                        className="bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white hover:opacity-90 px-6 py-3"
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Nuova SCIA
+                      </Button>
+                      <Button
+                        onClick={() => setSciaShowForm('spunta')}
+                        className="bg-gradient-to-r from-[#10b981] to-[#059669] text-white hover:opacity-90 px-6 py-3"
+                      >
+                        <ClipboardCheck className="w-4 h-4 mr-2" />
+                        Nuova Domanda Spunta
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* SEZIONE 3: Tabella Pratiche Inviate */}
+                <Card className="bg-[#1a2332] border-[#f59e0b]/20">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-[#f59e0b]" />
+                        Pratiche Inviate
+                        {sciaPraticheList.length > 0 && <span className="text-xs text-[#10b981]">● Live</span>}
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={sciaSearchFilter}
+                          onChange={(e) => setSciaSearchFilter(e.target.value)}
+                          placeholder="Cerca per protocollo, impresa..."
+                          className="px-3 py-1.5 bg-[#0b1220] border border-[#f59e0b]/20 rounded-lg text-sm text-[#e8fbff] placeholder-[#e8fbff]/30 focus:outline-none focus:border-[#f59e0b]/50 w-64"
+                        />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-[500px] overflow-y-auto">
+                      <table className="w-full text-sm">
+                        <thead className="sticky top-0 bg-[#1a2332]">
+                          <tr className="border-b border-[#e8fbff]/10">
+                            <th className="text-left py-2 px-3 text-[#e8fbff]/60 font-medium">Protocollo</th>
+                            <th className="text-left py-2 px-3 text-[#e8fbff]/60 font-medium">Impresa</th>
+                            <th className="text-left py-2 px-3 text-[#e8fbff]/60 font-medium">Comune</th>
+                            <th className="text-left py-2 px-3 text-[#e8fbff]/60 font-medium">Mercato</th>
+                            <th className="text-left py-2 px-3 text-[#e8fbff]/60 font-medium">Stato</th>
+                            <th className="text-left py-2 px-3 text-[#e8fbff]/60 font-medium">Score</th>
+                            <th className="text-left py-2 px-3 text-[#e8fbff]/60 font-medium">Data</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sciaPraticheList
+                            .filter((p: any) => {
+                              if (!sciaSearchFilter) return true;
+                              const q = sciaSearchFilter.toLowerCase();
+                              return (p.numero_protocollo || '').toLowerCase().includes(q) ||
+                                (p.richiedente_nome || '').toLowerCase().includes(q) ||
+                                (p.ragione_sociale || '').toLowerCase().includes(q) ||
+                                (p.comune_presentazione || '').toLowerCase().includes(q) ||
+                                (p.mercato_nome || '').toLowerCase().includes(q);
+                            })
+                            .map((pratica: any, idx: number) => (
+                            <tr key={pratica.id || idx} className="border-b border-[#e8fbff]/5 hover:bg-[#0b1220]/50 transition-colors">
+                              <td className="py-2.5 px-3 text-[#f59e0b] font-mono text-xs">{pratica.numero_protocollo || pratica.protocollo || '-'}</td>
+                              <td className="py-2.5 px-3 text-[#e8fbff]">{pratica.richiedente_nome || pratica.ragione_sociale || '-'}</td>
+                              <td className="py-2.5 px-3 text-[#e8fbff]/70">{pratica.comune_presentazione || '-'}</td>
+                              <td className="py-2.5 px-3 text-[#e8fbff]/70">{pratica.mercato_nome || '-'}</td>
+                              <td className="py-2.5 px-3">
+                                <Badge className={`text-xs ${
+                                  pratica.stato === 'APPROVED' ? 'bg-green-500/20 text-green-400' :
+                                  pratica.stato === 'REJECTED' ? 'bg-red-500/20 text-red-400' :
+                                  pratica.stato === 'EVALUATED' ? 'bg-purple-500/20 text-purple-400' :
+                                  pratica.stato === 'IN_LAVORAZIONE' ? 'bg-blue-500/20 text-blue-400' :
+                                  'bg-amber-500/20 text-amber-400'
+                                }`}>
+                                  {pratica.stato || 'RECEIVED'}
+                                </Badge>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                {pratica.score != null ? (
+                                  <span className={`font-bold ${pratica.score >= 70 ? 'text-green-400' : pratica.score >= 40 ? 'text-amber-400' : 'text-red-400'}`}>
+                                    {pratica.score}%
+                                  </span>
+                                ) : <span className="text-[#e8fbff]/30">-</span>}
+                              </td>
+                              <td className="py-2.5 px-3 text-[#e8fbff]/50 text-xs">
+                                {pratica.data_presentazione ? new Date(pratica.data_presentazione).toLocaleDateString('it-IT') : pratica.created_at ? new Date(pratica.created_at).toLocaleDateString('it-IT') : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                          {sciaPraticheList.length === 0 && (
+                            <tr>
+                              <td colSpan={7} className="text-center py-12 text-[#e8fbff]/40">
+                                <FileText className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                                <p>Nessuna pratica ancora inviata</p>
+                                <p className="text-xs mt-1">Usa i pulsanti sopra per compilare una nuova SCIA o Domanda Spunta</p>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* SEZIONE 4: Lista Associati Tesserati */}
+                <Card className="bg-[#1a2332] border-[#f59e0b]/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#e8fbff] flex items-center gap-2">
+                      <Users className="h-5 w-5 text-[#f59e0b]" />
+                      Associati Tesserati
+                      {sciaAssociatiList.length > 0 && (
+                        <Badge className="bg-[#f59e0b]/20 text-[#f59e0b] ml-2">{sciaAssociatiList.length}</Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-[#e8fbff]/50">
+                      Imprese associate - clicca per visualizzare i dettagli
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {/* Modal dettaglio associato */}
+                    {sciaAssociatoDetail && (
+                      <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center" onClick={() => setSciaAssociatoDetail(null)}>
+                        <div className="bg-[#1a2332] border border-[#f59e0b]/30 rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-[#e8fbff]">{sciaAssociatoDetail.denominazione || sciaAssociatoDetail.nome || 'Associato'}</h3>
+                            <Button variant="ghost" size="sm" onClick={() => setSciaAssociatoDetail(null)} className="text-[#e8fbff]/50 hover:text-[#e8fbff]">✕</Button>
+                          </div>
+                          <div className="space-y-3 text-sm">
+                            {sciaAssociatoDetail.codice_fiscale && (
+                              <div className="flex justify-between"><span className="text-[#e8fbff]/50">Codice Fiscale</span><span className="text-[#e8fbff] font-mono">{sciaAssociatoDetail.codice_fiscale}</span></div>
+                            )}
+                            {sciaAssociatoDetail.partita_iva && (
+                              <div className="flex justify-between"><span className="text-[#e8fbff]/50">Partita IVA</span><span className="text-[#e8fbff] font-mono">{sciaAssociatoDetail.partita_iva}</span></div>
+                            )}
+                            {sciaAssociatoDetail.comune && (
+                              <div className="flex justify-between"><span className="text-[#e8fbff]/50">Comune</span><span className="text-[#e8fbff]">{sciaAssociatoDetail.comune}</span></div>
+                            )}
+                            {sciaAssociatoDetail.pec && (
+                              <div className="flex justify-between"><span className="text-[#e8fbff]/50">PEC</span><span className="text-[#e8fbff]">{sciaAssociatoDetail.pec}</span></div>
+                            )}
+                            {sciaAssociatoDetail.telefono && (
+                              <div className="flex justify-between"><span className="text-[#e8fbff]/50">Telefono</span><span className="text-[#e8fbff]">{sciaAssociatoDetail.telefono}</span></div>
+                            )}
+                            {sciaAssociatoDetail.associazione_nome && (
+                              <div className="flex justify-between"><span className="text-[#e8fbff]/50">Associazione</span><span className="text-[#e8fbff]">{sciaAssociatoDetail.associazione_nome}</span></div>
+                            )}
+                            {sciaAssociatoDetail.stato && (
+                              <div className="flex justify-between"><span className="text-[#e8fbff]/50">Stato</span>
+                                <Badge className={sciaAssociatoDetail.stato === 'ATTIVO' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>{sciaAssociatoDetail.stato}</Badge>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
+                      {sciaAssociatiList.map((assoc: any, idx: number) => (
+                        <div
+                          key={assoc.id || idx}
+                          onClick={() => setSciaAssociatoDetail(assoc)}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-[#0b1220] border-[#e8fbff]/10 cursor-pointer hover:border-[#f59e0b]/30 transition-all hover:bg-[#0b1220]/80"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-[#e8fbff]">{assoc.denominazione || assoc.nome || `Associato #${idx + 1}`}</span>
+                              {assoc.stato && (
+                                <Badge className={`text-xs ${assoc.stato === 'ATTIVO' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                  {assoc.stato}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-[#e8fbff]/50 mt-0.5">
+                              {assoc.partita_iva && <span>P.IVA: {assoc.partita_iva}</span>}
+                              {assoc.comune && <span className="ml-2">• {assoc.comune}</span>}
+                              {assoc.associazione_nome && <span className="ml-2 text-[#f59e0b]">• {assoc.associazione_nome}</span>}
+                            </div>
+                          </div>
+                          <div className="text-[#e8fbff]/30 text-xs">Dettaglio →</div>
+                        </div>
+                      ))}
+                      {sciaAssociatiList.length === 0 && (
+                        <div className="text-center text-[#e8fbff]/50 py-8">
+                          <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                          <p>Caricamento associati...</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
               </TabsContent>
             </Tabs>
           </TabsContent>

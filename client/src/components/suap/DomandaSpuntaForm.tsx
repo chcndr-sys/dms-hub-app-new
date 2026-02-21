@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileText, Send, Loader2, Wallet, AlertCircle } from 'lucide-react';
+import { FileText, Send, Loader2, Wallet, AlertCircle, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -141,9 +141,16 @@ export default function DomandaSpuntaForm({ onCancel, onSubmit, initialData, dom
     dichiarazione_requisiti: false,
     dichiarazione_durc: false,
     dichiarazione_antimafia: false,
-    
+
     // Note
-    note: ''
+    note: '',
+
+    // Imposta di Bollo (Fase 1 - Dichiarazione Sostitutiva)
+    bollo_1_numero: '',
+    bollo_1_data: '',
+    bollo_2_numero: '',
+    bollo_2_data: '',
+    bollo_dichiarazione_sostitutiva: false as boolean
   });
 
   // Carica mercati e imprese all'avvio
