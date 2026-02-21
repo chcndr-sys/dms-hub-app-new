@@ -42,6 +42,7 @@ import { MultiAgentChatView, type AgentMessage } from '@/components/multi-agent/
 import { SharedWorkspace } from '@/components/SharedWorkspace';
 import NotificationsPanel from '@/components/NotificationsPanel';
 import ComuniPanel from '@/components/ComuniPanel';
+import AssociazioniPanel from '@/components/AssociazioniPanel';
 import WalletPanel from '@/components/WalletPanel';
 import SecurityTab from '@/components/SecurityTab';
 import FraudMonitorPanel from '@/components/FraudMonitorPanel';
@@ -2227,8 +2228,8 @@ export default function DashboardPA() {
                   : 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30 hover:bg-[#8b5cf6]/20 text-[#8b5cf6]'
               }`}
             >
-              <Package className="h-6 w-6" />
-              <span className="text-xs font-medium">TPAS</span>
+              <Briefcase className="h-6 w-6" />
+              <span className="text-xs font-medium">Associazioni</span>
             </button>
             </ProtectedTab>
             <ProtectedTab tabId="carboncredits">
@@ -2784,121 +2785,7 @@ export default function DashboardPA() {
 
           {/* TAB 6: TPAS */}
           <TabsContent value="tpas" className="space-y-6">
-            {/* E-commerce vs Fisico */}
-            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <Package className="h-5 w-5 text-[#14b8a6]" />
-                  E-commerce vs Negozi Fisici
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="p-4 bg-[#ef4444]/10 border border-[#ef4444]/30 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Package className="h-5 w-5 text-[#ef4444]" />
-                      <span className="text-[#e8fbff] font-semibold">E-commerce</span>
-                    </div>
-                    <div className="text-3xl font-bold text-[#ef4444] mb-1">
-                      {mockData.ecommerceVsPhysical.ecommerce.percentage}%
-                    </div>
-                    <div className="text-sm text-[#e8fbff]/70">
-                      {mockData.ecommerceVsPhysical.ecommerce.purchases.toLocaleString()} acquisti
-                    </div>
-                    <div className="text-sm text-[#ef4444] mt-2">
-                      CO₂: {mockData.ecommerceVsPhysical.ecommerce.avgCo2} kg/acquisto
-                    </div>
-                  </div>
-                  <div className="p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Store className="h-5 w-5 text-[#10b981]" />
-                      <span className="text-[#e8fbff] font-semibold">Negozi Fisici</span>
-                    </div>
-                    <div className="text-3xl font-bold text-[#10b981] mb-1">
-                      {mockData.ecommerceVsPhysical.physical.percentage}%
-                    </div>
-                    <div className="text-sm text-[#e8fbff]/70">
-                      {mockData.ecommerceVsPhysical.physical.purchases.toLocaleString()} acquisti
-                    </div>
-                    <div className="text-sm text-[#10b981] mt-2">
-                      CO₂: {mockData.ecommerceVsPhysical.physical.avgCo2} kg/acquisto
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg">
-                  <div className="flex items-center gap-2 text-[#10b981]">
-                    <Leaf className="h-5 w-5" />
-                    <span className="font-semibold">
-                      Risparmio CO₂ acquisti fisici: {mockData.ecommerceVsPhysical.co2Savings.toLocaleString()} kg/mese
-                    </span>
-                  </div>
-                  <p className="text-sm text-[#e8fbff]/70 mt-2">Equivalente a 200 alberi piantati</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Origine Prodotti */}
-            <Card className="bg-[#1a2332] border-[#14b8a6]/30">
-              <CardHeader>
-                <CardTitle className="text-[#e8fbff] flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-[#14b8a6]" />
-                  Origine Prodotti
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">🇮🇹</span>
-                    <span className="text-[#e8fbff]">Locale (0-50km)</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-[#e8fbff]/70">{mockData.productOrigin.local.count.toLocaleString()}</span>
-                    <span className="font-semibold text-[#10b981]">{mockData.productOrigin.local.percentage}%</span>
-                    <span className="text-xs text-[#10b981]">CO₂: {mockData.productOrigin.local.avgCo2} kg</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">🇮🇹</span>
-                    <span className="text-[#e8fbff]">Nazionale</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-[#e8fbff]/70">{mockData.productOrigin.national.count.toLocaleString()}</span>
-                    <span className="font-semibold text-[#14b8a6]">{mockData.productOrigin.national.percentage}%</span>
-                    <span className="text-xs text-[#f59e0b]">CO₂: {mockData.productOrigin.national.avgCo2} kg</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">🇪🇺</span>
-                    <span className="text-[#e8fbff]">UE</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-[#e8fbff]/70">{mockData.productOrigin.eu.count.toLocaleString()}</span>
-                    <span className="font-semibold text-[#f59e0b]">{mockData.productOrigin.eu.percentage}%</span>
-                    <span className="text-xs text-[#ef4444]">CO₂: {mockData.productOrigin.eu.avgCo2} kg</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-[#0b1220] rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">🌍</span>
-                    <span className="text-[#e8fbff]">Extra-UE</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-[#e8fbff]/70">{mockData.productOrigin.extraEu.count.toLocaleString()}</span>
-                    <span className="font-semibold text-[#ef4444]">{mockData.productOrigin.extraEu.percentage}%</span>
-                    <span className="text-xs text-[#ef4444]">CO₂: {mockData.productOrigin.extraEu.avgCo2} kg</span>
-                  </div>
-                </div>
-                <div className="mt-4 p-4 bg-[#8b5cf6]/10 border border-[#8b5cf6]/30 rounded-lg">
-                  <div className="flex items-center gap-2 text-[#8b5cf6]">
-                    <Award className="h-5 w-5" />
-                    <span className="font-semibold">Sustainability Score: 8.5/10</span>
-                  </div>
-                  <p className="text-sm text-[#e8fbff]/70 mt-2">88% prodotti italiani, 60% locali</p>
-                </div>
-              </CardContent>
-            </Card>
+            <AssociazioniPanel />
           </TabsContent>
 
           {/* TAB 7: CARBON CREDITS */}
