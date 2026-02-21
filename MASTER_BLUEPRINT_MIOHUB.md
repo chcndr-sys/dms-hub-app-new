@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 8.7.0 (Inventario DB Neon + Pulizia Pratiche Test + Fix Admin Globale SUAP)  
+> **Versione:** 8.8.0 (Fix Market Filtering + Auto-APPROVED + Data Cleanup)  
 > **Data:** 21 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -50,6 +50,13 @@ Questa tabella traccia la timeline completa di ogni posteggio, registrando ogni 
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 21 Febbraio 2026 (v8.7.0 → v8.8.0)
+- ✅ **Fix Market Dropdown SciaForm:** Aggiunta dipendenza `comuneId` nell'useEffect di SciaForm per ricaricare i mercati quando cambia il comune impersonato. Il filtro `?comune_id=X` era già implementato ma non si riattivava al cambio comune.
+- ✅ **Auto-APPROVED dopo Concessione:** Quando viene generata una concessione da ConcessioneForm, la pratica SCIA collegata viene automaticamente aggiornata a stato `APPROVED` tramite `POST /api/suap/pratiche/:id/stato`. Aggiunta funzione `updateSuapPraticaStato()` nel client API frontend.
+- ✅ **Fix Type Mismatch Backend:** Corretto errore `operator does not exist: character varying = integer` nel JOIN tra `suap_pratiche.mercato_id` (varchar) e `markets.id` (integer) nella funzione `updatePraticaStato`. Fix: cast a `::text` su entrambi i lati.
+- ✅ **Data Cleanup Pratiche Modena:** Corretti 12 pratiche Modena che avevano `mercato_id=1` (Grosseto) invece di `mercato_id=5` (Mercato Novi Sad Modena). Corretta anche 1 pratica con `mercato_id='Mercato Grosseto'` (stringa invece di numero). Totale 17 pratiche ora con dati coerenti.
+- ✅ **Stato Pratiche:** 4 pratiche Grosseto (mercato_id=1) + 13 pratiche Modena (mercato_id=5). Stati: 6 APPROVED, 10 EVALUATED, 1 RECEIVED.
 
 ### Sessione 21 Febbraio 2026 (v8.6.0 → v8.7.0)
 - ✅ **Inventario Completo Database Neon:** Censimento di tutte le 152 tabelle del database con colonne, records e descrizione. Organizzato per categorie: Core, SUAP/SCIA, Qualificazione, Segnalazioni, Mobilità, Gaming, Utenti, Notifiche, Agente AI, Storico, Geografiche, HUB. Nessuna tabella duplicata trovata.
