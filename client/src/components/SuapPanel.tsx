@@ -479,8 +479,19 @@ export default function SuapPanel() {
     if (!selectedPratica) return;
     setLoading(true);
     try {
-      await evaluateSuapPratica(String(selectedPratica.id), ENTE_ID);
-      toast.success('Valutazione avviata');
+      const evalResult = await evaluateSuapPratica(String(selectedPratica.id), ENTE_ID);
+      toast.success('Valutazione completata');
+      
+      // Aggiorna score e stato nella lista pratiche (fix: prima non si aggiornava)
+      if (evalResult) {
+        setPratiche(prev => prev.map(p => 
+          p.id === selectedPratica.id 
+            ? { ...p, score: evalResult.score, stato: evalResult.status || p.stato }
+            : p
+        ));
+      }
+      
+      // Ricarica il dettaglio pratica con i nuovi check
       await loadPraticaDetail(selectedPratica.id);
     } catch (error) {
       console.error('Error evaluating pratica:', error);
@@ -1123,100 +1134,144 @@ export default function SuapPanel() {
                   <CardContent>
                     {selectedPratica.checks && selectedPratica.checks.length > 0 ? (
                       <div className="space-y-4">
-                        {/* Raggruppa per categoria */}
                         {(() => {
                           const allChecks = selectedPratica.checks || [];
                           
-                          // Filtra per mostrare solo ultima verifica o tutto
-                          let checks = allChecks;
-                          if (!showAllChecks && allChecks.length > 0) {
-                            // Trova il timestamp più recente
-                            const latestTime = Math.max(...allChecks.map(c => 
-                              new Date(c.data_check || c.created_at || 0).getTime()
-                            ));
-                            // Considera "ultima verifica" i check entro 5 minuti dal più recente
-                            const threshold = latestTime - (5 * 60 * 1000); // 5 minuti
-                            checks = allChecks.filter(c => {
-                              const checkTime = new Date(c.data_check || c.created_at || 0).getTime();
-                              return checkTime >= threshold;
-                            });
-                          }
-                          const grouped: Record<string, typeof checks> = {};
-                          
-                          checks.forEach(check => {
-                            // Estrai categoria dal dettaglio o dal check_code
-                            let categoria = 'PRATICA';
+                          // Raggruppa per evaluation_run_id (o per timestamp se non presente)
+                          const runGroups: Record<string, typeof allChecks> = {};
+                          allChecks.forEach(check => {
+                            let runId = 'unknown';
                             try {
-                              const dettaglio = typeof check.dettaglio === 'string' ? JSON.parse(check.dettaglio) : check.dettaglio;
-                              categoria = dettaglio?.categoria || 'PRATICA';
+                              const det = typeof check.dettaglio === 'string' ? JSON.parse(check.dettaglio) : check.dettaglio;
+                              runId = det?.evaluation_run_id || 'legacy';
                             } catch {
-                              // Determina categoria dal nome del check
-                              if (check.check_code?.includes('_SUB')) categoria = 'SUBENTRANTE';
-                              else if (check.check_code?.includes('_CED') || check.check_code?.includes('CANONE')) categoria = 'CEDENTE';
+                              runId = 'legacy';
                             }
-                            if (!grouped[categoria]) grouped[categoria] = [];
-                            grouped[categoria].push(check);
+                            // Fallback: raggruppa per finestra temporale di 5 minuti
+                            if (runId === 'legacy') {
+                              const checkTime = new Date(check.data_check || check.created_at || 0).getTime();
+                              const roundedTime = Math.floor(checkTime / (5 * 60 * 1000)) * (5 * 60 * 1000);
+                              runId = `legacy-${roundedTime}`;
+                            }
+                            if (!runGroups[runId]) runGroups[runId] = [];
+                            runGroups[runId].push(check);
                           });
+                          
+                          // Ordina i run dal più recente al più vecchio
+                          const sortedRuns = Object.entries(runGroups).sort((a, b) => {
+                            const timeA = Math.max(...a[1].map(c => new Date(c.data_check || c.created_at || 0).getTime()));
+                            const timeB = Math.max(...b[1].map(c => new Date(c.data_check || c.created_at || 0).getTime()));
+                            return timeB - timeA;
+                          });
+                          
+                          // Se non storico, mostra solo l'ultimo run
+                          const runsToShow = showAllChecks ? sortedRuns : sortedRuns.slice(0, 1);
                           
                           const categorieOrder = ['SUBENTRANTE', 'CEDENTE', 'PRATICA'];
                           const categorieLabels: Record<string, { label: string; color: string; icon: string }> = {
-                            'SUBENTRANTE': { label: 'Subentrante', color: '#00f0ff', icon: '👤' },
-                            'CEDENTE': { label: 'Cedente', color: '#f59e0b', icon: '📤' },
-                            'PRATICA': { label: 'Pratica', color: '#8b5cf6', icon: '📄' }
+                            'SUBENTRANTE': { label: 'Subentrante', color: '#00f0ff', icon: '\u{1F464}' },
+                            'CEDENTE': { label: 'Cedente', color: '#f59e0b', icon: '\u{1F4E4}' },
+                            'PRATICA': { label: 'Pratica', color: '#8b5cf6', icon: '\u{1F4C4}' }
                           };
                           
-                          return categorieOrder.map(cat => {
-                            const catChecks = grouped[cat];
-                            if (!catChecks || catChecks.length === 0) return null;
-                            const catInfo = categorieLabels[cat] || { label: cat, color: '#6b7280', icon: '✓' };
+                          return runsToShow.map(([runId, runChecks], runIdx) => {
+                            const runTime = Math.max(...runChecks.map(c => new Date(c.data_check || c.created_at || 0).getTime()));
+                            const passedInRun = runChecks.filter(c => c.esito === true || c.esito === 'PASS' || c.esito === 'true').length;
+                            const isLatest = runIdx === 0;
+                            
+                            // Raggruppa per categoria
+                            const grouped: Record<string, typeof runChecks> = {};
+                            runChecks.forEach(check => {
+                              let categoria = 'PRATICA';
+                              try {
+                                const dettaglio = typeof check.dettaglio === 'string' ? JSON.parse(check.dettaglio) : check.dettaglio;
+                                categoria = dettaglio?.categoria || 'PRATICA';
+                              } catch {
+                                if (check.check_code?.includes('_SUB')) categoria = 'SUBENTRANTE';
+                                else if (check.check_code?.includes('_CED') || check.check_code?.includes('CANONE')) categoria = 'CEDENTE';
+                              }
+                              if (!grouped[categoria]) grouped[categoria] = [];
+                              grouped[categoria].push(check);
+                            });
                             
                             return (
-                              <div key={cat} className="space-y-2">
-                                <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: catInfo.color }}>
-                                  <span>{catInfo.icon}</span>
-                                  <span>{catInfo.label}</span>
-                                  <span className="text-xs text-gray-500">({catChecks.length})</span>
-                                </div>
-                                <div className="space-y-2 pl-4 border-l-2" style={{ borderColor: catInfo.color + '40' }}>
-                                  {catChecks.map((check, idx) => {
-                                    const isPassed = check.esito === true || check.esito === 'PASS' || check.esito === 'true';
-                                    const checkName = check.tipo_check || check.check_code || 'Controllo';
-                                    const checkTime = check.data_check || check.created_at;
-                                    
-                                    // Estrai motivo dal dettaglio
-                                    let motivo = '';
-                                    try {
-                                      const dettaglio = typeof check.dettaglio === 'string' ? JSON.parse(check.dettaglio) : check.dettaglio;
-                                      motivo = dettaglio?.motivo || '';
-                                    } catch {}
-                                    
-                                    return (
-                                      <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-[#0b1220]/50">
-                                        <div className="flex items-center gap-2">
-                                          {isPassed ? (
-                                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                          ) : (
-                                            <XCircle className="h-4 w-4 text-red-500" />
-                                          )}
-                                          <div>
-                                            <p className="text-[#e8fbff] text-sm">{checkName}</p>
-                                            {motivo && <p className="text-xs text-gray-500">{motivo}</p>}
-                                          </div>
-                                        </div>
-                                        <div className="text-right">
-                                          <span className={`text-xs font-medium ${isPassed ? 'text-green-400' : 'text-red-400'}`}>
-                                            {isPassed ? 'PASS' : 'FAIL'}
-                                          </span>
-                                          {checkTime && (
-                                            <p className="text-xs text-gray-500">
-                                              {formatDateTime(checkTime)}
-                                            </p>
-                                          )}
-                                        </div>
+                              <div key={runId} className={`space-y-3 ${!isLatest ? 'opacity-70' : ''}`}>
+                                {/* Header del run di valutazione */}
+                                {showAllChecks && (
+                                  <div className={`flex items-center justify-between p-2 rounded-lg ${isLatest ? 'bg-green-500/10 border border-green-500/30' : 'bg-gray-500/10 border border-gray-500/20'}`}>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`text-xs font-bold ${isLatest ? 'text-green-400' : 'text-gray-400'}`}>
+                                        {isLatest ? 'ULTIMA VALUTAZIONE' : `Valutazione #${sortedRuns.length - runIdx}`}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(runTime).toLocaleString('it-IT')}
+                                      </span>
+                                    </div>
+                                    <span className={`text-xs font-medium ${passedInRun === runChecks.length ? 'text-green-400' : 'text-amber-400'}`}>
+                                      {passedInRun}/{runChecks.length} superati
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {categorieOrder.map(cat => {
+                                  const catChecks = grouped[cat];
+                                  if (!catChecks || catChecks.length === 0) return null;
+                                  const catInfo = categorieLabels[cat] || { label: cat, color: '#6b7280', icon: '\u2713' };
+                                  
+                                  return (
+                                    <div key={`${runId}-${cat}`} className="space-y-2">
+                                      <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: catInfo.color }}>
+                                        <span>{catInfo.icon}</span>
+                                        <span>{catInfo.label}</span>
+                                        <span className="text-xs text-gray-500">({catChecks.length})</span>
                                       </div>
-                                    );
-                                  })}
-                                </div>
+                                      <div className="space-y-2 pl-4 border-l-2" style={{ borderColor: catInfo.color + '40' }}>
+                                        {catChecks.map((check: any, idx: number) => {
+                                          const isPassed = check.esito === true || check.esito === 'PASS' || check.esito === 'true';
+                                          const checkName = check.tipo_check || check.check_code || 'Controllo';
+                                          const checkTime = check.data_check || check.created_at;
+                                          
+                                          let motivo = '';
+                                          try {
+                                            const dettaglio = typeof check.dettaglio === 'string' ? JSON.parse(check.dettaglio) : check.dettaglio;
+                                            motivo = dettaglio?.motivo || '';
+                                          } catch {}
+                                          
+                                          return (
+                                            <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-[#0b1220]/50">
+                                              <div className="flex items-center gap-2">
+                                                {isPassed ? (
+                                                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                                                ) : (
+                                                  <XCircle className="h-4 w-4 text-red-500" />
+                                                )}
+                                                <div>
+                                                  <p className="text-[#e8fbff] text-sm">{checkName}</p>
+                                                  {motivo && <p className="text-xs text-gray-500">{motivo}</p>}
+                                                </div>
+                                              </div>
+                                              <div className="text-right">
+                                                <span className={`text-xs font-medium ${isPassed ? 'text-green-400' : 'text-red-400'}`}>
+                                                  {isPassed ? 'PASS' : 'FAIL'}
+                                                </span>
+                                                {checkTime && (
+                                                  <p className="text-xs text-gray-500">
+                                                    {formatDateTime(checkTime)}
+                                                  </p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                
+                                {/* Separatore tra run */}
+                                {showAllChecks && runIdx < runsToShow.length - 1 && (
+                                  <hr className="border-gray-700/50 my-4" />
+                                )}
                               </div>
                             );
                           });
@@ -1235,20 +1290,34 @@ export default function SuapPanel() {
                   </CardHeader>
                   <CardContent className="flex flex-col items-center justify-center py-8">
                     {(() => {
-                      // Calcola statistiche dai controlli - SOLO ULTIMA VERIFICA
+                      // Calcola statistiche dai controlli - SOLO ULTIMA VALUTAZIONE
                       const allChecks = selectedPratica.checks || [];
                       
-                      // Filtra per mostrare solo ultima verifica (stesso filtro usato nella lista)
+                      // Trova l'ultimo evaluation_run_id e filtra solo quei check
                       let checks = allChecks;
                       if (allChecks.length > 0) {
-                        const latestTime = Math.max(...allChecks.map(c => 
-                          new Date(c.data_check || c.created_at || 0).getTime()
-                        ));
-                        const threshold = latestTime - (5 * 60 * 1000); // 5 minuti
-                        checks = allChecks.filter(c => {
-                          const checkTime = new Date(c.data_check || c.created_at || 0).getTime();
-                          return checkTime >= threshold;
+                        // Raggruppa per evaluation_run_id
+                        const runGroups: Record<string, typeof allChecks> = {};
+                        allChecks.forEach(c => {
+                          let runId = 'legacy';
+                          try {
+                            const det = typeof c.dettaglio === 'string' ? JSON.parse(c.dettaglio) : c.dettaglio;
+                            runId = det?.evaluation_run_id || 'legacy';
+                          } catch {}
+                          if (runId === 'legacy') {
+                            const t = new Date(c.data_check || c.created_at || 0).getTime();
+                            runId = `legacy-${Math.floor(t / (5 * 60 * 1000)) * (5 * 60 * 1000)}`;
+                          }
+                          if (!runGroups[runId]) runGroups[runId] = [];
+                          runGroups[runId].push(c);
                         });
+                        // Prendi il run più recente
+                        const latestRun = Object.entries(runGroups).sort((a, b) => {
+                          const tA = Math.max(...a[1].map(c => new Date(c.data_check || c.created_at || 0).getTime()));
+                          const tB = Math.max(...b[1].map(c => new Date(c.data_check || c.created_at || 0).getTime()));
+                          return tB - tA;
+                        })[0];
+                        checks = latestRun ? latestRun[1] : allChecks;
                       }
                       
                       const totalChecks = checks.length;
