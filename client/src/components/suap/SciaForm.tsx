@@ -609,6 +609,31 @@ export default function SciaForm({ onCancel, onSubmit, comuneNome = '', comuneId
         description: stall.status === 'libero' ? 'Posteggio libero' : `${stall.area_mq} mq` 
       });
     }
+
+    // Cerca SCIA precedente per questo posteggio (per pre-compilare i campi SCIA Precedente)
+    try {
+      const sciaRes = await fetch(`${API_URL}/api/suap/pratiche?posteggio_id=${stallId}`);
+      const sciaJson = await sciaRes.json();
+      if (sciaJson.success && sciaJson.data && sciaJson.data.length > 0) {
+        // Cerca la SCIA più recente APPROVED o EVALUATED per questo posteggio
+        const sciaPrec = sciaJson.data
+          .filter((p: any) => p.posteggio_id?.toString() === stallId && (p.stato === 'APPROVED' || p.stato === 'EVALUATED'))
+          .sort((a: any, b: any) => new Date(b.data_presentazione).getTime() - new Date(a.data_presentazione).getTime())[0];
+        
+        if (sciaPrec) {
+          const dataPrec = sciaPrec.data_presentazione ? sciaPrec.data_presentazione.split('T')[0] : '';
+          setFormData(prev => ({
+            ...prev,
+            scia_precedente_protocollo: sciaPrec.numero_protocollo || '',
+            scia_precedente_data: dataPrec,
+            scia_precedente_comune: sciaPrec.comune_presentazione || prev.scia_precedente_comune
+          }));
+          console.log(`[SciaForm] SCIA precedente trovata: ${sciaPrec.numero_protocollo}`);
+        }
+      }
+    } catch (error) {
+      console.error('Errore ricerca SCIA precedente:', error);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {

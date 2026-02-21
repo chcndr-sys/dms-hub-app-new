@@ -1294,6 +1294,9 @@ export default function SuapPanel() {
                                 <p className="text-xs text-gray-500 mt-1">
                                   su {totalChecks} controlli totali
                                 </p>
+                                <p className="text-xs text-gray-600 mt-2 italic">
+                                  Score pesato: ogni controllo ha un peso diverso (4-15 pt)
+                                </p>
                               </>
                             ) : (
                               <p className="text-gray-500">Nessun controllo effettuato</p>
