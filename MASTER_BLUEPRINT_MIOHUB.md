@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 8.4.0 (Semaforo Rate + Fix Segnalazioni Civiche Admin Globale)  
+> **Versione:** 8.5.0 (Rimozione Hardcoded Grosseto + Fix Aggiorna-Mora Dinamico)  
 > **Data:** 21 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -50,6 +50,17 @@ Questa tabella traccia la timeline completa di ogni posteggio, registrando ogni 
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 21 Febbraio 2026 (v8.4.0 → v8.5.0)
+- ✅ **Rimozione Completa Hardcoded Grosseto/comune_id=1:** Censimento e correzione di TUTTI i riferimenti hardcoded a Grosseto e `comune_id = 1` in 7 file backend e 6 file frontend. Il sistema è ora completamente dinamico per comune impersonalizzato.
+- ✅ **Fix Aggiorna-Mora Dinamico:** L'endpoint `POST /api/canone-unico/aggiorna-mora` era hardcoded a `comune_id = 1`. Ora accetta `comune_id` come parametro opzionale: se specificato aggiorna solo quel comune, altrimenti aggiorna TUTTI i comuni. Questo risolveva il problema delle rate di Modena che restavano `NON_PAGATO` nel DB anche se scadute.
+- ✅ **Fix Semaforo-Rate Recupero Comune:** L'endpoint `semaforo-rate` ora recupera il `comune_id` dal wallet tramite il mercato, invece di usare un fallback hardcoded.
+- ✅ **Fix Config Verbali Dinamica:** L'endpoint `GET /api/verbali/config` ora accetta `comune_id` e restituisce nome comune e corpo PM dinamicamente dal DB, invece di dati statici Grosseto.
+- ✅ **Fix TCC Rules/Dashboard/Config:** Rimossi fallback `comune_id = 1` da `GET /api/tcc/v2/rules` (ora richiede `comune_id` obbligatorio), dashboard e config TCC.
+- ✅ **Fix Frontend Notifiche:** `SuapPanel`, `WalletPanel`, `ControlliSanzioniPanel` ora mostrano il nome del comune impersonalizzato nei NotificationManager, non più "Grosseto" hardcoded.
+- ✅ **Verifica Flusso SCIA End-to-End:** Analizzato il percorso completo `SciaForm → SuapPanel.handleSubmitScia → API /api/suap/pratiche → suapService.createPratica → DB`. Il mapping dei campi sub_*/ced_* è corretto e completo.
+- ✅ **File backend modificati:** `canone-unico.js`, `concessions.js`, `autorizzazioni.js`, `domande-spunta.js`, `sanctions.js`, `tcc-v2.js`, `verbali.js`.
+- ✅ **File frontend modificati:** `SuapPanel.tsx`, `GamingRewardsPanel.tsx`, `AnagraficaPage.tsx`, `ControlliSanzioniPanel.tsx`, `WalletPanel.tsx`, `GestioneHubNegozi.tsx`.
 
 ### Sessione 21 Febbraio 2026 (v8.3.0 → v8.4.0)
 - ✅ **Semaforo Rate con Badge Colorati:** Riscritto il sistema di visualizzazione rate nelle schede impresa della sezione "Lista Imprese per Mercato" (tab Canone). Ora mostra badge colorati: **rosso** per rate in mora (scadute e non pagate), **giallo** per rate da pagare (non ancora scadute), **verde** per rate già pagate. Prima mostrava solo un conteggio generico "scadenze non pagate" che escludeva le rate IN_MORA.
