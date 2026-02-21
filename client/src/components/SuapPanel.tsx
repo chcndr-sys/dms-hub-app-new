@@ -2327,7 +2327,6 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
         <TabsContent value="storico-titolarita" className="space-y-6 mt-6">
           <StoricoTitolarita 
             comuneId={comuneData?.id}
-            marketId={1}
           />
         </TabsContent>
       </Tabs>

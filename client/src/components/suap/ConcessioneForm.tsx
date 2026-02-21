@@ -199,11 +199,25 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode 
         autorizzazione_precedente_data: formatDate(initialData.autorizzazione_precedente_data),
       };
       
+      // Calcola durata e scadenza
+      const durataAnni = formattedData.durata_anni || '10';
+      const dataDecorrenza = formattedData.data_decorrenza || new Date().toISOString().split('T')[0];
+      let dataScadenza = formattedData.data_scadenza;
+      
+      // Se data_scadenza è vuota, la calcoliamo da data_decorrenza + durata_anni
+      if (!dataScadenza && dataDecorrenza) {
+        const d = new Date(dataDecorrenza);
+        d.setFullYear(d.getFullYear() + parseInt(durataAnni));
+        dataScadenza = d.toISOString().split('T')[0];
+      }
+      
       setFormData(prev => ({
         ...prev,
         ...formattedData,
         // Assicura che durata_anni sia sempre un valore valido (default 10)
-        durata_anni: formattedData.durata_anni || prev.durata_anni || '10',
+        durata_anni: durataAnni,
+        // Assicura data_scadenza calcolata
+        data_scadenza: dataScadenza || prev.data_scadenza,
         // Assicura tipo_concessione valido
         tipo_concessione: formattedData.tipo_concessione || prev.tipo_concessione || 'subingresso'
       }));
