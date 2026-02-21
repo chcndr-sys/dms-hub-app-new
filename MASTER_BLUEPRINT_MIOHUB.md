@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 8.5.0 (Rimozione Hardcoded Grosseto + Fix Aggiorna-Mora Dinamico)  
+> **Versione:** 8.6.0 (Fix SUAP Engine v2.1 + Validazione SciaForm + Rimozione Hardcoded)  
 > **Data:** 21 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI  
 > **Stato:** PRODUZIONE
@@ -50,6 +50,12 @@ Questa tabella traccia la timeline completa di ogni posteggio, registrando ogni 
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 21 Febbraio 2026 (v8.5.0 → v8.6.0)
+- **SUAP Engine v2.1**: DELETE vecchi check v1.0 prima di ri-valutare (fix ON CONFLICT DO NOTHING)
+- **CHECK_DATI_COMPLETI** promosso da SOFT a HARD (peso 15), campi obbligatori estesi: sub_cf, mercato_id, posteggio_id, ced_cf per subingresso
+- **SciaForm validazione**: blocca submit senza subentrante CF, mercato, posteggio, cedente (per subingresso)
+- **Analisi 29 pratiche SCIA**: 12 con dati vuoti (test), 17 complete. Pratiche vuote non possono più ottenere APPROVED
 
 ### Sessione 21 Febbraio 2026 (v8.4.0 → v8.5.0)
 - ✅ **Rimozione Completa Hardcoded Grosseto/comune_id=1:** Censimento e correzione di TUTTI i riferimenti hardcoded a Grosseto e `comune_id = 1` in 7 file backend e 6 file frontend. Il sistema è ora completamente dinamico per comune impersonalizzato.
