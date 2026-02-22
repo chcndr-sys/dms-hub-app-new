@@ -542,7 +542,7 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
         c.esito === false || c.esito === 'FAIL' || c.esito === 'false'
       );
       const motivazione = failedChecks.length > 0
-        ? `Pratica negata per: ${failedChecks.map(c => c.nome_check || c.tipo_check).join(', ')}`
+        ? `Pratica negata per: ${failedChecks.map(c => (c as any).check_code?.replace('CHECK_', '').replace(/_/g, ' ') || (c as any).dettaglio?.motivo || 'Controllo fallito').join(', ')}`
         : 'Pratica negata dal funzionario SUAP';
       
       await updateSuapPraticaStato(String(selectedPratica.id), ENTE_ID, 'REJECTED', motivazione);
@@ -571,7 +571,7 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
         c.esito === false || c.esito === 'FAIL' || c.esito === 'false'
       );
       const motivazione = failedChecks.length > 0
-        ? `Regolarizzazione richiesta per: ${failedChecks.map(c => c.nome_check || c.tipo_check).join(', ')}`
+        ? `Regolarizzazione richiesta per: ${failedChecks.map(c => (c as any).check_code?.replace('CHECK_', '').replace(/_/g, ' ') || (c as any).dettaglio?.motivo || 'Controllo fallito').join(', ')}`
         : 'Regolarizzazione richiesta dal funzionario SUAP';
       
       await updateSuapPraticaStato(String(selectedPratica.id), ENTE_ID, 'INTEGRATION_NEEDED', motivazione);
@@ -776,7 +776,7 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
                   Pratiche Pendenti
                 </CardTitle>
                 <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
-                  {pratiche.filter(p => (p.stato as string) === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').length} da revisionare
+                  {pratiche.filter(p => (p.stato as string) === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED' || p.stato === 'INTEGRATION_NEEDED').length} da revisionare
                 </span>
               </CardHeader>
               <CardContent>
@@ -784,7 +784,7 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-orange-400" />
                   </div>
-                ) : pratiche.filter(p => (p.stato as string) === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').length === 0 ? (
+                ) : pratiche.filter(p => (p.stato as string) === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED' || p.stato === 'INTEGRATION_NEEDED').length === 0 ? (
                   <div className="text-center py-8">
                     <CheckCircle2 className="h-12 w-12 mx-auto text-green-400/40 mb-4" />
                     <p className="text-[#e8fbff]/60">Nessuna pratica pendente</p>
@@ -792,7 +792,7 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                    {pratiche.filter(p => (p.stato as string) === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED').map((pratica) => (
+                    {pratiche.filter(p => (p.stato as string) === 'IN_LAVORAZIONE' || p.stato === 'EVALUATED' || p.stato === 'INTEGRATION_NEEDED').map((pratica) => (
                       <div 
                         key={pratica.id}
                         className="flex items-center justify-between p-3 rounded-lg bg-orange-500/5 border border-orange-500/20 hover:bg-orange-500/10 cursor-pointer transition-colors"
@@ -800,9 +800,9 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>
+                            <span className={`w-2 h-2 rounded-full ${pratica.stato === 'INTEGRATION_NEEDED' ? 'bg-orange-500' : 'bg-orange-400'} animate-pulse`}></span>
                             <span className="font-medium text-[#e8fbff]">{pratica.tipo_pratica}</span>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400">Da Revisionare</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${pratica.stato === 'INTEGRATION_NEEDED' ? 'bg-orange-600/20 text-orange-300' : 'bg-orange-500/20 text-orange-400'}`}>{pratica.stato === 'INTEGRATION_NEEDED' ? 'Regolarizzazione' : 'Da Revisionare'}</span>
                           </div>
                           <p className="text-sm text-gray-500">
                             {pratica.richiedente_nome} - {pratica.richiedente_cf}
@@ -1129,8 +1129,28 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
               </div>
 
               {/* ============================================================== */}
-              {/* BANNER STATO RIGETTO / REGOLARIZZAZIONE */}
+              {/* BANNER STATO PRATICA */}
               {/* ============================================================== */}
+              {selectedPratica.stato === 'APPROVED' && (
+                <Card className="bg-green-900/30 border-green-500/50">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="h-6 w-6 text-green-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-green-300 font-bold text-lg">Pratica SCIA Espletata con Esito Positivo</p>
+                        <p className="text-green-400/80 text-sm mt-1">
+                          Tutti i controlli sono stati superati. {selectedPratica.concessione_id ? 'La concessione è stata generata ed è attiva.' : 'La pratica è stata approvata e la concessione può essere generata.'}
+                        </p>
+                        {selectedPratica.checks && selectedPratica.checks.filter(c => c.esito === true || c.esito === 'PASS' || c.esito === 'true').length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <p className="text-green-400 text-xs font-medium">Controlli superati: {selectedPratica.checks.filter(c => c.esito === true || c.esito === 'PASS' || c.esito === 'true').length}/{selectedPratica.checks.length}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               {selectedPratica.stato === 'REJECTED' && (
                 <Card className="bg-red-900/30 border-red-500/50">
                   <CardContent className="py-4">
@@ -1141,12 +1161,11 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
                         <p className="text-red-400/80 text-sm mt-1">
                           Questa pratica è stata negata definitivamente. Il motivo del rigetto è documentato nei controlli automatici della valutazione.
                         </p>
-                        {/* Mostra check falliti come motivo */}
                         {selectedPratica.checks && selectedPratica.checks.filter(c => c.esito === false || c.esito === 'FAIL' || c.esito === 'false').length > 0 && (
                           <div className="mt-2 space-y-1">
                             <p className="text-red-400 text-xs font-medium">Controlli non superati:</p>
                             {selectedPratica.checks.filter(c => c.esito === false || c.esito === 'FAIL' || c.esito === 'false').map((c, i) => (
-                              <p key={i} className="text-red-400/70 text-xs">• {(c as any).nome_check || (c as any).tipo_check}: {(c as any).note || 'Non conforme'}</p>
+                              <p key={i} className="text-red-400/70 text-xs">• {(c as any).check_code?.replace('CHECK_', '').replace(/_/g, ' ') || 'Controllo'}: {(c as any).dettaglio?.motivo || 'Non conforme'}</p>
                             ))}
                           </div>
                         )}
@@ -1169,7 +1188,7 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
                           <div className="mt-2 space-y-1">
                             <p className="text-orange-400 text-xs font-medium">Controlli da regolarizzare:</p>
                             {selectedPratica.checks.filter(c => c.esito === false || c.esito === 'FAIL' || c.esito === 'false').map((c, i) => (
-                              <p key={i} className="text-orange-400/70 text-xs">• {(c as any).nome_check || (c as any).tipo_check}: {(c as any).note || 'Da regolarizzare'}</p>
+                              <p key={i} className="text-orange-400/70 text-xs">• {(c as any).check_code?.replace('CHECK_', '').replace(/_/g, ' ') || 'Controllo'}: {(c as any).dettaglio?.motivo || 'Da regolarizzare'}</p>
                             ))}
                           </div>
                         )}

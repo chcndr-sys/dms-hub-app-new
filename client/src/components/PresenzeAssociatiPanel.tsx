@@ -153,6 +153,27 @@ export default function PresenzeAssociatiPanel() {
   const [schedaOpen, setSchedaOpen] = useState(false);
   const [schedaLoading, setSchedaLoading] = useState(false);
   const [schedaData, setSchedaData] = useState<SchedaAssociato | null>(null);
+  const [schedaEditMode, setSchedaEditMode] = useState(false);
+  const [schedaSaving, setSchedaSaving] = useState(false);
+  const [editForm, setEditForm] = useState<{
+    numero_tessera: string;
+    data_scadenza: string;
+    importo_annuale: string;
+    importo_pagato: string;
+    metodo_pagamento: string;
+    categoria_associativa: string;
+    settore_merceologico: string;
+    note: string;
+  }>({
+    numero_tessera: '',
+    data_scadenza: '',
+    importo_annuale: '',
+    importo_pagato: '',
+    metodo_pagamento: '',
+    categoria_associativa: '',
+    settore_merceologico: '',
+    note: '',
+  });
 
   // Form nuovo tesseramento
   const [impresaSearch, setImpresaSearch] = useState('');
@@ -222,6 +243,19 @@ export default function PresenzeAssociatiPanel() {
       const data = await res.json();
       if (data.success && data.data) {
         setSchedaData(data.data);
+        setSchedaEditMode(false);
+        // Inizializza form edit con dati correnti
+        const t = data.data.tesseramento;
+        setEditForm({
+          numero_tessera: t.numero_tessera || '',
+          data_scadenza: t.data_scadenza ? t.data_scadenza.split('T')[0] : '',
+          importo_annuale: t.importo_annuale || '',
+          importo_pagato: t.importo_pagato || '',
+          metodo_pagamento: t.metodo_pagamento || '',
+          categoria_associativa: t.categoria_associativa || '',
+          settore_merceologico: t.settore_merceologico || '',
+          note: t.note || '',
+        });
       } else {
         toast.error('Errore caricamento scheda associato');
         setSchedaOpen(false);
@@ -234,6 +268,46 @@ export default function PresenzeAssociatiPanel() {
       setSchedaLoading(false);
     }
   }, [associazioneId]);
+
+  // Salva modifiche scheda
+  const handleSaveScheda = async () => {
+    if (!associazioneId || !schedaData) return;
+    setSchedaSaving(true);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/associazioni/${associazioneId}/tesseramenti/${schedaData.tesseramento.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            numero_tessera: editForm.numero_tessera || null,
+            data_scadenza: editForm.data_scadenza || null,
+            importo_annuale: editForm.importo_annuale ? parseFloat(editForm.importo_annuale) : null,
+            importo_pagato: editForm.importo_pagato ? parseFloat(editForm.importo_pagato) : null,
+            metodo_pagamento: editForm.metodo_pagamento || null,
+            categoria_associativa: editForm.categoria_associativa || null,
+            settore_merceologico: editForm.settore_merceologico || null,
+            note: editForm.note || null,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Scheda aggiornata con successo');
+        setSchedaEditMode(false);
+        // Ricarica scheda per aggiornare i dati
+        loadSchedaAssociato(schedaData.tesseramento.id);
+        loadTesseramenti();
+      } else {
+        toast.error(data.error || 'Errore salvataggio');
+      }
+    } catch (error) {
+      console.error('Errore salvataggio scheda:', error);
+      toast.error('Errore di connessione');
+    } finally {
+      setSchedaSaving(false);
+    }
+  };
 
   // Cerca imprese per autocomplete
   const searchImprese = useCallback(async (query: string) => {
@@ -636,9 +710,46 @@ export default function PresenzeAssociatiPanel() {
       <Dialog open={schedaOpen} onOpenChange={setSchedaOpen}>
         <DialogContent className="bg-[#1a2332] border-[#3b82f6]/30 text-[#e8fbff] max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-[#e8fbff] flex items-center gap-2">
-              <Users className="h-5 w-5 text-[#3b82f6]" />
-              Scheda Associato
+            <DialogTitle className="text-[#e8fbff] flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-[#3b82f6]" />
+                Scheda Associato
+              </span>
+              {schedaData && (
+                <div className="flex items-center gap-2">
+                  {schedaEditMode ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-[#e8fbff]/60 hover:bg-[#e8fbff]/10"
+                        onClick={() => setSchedaEditMode(false)}
+                      >
+                        <X className="h-4 w-4 mr-1" /> Annulla
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-[#10b981] hover:bg-[#10b981]/80 text-white"
+                        onClick={handleSaveScheda}
+                        disabled={schedaSaving}
+                      >
+                        {schedaSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                        Salva
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-[#f59e0b] hover:bg-[#f59e0b]/10"
+                      onClick={() => setSchedaEditMode(true)}
+                      title="Modifica scheda"
+                    >
+                      <FileText className="h-4 w-4 mr-1" /> Modifica
+                    </Button>
+                  )}
+                </div>
+              )}
             </DialogTitle>
           </DialogHeader>
 
@@ -735,84 +846,188 @@ export default function PresenzeAssociatiPanel() {
               </Card>
 
               {/* Dati Tessera */}
-              <Card className="bg-[#0b1220] border-[#10b981]/20">
+              <Card className={`bg-[#0b1220] ${schedaEditMode ? 'border-[#f59e0b]/40' : 'border-[#10b981]/20'}`}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm text-[#10b981] flex items-center gap-2">
                     <CreditCard className="h-4 w-4" />
                     Dati Tessera
+                    {schedaEditMode && <Badge className="bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/50 text-[10px]">Modifica</Badge>}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                    <div>
-                      <p className="text-[#e8fbff]/50 text-xs">N. Tessera</p>
-                      <p className="text-[#e8fbff]">{schedaData.tesseramento.numero_tessera || '—'}</p>
+                  {schedaEditMode ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                      <div>
+                        <Label className="text-[#e8fbff]/50 text-xs">N. Tessera</Label>
+                        <Input
+                          value={editForm.numero_tessera}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, numero_tessera: e.target.value }))}
+                          className="bg-[#1a2332] border-[#334155] text-[#e8fbff] h-8 text-sm"
+                          placeholder="Inserisci numero tessera"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[#e8fbff]/50 text-xs">Data Iscrizione</Label>
+                        <p className="text-[#e8fbff] text-sm py-1">{formatDate(schedaData.tesseramento.data_iscrizione)}</p>
+                      </div>
+                      <div>
+                        <Label className="text-[#e8fbff]/50 text-xs">Scadenza Tessera</Label>
+                        <Input
+                          type="date"
+                          value={editForm.data_scadenza}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, data_scadenza: e.target.value }))}
+                          className="bg-[#1a2332] border-[#334155] text-[#e8fbff] h-8 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[#e8fbff]/50 text-xs">Importo Annuale (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={editForm.importo_annuale}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, importo_annuale: e.target.value }))}
+                          className="bg-[#1a2332] border-[#334155] text-[#e8fbff] h-8 text-sm"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[#e8fbff]/50 text-xs">Importo Pagato (€)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={editForm.importo_pagato}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, importo_pagato: e.target.value }))}
+                          className="bg-[#1a2332] border-[#334155] text-[#e8fbff] h-8 text-sm"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[#e8fbff]/50 text-xs">Metodo Pagamento</Label>
+                        <Input
+                          value={editForm.metodo_pagamento}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, metodo_pagamento: e.target.value }))}
+                          className="bg-[#1a2332] border-[#334155] text-[#e8fbff] h-8 text-sm"
+                          placeholder="Es. Bonifico, Contanti"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[#e8fbff]/50 text-xs">Categoria Associativa</Label>
+                        <Input
+                          value={editForm.categoria_associativa}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, categoria_associativa: e.target.value }))}
+                          className="bg-[#1a2332] border-[#334155] text-[#e8fbff] h-8 text-sm"
+                          placeholder="Es. Ordinario, Premium"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[#e8fbff]/50 text-xs">Settore Merceologico</Label>
+                        <Input
+                          value={editForm.settore_merceologico}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, settore_merceologico: e.target.value }))}
+                          className="bg-[#1a2332] border-[#334155] text-[#e8fbff] h-8 text-sm"
+                          placeholder="Es. Alimentare, Non Alimentare"
+                        />
+                      </div>
+                      <div className="col-span-2 md:col-span-3">
+                        <Label className="text-[#e8fbff]/50 text-xs">Note</Label>
+                        <Input
+                          value={editForm.note}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, note: e.target.value }))}
+                          className="bg-[#1a2332] border-[#334155] text-[#e8fbff] h-8 text-sm"
+                          placeholder="Note aggiuntive"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[#e8fbff]/50 text-xs">Data Iscrizione</p>
-                      <p className="text-[#e8fbff]">{formatDate(schedaData.tesseramento.data_iscrizione)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[#e8fbff]/50 text-xs flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> Scadenza Tessera
-                      </p>
-                      <p className={`font-medium ${schedaData.tesseramento.tessera_scaduta ? 'text-[#ef4444]' : 'text-[#e8fbff]'}`}>
-                        {formatDate(schedaData.tesseramento.data_scadenza)}
-                        {schedaData.tesseramento.tessera_scaduta && (
-                          <span className="ml-1 text-xs">
-                            <AlertTriangle className="h-3 w-3 inline" /> SCADUTA
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[#e8fbff]/50 text-xs">Importo Annuale</p>
-                      <p className="text-[#e8fbff]">
-                        {parseFloat(schedaData.tesseramento.importo_annuale) > 0
-                          ? `€ ${parseFloat(schedaData.tesseramento.importo_annuale).toFixed(2)}`
-                          : '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[#e8fbff]/50 text-xs">Importo Pagato</p>
-                      <p className="text-[#e8fbff]">
-                        {parseFloat(schedaData.tesseramento.importo_pagato) > 0
-                          ? `€ ${parseFloat(schedaData.tesseramento.importo_pagato).toFixed(2)}`
-                          : '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[#e8fbff]/50 text-xs">Stato Pagamento</p>
-                      <Badge
-                        variant="outline"
-                        className={
-                          schedaData.tesseramento.stato_pagamento === 'pagato'
-                            ? 'text-[#10b981] border-[#10b981]/50'
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                      <div>
+                        <p className="text-[#e8fbff]/50 text-xs">N. Tessera</p>
+                        <p className="text-[#e8fbff]">{schedaData.tesseramento.numero_tessera || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[#e8fbff]/50 text-xs">Data Iscrizione</p>
+                        <p className="text-[#e8fbff]">{formatDate(schedaData.tesseramento.data_iscrizione)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[#e8fbff]/50 text-xs flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> Scadenza Tessera
+                        </p>
+                        <p className={`font-medium ${schedaData.tesseramento.tessera_scaduta ? 'text-[#ef4444]' : 'text-[#e8fbff]'}`}>
+                          {formatDate(schedaData.tesseramento.data_scadenza)}
+                          {schedaData.tesseramento.tessera_scaduta && (
+                            <span className="ml-1 text-xs">
+                              <AlertTriangle className="h-3 w-3 inline" /> SCADUTA
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[#e8fbff]/50 text-xs">Importo Annuale</p>
+                        <p className="text-[#e8fbff]">
+                          {parseFloat(schedaData.tesseramento.importo_annuale) > 0
+                            ? `€ ${parseFloat(schedaData.tesseramento.importo_annuale).toFixed(2)}`
+                            : '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[#e8fbff]/50 text-xs">Importo Pagato</p>
+                        <p className="text-[#e8fbff]">
+                          {parseFloat(schedaData.tesseramento.importo_pagato) > 0
+                            ? `€ ${parseFloat(schedaData.tesseramento.importo_pagato).toFixed(2)}`
+                            : '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[#e8fbff]/50 text-xs">Stato Pagamento</p>
+                        <Badge
+                          variant="outline"
+                          className={
+                            schedaData.tesseramento.stato_pagamento === 'pagato'
+                              ? 'text-[#10b981] border-[#10b981]/50'
+                              : schedaData.tesseramento.stato_pagamento === 'da_pagare'
+                              ? 'text-[#ef4444] border-[#ef4444]/50'
+                              : 'text-[#e8fbff]/50 border-[#e8fbff]/20'
+                          }
+                        >
+                          {schedaData.tesseramento.stato_pagamento === 'pagato'
+                            ? 'Pagato'
                             : schedaData.tesseramento.stato_pagamento === 'da_pagare'
-                            ? 'text-[#ef4444] border-[#ef4444]/50'
-                            : 'text-[#e8fbff]/50 border-[#e8fbff]/20'
-                        }
-                      >
-                        {schedaData.tesseramento.stato_pagamento === 'pagato'
-                          ? 'Pagato'
-                          : schedaData.tesseramento.stato_pagamento === 'da_pagare'
-                          ? 'Da Pagare'
-                          : 'Non definito'}
-                      </Badge>
+                            ? 'Da Pagare'
+                            : 'Non definito'}
+                        </Badge>
+                      </div>
+                      {schedaData.tesseramento.data_rinnovo && (
+                        <div>
+                          <p className="text-[#e8fbff]/50 text-xs">Data Rinnovo</p>
+                          <p className="text-[#e8fbff]">{formatDate(schedaData.tesseramento.data_rinnovo)}</p>
+                        </div>
+                      )}
+                      {schedaData.tesseramento.metodo_pagamento && (
+                        <div>
+                          <p className="text-[#e8fbff]/50 text-xs">Metodo Pagamento</p>
+                          <p className="text-[#e8fbff]">{schedaData.tesseramento.metodo_pagamento}</p>
+                        </div>
+                      )}
+                      {schedaData.tesseramento.categoria_associativa && (
+                        <div>
+                          <p className="text-[#e8fbff]/50 text-xs">Categoria Associativa</p>
+                          <p className="text-[#e8fbff]">{schedaData.tesseramento.categoria_associativa}</p>
+                        </div>
+                      )}
+                      {schedaData.tesseramento.settore_merceologico && (
+                        <div>
+                          <p className="text-[#e8fbff]/50 text-xs">Settore Merceologico</p>
+                          <p className="text-[#e8fbff]">{schedaData.tesseramento.settore_merceologico}</p>
+                        </div>
+                      )}
+                      {schedaData.tesseramento.note && (
+                        <div className="col-span-2 md:col-span-3">
+                          <p className="text-[#e8fbff]/50 text-xs">Note</p>
+                          <p className="text-[#e8fbff]">{schedaData.tesseramento.note}</p>
+                        </div>
+                      )}
                     </div>
-                    {schedaData.tesseramento.data_rinnovo && (
-                      <div>
-                        <p className="text-[#e8fbff]/50 text-xs">Data Rinnovo</p>
-                        <p className="text-[#e8fbff]">{formatDate(schedaData.tesseramento.data_rinnovo)}</p>
-                      </div>
-                    )}
-                    {schedaData.tesseramento.metodo_pagamento && (
-                      <div>
-                        <p className="text-[#e8fbff]/50 text-xs">Metodo Pagamento</p>
-                        <p className="text-[#e8fbff]">{schedaData.tesseramento.metodo_pagamento}</p>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -833,7 +1048,12 @@ export default function PresenzeAssociatiPanel() {
                   ) : (
                     <div className="space-y-2">
                       {schedaData.pratiche.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between p-2 bg-[#1a2332] rounded border border-[#334155]">
+                        <div key={p.id} className="flex items-center justify-between p-2 bg-[#1a2332] rounded border border-[#334155] hover:bg-[#1a2332]/80 hover:border-[#f59e0b]/40 cursor-pointer transition-colors" onClick={() => {
+                            // Naviga al tab SCIA & Pratiche e apri il dettaglio pratica
+                            setSchedaOpen(false);
+                            // Dispatch evento custom per navigare al SuapPanel con la pratica selezionata
+                            window.dispatchEvent(new CustomEvent('navigate-to-pratica', { detail: { praticaId: p.id, cui: p.cui } }));
+                          }}>
                           <div>
                             <p className="text-sm text-[#e8fbff] font-medium">{p.cui}</p>
                             <p className="text-xs text-[#e8fbff]/50">
@@ -843,15 +1063,34 @@ export default function PresenzeAssociatiPanel() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                              p.stato === 'APPROVED' ? 'bg-[#10b981]' :
+                              p.stato === 'REJECTED' ? 'bg-[#ef4444]' :
+                              p.stato === 'INTEGRATION_NEEDED' ? 'bg-[#f59e0b]' :
+                              p.stato === 'EVALUATED' ? 'bg-[#a855f7]' :
+                              p.stato === 'IN_LAVORAZIONE' ? 'bg-[#3b82f6]' :
+                              p.stato === 'RECEIVED' ? 'bg-[#06b6d4]' :
+                              'bg-[#6b7280]'
+                            }`} />
                             <Badge
                               variant="outline"
                               className={
                                 p.stato === 'APPROVED' ? 'text-[#10b981] border-[#10b981]/50' :
-                                p.stato === 'EVALUATED' ? 'text-[#f59e0b] border-[#f59e0b]/50' :
+                                p.stato === 'REJECTED' ? 'text-[#ef4444] border-[#ef4444]/50' :
+                                p.stato === 'INTEGRATION_NEEDED' ? 'text-[#f59e0b] border-[#f59e0b]/50' :
+                                p.stato === 'EVALUATED' ? 'text-[#a855f7] border-[#a855f7]/50' :
+                                p.stato === 'IN_LAVORAZIONE' ? 'text-[#3b82f6] border-[#3b82f6]/50' :
+                                p.stato === 'RECEIVED' ? 'text-[#06b6d4] border-[#06b6d4]/50' :
                                 'text-[#e8fbff]/50 border-[#e8fbff]/20'
                               }
                             >
-                              {p.stato}
+                              {p.stato === 'APPROVED' ? 'Approvata' :
+                               p.stato === 'REJECTED' ? 'Negata' :
+                               p.stato === 'INTEGRATION_NEEDED' ? 'Regolarizzazione' :
+                               p.stato === 'EVALUATED' ? 'Valutata' :
+                               p.stato === 'IN_LAVORAZIONE' ? 'In Lavorazione' :
+                               p.stato === 'RECEIVED' ? 'Ricevuta' :
+                               p.stato}
                             </Badge>
                             {p.score != null && (
                               <span className="text-xs text-[#e8fbff]/50">{p.score}/100</span>
@@ -881,9 +1120,12 @@ export default function PresenzeAssociatiPanel() {
                   ) : (
                     <div className="space-y-2">
                       {schedaData.concessioni.map((c) => (
-                        <div key={c.id} className="flex items-center justify-between p-2 bg-[#1a2332] rounded border border-[#334155]">
+                        <div key={c.id} className="flex items-center justify-between p-2 bg-[#1a2332] rounded border border-[#334155] hover:bg-[#1a2332]/80 hover:border-[#8b5cf6]/40 cursor-pointer transition-colors" onClick={() => {
+                            setSchedaOpen(false);
+                            window.dispatchEvent(new CustomEvent('navigate-to-concessione', { detail: { concessioneId: c.id, numero: c.numero_protocollo } }));
+                          }}>
                           <div>
-                            <p className="text-sm text-[#e8fbff] font-medium">{c.numero_protocollo}</p>
+                            <p className="text-sm text-[#e8fbff] font-medium">#{c.numero_protocollo}</p>
                             <p className="text-xs text-[#e8fbff]/50">
                               {c.tipo} · {c.concessionario_nome || '—'}
                               {c.mercato_nome && ` · ${c.mercato_nome}`}
@@ -891,11 +1133,18 @@ export default function PresenzeAssociatiPanel() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                              c.stato === 'ATTIVA' ? 'bg-[#10b981]' :
+                              c.stato === 'CESSATA' ? 'bg-[#ef4444]' :
+                              c.stato === 'SOSPESA' ? 'bg-[#f59e0b]' :
+                              'bg-[#6b7280]'
+                            }`} />
                             <Badge
                               variant="outline"
                               className={
                                 c.stato === 'ATTIVA' ? 'text-[#10b981] border-[#10b981]/50' :
                                 c.stato === 'CESSATA' ? 'text-[#ef4444] border-[#ef4444]/50' :
+                                c.stato === 'SOSPESA' ? 'text-[#f59e0b] border-[#f59e0b]/50' :
                                 'text-[#e8fbff]/50 border-[#e8fbff]/20'
                               }
                             >
