@@ -4,7 +4,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Building2, FileCheck, AlertCircle, CheckCircle, Clock, Users, Search, X, TrendingUp } from 'lucide-react';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, addAssociazioneIdToUrl, isAssociazioneImpersonation } from '@/hooks/useImpersonation';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 
 // ============================================================================
@@ -66,7 +66,8 @@ export default function ImpreseQualificazioniPanel() {
     const fetchImprese = async () => {
       setLoading(true);
       try {
-        const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/imprese?limit=200`));
+        const baseUrl = `${API_BASE_URL}/api/imprese?limit=200`;
+        const response = await fetch(isAssociazioneImpersonation() ? addAssociazioneIdToUrl(baseUrl) : addComuneIdToUrl(baseUrl));
         const data = await response.json();
         if (data.success && data.data) {
           // Mappa i campi dall'API ai nomi usati nel frontend

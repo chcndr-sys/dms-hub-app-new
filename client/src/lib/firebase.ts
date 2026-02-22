@@ -29,12 +29,12 @@ import {
 // ============================================
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBQlKp8jQi7Q19tXQtTYpdgivw-WyhocTg",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "dmshub-auth-2975e.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "dmshub-auth-2975e",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "dmshub-auth-2975e.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "793464851990",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:793464851990:web:d6d70e95ac75bedb216f37",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // ============================================

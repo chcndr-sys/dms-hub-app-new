@@ -154,9 +154,9 @@ const DB_GROUPS = [
     tables: ['tcc_rate_limits', 'tcc_fraud_events', 'tcc_idempotency_keys', 'tcc_daily_limits', 'tcc_qr_tokens'] },
 ];
 
-// ─── Gruppi componenti (147 totali) ──────────────────────────────────
+// ─── Gruppi componenti (149 totali) ──────────────────────────────────
 const COMPONENT_GROUPS = [
-  { name: 'Dashboard PA', count: 14, desc: '28 tab protetti con sistema RBAC + ProtectedTab', color: '#14b8a6', icon: LayoutDashboard },
+  { name: 'Dashboard PA', count: 14, desc: '32 tab protetti con sistema RBAC + ProtectedTab', color: '#14b8a6', icon: LayoutDashboard },
   { name: 'Gestione Mercati', count: 12, desc: 'Mercati, posteggi, concessioni, presenze, operatori', color: '#06b6d4', icon: Store },
   { name: 'Mappe & GIS', count: 10, desc: 'Leaflet maps, layer manager, route optimizer', color: '#10b981', icon: MapPin },
   { name: 'Wallet & Pagamenti', count: 8, desc: 'Borsellino, PagoPA E-FIL, transazioni', color: '#f59e0b', icon: Wallet },
@@ -165,7 +165,7 @@ const COMPONENT_GROUPS = [
   { name: 'UI Base (shadcn)', count: 53, desc: 'Button, Card, Dialog, Table, Select, etc.', color: '#64748b', icon: Layers },
   { name: 'Report & Docs', count: 5, desc: 'Blueprint navigator, dossier, report cards', color: '#a855f7', icon: FileText },
   { name: 'Segnalazioni', count: 6, desc: 'Civic reports panel, heatmap, categorie', color: '#06b6d4', icon: AlertCircle },
-  { name: 'Impresa & Operatori', count: 10, desc: 'Dashboard impresa, anagrafica, notifiche, hub', color: '#f97316', icon: Globe },
+  { name: 'Impresa & Operatori', count: 12, desc: 'Dashboard impresa, anagrafica, notifiche, hub, presenze associati', color: '#f97316', icon: Globe },
   { name: 'Pagine Pubbliche', count: 15, desc: 'Home, mappa, vetrine, SUAP, presentazione', color: '#22c55e', icon: Globe },
 ];
 

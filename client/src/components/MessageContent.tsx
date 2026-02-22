@@ -31,9 +31,14 @@ export const MessageContent: React.FC<MessageContentProps> = ({ content }) => {
 
   const executeCode = (code: string, blockIndex: number) => {
     try {
-      // Esegui il codice JavaScript
-      eval(code);
-      
+      // Validazione: permetti solo codice che chiama window.sharedWorkspaceAPI
+      const trimmed = code.trim();
+      if (!trimmed.includes('window.sharedWorkspaceAPI')) {
+        throw new Error('Codice non autorizzato: deve usare window.sharedWorkspaceAPI');
+      }
+      // Usa Function constructor invece di eval() per isolare dallo scope locale
+      new Function(trimmed)();
+
       // Marca come eseguito
       setAutoExecuted(prev => new Set(prev).add(blockIndex));
       setErrors(prev => {

@@ -269,6 +269,11 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
   }, [comuneDataLoaded, comuneData]);
 
   const loadData = async () => {
+    // Se siamo in modalità associazione, non caricare dati SUAP (non pertinenti)
+    if (isAssociazione) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       // Filtra le pratiche SCIA per comune (se impersonalizzato) o mostra tutte (admin globale)
@@ -283,11 +288,11 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
       ]);
       setStats(statsData);
       // Ordina per data creazione (più recenti prima)
-      const sorted = praticheData.sort((a, b) => 
+      const sorted = praticheData.sort((a, b) =>
         new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
       );
       setPratiche(sorted);
-      
+
       // Carica anche le concessioni, le domande spunta e le notifiche
       await loadConcessioni();
       await loadDomandeSpuntaDashboard();

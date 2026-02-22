@@ -43,6 +43,8 @@ import { SharedWorkspace } from '@/components/SharedWorkspace';
 import NotificationsPanel from '@/components/NotificationsPanel';
 import ComuniPanel from '@/components/ComuniPanel';
 import AssociazioniPanel from '@/components/AssociazioniPanel';
+import PresenzeAssociatiPanel from '@/components/PresenzeAssociatiPanel';
+import AnagraficaAssociazionePanel from '@/components/AnagraficaAssociazionePanel';
 import WalletPanel from '@/components/WalletPanel';
 import SecurityTab from '@/components/SecurityTab';
 import FraudMonitorPanel from '@/components/FraudMonitorPanel';
@@ -62,6 +64,7 @@ import { sendAgentMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient'
 import { sendDirectMessageToHetzner, DirectMioMessage } from '@/lib/DirectMioClient';
 import { sendToAgent } from '@/lib/agentHelper';
 import { toast } from 'sonner';
+import { isAssociazioneImpersonation } from '@/hooks/useImpersonation';
 
 // 👻 GHOSTBUSTER: MioChatMessage sostituito con DirectMioMessage
 // 🔥 FORCE REBUILD: 2024-12-20 12:46 - Fix agentName filter removed from single chats
@@ -93,14 +96,17 @@ function useDashboardData() {
   useEffect(() => {
     const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
     
+    // Se impersonificazione associazione, non caricare stats globali (non pertinenti)
+    if (isAssociazioneImpersonation()) return;
+
     // Leggi comune_id dall'URL se in modalità impersonificazione
     const urlParams = new URLSearchParams(window.location.search);
     const comuneId = urlParams.get('comune_id');
     const isImpersonating = urlParams.get('impersonate') === 'true';
-    
+
     // Costruisci query string per filtro comune
     const comuneFilter = (comuneId && isImpersonating) ? `?comune_id=${comuneId}` : '';
-    
+
     // Fetch overview (con filtro comune se impersonificazione)
     fetch(`${MIHUB_API}/stats/overview${comuneFilter}`)
       .then(res => res.json())
@@ -873,6 +879,7 @@ export default function DashboardPA() {
   
   // Carica statistiche imprese (REST leggero + fallback tRPC)
   useEffect(() => {
+    if (isAssociazioneImpersonation()) return;
     fetch('/api/imprese?stats_only=true')
       .then(r => r.json())
       .then(data => {
@@ -1274,42 +1281,6 @@ export default function DashboardPA() {
         }
       })
       .catch(err => console.error('Imprese fetch error:', err));
-
-    // Fetch pratiche SCIA per sotto-tab associazioni
-    fetch(`${MIHUB_API}/suap/pratiche`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.data) {
-          setSciaPraticheList(data.data);
-          const pratiche = data.data;
-          setSciaPraticheStats({
-            inviate: pratiche.length,
-            inLavorazione: pratiche.filter((p: any) => ['RECEIVED', 'PRECHECK', 'EVALUATED'].includes(p.stato)).length,
-            approvate: pratiche.filter((p: any) => p.stato === 'APPROVED').length,
-            concessioni: pratiche.filter((p: any) => p.concessione_id).length
-          });
-        }
-      })
-      .catch(err => console.error('SCIA pratiche fetch error:', err));
-
-    // Fetch lista associati per sotto-tab associazioni
-    fetch(`${MIHUB_API}/bandi/associazioni`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.data) {
-          // Flatten: ogni associazione ha una lista di imprese associate
-          const allAssociati: any[] = [];
-          data.data.forEach((assoc: any) => {
-            if (assoc.imprese_associate && Array.isArray(assoc.imprese_associate)) {
-              assoc.imprese_associate.forEach((imp: any) => {
-                allAssociati.push({ ...imp, associazione_nome: assoc.nome });
-              });
-            }
-          });
-          setSciaAssociatiList(allAssociati.length > 0 ? allAssociati : data.data);
-        }
-      })
-      .catch(err => console.error('Associati fetch error:', err));
 
     // Polling ogni 30 secondi per aggiornare notifiche
     const interval = setInterval(() => {
@@ -2783,9 +2754,16 @@ export default function DashboardPA() {
             </Card>
           </TabsContent>
 
-          {/* TAB 6: TPAS */}
+          {/* TAB 6: TPAS / Associazioni */}
           <TabsContent value="tpas" className="space-y-6">
-            <AssociazioniPanel />
+            {isAssociazioneImpersonation() ? (
+              <>
+                <AnagraficaAssociazionePanel />
+                <PresenzeAssociatiPanel />
+              </>
+            ) : (
+              <AssociazioniPanel />
+            )}
           </TabsContent>
 
           {/* TAB 7: CARBON CREDITS */}
@@ -4919,9 +4897,21 @@ export default function DashboardPA() {
                                   const data = await res.json();
                                   const list = document.getElementById('imprese-list');
                                   if (list && data.success) {
-                                    list.innerHTML = data.data.map((i: any) => 
-                                      `<div class="p-2 hover:bg-[#3b82f6]/20 cursor-pointer rounded" onclick="document.getElementById('impresa_id').value='${i.id}'; document.getElementById('impresa_nome').value='${i.denominazione} (${i.partita_iva})'; document.getElementById('imprese-list').innerHTML='';">${i.denominazione} - ${i.partita_iva} - ${i.comune || ''}</div>`
-                                    ).join('');
+                                    // Pulisci il contenuto precedente
+                                    list.textContent = '';
+                                    data.data.forEach((i: any) => {
+                                      const div = document.createElement('div');
+                                      div.className = 'p-2 hover:bg-[#3b82f6]/20 cursor-pointer rounded';
+                                      div.textContent = `${i.denominazione} - ${i.partita_iva} - ${i.comune || ''}`;
+                                      div.addEventListener('click', () => {
+                                        const idInput = document.getElementById('impresa_id') as HTMLInputElement;
+                                        const nomeInput = document.getElementById('impresa_nome') as HTMLInputElement;
+                                        if (idInput) idInput.value = String(i.id);
+                                        if (nomeInput) nomeInput.value = `${i.denominazione} (${i.partita_iva})`;
+                                        list.textContent = '';
+                                      });
+                                      list.appendChild(div);
+                                    });
                                   }
                                 } catch {}
                               }}

@@ -45,7 +45,7 @@ import WalletPanel from './WalletPanel';
 import NotificationsPanel from './NotificationsPanel';
 
 import { MIHUB_API_BASE_URL } from '@/config/api';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, isAssociazioneImpersonation } from '@/hooks/useImpersonation';
 
 // ============================================================================
 // TIPI E INTERFACCE
@@ -206,6 +206,11 @@ export default function GestioneHubPanel() {
   }, []);
 
   const fetchAllData = async () => {
+    // Non caricare dati Hub per impersonificazione associazione
+    if (isAssociazioneImpersonation()) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const [marketsRes, vendorsRes, stallsRes, concessionsRes, impreseRes] = await Promise.all([

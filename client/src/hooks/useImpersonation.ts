@@ -247,6 +247,22 @@ export function addComuneIdToUrl(url: string): string {
   return `${url}${separator}comune_id=${comuneId}`;
 }
 
+// Helper standalone per aggiungere associazione_id alle URL
+export function addAssociazioneIdToUrl(url: string): string {
+  const { isImpersonating, entityType, associazioneId } = getCombinedState();
+  if (!isImpersonating || entityType !== 'associazione' || !associazioneId) {
+    return url;
+  }
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}associazione_id=${associazioneId}`;
+}
+
+// Helper standalone per verificare se siamo in impersonificazione associazione
+export function isAssociazioneImpersonation(): boolean {
+  const state = getCombinedState();
+  return state.isImpersonating && state.entityType === 'associazione';
+}
+
 // Helper per terminare l'impersonificazione (standalone)
 export function endImpersonation(): void {
   sessionStorage.removeItem(STORAGE_KEY);

@@ -53,7 +53,7 @@ export default function CivicReportsPanel() {
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const { comuneId: impersonatedComuneId } = useImpersonation();
+  const { comuneId: impersonatedComuneId, isImpersonating: isImp, entityType } = useImpersonation();
   const { setSelectedReport } = useCivicReports();
   // Se impersonato: filtra per comune. Se admin globale: mostra tutte le segnalazioni
   const comuneId = impersonatedComuneId ? parseInt(impersonatedComuneId) : null;
@@ -61,6 +61,11 @@ export default function CivicReportsPanel() {
 
   // Carica statistiche + lista completa segnalazioni
   const loadStats = async () => {
+    // Non caricare dati civici per impersonificazione associazione
+    if (isImp && entityType === 'associazione') {
+      setLoading(false);
+      return;
+    }
     try {
       const statsUrl = comuneParam 
         ? `${API_BASE_URL}/api/civic-reports/stats?${comuneParam}` 

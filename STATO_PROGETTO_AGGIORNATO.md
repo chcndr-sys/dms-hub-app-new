@@ -11,7 +11,7 @@
 
 Il **DMS HUB** è l'ecosistema nazionale per la digitalizzazione dei mercati e del commercio locale sostenibile in Italia. Il sistema integra 8 applicazioni web interconnesse con database PostgreSQL centralizzato, API tRPC type-safe, e integrazioni esterne con TPER, Centro Mobilità Nazionale, ARPAE, e Gestionale Heroku.
 
-**Stato Generale**: ✅ **Sistema Operativo** - Dashboard PA completa con 28 tab, Sistema Integrazioni funzionante, Database con 68 tabelle, 15 router tRPC con 100+ procedure, RBAC completo, Impersonificazione comuni operativa, PagoPA/SPID/CIE/CNS integrati, Sistema SUAP completo, Sistema Associazioni in corso
+**Stato Generale**: ✅ **Sistema Operativo** - Dashboard PA completa con 32 tab, Sistema Integrazioni funzionante, Database con 68 tabelle, 15 router tRPC con 100+ procedure, RBAC completo, Impersonificazione comuni e associazioni operativa, PagoPA/SPID/CIE/CNS integrati, Sistema SUAP completo, Sistema Associazioni operativo
 
 ---
 
