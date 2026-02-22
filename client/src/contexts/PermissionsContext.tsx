@@ -27,6 +27,7 @@ import { getImpersonationParams } from '@/hooks/useImpersonation';
 const ROLE_IDS = {
   SUPER_ADMIN: 1,
   ADMIN_PA: 2,
+  ASSOCIATION: 10,
   CITIZEN: 13,
 };
 
@@ -212,11 +213,15 @@ interface PermissionsProviderProps {
 
 // Funzione per determinare il ruolo dell'utente
 async function determineUserRoleId(): Promise<{ roleId: number; isImpersonating: boolean }> {
-  // 1. Controlla se siamo in modalità impersonificazione
+  // 1. Controlla se siamo in modalità impersonificazione (comune O associazione)
   const impersonation = getImpersonationParams();
   if (impersonation.isImpersonating && impersonation.comuneId) {
-    console.warn('[PermissionsContext] Modalita impersonificazione - usando ruolo admin_pa');
+    console.warn('[PermissionsContext] Modalita impersonificazione COMUNE - usando ruolo admin_pa');
     return { roleId: ROLE_IDS.ADMIN_PA, isImpersonating: true };
+  }
+  if (impersonation.isImpersonating && impersonation.associazioneId) {
+    console.warn('[PermissionsContext] Modalita impersonificazione ASSOCIAZIONE - usando ruolo association (ID=10)');
+    return { roleId: ROLE_IDS.ASSOCIATION, isImpersonating: true };
   }
 
   // 2. Controlla se c'è un utente loggato in localStorage
