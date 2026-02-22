@@ -27,7 +27,7 @@ import {
   BarChart3, Store, AlertCircle, Clock, Camera, X, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useImpersonation, isAssociazioneImpersonation } from '@/hooks/useImpersonation';
+import { useImpersonation } from '@/hooks/useImpersonation';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 
 // Fix per icone marker Leaflet
@@ -1175,22 +1175,7 @@ export default function GamingRewardsPanel() {
     return [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng];
   };
 
-  // Non applicabile per impersonificazione associazione
-  if (entityType === 'associazione') {
-    return (
-      <div className="space-y-6">
-        <Card className="bg-[#1a2332] border-[#8b5cf6]/30">
-          <CardContent className="flex items-center justify-center h-40">
-            <div className="text-center text-[#e8fbff]/60">
-              <Gamepad2 className="h-10 w-10 mx-auto mb-3 opacity-40" />
-              <p className="font-medium">Gaming & Rewards</p>
-              <p className="text-sm mt-1">Non applicabile per le associazioni</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Gaming & Rewards: mostrare sempre (anche per impersonificazione associazione)
 
   if (loading) {
     return (

@@ -96,30 +96,19 @@ function useDashboardData() {
   useEffect(() => {
     const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
     
-    // Se impersonificazione associazione, setta stats vuote (non pertinenti) e non fare fetch
-    if (isAssociazioneImpersonation()) {
-      setStatsOverview({
-        totalUsers: 0, userGrowth: 0, activeMarkets: 0, totalShops: 0,
-        totalTransactions: 0, transactionGrowth: 0, sustainabilityRating: 0,
-        imprese: 0, autorizzazioni: 0, comuni: 0, tcc: {}, today: {}
-      });
-      setStatsRealtime({ activeUsers: 0, activeVendors: 0, todayCheckins: 0, todayTransactions: 0 });
-      setStatsGrowth({ growth: [] });
-      setStatsQualificazione(null);
-      setFormazioneStats(null);
-      setBandiStats(null);
-      return;
-    }
+    // Se impersonificazione associazione, carica stats globali (senza filtro comune)
+    // ma non caricare stats specifiche (qualificazione, formazione, bandi)
+    const isAssocImpersonation = isAssociazioneImpersonation();
 
-    // Leggi comune_id dall'URL se in modalità impersonificazione
+    // Leggi comune_id dall'URL se in modalità impersonificazione comune
     const urlParams = new URLSearchParams(window.location.search);
     const comuneId = urlParams.get('comune_id');
     const isImpersonating = urlParams.get('impersonate') === 'true';
 
-    // Costruisci query string per filtro comune
-    const comuneFilter = (comuneId && isImpersonating) ? `?comune_id=${comuneId}` : '';
+    // Costruisci query string per filtro comune (solo per comuni, non per associazioni)
+    const comuneFilter = (comuneId && isImpersonating && !isAssocImpersonation) ? `?comune_id=${comuneId}` : '';
 
-    // Fetch overview (con filtro comune se impersonificazione)
+    // Fetch overview globali (sempre, anche per associazioni)
     fetch(`${MIHUB_API}/stats/overview${comuneFilter}`)
       .then(res => res.json())
       .then(data => {
@@ -149,7 +138,14 @@ function useDashboardData() {
       })
       .catch(err => console.error('Stats growth fetch error:', err));
     
-    // Fetch qualificazione (Tab Imprese)
+    // Per associazioni: qualificazione non pertinente, formazione e bandi sì
+    // Costruisci filtro associazione_id per le fetch dei tab Enti
+    const assocIdParam = isAssocImpersonation ? urlParams.get('associazione_id') : null;
+    const assocFilter = assocIdParam ? `?associazione_id=${assocIdParam}` : '';
+    const assocFilterAnd = assocIdParam ? `&associazione_id=${assocIdParam}` : '';
+
+    // Fetch qualificazione (Tab Imprese) - solo se NON impersonificazione associazione
+    if (!isAssocImpersonation)
     fetch(`${MIHUB_API}/stats/qualificazione/overview`)
       .then(res => res.json())
       .then(async data => {
@@ -204,7 +200,7 @@ function useDashboardData() {
           const [assocRes, catalogoRes, serviziRes, richiesteRes, regolaritaRes] = await Promise.all([
             fetch(`${MIHUB_API}/bandi/associazioni`).then(r => r.json()),
             fetch(`${MIHUB_API}/bandi/catalogo`).then(r => r.json()),
-            fetch(`${MIHUB_API}/bandi/servizi`).then(r => r.json()),
+            fetch(`${MIHUB_API}/bandi/servizi${assocFilter}`).then(r => r.json()),
             fetch(`${MIHUB_API}/bandi/richieste/stats`).then(r => r.json()),
             fetch(`${MIHUB_API}/bandi/regolarita/stats`).then(r => r.json())
           ]);
@@ -891,10 +887,6 @@ export default function DashboardPA() {
   
   // Carica statistiche imprese (REST leggero + fallback tRPC)
   useEffect(() => {
-    if (isAssociazioneImpersonation()) {
-      setImpreseStats({ total: 0, concessioni: 0, comuni: 0, media: '0' });
-      return;
-    }
     fetch('/api/imprese?stats_only=true')
       .then(r => r.json())
       .then(data => {

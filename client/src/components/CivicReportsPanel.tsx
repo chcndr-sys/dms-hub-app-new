@@ -61,11 +61,7 @@ export default function CivicReportsPanel() {
 
   // Carica statistiche + lista completa segnalazioni
   const loadStats = async () => {
-    // Non caricare dati civici per impersonificazione associazione
-    if (isImp && entityType === 'associazione') {
-      setLoading(false);
-      return;
-    }
+    // Dati civici: caricare sempre (anche per impersonificazione associazione)
     try {
       const statsUrl = comuneParam 
         ? `${API_BASE_URL}/api/civic-reports/stats?${comuneParam}` 
