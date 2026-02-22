@@ -8,6 +8,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, FileText, Loader2, Building2, X, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
+import { getImpersonationParams, isAssociazioneImpersonation } from '@/hooks/useImpersonation';
+import { MIHUB_API_BASE_URL } from '@/config/api';
 
 // API URL
 const API_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
@@ -825,9 +827,41 @@ export default function SciaForm({ onCancel, onSubmit, comuneNome = '', comuneId
               </div>
               <div className="space-y-2">
                 <Label className="text-[#e8fbff]">Ruolo Dichiarante *</Label>
-                <Select 
-                  value={formData.ruolo_dichiarante} 
-                  onValueChange={(value) => setFormData({...formData, ruolo_dichiarante: value})}
+                <Select
+                  value={formData.ruolo_dichiarante}
+                  onValueChange={async (value) => {
+                    setFormData(prev => ({...prev, ruolo_dichiarante: value}));
+                    // Auto-compila dati delegato da scheda associazione
+                    if (value === 'associazione' && isAssociazioneImpersonation()) {
+                      const { associazioneId } = getImpersonationParams();
+                      if (associazioneId) {
+                        try {
+                          const res = await fetch(`${MIHUB_API_BASE_URL}/api/associazioni/${associazioneId}`);
+                          const data = await res.json();
+                          if (data.success && data.data) {
+                            const assoc = data.data;
+                            setFormData(prev => ({
+                              ...prev,
+                              ruolo_dichiarante: value,
+                              delegato_nome: assoc.referente_nome || assoc.presidente_nome || '',
+                              delegato_cognome: assoc.referente_cognome || assoc.presidente_cognome || '',
+                              delegato_cf: assoc.codice_fiscale_referente || '',
+                              delegato_data_nascita: assoc.data_nascita_referente || '',
+                              delegato_luogo_nascita: assoc.luogo_nascita_referente || '',
+                              delegato_residenza_via: assoc.residenza_referente || '',
+                              delegato_residenza_comune: assoc.comune_referente || '',
+                              delegato_residenza_cap: assoc.cap_referente || '',
+                              delegato_qualifica: 'Delegato Associazione',
+                              pec_del: assoc.pec || '',
+                            }));
+                            toast.success('Dati delegato compilati dalla scheda associazione');
+                          }
+                        } catch (error) {
+                          console.error('Errore caricamento dati associazione:', error);
+                        }
+                      }
+                    }
+                  }}
                 >
                   <SelectTrigger className="bg-[#0b1220] border-[#334155] text-[#e8fbff]">
                     <SelectValue />
