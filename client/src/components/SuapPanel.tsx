@@ -9,7 +9,8 @@ import {
   FileText, CheckCircle2, XCircle, Clock, Loader2, 
   Search, Filter, Eye, Play, User, Building2, MapPin, FileCheck, Users,
   Plus, LayoutDashboard, List, FileSearch, AlertCircle, TrendingUp, ScrollText, Stamp,
-  ArrowLeft, RefreshCw, AlertTriangle, Bell, Inbox, Edit, Trash2, CreditCard, Wallet, Calendar, History
+  ArrowLeft, RefreshCw, AlertTriangle, Bell, Inbox, Edit, Trash2, CreditCard, Wallet, Calendar, History,
+  Ban, ShieldAlert
 } from 'lucide-react';
 import { 
   getSuapStats, getSuapPratiche, getSuapPraticaById, 
@@ -147,6 +148,7 @@ function getStatoBadge(stato: string) {
     'EVALUATED': { bg: 'bg-purple-500/20', text: 'text-purple-400', icon: <FileSearch className="w-3 h-3" /> },
     'APPROVED': { bg: 'bg-green-500/20', text: 'text-green-400', icon: <CheckCircle2 className="w-3 h-3" /> },
     'REJECTED': { bg: 'bg-red-500/20', text: 'text-red-400', icon: <XCircle className="w-3 h-3" /> },
+    'INTEGRATION_NEEDED': { bg: 'bg-orange-500/20', text: 'text-orange-400', icon: <AlertTriangle className="w-3 h-3" /> },
   };
   const v = variants[stato] || variants['RECEIVED'];
   return (
@@ -529,6 +531,63 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
     }
   };
 
+  // Nega pratica (REJECTED) - il motivo è già nei check della valutazione
+  const handleNegaPratica = async () => {
+    if (!selectedPratica) return;
+    if (!confirm('Sei sicuro di voler NEGARE definitivamente questa pratica? Il motivo del rigetto è documentato nei controlli automatici della valutazione.')) return;
+    setLoading(true);
+    try {
+      // Costruisci motivazione dai check falliti
+      const failedChecks = (selectedPratica.checks || []).filter(c => 
+        c.esito === false || c.esito === 'FAIL' || c.esito === 'false'
+      );
+      const motivazione = failedChecks.length > 0
+        ? `Pratica negata per: ${failedChecks.map(c => c.nome_check || c.tipo_check).join(', ')}`
+        : 'Pratica negata dal funzionario SUAP';
+      
+      await updateSuapPraticaStato(String(selectedPratica.id), ENTE_ID, 'REJECTED', motivazione);
+      toast.success('Pratica NEGATA con successo');
+      // Aggiorna stato nella lista
+      setPratiche(prev => prev.map(p => 
+        p.id === selectedPratica.id ? { ...p, stato: 'REJECTED' } : p
+      ));
+      // Ricarica dettaglio
+      await loadPraticaDetail(selectedPratica.id);
+    } catch (error) {
+      console.error('Error rejecting pratica:', error);
+      toast.error('Errore nel rigetto della pratica');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Richiedi regolarizzazione (INTEGRATION_NEEDED) - il motivo è nei check
+  const handleRichiediRegolarizzazione = async () => {
+    if (!selectedPratica) return;
+    if (!confirm('Vuoi richiedere la regolarizzazione di questa pratica? L\'associazione riceverà una notifica con i controlli falliti.')) return;
+    setLoading(true);
+    try {
+      const failedChecks = (selectedPratica.checks || []).filter(c => 
+        c.esito === false || c.esito === 'FAIL' || c.esito === 'false'
+      );
+      const motivazione = failedChecks.length > 0
+        ? `Regolarizzazione richiesta per: ${failedChecks.map(c => c.nome_check || c.tipo_check).join(', ')}`
+        : 'Regolarizzazione richiesta dal funzionario SUAP';
+      
+      await updateSuapPraticaStato(String(selectedPratica.id), ENTE_ID, 'INTEGRATION_NEEDED', motivazione);
+      toast.success('Richiesta di regolarizzazione inviata');
+      setPratiche(prev => prev.map(p => 
+        p.id === selectedPratica.id ? { ...p, stato: 'INTEGRATION_NEEDED' } : p
+      ));
+      await loadPraticaDetail(selectedPratica.id);
+    } catch (error) {
+      console.error('Error requesting integration:', error);
+      toast.error('Errore nella richiesta di regolarizzazione');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filtra pratiche
   const filteredPratiche = pratiche.filter(p => {
     if (!searchQuery) return true;
@@ -654,7 +713,7 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
         {/* ================================================================== */}
         <TabsContent value="dashboard" className="space-y-6 mt-6">
           {/* Statistiche */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-cyan-400 text-sm mb-1">
@@ -688,11 +747,21 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
             <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-red-400 text-sm mb-1">
-                  <XCircle className="w-4 h-4" />
-                  Rigettate / Bloccate
+                  <Ban className="w-4 h-4" />
+                  Negate
                 </div>
                 <div className="text-2xl font-bold text-white">{stats?.rigettate || 0}</div>
-                <p className="text-xs text-gray-500">Anomalie rilevate</p>
+                <p className="text-xs text-gray-500">Pratiche negate</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 text-orange-400 text-sm mb-1">
+                  <ShieldAlert className="w-4 h-4" />
+                  In Regolarizzazione
+                </div>
+                <div className="text-2xl font-bold text-white">{stats?.in_attesa_integrazione || 0}</div>
+                <p className="text-xs text-gray-500">In attesa di integrazione</p>
               </CardContent>
             </Card>
           </div>
@@ -1040,8 +1109,75 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
                     <Stamp className="mr-2 h-4 w-4" />
                     Genera Concessione
                   </Button>
+                  <Button 
+                    onClick={handleRichiediRegolarizzazione}
+                    disabled={loading || selectedPratica.stato === 'APPROVED' || selectedPratica.stato === 'REJECTED'}
+                    className="bg-orange-500 text-white hover:bg-orange-600"
+                  >
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldAlert className="mr-2 h-4 w-4" />}
+                    Richiedi Regolarizzazione
+                  </Button>
+                  <Button 
+                    onClick={handleNegaPratica}
+                    disabled={loading || selectedPratica.stato === 'APPROVED' || selectedPratica.stato === 'REJECTED'}
+                    className="bg-red-600 text-white hover:bg-red-700"
+                  >
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Ban className="mr-2 h-4 w-4" />}
+                    Nega Pratica
+                  </Button>
                 </div>}
               </div>
+
+              {/* ============================================================== */}
+              {/* BANNER STATO RIGETTO / REGOLARIZZAZIONE */}
+              {/* ============================================================== */}
+              {selectedPratica.stato === 'REJECTED' && (
+                <Card className="bg-red-900/30 border-red-500/50">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-3">
+                      <Ban className="h-6 w-6 text-red-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-red-300 font-bold text-lg">Pratica NEGATA</p>
+                        <p className="text-red-400/80 text-sm mt-1">
+                          Questa pratica è stata negata definitivamente. Il motivo del rigetto è documentato nei controlli automatici della valutazione.
+                        </p>
+                        {/* Mostra check falliti come motivo */}
+                        {selectedPratica.checks && selectedPratica.checks.filter(c => c.esito === false || c.esito === 'FAIL' || c.esito === 'false').length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <p className="text-red-400 text-xs font-medium">Controlli non superati:</p>
+                            {selectedPratica.checks.filter(c => c.esito === false || c.esito === 'FAIL' || c.esito === 'false').map((c, i) => (
+                              <p key={i} className="text-red-400/70 text-xs">• {(c as any).nome_check || (c as any).tipo_check}: {(c as any).note || 'Non conforme'}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {selectedPratica.stato === 'INTEGRATION_NEEDED' && (
+                <Card className="bg-orange-900/30 border-orange-500/50">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-3">
+                      <ShieldAlert className="h-6 w-6 text-orange-400 flex-shrink-0" />
+                      <div>
+                        <p className="text-orange-300 font-bold text-lg">Regolarizzazione Richiesta</p>
+                        <p className="text-orange-400/80 text-sm mt-1">
+                          Questa pratica necessita di regolarizzazione. {isAssociazione ? 'Utilizza la messaggistica in fondo alla pagina per inviare le integrazioni richieste.' : 'In attesa di integrazione documentale dall\'associazione.'}
+                        </p>
+                        {selectedPratica.checks && selectedPratica.checks.filter(c => c.esito === false || c.esito === 'FAIL' || c.esito === 'false').length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <p className="text-orange-400 text-xs font-medium">Controlli da regolarizzare:</p>
+                            {selectedPratica.checks.filter(c => c.esito === false || c.esito === 'FAIL' || c.esito === 'false').map((c, i) => (
+                              <p key={i} className="text-orange-400/70 text-xs">• {(c as any).nome_check || (c as any).tipo_check}: {(c as any).note || 'Da regolarizzare'}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* ============================================================== */}
               {/* SEZIONI ORDINATE COME IL FORM SCIA */}
