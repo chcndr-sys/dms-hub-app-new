@@ -26,6 +26,8 @@ import ListaDomandeSpuntaSuap from '@/components/suap/ListaDomandeSpuntaSuap';
 import AutorizzazioneDetail from '@/components/suap/AutorizzazioneDetail';
 import DomandaSpuntaDetail from '@/components/suap/DomandaSpuntaDetail';
 import NotificationManager from '@/components/suap/NotificationManager';
+import NotificheAssociazionePanel from '@/components/suap/NotificheAssociazionePanel';
+import MessaggiPraticaPanel from '@/components/suap/MessaggiPraticaPanel';
 import StoricoTitolarita from '@/components/suap/StoricoTitolarita';
 import { toast } from 'sonner';
 import { getImpersonationParams } from '@/hooks/useImpersonation';
@@ -1427,6 +1429,17 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Messaggistica Pratica - visibile per SUAP e Associazione */}
+              {selectedPratica && (
+                <MessaggiPraticaPanel
+                  praticaId={selectedPratica.id}
+                  mittenteId={isAssociazione
+                    ? parseInt(getImpersonationParams().associazioneId || '0')
+                    : (comuneData?.id || 0)
+                  }
+                />
+              )}
             </>
           )}
         </TabsContent>
@@ -2404,12 +2417,16 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
         {/* TAB NOTIFICHE */}
         {/* ================================================================== */}
         <TabsContent value="notifiche" className="space-y-6 mt-6">
-          <NotificationManager 
-            mittenteTipo="SUAP"
-            mittenteId={comuneData?.id || 0}
-            mittenteNome={`SUAP${comuneData?.nome ? ` Comune di ${comuneData.nome}` : ''}`}
-            onNotificheUpdate={loadNotificheCount}
-          />
+          {isAssociazione ? (
+            <NotificheAssociazionePanel onNotificheUpdate={loadNotificheCount} />
+          ) : (
+            <NotificationManager
+              mittenteTipo="SUAP"
+              mittenteId={comuneData?.id || 0}
+              mittenteNome={`SUAP${comuneData?.nome ? ` Comune di ${comuneData.nome}` : ''}`}
+              onNotificheUpdate={loadNotificheCount}
+            />
+          )}
         </TabsContent>
 
         {/* ================================================================== */}
