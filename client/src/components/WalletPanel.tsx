@@ -228,7 +228,7 @@ export default function WalletPanel() {
   // Auto-init: assicura che le tabelle wallets e wallet_transactions esistano nel DB
   const ensureWalletTablesExist = async () => {
     try {
-      await fetch(`${WALLET_API_BASE}/api/wallets/init`, {
+      await fetch(addComuneIdToUrl(`${WALLET_API_BASE}/api/wallets/init`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -246,7 +246,7 @@ export default function WalletPanel() {
   const fetchImpostazioniMora = async () => {
     try {
       const API_URL = WALLET_API_BASE;
-      const response = await fetch(`${API_URL}/api/canone-unico/impostazioni-mora`);
+      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/impostazioni-mora`));
       const data = await response.json();
       if (data.success) {
         setImpostazioniMora({
@@ -266,7 +266,7 @@ export default function WalletPanel() {
     setIsSavingMora(true);
     try {
       const API_URL = WALLET_API_BASE;
-      const response = await fetch(`${API_URL}/api/canone-unico/impostazioni-mora`, {
+      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/impostazioni-mora`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(impostazioniMora)
@@ -277,7 +277,7 @@ export default function WalletPanel() {
         setShowImpostazioniMoraDialog(false);
         // Se mora abilitata, aggiorna le scadenze in mora
         if (impostazioniMora.mora_abilitata) {
-          await fetch(`${API_URL}/api/canone-unico/aggiorna-mora`, { method: 'POST' });
+          await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/aggiorna-mora`), { method: 'POST' });
           fetchCanoneScadenze();
         }
       } else {
@@ -338,7 +338,7 @@ export default function WalletPanel() {
   const handleGeneraCanoneAnnuo = async () => {
     try {
       const API_URL = WALLET_API_BASE;
-      const response = await fetch(`${API_URL}/api/canone-unico/genera-canone-annuo`, {
+      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/genera-canone-annuo`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -370,7 +370,7 @@ export default function WalletPanel() {
     if (!confirm('Sei sicuro di voler eliminare questa scadenza?')) return;
     try {
       const API_URL = WALLET_API_BASE;
-      const response = await fetch(`${API_URL}/api/canone-unico/scadenza/${scadenzaId}`, {
+      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/scadenza/${scadenzaId}`), {
         method: 'DELETE'
       });
       const data = await response.json();
@@ -390,7 +390,7 @@ export default function WalletPanel() {
   const handleViewScadenza = async (scadenzaId: number) => {
     try {
       const API_URL = WALLET_API_BASE;
-      const response = await fetch(`${API_URL}/api/canone-unico/scadenza/${scadenzaId}`);
+      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/scadenza/${scadenzaId}`));
       const data = await response.json();
       if (data.success) {
         const s = data.scadenza;
@@ -411,7 +411,7 @@ export default function WalletPanel() {
     if (!confirm(`Sei sicuro di voler eliminare TUTTE le scadenze dell'anno ${anno}?`)) return;
     try {
       const API_URL = WALLET_API_BASE;
-      const response = await fetch(`${API_URL}/api/canone-unico/scadenze/${anno}`, {
+      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/scadenze/${anno}`), {
         method: 'DELETE'
       });
       const data = await response.json();
@@ -435,7 +435,7 @@ export default function WalletPanel() {
     
     try {
       const API_URL = WALLET_API_BASE;
-      const response = await fetch(`${API_URL}/api/canone-unico/genera-pagamento-straordinario`, {
+      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/genera-pagamento-straordinario`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -626,8 +626,8 @@ export default function WalletPanel() {
       });
 
       // Fetch in parallel
-      const promises = walletIds.map(id => 
-        fetch(`${API_URL}/api/wallets/${id}/transactions`).then(r => r.json())
+      const promises = walletIds.map(id =>
+        fetch(addComuneIdToUrl(`${API_URL}/api/wallets/${id}/transactions`)).then(r => r.json())
       );
       
       const results = await Promise.all(promises);
@@ -796,7 +796,7 @@ export default function WalletPanel() {
       const anno = new Date().getFullYear();
       
       // Prima prova a caricare le scadenze esistenti
-      const scadenzeRes = await fetch(`${API_URL}/api/canone-unico/semaforo-rate/${wallet.id}/${anno}`);
+      const scadenzeRes = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/semaforo-rate/${wallet.id}/${anno}`));
       const scadenzeData = await scadenzeRes.json();
       
       if (scadenzeData.success && scadenzeData.semaforo && scadenzeData.semaforo.length > 0) {
@@ -825,7 +825,7 @@ export default function WalletPanel() {
         }
       } else if (wallet.type !== 'SPUNTA') {
         // Nessuna scadenza e NON è SPUNTA - calcola il canone annuo (fallback)
-        const res = await fetch(`${API_URL}/api/wallets/calculate-annual-fee`, {
+        const res = await fetch(addComuneIdToUrl(`${API_URL}/api/wallets/calculate-annual-fee`), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ wallet_id: wallet.id })
@@ -882,7 +882,7 @@ export default function WalletPanel() {
         }
       }
       
-      const res = await fetch(`${API_URL}/api/wallets/deposit`, {
+      const res = await fetch(addComuneIdToUrl(`${API_URL}/api/wallets/deposit`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -923,7 +923,7 @@ export default function WalletPanel() {
 
     try {
       const API_URL = WALLET_API_BASE;
-      const res = await fetch(`${API_URL}/api/wallets/${walletToDelete.id}`, {
+      const res = await fetch(addComuneIdToUrl(`${API_URL}/api/wallets/${walletToDelete.id}`), {
         method: 'DELETE',
       });
 
@@ -950,7 +950,7 @@ export default function WalletPanel() {
     
     try {
       const API_URL = WALLET_API_BASE;
-      const res = await fetch(`${API_URL}/api/canone-unico/wallet/${walletId}/azzera`, {
+      const res = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/wallet/${walletId}/azzera`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -973,7 +973,7 @@ export default function WalletPanel() {
     
     try {
       const API_URL = WALLET_API_BASE;
-      const res = await fetch(`${API_URL}/api/canone-unico/wallets/azzera-tutti`, {
+      const res = await fetch(addComuneIdToUrl(`${API_URL}/api/canone-unico/wallets/azzera-tutti`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

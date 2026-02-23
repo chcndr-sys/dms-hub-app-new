@@ -44,8 +44,6 @@ const PROCEDURE_MAP: Record<string, string> = {
   'integrations.sync.getConfig': '/api/integrations/sync/config',
   'integrations.sync.trigger': '/api/integrations/sync/trigger',
   'integrations.sync.updateConfig': '/api/integrations/sync/config',
-  // System
-  'system.health': '/api/health',
   // Guardian
   'guardian.integrations': '/api/guardian/integrations',
   'guardian.logs': '/api/guardian/logs',

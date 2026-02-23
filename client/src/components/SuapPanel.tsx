@@ -2146,7 +2146,7 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                       onClick={async () => {
                         try {
                           setLoading(true);
-                          const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${selectedConcessione.id}/associa-posteggio`, {
+                          const response = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/concessions/${selectedConcessione.id}/associa-posteggio`), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' }
                           });
@@ -2390,14 +2390,14 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                             onClick={async () => {
                               // Carica i dettagli completi della concessione (inclusi campi cedente)
                               try {
-                                const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`);
+                                const response = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`));
                                 const data = await response.json();
                                 if (data.success && data.data) {
                                   let concessioneData = { ...conc, ...data.data };
                                   // Se c'è cedente_impresa_id, carica anche i dati dell'impresa cedente
                                   if (data.data.cedente_impresa_id) {
                                     try {
-                                      const cedenteResponse = await fetch(`https://orchestratore.mio-hub.me/api/imprese/${data.data.cedente_impresa_id}`);
+                                      const cedenteResponse = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/imprese/${data.data.cedente_impresa_id}`));
                                       const cedenteData = await cedenteResponse.json();
                                       if (cedenteData.success && cedenteData.data) {
                                         concessioneData = {
@@ -2432,7 +2432,7 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                             onClick={async () => {
                               // Carica i dettagli completi della concessione prima di aprire il form
                               try {
-                                const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`);
+                                const response = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`));
                                 const data = await response.json();
                                 if (data.success && data.data) {
                                   // Combina i dati della lista con i dettagli completi
@@ -2475,7 +2475,7 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                             onClick={async () => {
                               if (!confirm(`Sei sicuro di voler eliminare la concessione ${conc.numero_protocollo || '#' + conc.id}?`)) return;
                               try {
-                                const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`, {
+                                const response = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`), {
                                   method: 'DELETE'
                                 });
                                 const data = await response.json();

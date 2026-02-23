@@ -1246,7 +1246,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                         <button
                           onClick={async () => {
                             try {
-                              const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${selectedConcessionDetail.id}/associa-posteggio`, {
+                              const response = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/concessions/${selectedConcessionDetail.id}/associa-posteggio`), {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' }
                               });
@@ -1346,14 +1346,14 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                           onView={async () => {
                             // Carica i dettagli completi della concessione (inclusi campi cedente)
                             try {
-                              const response = await fetch(`https://orchestratore.mio-hub.me/api/concessions/${concession.id}`);
+                              const response = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/concessions/${concession.id}`));
                               const data = await response.json();
                               if (data.success && data.data) {
                                 let concessioneData = { ...concession, ...data.data };
                                 // Se c'è cedente_impresa_id, carica anche i dati dell'impresa cedente
                                 if (data.data.cedente_impresa_id) {
                                   try {
-                                    const cedenteResponse = await fetch(`https://orchestratore.mio-hub.me/api/imprese/${data.data.cedente_impresa_id}`);
+                                    const cedenteResponse = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/imprese/${data.data.cedente_impresa_id}`));
                                     const cedenteData = await cedenteResponse.json();
                                     if (cedenteData.success && cedenteData.data) {
                                       concessioneData = {

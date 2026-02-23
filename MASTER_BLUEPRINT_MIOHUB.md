@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 8.17.3 (IDOR Fix Completo + Proxy Fix)  
-> **Data:** 23 Febbraio 2026  
+> **Versione:** 8.17.4 (Impersonation Hardening + Dead Code Cleanup)
+> **Data:** 24 Febbraio 2026
 > **Autore:** Sistema documentato da Manus AI & Claude AI  
 > **Stato:** PRODUZIONE
 
@@ -50,6 +50,52 @@ Questa tabella traccia la timeline completa di ogni posteggio, registrando ogni 
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 24 Febbraio 2026 (v8.17.3 → v8.17.4) — Impersonation Hardening + Dead Code Cleanup
+
+**Contesto:** Scansione completa frontend post-IDOR fix. Trovate 30+ fetch calls senza `addComuneIdToUrl()` che rompevano l'impersonazione per comune.
+
+**Backend (mihub-backend-rest) — 3 commit di Manus (gia' in produzione):**
+- ✅ **d73896a: Fix health-monitor.js** — Rimosso `const pool = pool` (auto-referenza circolare) in 3 funzioni. Guardian Service e MIO Agent ora Online nell'Health Monitor.
+- ✅ **c3b126e: Fix GET endpoints** — `comune_id` ora opzionale su GET (super_admin vede tutto), obbligatorio su POST/PUT/DELETE.
+- ✅ **397bfef: Fix WalletImpresaPage.tsx** — Aggiunto `addComuneIdToUrl` a 6 fetch nella pagina wallet impresa.
+
+**Frontend — Fix Impersonation Hardening (Claude, questo commit):**
+- ✅ **WalletPanel.tsx — 16 fetch fixate:** Tutte le chiamate POST/PUT/DELETE/GET ora wrappate con `addComuneIdToUrl()`. Include operazioni critiche: `wallets/deposit`, `wallets/DELETE`, `canone-unico/scadenze/DELETE`, `canone-unico/wallets/azzera-tutti`, `genera-canone-annuo`, `genera-pagamento-straordinario`, `calculate-annual-fee`, `impostazioni-mora` GET/PUT, `aggiorna-mora`, `semaforo-rate`, transazioni batch.
+- ✅ **SuapPanel.tsx — 5 fetch fixate:** `associa-posteggio` POST, visualizza/modifica/elimina concessione, carica impresa cedente.
+- ✅ **MarketCompaniesTab.tsx — 3 fetch fixate:** `associa-posteggio` POST, visualizza concessione + carica impresa cedente.
+- ✅ **GestioneMercati.tsx — 8 fetch fixate:** Aggiunto import `addComuneIdToUrl`. Wrappate: lista mercati (2 chiamate), modifica mercato PATCH, stalls, GIS map, concessioni, presenze, graduatoria, spuntisti (Promise.all), concessions + vendors.
+
+**Frontend — Dead Code Cleanup:**
+- ✅ **trpcHttp.ts:** Rimosso mapping morto `system.health → /api/health` (mai chiamato, causava confusione nei log 404).
+- ✅ **vercel.json:** Rimosso proxy morto `/api/trpc/:path*` → mihub.157-90-29-66.nip.io (server tRPC archiviato in FASE 5).
+
+**Health Monitor (aggiornato):**
+| Servizio | Stato | Note |
+|----------|-------|------|
+| Backend Hetzner | ✅ Online | 19ms |
+| Database Neon | ✅ Online | 127ms |
+| Frontend Vercel | ✅ Online | 273ms |
+| Guardian Service | ✅ Online | 216ms (fixato d73896a) |
+| MIO Agent | ✅ Online | 903ms (fixato d73896a) |
+| Storage S3 | ⏸️ Disabled | Da configurare |
+| PDND API | ❌ Down | Da configurare (non bug) |
+
+**Checklist Pre-Lancio (stato aggiornato):**
+- ⏳ Attivare Verifica Firma Token Firebase (`GOOGLE_APPLICATION_CREDENTIALS` su Hetzner)
+- ⏳ Validazione Impersonazione Server-Side (middleware `impersonation.js`)
+- ⏳ Sessione JWT con Refresh Token (ridurre scadenza da 24h a 1h)
+- ⏳ Revisione Completa Permessi RBAC
+- ⏳ Test di Carico (Load Testing)
+
+**Problemi Residui Identificati (non fixati in questa sessione):**
+- ⚠️ `GestioneMercati.tsx` ha ancora ~20 fetch per operazioni su stalli/presenze senza wrapping (operazioni su dati gia' filtrati per mercato, rischio basso)
+- ⚠️ `DashboardPA.tsx` L104-109: parsing URL manuale per impersonazione invece di usare hook `useImpersonation()`
+- ⚠️ `ControlliSanzioniPanel.tsx` L344-369: parsing URL manuale misto con hook — potenziale desync
+- ⚠️ `drizzle/schema.ts` e `drizzle.config.ts` mancanti dal repo (archiviati in `_cantina/` dalla FASE 5) — le 3 API routes in `/api/logs/` sono rotte
+- ⚠️ Proxy `/api/trpc` rimosso — verificare che nessun client lo chiami ancora
+
+---
 
 ### Sessione 23 Febbraio 2026 — Notte (v8.17.2 → v8.17.3) — IDOR Fix Completo
 

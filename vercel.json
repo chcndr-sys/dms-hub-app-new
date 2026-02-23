@@ -84,10 +84,6 @@
       "destination": "https://orchestratore.mio-hub.me/api/github/:path*"
     },
     {
-      "source": "/api/trpc/:path*",
-      "destination": "https://mihub.157-90-29-66.nip.io/api/trpc/:path*"
-    },
-    {
       "source": "/api/markets",
       "destination": "https://api.mio-hub.me/api/markets"
     },

@@ -37,7 +37,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { MIHUB_API_BASE_URL } from '@/config/api';
-import { useImpersonation } from '@/hooks/useImpersonation';
+import { useImpersonation, addComuneIdToUrl } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = MIHUB_API_BASE_URL;
 
@@ -188,7 +188,7 @@ export default function GestioneMercati() {
   const restMarketsQuery = useQuery({
     queryKey: ['dmsHub-markets-list-fallback'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/api/markets`);
+      const res = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/markets`));
       if (!res.ok) return [];
       const json = await res.json();
       return json?.data ?? json ?? [];
@@ -234,7 +234,7 @@ export default function GestioneMercati() {
 
   const fetchMarkets = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/markets`);
+      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/markets`));
       const data = await response.json();
       if (data.success && data.data && data.data.length > 0) {
         const filteredMarkets = applyFilters(data.data);
@@ -427,7 +427,7 @@ function MarketDetail({ market, allMarkets, onUpdate, onStallsLoaded, onRefreshS
   // Funzione per caricare i posteggi (esposta per refresh esterno)
   const fetchStalls = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/markets/${market.id}/stalls`);
+      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/markets/${market.id}/stalls`));
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const json = await response.json();
       if (json.success && Array.isArray(json.data)) {
@@ -583,7 +583,7 @@ function AnagraficaTab({ market, onUpdate }: { market: Market; onUpdate: () => v
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/markets/${market.id}`, {
+      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/markets/${market.id}`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1588,12 +1588,12 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   const fetchData = async () => {
     try {
       const [stallsRes, mapRes, concessionsRes, presenzeRes, graduatoriaRes, spuntistiRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/markets/${marketId}/stalls`),
-        fetch(`${API_BASE_URL}/api/gis/market-map/${marketId}`),
-        fetch(`${API_BASE_URL}/api/markets/${marketId}/concessions`),
-        fetch(`${API_BASE_URL}/api/presenze/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) })),
-        fetch(`${API_BASE_URL}/api/graduatoria/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) })),
-        fetch(`${API_BASE_URL}/api/spuntisti/mercato/${marketId}`).catch(() => ({ json: () => ({ success: false }) }))
+        fetch(addComuneIdToUrl(`${API_BASE_URL}/api/markets/${marketId}/stalls`)),
+        fetch(addComuneIdToUrl(`${API_BASE_URL}/api/gis/market-map/${marketId}`)),
+        fetch(addComuneIdToUrl(`${API_BASE_URL}/api/markets/${marketId}/concessions`)),
+        fetch(addComuneIdToUrl(`${API_BASE_URL}/api/presenze/mercato/${marketId}`)).catch(() => ({ json: () => ({ success: false }) })),
+        fetch(addComuneIdToUrl(`${API_BASE_URL}/api/graduatoria/mercato/${marketId}`)).catch(() => ({ json: () => ({ success: false }) })),
+        fetch(addComuneIdToUrl(`${API_BASE_URL}/api/spuntisti/mercato/${marketId}`)).catch(() => ({ json: () => ({ success: false }) }))
       ]);
 
       const stallsData = await stallsRes.json();
@@ -4046,8 +4046,8 @@ function ConcessioniTab({ marketId }: { marketId: number }) {
   const fetchData = async () => {
     try {
       const [concessionsRes, vendorsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/concessions?market_id=${marketId}`),
-        fetch(`${API_BASE_URL}/api/vendors`)
+        fetch(addComuneIdToUrl(`${API_BASE_URL}/api/concessions?market_id=${marketId}`)),
+        fetch(addComuneIdToUrl(`${API_BASE_URL}/api/vendors`))
       ]);
 
       const concessionsData = await concessionsRes.json();
