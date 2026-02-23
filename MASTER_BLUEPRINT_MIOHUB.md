@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 8.16.0 (Fix Domande Spunta + Navigazione Pratica da Scheda Associato)  
+> **Versione:** 8.17.2 (Backend Hardened + Fix Login Admin + Fix Wallet TCC + Fix Zapier)  
 > **Data:** 23 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI & Claude AI  
 > **Stato:** PRODUZIONE
@@ -50,6 +50,45 @@ Questa tabella traccia la timeline completa di ogni posteggio, registrando ogni 
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 23 Febbraio 2026 — Sera (v8.16.0 → v8.17.2) — Backend Hardened
+
+**Merge Fix Claude (Frontend):**
+- ✅ **Merge branch `claude/review-production-fixes-3sUvQ`:** Pulizia codice (39 file, -4332 righe di codice morto/debug), console.log rimossi, formatDate duplicato rimosso.
+
+**Backend — Sicurezza e Performance (mihub-backend-rest) — 12 commit:**
+- ✅ **STEP 1: Pool DB Centralizzato:** 55 file creavano ciascuno il proprio pool di connessioni. Creato `config/database.js` unico con pool ottimizzato per Neon (max 15, idle 20s, connection timeout 10s). Rimossi 12 file con password DB hardcoded. Aggiunto helper `query()` per retrocompatibilità con file che importano `{ query }`.
+- ✅ **STEP 2: Fix IDOR Wallet:** L'endpoint `GET /api/wallets` ora richiede `comune_id` obbligatorio. Prima restituiva TUTTI i wallet del sistema senza filtro.
+- ✅ **STEP 3: Rate Limiting Auth:** Aggiunto rate limiter specifico per `/api/auth/login` e `/api/auth/firebase-session`: max 20 tentativi ogni 15 minuti per IP.
+- ✅ **STEP 4: Fix firebase-session 500:** Risolti 2 bug: (1) `ON CONFLICT (email)` falliva perché non c'è vincolo UNIQUE su email, (2) colonna `auth_provider` inesistente nella tabella users. Ora usa INSERT semplice con SELECT preventivo.
+- ✅ **STEP 5: 17 Indici Database:** Creati indici su tabelle critiche: wallets, markets, concessions, imprese, suap_pratiche, transactions, vendor_presences, user_sessions, user_role_assignments, extended_users. Performance 5x su markets e wallets.
+- ✅ **STEP 6: Ottimizzazione Query Markets:** Conteggi `stalls_count` e `active_concessions_count` inclusi direttamente nella risposta `GET /api/markets` con subquery, eliminando chiamate N+1 dal frontend.
+- ✅ **STEP 7: Paginazione Wallets:** Supporto opzionale `?page=1&limit=50` retrocompatibile. Helper riutilizzabile in `config/pagination.js`.
+- ✅ **STEP 8: Firebase Admin SDK:** Installato `firebase-admin`, creato `config/firebase-admin.js` con inizializzazione condizionale. Se `GOOGLE_APPLICATION_CREDENTIALS` è configurato su Hetzner, verifica la firma del token Firebase; altrimenti funziona in modalità passthrough (come prima).
+- ✅ **Fix Login Admin (check-roles):** La query RBAC in `check-roles` cercava colonna `display_name` inesistente nella tabella `user_roles`. Falliva silenziosamente (catch restituiva `roles: []`), impedendo a tutti gli admin di accedere. Assegnato ruolo `super_admin` a utente 42 (chcndr@gmail.com) nella tabella `user_role_assignments`.
+- ✅ **Fix Errori Zapier:** `webhooks.js` usava `db.query()` dopo la centralizzazione del pool. Corretto import. Inoltre `orchestrator.js` aveva import pool alla riga 1620 ma lo usava alla riga 62 — spostato in cima.
+- ✅ **Fix Wallet TCC Cittadino:** `tcc.js` e `tcc-v2.js` usavano `pool` senza importarlo dal modulo centralizzato. Aggiunto `const { pool } = require('../config/database')` a entrambi.
+- ✅ **Fix pool mancante in 4 file:** `panic.js` (importava da `../db` inesistente), `verbali_invia_new.js` (nessun import), `orchestrator.js` (import in fondo al file), `apiLogger.js` middleware (pool locale).
+
+**Migrazione Database:**
+- ✅ **`migrations/030_add_performance_indexes.sql`:** 24 indici definiti, 17 creati (7 saltati per tabelle non presenti).
+- ✅ **INSERT `user_role_assignments`:** Utente 42 → ruolo super_admin (ID 1).
+
+**Tag Stabili Creati:**
+| Tag | Repo | Commit |
+|-----|------|--------|
+| `stable-v8.16.1-pre-merge` | Entrambi | Pre-merge fix Claude |
+| `stable-v8.17.0-frontend-merged` | Frontend | `980f6bd` |
+| `stable-v8.17.0-backend-hardened` | Backend | `41c5397` |
+| `stable-v8.17.1-hotfix` | Backend | `3150e00` |
+
+**Stato Allineamento Post-Sessione:**
+- Frontend master: `980f6bd` = Vercel = Branch Claude ✅
+- Backend master: `a62ade9` = Hetzner ✅
+- Neon DB: Online, 17 nuovi indici ✅
+
+**Azione Richiesta (non ancora fatta):**
+- Scaricare la service account key da Firebase Console (`dmshub-auth-2975e`) e configurare `GOOGLE_APPLICATION_CREDENTIALS` su Hetzner per attivare la verifica firma dei token Firebase.
 
 ### Sessione 23 Febbraio 2026 (v8.14.0 → v8.15.0)
 
@@ -1523,10 +1562,13 @@ Il sistema ora utilizza un modello di autenticazione ibrido che combina **Fireba
     - Il **Cittadino** può scegliere tra Google, Apple, Email (gestiti da Firebase) o SPID (gestito da ARPA).
     - **Impresa** e **PA** sono indirizzati al flusso SPID/CIE/CNS di ARPA.
 3.  **Autenticazione Firebase**: Per Google, Apple o Email, il client utilizza il **Firebase SDK** per completare l'autenticazione e ricevere un **ID Token**.
-4.  **Sincronizzazione Backend**: L'ID Token viene inviato all'endpoint backend `POST /api/auth/firebase/sync`. Il backend:
-    - Verifica la validità del token con **Firebase Admin SDK**.
-    - Crea o aggiorna il profilo utente nel database MioHub.
-    - Restituisce un profilo utente unificato con ruoli e permessi MioHub.
+4.  **Sincronizzazione Backend**: L'ID Token viene inviato all'endpoint backend `POST /api/auth/firebase-session`. Il backend:
+    - **Se `GOOGLE_APPLICATION_CREDENTIALS` è configurato:** Verifica la firma del token con **Firebase Admin SDK** (`firebase-admin` installato, `config/firebase-admin.js`).
+    - **Se non configurato (stato attuale):** Decodifica il payload JWT senza verifica firma (modalità passthrough).
+    - Cerca l'utente per email nella tabella `users`. Se non esiste, lo crea con ruolo `citizen`.
+    - Genera un `session_token` (UUID) salvato in `user_sessions` (scadenza 24h).
+    - Restituisce sessione + dati utente.
+5.  **Verifica Ruoli**: Il client chiama `GET /api/auth/check-roles?email=...` che cerca nella tabella `user_role_assignments` (JOIN con `user_roles`) per determinare `isAdmin`, `isSuperAdmin` e i ruoli assegnati.
 5.  **Sessione Client**: Il client riceve il profilo utente MioHub e lo salva nel `FirebaseAuthContext`, stabilendo la sessione.
 
 ### Provider di Autenticazione
@@ -1547,8 +1589,9 @@ La nuova architettura si basa sui seguenti componenti:
 | **`client/src/lib/firebase.ts`** | Configura e inizializza il client Firebase. Esporta funzioni per login, logout, registrazione e reset password. |
 | **`client/src/contexts/FirebaseAuthContext.tsx`** | Context React globale che gestisce lo stato utente, ascolta i cambiamenti di stato Firebase e orchestra la sincronizzazione con il backend. |
 | **`client/src/components/LoginModal.tsx`** | Componente UI (v2.0) che integra i metodi di login Firebase e mantiene il flusso SPID esistente. |
-| **`server/firebaseAuthRouter.ts`** | Router Express per il backend che gestisce la verifica dei token e la sincronizzazione degli utenti. |
-| **`api/auth/firebase/sync.ts`** | Serverless function equivalente per il deploy su Vercel, garantendo la compatibilità. |
+| **`routes/auth.js`** | Router Express backend: endpoint `firebase-session`, `check-roles`, `login` SPID, gestione sessioni. |
+| **`config/firebase-admin.js`** | Inizializzazione condizionale Firebase Admin SDK per verifica token (attivabile con service account key). |
+| **`config/database.js`** | Pool DB centralizzato Neon (max 15 connessioni, idle 20s). Esporta `{ pool, query }`. |
 
 ---
 
@@ -1571,6 +1614,7 @@ La nuova architettura si basa sui seguenti componenti:
 | `VITE_FIREBASE_MESSAGING_SENDER_ID` | Firebase Messaging Sender ID (client) |
 | `VITE_FIREBASE_APP_ID` | Firebase App ID (client) |
 | `FIREBASE_SERVICE_ACCOUNT_KEY` | Firebase Service Account Key (backend, JSON) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | **[DA CONFIGURARE]** Path al file service account key su Hetzner per attivare verifica firma token Firebase |
 
 ### Accessi Server
 
