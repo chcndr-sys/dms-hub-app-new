@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 8.15.0 (Fix SUAP: Banner, Dashboard, Semafori, Click, Notifiche, Check, Modifica Scheda)  
+> **Versione:** 8.16.0 (Fix Domande Spunta + Navigazione Pratica da Scheda Associato)  
 > **Data:** 23 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI & Claude AI  
 > **Stato:** PRODUZIONE
@@ -8942,3 +8942,64 @@ Il tab "Associazioni" (TPAS) è la sezione ADMIN per gestire tutte le associazio
 | Tab DashboardPA | 32 |
 | Tipi `any` | 553 |
 | `useMemo`/`useCallback` | 122 (27 + 95) |
+
+
+---
+
+## 🔄 AGGIORNAMENTO SESSIONE 23 FEBBRAIO 2026 (v8.15.0 → v8.16.0)
+
+> **Data:** 23 Febbraio 2026  
+> **Sessione:** Notte 22-23 Feb  
+> **Stato:** Tutte le modifiche deployate e funzionanti
+
+---
+
+### 📋 RIEPILOGO COMPLETO MODIFICHE
+
+#### Fix v8.15.0 (Sessione precedente — SUAP)
+
+| # | Fix | File | Dettaglio |
+|---|-----|------|-----------|
+| 1 | Banner APPROVED verde | `SuapPanel.tsx` | Banner "Pratica SCIA Espletata con Esito Positivo" quando stato=APPROVED |
+| 2 | Dashboard associazione pratiche | `SuapPanel.tsx` | INTEGRATION_NEEDED incluso nel riquadro "Pratiche Pendenti" |
+| 3 | Semaforo colori scheda associato | `PresenzeAssociatiPanel.tsx` | Badge colori: verde APPROVED, rosso REJECTED, arancione INTEGRATION_NEEDED, blu IN_LAVORAZIONE |
+| 4 | Click pratica/concessione scheda | `PresenzeAssociatiPanel.tsx` + `SuapPanel.tsx` + `DashboardPA.tsx` | Click apre dettaglio pratica/concessione con navigazione tab automatica |
+| 5 | Notifica impresa con posteggio | `concessions.js` | Aggiunto `Post. ${stallData.number}` nelle notifiche concessione |
+| 6 | Nomi check banner regolarizzazione | `SuapPanel.tsx` | Usa `check_code` e `dettaglio.motivo` invece di campi inesistenti |
+| 7 | Tab modifica scheda associato | `PresenzeAssociatiPanel.tsx` | Bottone matita per editare N. Tessera, Scadenza, Importi, Stato Pagamento |
+| 8 | Nega Pratica + Richiedi Regolarizzazione | `SuapPanel.tsx` + `service.js` | Bottoni rosso/arancione nella vista PA per negare o richiedere integrazione |
+| 9 | associazione_id nel submit SCIA | `SuapPanel.tsx` | Aggiunto associazione_id al praticaData quando si crea SCIA da impersonazione |
+
+#### Fix v8.16.0 (Sessione corrente)
+
+| # | Fix | File | Dettaglio |
+|---|-----|------|-----------|
+| 1 | **Domande Spunta filtro case-sensitive** | `domande-spunta.js` (backend) | `stato = 'attivo'` → `UPPER(stato) = 'ATTIVO'` — il DB aveva 'ATTIVO' maiuscolo, il filtro cercava 'attivo' minuscolo. Risultato: da 1 a 6 domande visibili per associazione |
+| 2 | **Navigazione pratica da scheda associato** | `SuapPanel.tsx` + `DashboardPA.tsx` | Aggiunto listener `navigate-to-pratica` e `navigate-to-concessione`. DashboardPA sotto-tab Enti&Associazioni ora controllato (`value={docsSubTab}`) per switch programmatico da "Associati" a "SCIA & Pratiche" |
+
+#### COMMIT
+
+| Repo | Commit | Descrizione |
+|------|--------|-------------|
+| `dms-hub-app-new` | `1ef778f` | associazione_id nel submit SCIA |
+| `dms-hub-app-new` | `b0217b0` | Nega Pratica + Regolarizzazione + Banner + Semafori + Check + Modifica Scheda |
+| `dms-hub-app-new` | `dad8150` | Fix 7 issues SUAP completi |
+| `dms-hub-app-new` | `aa8e099` | Fix domande spunta filtro + navigazione pratica da scheda |
+| `mihub-backend-rest` | `afa910d` | Notifiche REJECTED/INTEGRATION_NEEDED |
+| `mihub-backend-rest` | `e131ae3` | Fix notifica posteggio concessione |
+| `mihub-backend-rest` | `5ccb45f` | Fix domande spunta filtro case-sensitive |
+
+#### STATO ALLINEAMENTO
+
+| Componente | Branch | Commit | Deploy |
+|------------|--------|--------|--------|
+| Frontend (Vercel) | `master` | `aa8e099` | Auto-deploy ✅ |
+| Frontend | `claude/review-production-fixes-3sUvQ` | Da allineare | — |
+| Backend (Hetzner) | `master` | `5ccb45f` | Auto-deploy GitHub Actions ✅ |
+
+### ⚠️ BUG NOTI DA INVESTIGARE
+
+| Errore | Tipo | Severità | Dettaglio |
+|--------|------|----------|-----------|
+| `GET /api/trpc/system.health` 404 | Frontend | MEDIUM | Vecchio client tRPC residuo chiama endpoint inesistente |
+| `POST /api/auth/firebase-session` 500 | Backend | HIGH | Errore intermittente login Firebase — possibile colonna mancante o token malformato |
