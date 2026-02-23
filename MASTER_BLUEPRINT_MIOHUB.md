@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 8.17.2 (Backend Hardened + Fix Login Admin + Fix Wallet TCC + Fix Zapier)  
+> **Versione:** 8.17.3 (IDOR Fix Completo + Proxy Fix)  
 > **Data:** 23 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI & Claude AI  
 > **Stato:** PRODUZIONE
@@ -51,6 +51,39 @@ Questa tabella traccia la timeline completa di ogni posteggio, registrando ogni 
 
 ## 📝 CHANGELOG RECENTE
 
+### Sessione 23 Febbraio 2026 — Notte (v8.17.2 → v8.17.3) — IDOR Fix Completo
+
+**Backend — Fix IDOR Wallet & Canone-Unico (mihub-backend-rest):**
+- ✅ **Fix IDOR Completo wallets.js (7 endpoint):** Tutti gli endpoint wallet ora richiedono `comune_id` obbligatorio. Gli endpoint `deposit`, `withdraw`, `delete` e `transactions` verificano anche l'ownership del wallet tramite join `wallets → markets → comune_id`. Senza `comune_id` restituiscono HTTP 400.
+- ✅ **Fix IDOR Completo canone-unico.js (18 endpoint):** Tutti gli endpoint canone-unico ora richiedono `comune_id` obbligatorio. Gli endpoint critici (`azzera-tutti`, `scadenze DELETE`, `genera-canone-annuo`) filtrano per comune tramite subquery. Rimosso default hardcoded `comune_id = 1` da `impostazioni-mora`.
+- ✅ **Endpoint protetti con ownership check:** `semaforo-rate`, `semaforo-impresa`, `imprese-concessioni`, `concessions/:id/status`, `posteggi-mercato`, `scadenza/:id GET`, `ricariche-spunta`.
+
+**Frontend — Fix WalletPanel.tsx (dms-hub-app-new):**
+- ✅ **17 chiamate fetch fixate:** Tutte le chiamate API nel WalletPanel ora includono `comune_id` tramite helper `addComuneIdToUrl()` che legge dal contesto di impersonazione.
+
+**Frontend — Fix vercel.json:**
+- ✅ **3 regole proxy aggiunte:** `/api/logs/:path*` → api.mio-hub.me, `/api/system/:path*` → api.mio-hub.me, `/api/github/:path*` → orchestratore.mio-hub.me.
+- ✅ **Rimosso self-rewrite:** `/api/mihub/get-messages` puntava a se stesso (loop). Ora correttamente proxied a api.mio-hub.me tramite regola wildcard `/api/mihub/:path*`.
+
+**Test Produzione:**
+- ✅ Tutti gli endpoint senza `comune_id` restituiscono HTTP 400
+- ✅ Endpoint con `comune_id` corretto restituiscono dati
+- ✅ Cross-tenant (`comune_id=999`) restituisce 0 risultati o 404
+
+**Tag Stabili Creati:**
+| Tag | Repo | Commit |
+|-----|------|--------|
+| `stable-v8.17.3-idor-fixed` | Backend | `39cd701` |
+| `stable-v8.17.3-idor-fixed` | Frontend | `95b2c98` |
+
+**Stato Allineamento Post-Sessione:**
+- Frontend master: `95b2c98` = Vercel ✅
+- Backend master: `39cd701` = Hetzner ✅
+- Neon DB: Online, 17 indici ✅
+- IDOR: **RISOLTO** su tutti gli endpoint wallet e canone-unico ✅
+
+---
+
 ### Sessione 23 Febbraio 2026 — Sera (v8.16.0 → v8.17.2) — Backend Hardened
 
 **Merge Fix Claude (Frontend):**
@@ -82,7 +115,7 @@ Questa tabella traccia la timeline completa di ogni posteggio, registrando ogni 
 | `stable-v8.17.0-backend-hardened` | Backend | `41c5397` |
 | `stable-v8.17.1-hotfix` | Backend | `3150e00` |
 
-**Stato Allineamento Post-Sessione:**
+**Stato Allineamento Post-Sessione (v8.17.2):**
 - Frontend master: `980f6bd` = Vercel = Branch Claude ✅
 - Backend master: `a62ade9` = Hetzner ✅
 - Neon DB: Online, 17 nuovi indici ✅
