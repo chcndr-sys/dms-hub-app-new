@@ -9043,7 +9043,23 @@ Il tab "Associazioni" (TPAS) è la sezione ADMIN per gestire tutte le associazio
 
 ### ⚠️ BUG NOTI DA INVESTIGARE
 
-| Errore | Tipo | Severità | Dettaglio |
-|--------|------|----------|-----------|
-| `GET /api/trpc/system.health` 404 | Frontend | MEDIUM | Vecchio client tRPC residuo chiama endpoint inesistente |
-| `POST /api/auth/firebase-session` 500 | Backend | HIGH | Errore intermittente login Firebase — possibile colonna mancante o token malformato |
+| Errore | Tipo | Severità | Stato |
+|--------|------|----------|-------|
+| `GET /api/trpc/system.health` 404 | Frontend | MEDIUM | ✅ RISOLTO v8.17.0 — Claude ha riscritto `trpcHttp.ts` per intercettare e convertire le vecchie chiamate tRPC |
+| `POST /api/auth/firebase-session` 500 | Backend | HIGH | ✅ RISOLTO v8.17.0 — Bug ON CONFLICT + colonna `auth_provider` inesistente |
+| `check-roles` restituiva ruoli vuoti | Backend | CRITICAL | ✅ RISOLTO v8.17.1 — Colonna `display_name` inesistente nella query RBAC |
+| Zapier errori continui `pool is not defined` | Backend | HIGH | ✅ RISOLTO v8.17.2 — Pool mancante in webhooks.js, orchestrator.js, tcc.js |
+
+---
+
+## 🚀 CHECKLIST PRE-LANCIO PUBBLICO
+
+> **Nota:** Queste azioni sono raccomandate prima di aprire il sistema al pubblico. Sono state identificate durante la sessione di hardening backend del 23 Febbraio 2026. Il sistema è attualmente in costruzione e funzionante per uso interno/test.
+
+| # | Priorità | Azione | Descrizione | Stato |
+|---|----------|--------|-------------|-------|
+| 1 | **CRITICA** | Attivare Verifica Firma Token Firebase | Scaricare la service account key da Firebase Console (`dmshub-auth-2975e`), caricarla su Hetzner e configurare la variabile `GOOGLE_APPLICATION_CREDENTIALS`. Il codice è già pronto in `config/firebase-admin.js` — si attiva automaticamente. Senza questo, chiunque può creare un token JWT falso e accedere. | ⏳ DA FARE |
+| 2 | **ALTA** | Validazione Impersonazione Server-Side | Creare middleware `middleware/impersonation.js` che verifichi server-side che l'utente abbia il permesso di impersonare il comune/associazione richiesto. Attualmente l'impersonazione è gestita solo lato client. | ⏳ DA FARE |
+| 3 | **MEDIA** | Sessione JWT con Refresh Token | Valutare se ridurre la scadenza sessione (attualmente 24h) e implementare refresh token. Passaggio intermedio consigliato: 7 giorni + refresh, poi eventualmente ridurre. Decisione di prodotto: impatta l'esperienza utente. | ⏳ DA FARE |
+| 4 | **BASSA** | Revisione Completa Permessi RBAC | Audit di tutti i ruoli e permessi per garantire il principio del minimo privilegio. | ⏳ DA FARE |
+| 5 | **BASSA** | Test di Carico (Load Testing) | Simulare utenti simultanei per identificare colli di bottiglia e verificare stabilità sotto stress. | ⏳ DA FARE |
