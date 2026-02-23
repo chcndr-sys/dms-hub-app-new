@@ -615,6 +615,27 @@ export default function DashboardPA() {
   const [dashboardSubTab, setDashboardSubTab] = useState<'overview' | 'mercati'>('overview');
   const [sistemaSubTab, setSistemaSubTab] = useState<'logs' | 'debug'>('logs');
   const [walletSubTab, setWalletSubTab] = useState<'wallet' | 'pagopa'>('wallet');
+  const [docsSubTab, setDocsSubTab] = useState<string>('formazione');
+
+  // Listener per navigazione dalla scheda associato alla pratica SCIA
+  useEffect(() => {
+    const handleNavigateToPratica = () => {
+      // Switcha al tab Enti & Associazioni e al sotto-tab SCIA & Pratiche
+      setActiveTab('docs');
+      setDocsSubTab('scia-pratiche');
+    };
+    const handleNavigateToConcessione = () => {
+      setActiveTab('docs');
+      setDocsSubTab('scia-pratiche');
+    };
+    window.addEventListener('navigate-to-pratica', handleNavigateToPratica);
+    window.addEventListener('navigate-to-concessione', handleNavigateToConcessione);
+    return () => {
+      window.removeEventListener('navigate-to-pratica', handleNavigateToPratica);
+      window.removeEventListener('navigate-to-concessione', handleNavigateToConcessione);
+    };
+  }, []);
+
   const [walletSearch, setWalletSearch] = useState('');
   const [selectedWallet, setSelectedWallet] = useState<number | null>(null);
 
@@ -4610,7 +4631,7 @@ export default function DashboardPA() {
           {/* TAB 24: DOCUMENTAZIONE - ENTI FORMATORI & BANDI */}
           <TabsContent value="docs" className="space-y-6">
             {/* Sotto-tab per Formazione e Bandi */}
-            <Tabs defaultValue="formazione" className="w-full">
+            <Tabs value={docsSubTab} onValueChange={setDocsSubTab} className="w-full">
               <TabsList className="bg-[#1a2332] border border-[#3b82f6]/20 mb-6">
                 <TabsTrigger value="formazione" className="data-[state=active]:bg-[#3b82f6]/20 data-[state=active]:text-[#3b82f6]">
                   <GraduationCap className="w-4 h-4 mr-2" />

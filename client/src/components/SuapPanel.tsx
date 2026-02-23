@@ -272,6 +272,33 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
     }
   }, [comuneDataLoaded, comuneData]);
 
+  // Ascolta eventi di navigazione dalla scheda associato
+  useEffect(() => {
+    const handleNavigateToPratica = (e: CustomEvent) => {
+      const { praticaId } = e.detail;
+      if (praticaId) {
+        loadPraticaDetail(praticaId);
+      }
+    };
+    const handleNavigateToConcessione = (e: CustomEvent) => {
+      const { concessioneId } = e.detail;
+      if (concessioneId) {
+        setActiveTab('concessioni');
+        // Seleziona la concessione dal lista
+        const found = concessioni.find((c: any) => c.id === concessioneId);
+        if (found) {
+          setSelectedConcessione(found);
+        }
+      }
+    };
+    window.addEventListener('navigate-to-pratica', handleNavigateToPratica as EventListener);
+    window.addEventListener('navigate-to-concessione', handleNavigateToConcessione as EventListener);
+    return () => {
+      window.removeEventListener('navigate-to-pratica', handleNavigateToPratica as EventListener);
+      window.removeEventListener('navigate-to-concessione', handleNavigateToConcessione as EventListener);
+    };
+  }, [concessioni]);
+
   const loadData = async () => {
     // Dati SUAP: caricare sempre (anche per impersonificazione associazione)
     setLoading(true);

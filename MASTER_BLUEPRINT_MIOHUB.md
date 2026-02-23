@@ -1,7 +1,7 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 8.14.0 (Campi Delegato SCIA in Form Associazione + Auto-compilazione)  
-> **Data:** 22 Febbraio 2026  
+> **Versione:** 8.15.0 (Fix SUAP: Banner, Dashboard, Semafori, Click, Notifiche, Check, Modifica Scheda)  
+> **Data:** 23 Febbraio 2026  
 > **Autore:** Sistema documentato da Manus AI & Claude AI  
 > **Stato:** PRODUZIONE
 
@@ -50,6 +50,20 @@ Questa tabella traccia la timeline completa di ogni posteggio, registrando ogni 
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 23 Febbraio 2026 (v8.14.0 → v8.15.0)
+
+**Backend (mihub-backend-rest):**
+- ✅ **Fix 5: Notifica Impresa con Posteggio:** Aggiunto il numero del posteggio (`Post. N`) nel messaggio di notifica all'impresa quando viene rilasciata/rinnovata una concessione. Il messaggio ora è più chiaro (es. "Il subingresso per il Post. 7 nel Mercato Grosseto è stato completato").
+
+**Frontend (dms-hub-app-new):**
+- ✅ **Fix 1: Banner Esito Positivo SCIA:** Aggiunto banner verde "Pratica SCIA Espletata con Esito Positivo" nella vista dettaglio pratica quando lo stato è `APPROVED`, con riepilogo della concessione generata.
+- ✅ **Fix 2: Dashboard Associazione - Pratiche Pendenti:** Il riquadro "Pratiche Pendenti" nella dashboard associazione ora include anche le pratiche con stato `INTEGRATION_NEEDED`, che richiedono un'azione da parte dell'associazione.
+- ✅ **Fix 3: Semaforo Colori Scheda Associato:** I badge stato delle pratiche SCIA nella scheda associato ora usano i colori corretti: verde (APPROVED), rosso (REJECTED), arancione (INTEGRATION_NEEDED), blu (IN_LAVORAZIONE).
+- ✅ **Fix 4: Click Pratica/Concessione apre Documento:** Nella scheda associato, cliccando su una pratica SCIA si apre il dettaglio nel SuapPanel, e cliccando su una concessione si apre il documento PDF della concessione.
+- ✅ **Fix 6: Nomi Check Banner Regolarizzazione:** Corretto il bug per cui i controlli da regolarizzare nel banner arancione apparivano senza nome. Ora vengono mostrati correttamente il codice del check e il motivo del fallimento (es. "CHECK_CANONE_UNICO: Wallet in rosso").
+- ✅ **Fix 7: Tab Modifica Scheda Associato:** Aggiunto bottone "Modifica" (icona matita) nella scheda associato. Cliccandolo, i campi (N. Tessera, Scadenza, Importi, etc.) diventano editabili e appare un bottone "Salva" per persistere le modifiche.
+
 
 ### Sessione 22 Febbraio 2026 — Notte (v8.13.0 → v8.14.0)
 
