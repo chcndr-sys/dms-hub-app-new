@@ -4959,17 +4959,22 @@ export default function DashboardPA() {
                           <label className="text-sm text-[#e8fbff]/70">Tipo Attestato *</label>
                           <select name="tipo_qualifica" required className="w-full p-3 bg-[#0b1220] border border-[#3b82f6]/20 rounded-lg text-[#e8fbff] focus:border-[#10b981] focus:outline-none">
                             <option value="">Seleziona tipo...</option>
+                            {/* Requisiti Obbligatori */}
+                            <option value="DURC">DURC - Regolarità Contributiva</option>
+                            <option value="ONORABILITA">ONORABILITA - Requisiti Morali (Art. 71 D.Lgs. 59/2010)</option>
+                            <option value="ANTIMAFIA">ANTIMAFIA - Dichiarazione (Art. 67 D.Lgs. 159/2011)</option>
+                            {/* Certificazioni Alimentari */}
                             <option value="HACCP">HACCP - Sicurezza Alimentare</option>
-                            <option value="SICUREZZA_LAVORO">Sicurezza sul Lavoro (D.Lgs 81/08)</option>
-                            <option value="ANTINCENDIO">Prevenzione Incendi</option>
-                            <option value="PRIMO_SOCCORSO">Primo Soccorso</option>
-                            <option value="PRIVACY_GDPR">Privacy e GDPR</option>
-                            <option value="IGIENE_ALIMENTARE">Igiene Alimentare</option>
-                            <option value="RSPP">RSPP - Responsabile Sicurezza</option>
-                            <option value="RLS">RLS - Rappresentante Lavoratori</option>
-                            <option value="CARRELLISTA">Patentino Carrello Elevatore</option>
-                            <option value="PES_PAV">PES/PAV - Lavori Elettrici</option>
-                            <option value="ALTRO">Altro</option>
+                            <option value="SAB">SAB - Somministrazione Alimenti e Bevande</option>
+                            <option value="REC">REC - Registro Esercenti Commercio</option>
+                            <option value="CORSO_ALIMENTARE">CORSO ALIMENTARE - Formazione Regionale</option>
+                            {/* Certificazioni Qualità */}
+                            <option value="ISO 9001">ISO 9001 - Qualità</option>
+                            <option value="ISO 14001">ISO 14001 - Ambiente</option>
+                            <option value="ISO 22000">ISO 22000 - Sicurezza Alimentare</option>
+                            {/* Altro */}
+                            <option value="CONCESSIONE MERCATO">CONCESSIONE MERCATO</option>
+                            <option value="ALTRO">ALTRO</option>
                           </select>
                         </div>
                       </div>
