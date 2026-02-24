@@ -443,6 +443,85 @@ Le query in `stats.js` usavano nomi tabella/colonna errati fin dalla creazione. 
 ### Inventario Tabelle Database (152 tabelle Neon)
 Riferimento completo: `/home/ubuntu/inventario_tabelle_neon.md`
 
-### Stato Allineamento (24/02/2026)
-- **Backend**: GitHub = Sandbox = Hetzner → commit `c4b88ec`
-- **Frontend**: GitHub = Sandbox = Vercel → commit `fefb6fd`
+### v8.18.0 → v8.18.2 - Security Hardening + Fix Frontend (24/02/2026)
+
+#### S1: Middleware Validazione Impersonazione Server-Side (v8.18.0)
+- **Nuovo file:** `middleware/validateImpersonation.js`
+- Ogni richiesta con `comune_id` su POST/PUT/DELETE richiede token Firebase + ruolo `super_admin`
+- GET con `comune_id` passano sempre (solo filtro dati, backward compatible)
+- Richieste senza `comune_id` passano sempre (595 fetch frontend non rotte)
+- Tentativi bloccati loggati in `audit_logs` con IP, URL, metodo
+- Montato globalmente in `index.js` prima di tutte le route API
+
+#### S2: Endpoint /api/me (v8.18.0)
+- **Nuovo file:** `routes/me.js`
+- `GET /api/me/profile` — ritorna profilo utente autenticato (da token Firebase)
+- `GET /api/me/impresa` — ritorna impresa dell'utente autenticato (anti-IDOR, no user_id in URL)
+- Richiede header `Authorization: Bearer <token>`
+
+#### Hotfix Middleware (v8.18.1)
+- GET con `comune_id` bloccava l'impersonazione frontend → fix: solo POST/PUT/DELETE richiedono auth
+- Il fix di Claude (`addComuneIdToUrl` su 70+ fetch) mandava `comune_id` su tutte le GET → middleware troppo restrittivo
+
+#### Merge Fix Claude Frontend (v8.18.1)
+- **27 file modificati**, fast-forward merge pulito
+- 70+ fetch wrappate con `addComuneIdToUrl()` per multi-tenant
+- URL hardcoded rimossi (`localhost:3001` → `API_BASE_URL`)
+- Validazione `parseInt` su `useImpersonation.ts`
+- `market_id=1` hardcoded rimosso da `MapPage.tsx`
+- TypeScript check e build passano senza errori
+
+#### Fix Mappa Rete Italia (v8.18.1)
+- `GestioneHubMapWrapper.tsx`: rimosso `addComuneIdToUrl` da tutte le fetch di loadData
+- La vista mappa rete hub/mercati è pubblica — mostra TUTTI i mercati di tutta Italia, non solo quelli del comune impersonato
+
+#### Fix SSO SUAP Indicatori (v8.18.2)
+- `SuapPanel.tsx`: grid da `grid-cols-6` a `grid-cols-5` → i 5 indicatori si distribuiscono su tutta la larghezza
+
+#### Fix Segnalazioni Civiche (v8.18.2)
+- `CivicReportsPanel.tsx`: rimosso `addComuneIdToUrl` dalle fetch che già avevano `comune_id` manuale
+- Il doppio `comune_id=1&comune_id=1` causava errore PostgreSQL `invalid input syntax for type integer` (riceveva array `{1,1}`)
+- Le 2 segnalazioni resolved di Grosseto ora vengono caricate correttamente
+
+#### Fix Verbale Data/Ora (v8.18.2)
+- `market-settings.js`: il CRON usava `T00:00:00` hardcoded → ora usa `detection_time_local` (orario reale rilevamento)
+- `verbali.js`: PDF usa `ora_violazione` dal JSON e `timeZone: 'Europe/Rome'`
+- Fallback chain: `checkin_local` → `detection_time_local` → `'08:00'`
+
+### Tag Stabili
+
+| Tag | Commit | Data | Descrizione |
+|-----|--------|------|-------------|
+| `stable-v8.17.5-pre-claude-merge` | FE: `d23203a` / BE: `c4b88ec` | 24/02 04:14 | Punto di ripristino pre-merge Claude |
+| `stable-v8.18.0-security-hardened` | BE: `502d1ac` | 24/02 06:30 | Post middleware impersonazione + /api/me |
+
+### Architettura Sicurezza Backend (v8.18.0+)
+
+```
+Richiesta HTTP → CORS → Rate Limiter (IPv6 safe) → validateImpersonation middleware
+                                                      ↓
+                                          Ha comune_id? → NO → passa (backward compatible)
+                                                      ↓ SÌ
+                                          È GET/HEAD? → SÌ → passa (solo filtro dati)
+                                                      ↓ NO (POST/PUT/DELETE)
+                                          Ha token? → NO → 401 BLOCCATO + audit_log
+                                                      ↓ SÌ
+                                          Token valido? → Decodifica email → Cerca utente
+                                                      ↓
+                                          È super_admin o ha accesso al comune? → SÌ → passa
+                                                                                 → NO → 403 BLOCCATO
+```
+
+### Distinzione Wallet (IMPORTANTE)
+
+| Sistema | Tabella Transazioni | Tipo | Colonne chiave |
+|---------|-------------------|------|----------------|
+| **Wallet Operatore (€ euro)** | `wallet_transactions` | Costi suolo pubblico, depositi | `wallet_id`, `type` (COSTO_POSTEGGIO/PRESENZA_GIORNALIERA/DEPOSIT), `amount` |
+| **TCC Cittadino (punti)** | `operator_transactions` | Token Carbon Credit issue/redeem | `user_id`, `type` (issue/redeem), `tcc_amount`, `euro_amount` |
+| **TCC Legacy v1** | `transactions` | Vecchio sistema TCC (118 righe) | `user_id`, `shop_id`, `type` (earn/spend), `amount` |
+| **Fondo TCC Comunale** | `fund_transactions` | Movimenti fondo comunale | 4 righe |
+
+### Stato Allineamento (24/02/2026 ore 17:30)
+- **Backend**: GitHub = Hetzner → commit `708601f` (fix verbali orario reale)
+- **Frontend**: GitHub = Vercel → commit `5c6818a` (fix SUAP + segnalazioni)
+- **Branch Claude**: `claude/review-production-fixes-3sUvQ` → mergiato in master, allineato a `fd03f12`
