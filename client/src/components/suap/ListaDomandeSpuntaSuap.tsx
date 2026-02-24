@@ -41,7 +41,7 @@ import {
   Wallet
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { addComuneIdToUrl, addAssociazioneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, addAssociazioneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 import { formatDate } from '@/lib/formatUtils';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
@@ -157,7 +157,7 @@ export default function ListaDomandeSpuntaSuap({
   // Approva domanda
   const handleApprova = async (id: number) => {
     try {
-      const response = await fetch(`${API_URL}/api/domande-spunta/${id}/approva`, {
+      const response = await authenticatedFetch(`${API_URL}/api/domande-spunta/${id}/approva`, {
         method: 'POST'
       });
       const json = await response.json();
@@ -179,7 +179,7 @@ export default function ListaDomandeSpuntaSuap({
     if (!motivo) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/domande-spunta/${id}/revisione`, {
+      const response = await authenticatedFetch(`${API_URL}/api/domande-spunta/${id}/revisione`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ motivo })
@@ -205,7 +205,7 @@ export default function ListaDomandeSpuntaSuap({
     if (!motivo) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/domande-spunta/${id}/rifiuta`, {
+      const response = await authenticatedFetch(`${API_URL}/api/domande-spunta/${id}/rifiuta`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ motivo })
@@ -228,7 +228,7 @@ export default function ListaDomandeSpuntaSuap({
     if (!confirm('Sei sicuro di voler eliminare questa domanda?')) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/domande-spunta/${id}`, {
+      const response = await authenticatedFetch(`${API_URL}/api/domande-spunta/${id}`, {
         method: 'DELETE'
       });
       const json = await response.json();

@@ -18,6 +18,7 @@ import {
   Share2, Gift, Copy, Check
 } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 // API Base URL — in produzione usa proxy Vercel (/api/tcc/* → orchestratore.mio-hub.me)
 // MIHUB_API_BASE_URL punta a mihub Hetzner che NON serve API TCC, quindi usiamo il proxy
@@ -169,7 +170,7 @@ export default function WalletPage() {
     if (currentUser?.id) {
       setEcoToggleLoading(true);
       try {
-        const response = await fetch(`${API_BASE}/api/citizens/${currentUser.id}/eco-credit`, {
+        const response = await authenticatedFetch(`${API_BASE}/api/citizens/${currentUser.id}/eco-credit`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -218,7 +219,7 @@ export default function WalletPage() {
           console.warn('GPS non disponibile per referral');
         }
       }
-      const response = await fetch(`${API_BASE}/api/gaming-rewards/referral/generate`, {
+      const response = await authenticatedFetch(`${API_BASE}/api/gaming-rewards/referral/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -432,7 +433,7 @@ export default function WalletPage() {
     try {
       setGeneratingSpendQR(true);
       const token = localStorage.getItem('token') || '';
-      const res = await fetch(`${API_BASE}/api/tcc/v2/generate-spend-qr`, {
+      const res = await authenticatedFetch(`${API_BASE}/api/tcc/v2/generate-spend-qr`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -506,7 +507,7 @@ export default function WalletPage() {
       setScanResult(null);
 
       const token = localStorage.getItem('token') || '';
-      const response = await fetch(`${API_BASE}/api/tcc/validate-qr`, {
+      const response = await authenticatedFetch(`${API_BASE}/api/tcc/validate-qr`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -555,7 +556,7 @@ export default function WalletPage() {
         body.euro_spent = parseFloat(euroSpent);
       }
 
-      const response = await fetch(`${API_BASE}/api/tcc/scan`, {
+      const response = await authenticatedFetch(`${API_BASE}/api/tcc/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -600,7 +601,7 @@ export default function WalletPage() {
       setRedeeming(true);
       setRedeemResult(null);
 
-      const response = await fetch(`${API_BASE}/api/tcc/merchant/redeem`, {
+      const response = await authenticatedFetch(`${API_BASE}/api/tcc/merchant/redeem`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

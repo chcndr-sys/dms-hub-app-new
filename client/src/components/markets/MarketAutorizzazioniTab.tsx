@@ -19,6 +19,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { MIHUB_API_BASE_URL } from '@/config/api';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 import { formatDate } from '@/lib/formatUtils';
 import { CompanyRow } from './MarketCompaniesTab';
 
@@ -124,7 +125,7 @@ export function MarketAutorizzazioniTab({ companies, searchQuery, marketId, mark
     if (!confirm('Sei sicuro di voler eliminare questa autorizzazione?')) return;
     
     try {
-      const response = await fetch(`${MIHUB_API_BASE_URL}/api/autorizzazioni/${id}`, {
+      const response = await authenticatedFetch(`${MIHUB_API_BASE_URL}/api/autorizzazioni/${id}`, {
         method: 'DELETE',
       });
       
@@ -256,7 +257,7 @@ function DomandaSpuntaModal({ companies, marketId, marketName, municipality, onC
 
     setLoading(true);
     try {
-      const response = await fetch(`${MIHUB_API_BASE_URL}/api/wallets/init`, {
+      const response = await authenticatedFetch(`${MIHUB_API_BASE_URL}/api/wallets/init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -453,7 +454,7 @@ function AutorizzazioneModal({ autorizzazione, companies, onClose, onSaved }: Au
       };
 
       // REST API call
-      const response = await fetch(url, {
+      const response = await authenticatedFetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

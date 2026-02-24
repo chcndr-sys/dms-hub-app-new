@@ -13,7 +13,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useImpersonation } from '@/hooks/useImpersonation';
+import { useImpersonation, authenticatedFetch } from '@/hooks/useImpersonation';
 import { 
   Shield, AlertTriangle, CheckCircle, Clock, FileText, 
   Search, Filter, Plus, Euro, Bell, Eye, Send,
@@ -894,7 +894,7 @@ export default function ControlliSanzioniPanel() {
     };
 
     try {
-      const response = await fetch(`${MIHUB_API}/inspections`, {
+      const response = await authenticatedFetch(`${MIHUB_API}/inspections`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -940,7 +940,7 @@ export default function ControlliSanzioniPanel() {
     };
 
     try {
-      const response = await fetch(`${MIHUB_API}/sanctions`, {
+      const response = await authenticatedFetch(`${MIHUB_API}/sanctions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -952,7 +952,7 @@ export default function ControlliSanzioniPanel() {
         if (impresaId) {
           const impresaNome = impreseList.find(i => i.id === parseInt(impresaId as string))?.denominazione || '';
           try {
-            await fetch(`${MIHUB_API}/notifiche/send`, {
+            await authenticatedFetch(`${MIHUB_API}/notifiche/send`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -1000,7 +1000,7 @@ export default function ControlliSanzioniPanel() {
     }
 
     try {
-      const response = await fetch(`${MIHUB_API}/notifiche/send`, {
+      const response = await authenticatedFetch(`${MIHUB_API}/notifiche/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1600,7 +1600,7 @@ export default function ControlliSanzioniPanel() {
                               onClick={async () => {
                                 if (!confirm(`Emettere sanzione per ${t.business_name}?\n\nVerrà creato un verbale automatico con importo predefinito.`)) return;
                                 try {
-                                  const res = await fetch(`${MIHUB_API}/market-settings/transgressions/${t.id}/sanction`, {
+                                  const res = await authenticatedFetch(`${MIHUB_API}/market-settings/transgressions/${t.id}/sanction`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({})
@@ -1646,7 +1646,7 @@ export default function ControlliSanzioniPanel() {
                                     className="bg-gray-600 hover:bg-gray-700 text-white text-xs flex-1"
                                     onClick={async () => {
                                       try {
-                                        const res = await fetch(`${MIHUB_API}/market-settings/transgressions/${t.id}/archive`, {
+                                        const res = await authenticatedFetch(`${MIHUB_API}/market-settings/transgressions/${t.id}/archive`, {
                                           method: 'PUT',
                                           headers: { 'Content-Type': 'application/json' },
                                           body: JSON.stringify({ notes: archiveNotes })
@@ -2048,7 +2048,7 @@ export default function ControlliSanzioniPanel() {
                               onClick={async () => {
                                 if (confirm('Inviare notifica verbale all\'impresa?')) {
                                   try {
-                                    const res = await fetch(`${MIHUB_API}/verbali/${sanction.id}/invia`, { method: 'POST' });
+                                    const res = await authenticatedFetch(`${MIHUB_API}/verbali/${sanction.id}/invia`, { method: 'POST' });
                                     const data = await res.json();
                                     if (data.success) alert('✅ Notifica inviata!');
                                     else alert('❌ Errore: ' + data.error);
@@ -2562,7 +2562,7 @@ export default function ControlliSanzioniPanel() {
                                   className="bg-green-600 hover:bg-green-700 text-white"
                                   onClick={async () => {
                                     try {
-                                      const res = await fetch(`${MIHUB_API}/giustificazioni/${g.id}/review`, {
+                                      const res = await authenticatedFetch(`${MIHUB_API}/giustificazioni/${g.id}/review`, {
                                         method: 'PUT',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ action: 'APPROVE', notes: 'Giustificazione accettata' })
@@ -2583,7 +2583,7 @@ export default function ControlliSanzioniPanel() {
                                   variant="destructive"
                                   onClick={async () => {
                                     try {
-                                      const res = await fetch(`${MIHUB_API}/giustificazioni/${g.id}/review`, {
+                                      const res = await authenticatedFetch(`${MIHUB_API}/giustificazioni/${g.id}/review`, {
                                         method: 'PUT',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ action: 'REJECT', notes: 'Giustificazione rifiutata' })
@@ -3227,7 +3227,7 @@ function SegnalazioniPMSubtab({ comuneId }: { comuneId: number }) {
 
   const handleAssign = async (reportId: number) => {
     try {
-      const res = await fetch(`${MIHUB_API}/civic-reports/${reportId}/assign`, {
+      const res = await authenticatedFetch(`${MIHUB_API}/civic-reports/${reportId}/assign`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ assigned_to: 1 }) // ID utente PM
@@ -3243,7 +3243,7 @@ function SegnalazioniPMSubtab({ comuneId }: { comuneId: number }) {
 
   const handleResolve = async (reportId: number) => {
     try {
-      const res = await fetch(`${MIHUB_API}/civic-reports/${reportId}/resolve`, {
+      const res = await authenticatedFetch(`${MIHUB_API}/civic-reports/${reportId}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resolution_notes: 'Risolto da PM', credit_tcc: true })

@@ -17,6 +17,7 @@ import {
   Eye, Clock, TrendingUp, RefreshCw, Search,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 // ============================================================================
 // FRAUD STATS CARD
@@ -151,7 +152,7 @@ function FraudEventsList() {
 
   const resolveMutation = useMutation({
     mutationFn: async (params: { eventId: number; resolution: string; notes: string }) => {
-      const res = await fetch(`${TCC_API_BASE}/api/tcc/v2/fraud/resolve`, {
+      const res = await authenticatedFetch(`${TCC_API_BASE}/api/tcc/v2/fraud/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),

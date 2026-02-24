@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MIHUB_API_BASE_URL } from '@/config/api';
-import { getImpersonationParams, isAssociazioneImpersonation } from '@/hooks/useImpersonation';
+import { getImpersonationParams, isAssociazioneImpersonation, authenticatedFetch } from '@/hooks/useImpersonation';
 import { formatDateTime as formatDate } from '@/lib/formatUtils';
 
 const API_BASE_URL = MIHUB_API_BASE_URL;
@@ -81,7 +81,7 @@ export default function MessaggiPraticaPanel({ praticaId, mittenteId }: Messaggi
     if (!nuovoMessaggio.trim()) return;
     setSending(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/suap/pratiche/${praticaId}/messaggi`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/suap/pratiche/${praticaId}/messaggi`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

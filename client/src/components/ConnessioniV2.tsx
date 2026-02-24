@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { integrations, API_BASE_URL, type IntegrationConfig } from '@/config/realEndpoints';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 export default function ConnessioniV2() {
   const [testingIntegration, setTestingIntegration] = useState<string | null>(null);
@@ -126,7 +127,7 @@ export default function ConnessioniV2() {
     setSyncingIntegration(integration.id);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/integrations/dms-legacy/sync`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/integrations/dms-legacy/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

@@ -8,7 +8,7 @@ import {
   ArrowDownLeft, ArrowUpRight, Phone, Loader2, Search, Building2, X, Landmark,
   Filter, Eye, Calendar, ChevronDown
 } from 'lucide-react';
-import { addComuneIdToUrl, getImpersonationParams } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, getImpersonationParams, authenticatedFetch } from '@/hooks/useImpersonation';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 import { formatDateTime as formatDate } from '@/lib/formatUtils';
 
@@ -322,7 +322,7 @@ export function NotificationsPanel() {
       setSending(true);
       setSendStatus(null);
       
-      const response = await fetch(`${BACKEND_URL}/api/mihub/notifications/send`, {
+      const response = await authenticatedFetch(`${BACKEND_URL}/api/mihub/notifications/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

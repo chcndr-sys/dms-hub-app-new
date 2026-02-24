@@ -42,7 +42,7 @@ import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { trpcQuery, trpcMutate } from '@/lib/trpcHttp';
 import { MIHUB_API_BASE_URL } from '@/config/api';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 
 export default function Integrazioni() {
   const [activeTab, setActiveTab] = useState('api-dashboard');
@@ -662,14 +662,14 @@ function APIDashboard() {
           
         // MIO AGENT - chiamate REST dirette
         case '/api/logs/initSchema':
-          const initResponse = await fetch('/api/logs/initSchema', {
+          const initResponse = await authenticatedFetch('/api/logs/initSchema', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
           });
           data = await initResponse.json();
           break;
         case '/api/logs/createLog':
-          const createResponse = await fetch('/api/logs/createLog', {
+          const createResponse = await authenticatedFetch('/api/logs/createLog', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsedBody),
@@ -698,7 +698,7 @@ function APIDashboard() {
           data = await healthResponse.json();
           break;
         case '/api/guardian/debug/testEndpoint':
-          const testEndpointResponse = await fetch('/api/guardian/debug/testEndpoint', {
+          const testEndpointResponse = await authenticatedFetch('/api/guardian/debug/testEndpoint', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsedBody),
@@ -716,7 +716,7 @@ function APIDashboard() {
           break;
         case '/api/suap/pratiche':
           if (endpointInfo?.method === 'POST') {
-            const suapCreateRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/suap/pratiche`, {
+            const suapCreateRes = await authenticatedFetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/suap/pratiche`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-ente-id': 'MOCK_ENTE_001' },
               body: JSON.stringify(parsedBody),
@@ -741,7 +741,7 @@ function APIDashboard() {
 
         case '/api/suap/pratiche/:id/valuta':
           const suapEvalId = parsedBody.id || 1;
-          const suapEvalRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/suap/pratiche/${suapEvalId}/valuta`, {
+          const suapEvalRes = await authenticatedFetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/suap/pratiche/${suapEvalId}/valuta`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-ente-id': 'MOCK_ENTE_001' },
           });
@@ -787,7 +787,7 @@ function APIDashboard() {
           data = await gisRes.json();
           break;
         case '/api/abacus/sql/query':
-          const abacusRes = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/abacus/sql/query`, {
+          const abacusRes = await authenticatedFetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/abacus/sql/query`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-agent-id': 'dev' }, // Requires auth
             body: JSON.stringify(parsedBody),
@@ -837,7 +837,7 @@ function APIDashboard() {
           data = await collabResponse.json();
           break;
         case '/api/collaboratori':
-          const createCollabResponse = await fetch('https://api.mio-hub.me/api/collaboratori', {
+          const createCollabResponse = await authenticatedFetch('https://api.mio-hub.me/api/collaboratori', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsedBody),
@@ -846,13 +846,13 @@ function APIDashboard() {
           break;
         case '/api/collaboratori/:id':
           if (parsedBody._method === 'DELETE') {
-            const deleteCollabResponse = await fetch(`https://api.mio-hub.me/api/collaboratori/${parsedBody.id || 1}`, {
+            const deleteCollabResponse = await authenticatedFetch(`https://api.mio-hub.me/api/collaboratori/${parsedBody.id || 1}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
             });
             data = await deleteCollabResponse.json();
           } else {
-            const updateCollabResponse = await fetch(`https://api.mio-hub.me/api/collaboratori/${parsedBody.id || 1}`, {
+            const updateCollabResponse = await authenticatedFetch(`https://api.mio-hub.me/api/collaboratori/${parsedBody.id || 1}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(parsedBody),
@@ -861,7 +861,7 @@ function APIDashboard() {
           }
           break;
         case '/api/collaboratori/:id/toggle-presenze':
-          const toggleCollabResponse = await fetch(`https://api.mio-hub.me/api/collaboratori/${parsedBody.id || 1}/toggle-presenze`, {
+          const toggleCollabResponse = await authenticatedFetch(`https://api.mio-hub.me/api/collaboratori/${parsedBody.id || 1}/toggle-presenze`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
           });
@@ -949,7 +949,7 @@ function APIDashboard() {
           
         // HUB SHOPS - chiamate REST dirette a Hetzner
         case '/api/hub/shops/create-with-impresa':
-          const createShopResponse = await fetch(addComuneIdToUrl(`${MIHUB_API_BASE_URL}/api/hub/shops/create-with-impresa`), {
+          const createShopResponse = await authenticatedFetch(`${MIHUB_API_BASE_URL}/api/hub/shops/create-with-impresa`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsedBody),
@@ -960,7 +960,7 @@ function APIDashboard() {
         // SHOPPING ROUTE - chiamate REST dirette
         case '/api/routing/calculate':
           const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
-          const routingResponse = await fetch(`${API_URL}/api/routing/calculate`, {
+          const routingResponse = await authenticatedFetch(`${API_URL}/api/routing/calculate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsedBody),
@@ -1009,7 +1009,7 @@ function APIDashboard() {
           break;
         }
         case '/api/integrations/dms-legacy/sync': {
-          const dmsSyncRes = await fetch('https://api.mio-hub.me/api/integrations/dms-legacy/sync', {
+          const dmsSyncRes = await authenticatedFetch('https://api.mio-hub.me/api/integrations/dms-legacy/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsedBody),
@@ -1062,7 +1062,7 @@ function APIDashboard() {
         case '/api/integrations/mercaweb/import/piazzole':
         case '/api/integrations/mercaweb/import/concessioni':
         case '/api/integrations/mercaweb/import/spuntisti': {
-          const mwImportRes = await fetch(`https://api.mio-hub.me${endpointPath}`, {
+          const mwImportRes = await authenticatedFetch(`https://api.mio-hub.me${endpointPath}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1138,7 +1138,7 @@ function APIDashboard() {
               }
             }
             
-            const restResponse = await fetch(urlWithParams, fetchOptions);
+            const restResponse = await authenticatedFetch(urlWithParams, fetchOptions);
             data = await restResponse.json();
           } else {
             throw new Error(`Endpoint sconosciuto: ${endpointPath}`);
@@ -2614,7 +2614,7 @@ function SecretsManager() {
     setSaving(true);
     
     try {
-      const response = await fetch(`/api/mihub/secrets/${envVar}`, {
+      const response = await authenticatedFetch(`/api/mihub/secrets/${envVar}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

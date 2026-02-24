@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, X, AlertCircle, Loader2, Trash2, Users, MapPin, Calendar, Building2 } from 'lucide-react';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = 'https://orchestratore.mio-hub.me';
 
@@ -158,7 +159,7 @@ export function ConcessionForm({
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/concessions/${concession.id}`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/concessions/${concession.id}`, {
         method: 'DELETE',
       });
       
@@ -234,7 +235,7 @@ export function ConcessionForm({
         }),
       };
 
-      const response = await fetch(url, {
+      const response = await authenticatedFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

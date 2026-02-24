@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useImpersonation, getImpersonationParams } from '@/hooks/useImpersonation';
+import { useImpersonation, getImpersonationParams, authenticatedFetch } from '@/hooks/useImpersonation';
 import { useLocation } from 'wouter';
 import { 
   Shield, FileText, User, Building2, MapPin, Calendar, 
@@ -410,7 +410,7 @@ export default function NuovoVerbalePage() {
         notes: notes || null
       };
 
-      const response = await fetch(`${MIHUB_API}/verbali`, {
+      const response = await authenticatedFetch(`${MIHUB_API}/verbali`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -422,7 +422,7 @@ export default function NuovoVerbalePage() {
         // Invio notifica automatica all'impresa/trasgressore
         let notificaInviata = false;
         try {
-          await fetch(`${MIHUB_API}/notifiche/send`, {
+          await authenticatedFetch(`${MIHUB_API}/notifiche/send`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MIHUB_API_BASE_URL } from '@/config/api';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 
 // ============================================================================
 // TYPES
@@ -822,7 +822,7 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
           setCollaboratori([titolare]);
           // Salva anche nel DB
           try {
-            await fetch(`${API_BASE_URL}/api/collaboratori`, {
+            await authenticatedFetch(`${API_BASE_URL}/api/collaboratori`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ impresa_id: impresaId, ...titolare }),
@@ -845,7 +845,7 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
     localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify(updated));
     // Sync con DB
     try {
-      await fetch(`${API_BASE_URL}/api/collaboratori/${id}/toggle-presenze`, { method: 'PATCH' });
+      await authenticatedFetch(`${API_BASE_URL}/api/collaboratori/${id}/toggle-presenze`, { method: 'PATCH' });
     } catch { /* ignore */ }
   };
 
@@ -861,7 +861,7 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
     };
     // Salva nel DB
     try {
-      const res = await fetch(`${API_BASE_URL}/api/collaboratori`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/collaboratori`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ impresa_id: impresaId, ...newCollab }),
@@ -888,7 +888,7 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
       const collab = updated.find(c => c.id === id);
       if (!collab) return;
       try {
-        await fetch(`${API_BASE_URL}/api/collaboratori/${id}`, {
+        await authenticatedFetch(`${API_BASE_URL}/api/collaboratori/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(collab),
@@ -904,7 +904,7 @@ function CollaboratoriSection({ impresaId, impresa }: { impresaId: number | null
     localStorage.setItem(`team_impresa_${impresaId}`, JSON.stringify(updated));
     // Rimuovi dal DB
     try {
-      await fetch(`${API_BASE_URL}/api/collaboratori/${id}`, { method: 'DELETE' });
+      await authenticatedFetch(`${API_BASE_URL}/api/collaboratori/${id}`, { method: 'DELETE' });
     } catch { /* ignore */ }
   };
 
@@ -1449,7 +1449,7 @@ function GiustificazioniSection({ impresaId, giustificazioni, concessioni, onRef
         fd.append('stall_number', selectedPost.stall_number || '');
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/giustificazioni`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/giustificazioni`, {
         method: 'POST',
         body: fd,
       });

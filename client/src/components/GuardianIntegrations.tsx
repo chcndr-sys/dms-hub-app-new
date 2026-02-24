@@ -30,6 +30,7 @@ import {
 import { toast } from 'sonner';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { MIHUB_API_BASE_URL } from '@/config/api';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 export default function GuardianIntegrations() {
   const [selectedEndpoint, setSelectedEndpoint] = useState<any>(null);
@@ -53,7 +54,7 @@ export default function GuardianIntegrations() {
   // Mutation REST per testare un endpoint
   const testEndpointMutation = useMutation({
     mutationFn: async (params: { endpoint: string; method: string; params: any }) => {
-      const res = await fetch(`${MIHUB_API_BASE_URL}/api/guardian/debug/testEndpoint`, {
+      const res = await authenticatedFetch(`${MIHUB_API_BASE_URL}/api/guardian/debug/testEndpoint`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),

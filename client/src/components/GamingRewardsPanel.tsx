@@ -27,7 +27,7 @@ import {
   BarChart3, Store, AlertCircle, Clock, Camera, X, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useImpersonation, addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { useImpersonation, addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 
 // Fix per icone marker Leaflet
@@ -1107,7 +1107,7 @@ export default function GamingRewardsPanel() {
   const saveConfig = async () => {
     setSavingConfig(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/gaming-rewards/config`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/gaming-rewards/config`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

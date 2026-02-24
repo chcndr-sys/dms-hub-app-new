@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDateTime as formatDate } from '@/lib/formatUtils';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 // v5.9.0: Usa MIHUB Hetzner (stesso backend di ControlliSanzioniPanel per coerenza notifiche)
 const MIHUB_API = (import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io') + '/api';
@@ -173,7 +174,7 @@ export function NotificationManager({ mittenteTipo, mittenteId, mittenteNome, on
         targetNome = impresa?.denominazione;
       }
       
-      const response = await fetch(`${MIHUB_API}/notifiche/send`, {
+      const response = await authenticatedFetch(`${MIHUB_API}/notifiche/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -214,7 +215,7 @@ export function NotificationManager({ mittenteTipo, mittenteId, mittenteNome, on
     if (msg.direzione !== 'RICEVUTO' || msg.letta) return;
     
     try {
-      await fetch(`${MIHUB_API}/notifiche/risposte/${msg.id}/letta`, {
+      await authenticatedFetch(`${MIHUB_API}/notifiche/risposte/${msg.id}/letta`, {
         method: 'PUT'
       });
       

@@ -3,6 +3,7 @@ import { Tldraw, TLEditorComponents, TLUiOverrides, useEditor, exportToBlob, Ass
 import 'tldraw/tldraw.css';
 import { Maximize2, Minimize2, Save, Download, Upload, RefreshCw } from 'lucide-react';
 import { MIHUB_API_BASE_URL } from '@/config/api';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 interface SharedWorkspaceProps {
   conversationId?: string;
@@ -95,7 +96,7 @@ export function SharedWorkspace({ conversationId, onSave }: SharedWorkspaceProps
       const { document, session } = getSnapshot(editorRef.current.store);
       const snapshot = { document, session };
       
-      const response = await fetch(`${MIHUB_API_BASE_URL}/api/workspace/save`, {
+      const response = await authenticatedFetch(`${MIHUB_API_BASE_URL}/api/workspace/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

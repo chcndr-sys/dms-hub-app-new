@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { MIHUB_API_BASE_URL } from '@/config/api';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 interface MarketSettings {
   market_id: number;
@@ -89,7 +90,7 @@ export function MarketSettingsTab({ marketId, marketName }: MarketSettingsTabPro
     
     try {
       setSaving(true);
-      const response = await fetch(`${MIHUB_API_BASE_URL}/api/market-settings/${marketId}`, {
+      const response = await authenticatedFetch(`${MIHUB_API_BASE_URL}/api/market-settings/${marketId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)

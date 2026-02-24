@@ -37,7 +37,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 import { formatDate } from '@/lib/formatUtils';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
@@ -145,7 +145,7 @@ export default function ListaAutorizzazioniSuap({
     if (!confirm('Sei sicuro di voler eliminare questa autorizzazione?')) return;
     
     try {
-      const response = await fetch(`${API_URL}/api/autorizzazioni/${id}`, {
+      const response = await authenticatedFetch(`${API_URL}/api/autorizzazioni/${id}`, {
         method: 'DELETE'
       });
       const json = await response.json();

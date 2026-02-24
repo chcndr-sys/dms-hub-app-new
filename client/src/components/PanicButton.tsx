@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 export function PanicButton() {
   const [messageCount, setMessageCount] = useState<number | null>(null);
@@ -34,7 +35,7 @@ export function PanicButton() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/mihub/panic/reset', {
+      const res = await authenticatedFetch('/api/mihub/panic/reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm: 'RESET_ALL_MESSAGES' })

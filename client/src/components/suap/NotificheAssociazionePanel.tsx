@@ -20,7 +20,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getImpersonationParams } from '@/hooks/useImpersonation';
+import { getImpersonationParams, authenticatedFetch } from '@/hooks/useImpersonation';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 import { formatDateTime as formatDate } from '@/lib/formatUtils';
 
@@ -81,7 +81,7 @@ export default function NotificheAssociazionePanel({ onNotificheUpdate }: Notifi
   const markAsRead = async (notificaId: number) => {
     if (!associazioneId) return;
     try {
-      await fetch(`${API_BASE_URL}/api/associazioni/${associazioneId}/notifiche/${notificaId}/letta`, {
+      await authenticatedFetch(`${API_BASE_URL}/api/associazioni/${associazioneId}/notifiche/${notificaId}/letta`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -97,7 +97,7 @@ export default function NotificheAssociazionePanel({ onNotificheUpdate }: Notifi
   const markAllAsRead = async () => {
     if (!associazioneId) return;
     try {
-      await fetch(`${API_BASE_URL}/api/associazioni/${associazioneId}/notifiche/lette-tutte`, {
+      await authenticatedFetch(`${API_BASE_URL}/api/associazioni/${associazioneId}/notifiche/lette-tutte`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
       });

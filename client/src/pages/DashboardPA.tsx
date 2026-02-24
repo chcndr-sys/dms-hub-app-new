@@ -64,7 +64,7 @@ import { sendAgentMessage, AgentChatMessage } from '@/lib/mioOrchestratorClient'
 import { sendDirectMessageToHetzner, DirectMioMessage } from '@/lib/DirectMioClient';
 import { sendToAgent } from '@/lib/agentHelper';
 import { toast } from 'sonner';
-import { isAssociazioneImpersonation, addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { isAssociazioneImpersonation, addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 
 // 👻 GHOSTBUSTER: MioChatMessage sostituito con DirectMioMessage
 // 🔥 FORCE REBUILD: 2024-12-20 12:46 - Fix agentName filter removed from single chats
@@ -835,7 +835,7 @@ export default function DashboardPA() {
   const handleEtsPriceUpdate = async () => {
     if (!editableEtsPrice || editableEtsPrice <= 0) return;
     try {
-      const response = await fetch(`${TCC_API}/api/tcc/v2/ets-price`, {
+      const response = await authenticatedFetch(`${TCC_API}/api/tcc/v2/ets-price`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -1200,7 +1200,7 @@ export default function DashboardPA() {
     if (risposta.letta) return; // Già letta
     const MIHUB_API = import.meta.env.VITE_MIHUB_API_BASE_URL || 'https://orchestratore.mio-hub.me/api';
     try {
-      await fetch(`${MIHUB_API}/notifiche/risposte/${risposta.id}/letta`, {
+      await authenticatedFetch(`${MIHUB_API}/notifiche/risposte/${risposta.id}/letta`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -3252,7 +3252,7 @@ export default function DashboardPA() {
                         // Es: slider su 10 → policy_multiplier = 10 → €100 spesi = (100/10)*10 = 100 TCC
                         const policyMultiplier = tccValue;
                         
-                        const response = await fetch(`${TCC_API}/api/tcc/v2/config/update/${selectedComuneId}`, {
+                        const response = await authenticatedFetch(`${TCC_API}/api/tcc/v2/config/update/${selectedComuneId}`, {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
@@ -3458,7 +3458,7 @@ export default function DashboardPA() {
                       btn.disabled = true;
                       btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2 inline" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Elaborazione...';
                       try {
-                        const response = await fetch(`${TCC_API}/api/tcc/v2/process-batch-reimbursements`, {
+                        const response = await authenticatedFetch(`${TCC_API}/api/tcc/v2/process-batch-reimbursements`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' }
                         });
@@ -4898,7 +4898,7 @@ export default function DashboardPA() {
                         note: formData.get('note')
                       };
                       try {
-                        const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/formazione/attestati`, {
+                        const res = await authenticatedFetch(`${import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me'}/api/formazione/attestati`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify(data)
@@ -5145,7 +5145,7 @@ export default function DashboardPA() {
                           targetNome = impresa?.denominazione;
                         }
                         
-                        const response = await fetch(`${MIHUB_API}/notifiche/send`, {
+                        const response = await authenticatedFetch(`${MIHUB_API}/notifiche/send`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
@@ -5827,7 +5827,7 @@ export default function DashboardPA() {
                           targetNome = impresa?.denominazione;
                         }
                         
-                        const response = await fetch(`${MIHUB_API}/notifiche/send`, {
+                        const response = await authenticatedFetch(`${MIHUB_API}/notifiche/send`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
@@ -6750,7 +6750,7 @@ export default function DashboardPA() {
                       // Se abbiamo un hubId, aggiorna l'hub esistente
                       if (data.hubId) {
                         const API_BASE_URL = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io';
-                        const response = await fetch(`${API_BASE_URL}/api/hub/locations/${data.hubId}`, {
+                        const response = await authenticatedFetch(`${API_BASE_URL}/api/hub/locations/${data.hubId}`, {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
@@ -7034,7 +7034,7 @@ function LogsSection() {
                       // Se abbiamo un hubId, aggiorna l'hub esistente
                       if (data.hubId) {
                         const API_BASE_URL = import.meta.env.VITE_MIHUB_API_URL || 'https://mihub.157-90-29-66.nip.io';
-                        const response = await fetch(`${API_BASE_URL}/api/hub/locations/${data.hubId}`, {
+                        const response = await authenticatedFetch(`${API_BASE_URL}/api/hub/locations/${data.hubId}`, {
                           method: 'PUT',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({

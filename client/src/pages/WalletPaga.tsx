@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Euro, ArrowLeft, QrCode, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 import { QRCodeSVG } from 'qrcode.react';
 
 // API Base URL — in produzione usa proxy Vercel (/api/tcc/* → orchestratore.mio-hub.me)
@@ -53,7 +54,7 @@ export default function WalletPaga() {
     setError(null);
     
     try {
-      const res = await fetch(`${API_BASE}/api/tcc/v2/generate-spend-qr`, {
+      const res = await authenticatedFetch(`${API_BASE}/api/tcc/v2/generate-spend-qr`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

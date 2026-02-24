@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Building2, Plus, Edit, Trash2, Phone, Mail, Globe, MapPin, Users, Save, X, Search, Loader2, FileText, Shield, CreditCard, Eye, ExternalLink, Briefcase, UserCheck, Hash } from 'lucide-react';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = 'https://orchestratore.mio-hub.me';
 
@@ -236,7 +237,7 @@ export default function AssociazioniPanel() {
         ? `${API_BASE_URL}/api/associazioni/${editing.id}`
         : `${API_BASE_URL}/api/associazioni`;
 
-      const res = await fetch(url, {
+      const res = await authenticatedFetch(url, {
         method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -260,7 +261,7 @@ export default function AssociazioniPanel() {
   const handleDelete = async (id: number) => {
     if (!confirm('Sei sicuro di voler eliminare questa associazione e tutti i dati correlati?')) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/associazioni/${id}`, { method: 'DELETE' });
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/associazioni/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         fetchAssociazioni();
@@ -319,7 +320,7 @@ export default function AssociazioniPanel() {
   const handleCreateContratto = async () => {
     if (!selectedAssociazione) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/associazioni/${selectedAssociazione.id}/contratti`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/associazioni/${selectedAssociazione.id}/contratti`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -342,7 +343,7 @@ export default function AssociazioniPanel() {
   const handleDeleteContratto = async (contrattoId: number) => {
     if (!confirm('Sei sicuro di voler eliminare questo contratto?')) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/associazioni/contratti/${contrattoId}`, { method: 'DELETE' });
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/associazioni/contratti/${contrattoId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success && selectedAssociazione) {
         fetchFatturazione(selectedAssociazione.id);
@@ -360,7 +361,7 @@ export default function AssociazioniPanel() {
     const iva = parseFloat(fatturaForm.iva) || 22;
     const totale = importo + (importo * iva / 100);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/associazioni/${selectedAssociazione.id}/fatture`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/associazioni/${selectedAssociazione.id}/fatture`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -384,7 +385,7 @@ export default function AssociazioniPanel() {
 
   const handleUpdateFatturaStato = async (fatturaId: number, nuovoStato: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/associazioni/fatture/${fatturaId}`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/associazioni/fatture/${fatturaId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stato: nuovoStato, data_pagamento: nuovoStato === 'pagata' ? new Date().toISOString().split('T')[0] : null })
@@ -414,7 +415,7 @@ export default function AssociazioniPanel() {
         return;
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/associazioni/${selectedAssociazione.id}/utenti`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/associazioni/${selectedAssociazione.id}/utenti`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: parseInt(userId as string), ruolo: utenteForm.ruolo, email: utenteForm.email })
@@ -432,7 +433,7 @@ export default function AssociazioniPanel() {
 
   const handleUpdateRuolo = async (assegnazioneId: number, nuovoRuolo: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/associazioni/utenti/${assegnazioneId}`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/associazioni/utenti/${assegnazioneId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ruolo: nuovoRuolo })
@@ -449,7 +450,7 @@ export default function AssociazioniPanel() {
   const handleRimuoviUtente = async (assegnazioneId: number) => {
     if (!confirm('Sei sicuro di voler rimuovere questo utente dall\'associazione?')) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/associazioni/utenti/${assegnazioneId}`, { method: 'DELETE' });
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/associazioni/utenti/${assegnazioneId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success && selectedAssociazione) {
         fetchPermessi(selectedAssociazione.id);

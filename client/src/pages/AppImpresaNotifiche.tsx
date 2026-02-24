@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 // Tipo notifica
 interface Notifica {
@@ -111,7 +112,7 @@ export default function AppImpresaNotifiche() {
     if (notifica.stato === 'LETTO') return;
     
     try {
-      await fetch(`${API_BASE_URL}/notifiche/leggi/${notifica.id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/notifiche/leggi/${notifica.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ impresa_id: IMPRESA_ID })
@@ -133,7 +134,7 @@ export default function AppImpresaNotifiche() {
     
     setInvioRisposta(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/notifiche/reply`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/notifiche/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -163,7 +164,7 @@ export default function AppImpresaNotifiche() {
   // Archivia notifica
   const archiviaNotifica = async (notifica: Notifica) => {
     try {
-      await fetch(`${API_BASE_URL}/notifiche/archivia/${notifica.id}`, {
+      await authenticatedFetch(`${API_BASE_URL}/notifiche/archivia/${notifica.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ impresa_id: IMPRESA_ID })

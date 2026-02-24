@@ -84,6 +84,7 @@ import {
   type SecurityUser
 } from '@/api/securityClient';
 import { ORCHESTRATORE_API_BASE_URL } from '@/config/api';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 export default function SecurityTab() {
   const [activeSubTab, setActiveSubTab] = useState('overview');
@@ -373,12 +374,12 @@ export default function SecurityTab() {
             const allPermIds = [...nonTabPerms, ...edited];
             
             // Salva
-            const saveRes = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${roleId}/permissions`, {
+            const saveRes = await authenticatedFetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${roleId}/permissions`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ permission_ids: allPermIds })
             });
-            
+
             const saveData = await saveRes.json();
             if (!saveData.success) {
               throw new Error(saveData.error || 'Errore nel salvataggio');
@@ -386,7 +387,7 @@ export default function SecurityTab() {
           }
         }
       }
-      
+
       toast.success('Permessi salvati con successo!');
       setRoleTabPermissions(editedRolePermissions);
       setHasPermissionChanges(false);
@@ -429,12 +430,12 @@ export default function SecurityTab() {
             const allPermIds = [...nonQuickPerms, ...edited];
             
             // Salva
-            const saveRes = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${roleId}/permissions`, {
+            const saveRes = await authenticatedFetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${roleId}/permissions`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ permission_ids: allPermIds })
             });
-            
+
             const saveData = await saveRes.json();
             if (!saveData.success) {
               throw new Error(saveData.error || 'Errore nel salvataggio');
@@ -442,7 +443,7 @@ export default function SecurityTab() {
           }
         }
       }
-      
+
       toast.success('Permessi Quick Access salvati!');
       setRoleQuickAccessPermissions(editedQuickAccessPermissions);
       setHasQuickAccessChanges(false);
@@ -469,7 +470,7 @@ export default function SecurityTab() {
     
     setActionLoading(true);
     try {
-      const response = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles`, {
+      const response = await authenticatedFetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newRole)
@@ -500,7 +501,7 @@ export default function SecurityTab() {
     
     setActionLoading(true);
     try {
-      const response = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${assignRole.roleId}/assign`, {
+      const response = await authenticatedFetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/roles/${assignRole.roleId}/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -586,7 +587,7 @@ export default function SecurityTab() {
     
     setActionLoading(true);
     try {
-      const response = await fetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/events/${selectedEvent.id}/resolve`, {
+      const response = await authenticatedFetch(`${ORCHESTRATORE_API_BASE_URL}/api/security/events/${selectedEvent.id}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resolution_notes: resolutionNotes })

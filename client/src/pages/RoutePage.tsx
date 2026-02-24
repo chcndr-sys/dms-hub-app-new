@@ -14,6 +14,7 @@ import { Navigation, ArrowLeft, Leaf, Clock, MapPin, TrendingUp, Car, Bike, Foot
 import BottomNav from '@/components/BottomNav';
 import { Link, useLocation } from 'wouter';
 import { MIHUB_API_BASE_URL } from '@/config/api';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 
@@ -182,7 +183,7 @@ export default function RoutePage() {
         includeTPL: mode === 'transit'
       };
       
-      const response = await fetch(`${API_URL}/api/routing/calculate`, {
+      const response = await authenticatedFetch(`${API_URL}/api/routing/calculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestPayload)
@@ -262,7 +263,7 @@ export default function RoutePage() {
       const options = await Promise.all(
         modes.map(async (m) => {
           try {
-            const res = await fetch(`${API_URL}/api/routing/calculate`, {
+            const res = await authenticatedFetch(`${API_URL}/api/routing/calculate`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

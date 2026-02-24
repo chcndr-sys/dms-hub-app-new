@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, FileCheck, FileText, User, MapPin, Wallet, Calendar, ClipboardCheck, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { MIHUB_API_BASE_URL } from '@/config/api';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 import { formatDate } from '@/lib/formatUtils';
 
 const API_URL = MIHUB_API_BASE_URL;
@@ -31,7 +32,7 @@ export default function DomandaSpuntaDetail({ domandaId, onBack, isAssociazione 
     if (!confirm('Sei sicuro di voler approvare questa domanda? Verrà creato il wallet spunta.')) return;
     setActionLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/domande-spunta/${domandaId}/approva`, {
+      const res = await authenticatedFetch(`${API_URL}/api/domande-spunta/${domandaId}/approva`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -55,7 +56,7 @@ export default function DomandaSpuntaDetail({ domandaId, onBack, isAssociazione 
     if (!motivo) return;
     setActionLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/domande-spunta/${domandaId}/revisione`, {
+      const res = await authenticatedFetch(`${API_URL}/api/domande-spunta/${domandaId}/revisione`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ motivo })
@@ -81,7 +82,7 @@ export default function DomandaSpuntaDetail({ domandaId, onBack, isAssociazione 
     if (!confirm('Sei sicuro di voler rifiutare questa domanda?')) return;
     setActionLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/domande-spunta/${domandaId}/rifiuta`, {
+      const res = await authenticatedFetch(`${API_URL}/api/domande-spunta/${domandaId}/rifiuta`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ motivo })

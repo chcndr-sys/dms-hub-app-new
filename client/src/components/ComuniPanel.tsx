@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Building2, Plus, Edit, Trash2, Phone, Mail, Globe, MapPin, Users, ChevronDown, ChevronUp, Save, X, Search, Download, Loader2, FileText, ShoppingBag, Shield, CreditCard, Eye, ExternalLink } from 'lucide-react';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = 'https://orchestratore.mio-hub.me';
 
@@ -334,7 +335,7 @@ export default function ComuniPanel() {
   const handleCreateContratto = async () => {
     if (!selectedComune) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/contratti`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/contratti`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -360,7 +361,7 @@ export default function ComuniPanel() {
     const iva = parseFloat(fatturaForm.iva) || 22;
     const totale = importo + (importo * iva / 100);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/fatture`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/fatture`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -385,7 +386,7 @@ export default function ComuniPanel() {
   // Aggiorna stato fattura
   const handleUpdateFatturaStato = async (fatturaId: number, nuovoStato: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/comuni/fatture/${fatturaId}`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/comuni/fatture/${fatturaId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stato: nuovoStato, data_pagamento: nuovoStato === 'pagata' ? new Date().toISOString().split('T')[0] : null })
@@ -403,7 +404,7 @@ export default function ComuniPanel() {
   const handleDeleteContratto = async (contrattoId: number) => {
     if (!confirm('Sei sicuro di voler eliminare questo contratto?')) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/comuni/contratti/${contrattoId}`, { method: 'DELETE' });
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/comuni/contratti/${contrattoId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success && selectedComune) {
         fetchFatturazione(selectedComune.id);
@@ -443,7 +444,7 @@ export default function ComuniPanel() {
         return;
       }
       
-      const res = await fetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/utenti`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/utenti`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: parseInt(userId as string), ruolo: utenteForm.ruolo })
@@ -462,7 +463,7 @@ export default function ComuniPanel() {
   // Aggiorna ruolo utente
   const handleUpdateRuolo = async (assegnazioneId: number, nuovoRuolo: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/comuni/utenti/${assegnazioneId}`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/comuni/utenti/${assegnazioneId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ruolo: nuovoRuolo })
@@ -480,7 +481,7 @@ export default function ComuniPanel() {
   const handleRimuoviUtente = async (assegnazioneId: number) => {
     if (!confirm('Sei sicuro di voler rimuovere questo utente dal comune?')) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/comuni/utenti/${assegnazioneId}`, { method: 'DELETE' });
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/comuni/utenti/${assegnazioneId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success && selectedComune) {
         fetchPermessi(selectedComune.id);
@@ -733,7 +734,7 @@ export default function ComuniPanel() {
               note: `Importato da IPA - Codice UO: ${uo.codice_uo || 'N/A'}`
             };
             
-            const saveRes = await fetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/settori`, {
+            const saveRes = await authenticatedFetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/settori`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(settoreData)
@@ -776,7 +777,7 @@ export default function ComuniPanel() {
       const isNewComune = !editingComune;
       const codiceIPA = comuneForm.codice_ipa;
       
-      const res = await fetch(url, {
+      const res = await authenticatedFetch(url, {
         method: editingComune ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(comuneForm)
@@ -837,7 +838,7 @@ export default function ComuniPanel() {
           };
           
           // Salva il settore
-          const resSave = await fetch(`${API_BASE_URL}/api/comuni/${comuneId}/settori`, {
+          const resSave = await authenticatedFetch(`${API_BASE_URL}/api/comuni/${comuneId}/settori`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(settoreData)
@@ -883,7 +884,7 @@ export default function ComuniPanel() {
     if (!confirm('Sei sicuro di voler eliminare questo comune e tutti i suoi settori?')) return;
     
     try {
-      const res = await fetch(`${API_BASE_URL}/api/comuni/${id}`, { method: 'DELETE' });
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/comuni/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         fetchComuni();
@@ -906,7 +907,7 @@ export default function ComuniPanel() {
         ? `${API_BASE_URL}/api/comuni/settori/${editingSettore.id}`
         : `${API_BASE_URL}/api/comuni/${selectedComune.id}/settori`;
       
-      const res = await fetch(url, {
+      const res = await authenticatedFetch(url, {
         method: editingSettore ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settoreForm)
@@ -933,7 +934,7 @@ export default function ComuniPanel() {
     if (!confirm('Sei sicuro di voler eliminare questo settore?')) return;
     
     try {
-      const res = await fetch(`${API_BASE_URL}/api/comuni/settori/${id}`, { method: 'DELETE' });
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/comuni/settori/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success && selectedComune) {
         fetchSettori(selectedComune.id);
@@ -1791,7 +1792,7 @@ export default function ComuniPanel() {
                               if (!selectedComune) return;
                               if (!confirm(`Vuoi generare le credenziali Admin per ${selectedComune.nome}?\n\nVerrà creato un utente admin con password temporanea.`)) return;
                               try {
-                                const res = await fetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/provision-admin`, {
+                                const res = await authenticatedFetch(`${API_BASE_URL}/api/comuni/${selectedComune.id}/provision-admin`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' }
                                 });

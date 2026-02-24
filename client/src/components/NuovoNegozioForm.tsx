@@ -13,6 +13,7 @@ import {
 import { toast } from 'sonner';
 import { Store, Building2, MapPin, Phone, Mail, Tag, Loader2, CheckCircle2 } from 'lucide-react';
 import { MIHUB_API_BASE_URL } from '@/config/api';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = MIHUB_API_BASE_URL;
 
@@ -121,7 +122,7 @@ export default function NuovoNegozioForm({ onSuccess, onCancel }: NuovoNegozioFo
       const hubLat = selectedHub?.center_lat || selectedHub?.lat || null;
       const hubLng = selectedHub?.center_lng || selectedHub?.lng || null;
 
-      const response = await fetch(`${API_BASE_URL}/api/hub/shops/create-with-impresa`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/hub/shops/create-with-impresa`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

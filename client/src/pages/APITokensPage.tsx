@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle2, XCircle, AlertTriangle, RefreshCw, Key, Database, Github, Cloud, Zap, Building2, Server, Save, Eye, EyeOff } from 'lucide-react';
+import { authenticatedFetch } from '@/hooks/useImpersonation';
 
 // API_BASE_URL rimosso - usa path relativi per sfruttare il rewrite Vercel
 
@@ -116,7 +117,7 @@ export default function APITokensPage() {
     setSaving(true);
     
     try {
-      const response = await fetch(`/admin/secrets`, {
+      const response = await authenticatedFetch(`/admin/secrets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

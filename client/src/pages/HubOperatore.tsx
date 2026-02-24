@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { useLocation, Link } from 'wouter';
 import { useFirebaseAuth } from '@/contexts/FirebaseAuthContext';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 
 // API Base URL — passa per il proxy Vercel (/api/tcc/* → orchestratore.mio-hub.me)
 // Fallback diretto se in sviluppo locale
@@ -546,7 +546,7 @@ export default function HubOperatore() {
       const qrValidateUrl = import.meta.env.DEV
         ? 'https://orchestratore.mio-hub.me/api/tcc/validate-qr'
         : '/api/tcc/validate-qr';
-      const res = await fetch(qrValidateUrl, {
+      const res = await authenticatedFetch(qrValidateUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -583,7 +583,7 @@ export default function HubOperatore() {
     setIsLoading(true);
     try {
       const token = await getCurrentToken();
-      const res = await fetch(`${API_BASE}/operator/issue`, {
+      const res = await authenticatedFetch(`${API_BASE}/operator/issue`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -635,7 +635,7 @@ export default function HubOperatore() {
     setIsLoading(true);
     try {
       const token = await getCurrentToken();
-      const res = await fetch(`${API_BASE}/operator/redeem-spend`, {
+      const res = await authenticatedFetch(`${API_BASE}/operator/redeem-spend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -681,7 +681,7 @@ export default function HubOperatore() {
     setIsLoading(true);
     try {
       const token = await getCurrentToken();
-      const res = await fetch(`${API_BASE}/operator/settlement`, {
+      const res = await authenticatedFetch(`${API_BASE}/operator/settlement`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -809,7 +809,7 @@ export default function HubOperatore() {
   const validateSpendQR = async (qrData: string) => {
     try {
       const token = await getCurrentToken();
-      const res = await fetch(`${API_BASE}/operator/validate-spend-qr`, {
+      const res = await authenticatedFetch(`${API_BASE}/operator/validate-spend-qr`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
