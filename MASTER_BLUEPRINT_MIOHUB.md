@@ -1,6 +1,6 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 8.17.4 (Impersonation Hardening + Dead Code Cleanup)
+> **Versione:** 9.0.0 (Modello Business Associativo)
 > **Data:** 24 Febbraio 2026
 > **Autore:** Sistema documentato da Manus AI & Claude AI  
 > **Stato:** PRODUZIONE
@@ -50,6 +50,18 @@ Questa tabella traccia la timeline completa di ogni posteggio, registrando ogni 
 ---
 
 ## 📝 CHANGELOG RECENTE
+
+### Sessione 24 Febbraio 2026 — Progetto v9.0.0 — Modello Business Associativo
+
+**Contesto:** Implementazione del modello di business associativo completo nell'App Impresa. Il sistema ha già il 70% dell'infrastruttura (qualifiche, notifiche, servizi, corsi, wallet). Il lavoro consiste nell'estendere componenti esistenti, collegare sistemi operativi e creare poche nuove funzionalità.
+
+**Divisione lavoro:**
+- **Manus:** Backend (8 nuovi endpoint) + Database (2 nuove tabelle + 1 ALTER) + Trigger SCIA/Attestati
+- **Claude:** Frontend (3 nuovi sotto-tab in AnagraficaPage + 2 estensioni componenti esistenti)
+
+**Stato:** 🔧 IN CORSO
+
+---
 
 ### Sessione 24 Febbraio 2026 (v8.17.3 → v8.17.4) — Impersonation Hardening + Dead Code Cleanup
 
@@ -9128,6 +9140,388 @@ Il tab "Associazioni" (TPAS) è la sezione ADMIN per gestire tutte le associazio
 | `POST /api/auth/firebase-session` 500 | Backend | HIGH | ✅ RISOLTO v8.17.0 — Bug ON CONFLICT + colonna `auth_provider` inesistente |
 | `check-roles` restituiva ruoli vuoti | Backend | CRITICAL | ✅ RISOLTO v8.17.1 — Colonna `display_name` inesistente nella query RBAC |
 | Zapier errori continui `pool is not defined` | Backend | HIGH | ✅ RISOLTO v8.17.2 — Pool mancante in webhooks.js, orchestrator.js, tcc.js |
+
+---
+
+## 📐 PROGETTO v9.0.0 — MODELLO BUSINESS ASSOCIATIVO
+
+### Obiettivo
+
+Rendere operativo il modello di business associativo nell'App Impresa: l'impresa vede le sue anomalie, chiede aiuto all'associazione, l'associazione offre servizi, l'impresa paga dal wallet generico, tutto resta nello storico.
+
+### Inventario Funzionalità Esistenti
+
+**App Impresa — Anagrafica (`AnagraficaPage.tsx`):**
+
+| Sotto-tab | ID | Stato |
+|---|---|---|
+| Concessioni | `concessioni` | ✅ Funzionante |
+| Qualifiche | `qualificazioni` | ✅ Funzionante — DURC, attestati, stato ATTIVA/SCADUTA, ente rilascio, date |
+| Autorizzazioni | `autorizzazioni` | ✅ Funzionante |
+| Spunta | `domande` | ✅ Funzionante |
+| Team | `collaboratori` | ✅ Funzionante |
+
+**App Impresa — Notifiche (`AppImpresaNotifiche.tsx`):**
+
+| Funzionalità | Stato |
+|---|---|
+| Messaggi bidirezionali impresa ↔ associazione/ente/PA | ✅ Funzionante |
+| Risposte rapide pre-postate (Appuntamento, Corso) | ✅ Funzionante |
+| Azioni rapide in fondo (Corsi, Bandi, Appuntamento, Regolarità) | ✅ UI presente, da collegare |
+| Tipi: INFORMATIVA, PROMOZIONALE, URGENTE, SANZIONE | ✅ Funzionante |
+
+**Backend Endpoint Esistenti:**
+
+| Route | Endpoint chiave | Stato |
+|---|---|---|
+| `associazioni.js` | CRUD associazioni, tesseramenti, notifiche, scheda associato | ✅ |
+| `formazione.js` | CRUD enti, corsi, iscrizioni, attestati | ✅ |
+| `bandi.js` | Servizi associazioni, richieste servizi, regolarità | ✅ |
+| `qualificazioni.js` | Qualificazioni per impresa, DURC | ✅ |
+| `wallets.js` | Wallet SPUNTA/CONCESSIONE/GENERICO, deposit, withdraw | ✅ |
+| `notifiche.js` | Notifiche bidirezionali, risposte, archiviazione | ✅ |
+
+**Database Tabelle Esistenti:**
+
+| Tabella | Stato |
+|---|---|
+| `tesseramenti_associazione` | ✅ Operativa |
+| `servizi_associazioni` | ✅ Operativa |
+| `richieste_servizi` | ✅ Operativa |
+| `regolarita_imprese` | ✅ Operativa |
+| `formazione_enti`, `formazione_corsi`, `formazione_iscrizioni` | ✅ Operative |
+| `wallets`, `wallet_transactions` | ✅ Operative |
+
+### Gap Analysis
+
+| Funzionalità | Backend | DB | Frontend PA | Frontend App | Lavoro |
+|---|---|---|---|---|---|
+| Qualifiche con allerte intelligenti | ✅ | ✅ | ✅ | ✅ (parziale) | **Estendere** con contatori + schede allerta + "Segnala" |
+| Notifiche con nuovi tipi | ✅ | ✅ | ✅ | ✅ | **Estendere** con ALLERTA_ANOMALIA, CONFERMA_PAGAMENTO |
+| Catalogo servizi (vista impresa) | ✅ | ✅ | ✅ | ❌ | **Creare** sotto-tab Servizi |
+| Pagamento quota via wallet | Parziale | ✅ | ❌ | ❌ | **Creare** flusso pagamento |
+| Pagamento servizi/corsi via wallet | ❌ | ✅ | ❌ | ❌ | **Creare** endpoint + flusso |
+| Pagina informativa associazione | ❌ | ❌ | ❌ | ❌ | **Creare** tutto |
+| Scelta associazione/procuratore | ❌ | ❌ | ❌ | ❌ | **Creare** tutto |
+| Adempimenti per tipo impresa | ❌ | ❌ | ❌ | ❌ | **Creare** configurazione |
+| Iscrizione corsi da app impresa | ✅ | ✅ | ✅ | ❌ | **Creare** sotto-tab Formazione |
+
+### Architettura Soluzione
+
+**Principio: Estendere, Non Ricreare**
+
+```
+App Impresa → Tab "Anagrafica" (AnagraficaPage.tsx)
+├── Concessioni (esistente ✅)
+├── Qualifiche (esistente ✅ → ESTENDERE con allerte e "Segnala")
+├── Autorizzazioni (esistente ✅)
+├── Spunta (esistente ✅)
+├── La Mia Associazione (NUOVO sotto-tab)
+├── Servizi (NUOVO sotto-tab)
+├── Formazione (NUOVO sotto-tab)
+└── Team (esistente ✅)
+
+App Impresa → Tab "Notifiche" (AppImpresaNotifiche.tsx)
+├── Messaggi (esistente ✅ → ESTENDERE con nuovi tipi)
+├── Azioni Rapide (esistente ✅ → COLLEGARE ai flussi reali)
+└── Nuovi tipi: ALLERTA_ANOMALIA, RICHIESTA_SERVIZIO, CONFERMA_PAGAMENTO
+```
+
+### FRONTEND — Specifiche per Claude
+
+#### F1. Estensione Tab Qualifiche → Centro Allerte
+
+**File:** `client/src/pages/AnagraficaPage.tsx` — componente `QualificazioniSection`
+
+**Aggiungere sopra la lista attuale:**
+
+1. **Pannello contatori allerte** — 4 card colorate in riga:
+   - Scadute (rosso) — qualifiche con `data_scadenza < oggi`
+   - In Scadenza (arancione) — qualifiche con `data_scadenza` entro 30 giorni
+   - Mancanti (giallo) — adempimenti obbligatori non presenti (da `GET /api/adempimenti/impresa/:id`)
+   - Regolari (verde) — qualifiche attive
+
+2. **Schede allerta** — per ogni qualifica SCADUTA o MANCANTE:
+   - Card con bordo rosso/arancione, icona AlertTriangle
+   - Titolo: "DURC SCADUTO dal 15/01/2026" o "HACCP MANCANTE"
+   - Spiegazione: testo da `adempimenti_tipo_impresa.descrizione`
+   - Azione richiesta: testo da `adempimenti_tipo_impresa.azione_richiesta`
+   - **Pulsante "Segnala all'Associazione e Chiedi Aiuto":**
+     - Se tesserato → apre dialog con anomalia pre-compilata + campo messaggio → invia via `POST /api/notifiche/reply`
+     - Se NON tesserato → banner "Non sei ancora associato" con link al sotto-tab "associazione"
+   - Pulsante "Dettagli" → espande card con normativa di riferimento
+
+3. **Lista qualifiche attive** — la lista esistente rimane sotto, invariata
+
+**Endpoint da chiamare:** `GET /api/adempimenti/impresa/:impresa_id` (Manus lo crea)
+
+**Risposta attesa:**
+```json
+{
+  "success": true,
+  "data": {
+    "tipo_impresa": "AMBULANTE_ALIMENTARE",
+    "adempimenti": [
+      {
+        "tipo_adempimento": "DURC",
+        "obbligatorio": true,
+        "descrizione": "Documento Unico di Regolarità Contributiva",
+        "normativa_riferimento": "Art. 80 D.Lgs. 50/2016",
+        "frequenza_rinnovo_mesi": 12,
+        "gravita": "CRITICA",
+        "azione_richiesta": "Richiedere rinnovo tramite INPS/INAIL o la propria associazione",
+        "stato_attuale": "SCADUTA",
+        "qualificazione": { "id": 123, "data_scadenza": "2026-01-15", ... }
+      },
+      {
+        "tipo_adempimento": "HACCP",
+        "obbligatorio": true,
+        "stato_attuale": "MANCANTE",
+        "qualificazione": null
+      }
+    ],
+    "riepilogo": { "scadute": 1, "in_scadenza": 0, "mancanti": 1, "regolari": 4 }
+  }
+}
+```
+
+#### F2. Estensione Notifiche → Nuovi Tipi e Azioni
+
+**File:** `client/src/pages/AppImpresaNotifiche.tsx`
+
+1. **Aggiungere nuovi tipi in `getMittenteIcon()` e `getTipoColor()`:**
+
+| Tipo | Icona | Colore |
+|---|---|---|
+| `ALLERTA_ANOMALIA` | AlertCircle | `bg-red-500/20 text-red-400` |
+| `RICHIESTA_SERVIZIO` | Briefcase | `bg-purple-500/20 text-purple-400` |
+| `CONFERMA_PAGAMENTO` | Wallet | `bg-green-500/20 text-green-400` |
+| `ISCRIZIONE_CORSO` | GraduationCap | `bg-blue-500/20 text-blue-400` |
+| `ATTESTATO_RILASCIATO` | FileCheck | `bg-green-500/20 text-green-400` |
+| `RINNOVO_TESSERA` | CreditCard | `bg-orange-500/20 text-orange-400` |
+
+2. **Nuove azioni rapide pre-postate** (aggiungere dopo le 2 esistenti):
+   - "Richiedi Rinnovo DURC" → pre-compila: "Vorrei richiedere assistenza per il rinnovo del DURC."
+   - "Richiedi Assistenza SCIA" → pre-compila: "Vorrei assistenza per la mia pratica SCIA."
+   - "Richiedi Preventivo Servizio" → pre-compila: "Vorrei un preventivo per il servizio..."
+
+3. **Collegare le 4 Azioni Rapide in fondo alla pagina:**
+   - "Corsi Disponibili" → `setLocation('/app/impresa/anagrafica?tab=formazione')`
+   - "Bandi Aperti" → `setLocation('/app/impresa/anagrafica?tab=servizi')`
+   - "Prenota Appuntamento" → pre-compila messaggio appuntamento
+   - "Stato Regolarità" → `setLocation('/app/impresa/anagrafica?tab=qualificazioni')`
+
+#### F3. Nuovo Sotto-tab "La Mia Associazione"
+
+**File:** `client/src/pages/AnagraficaPage.tsx` — aggiungere tab con id `associazione`
+
+**Se l'impresa è tesserata** (da `GET /api/tesseramenti/impresa/:impresa_id`):
+- Card associazione: nome, stato tesseramento (ATTIVO badge verde), numero tessera, scadenza
+- Quota annuale e stato pagamento (Pagata badge verde / Da Pagare badge rosso)
+- Pulsanti: "Contatta" (naviga a notifiche), "Richiedi Servizio" (tab servizi), "Rinnova Quota" (dialog PagaConWallet), "Storico Pagamenti"
+- Sezione "Delega come Procuratore": checkbox + testo esplicativo
+
+**Se NON tesserata** (tesseramenti vuoti):
+- Banner informativo vantaggi
+- Lista associazioni da `GET /api/associazioni/pubbliche`
+- Per ogni associazione: card con nome, descrizione, servizi, quota
+- Pulsante "Vedi Dettagli" → dialog/pagina informativa da `GET /api/associazioni/:id/pagina`
+- Pulsante "Associati" → dialog conferma + `POST /api/tesseramenti/richiedi` con pagamento wallet
+
+#### F4. Nuovo Sotto-tab "Servizi"
+
+**File:** `client/src/pages/AnagraficaPage.tsx` — aggiungere tab con id `servizi`
+
+**Struttura a 2 sezioni:**
+
+1. **Catalogo Servizi** — da `GET /api/bandi/servizi?associazione_id=X` (ESISTE)
+   - Card per servizio: nome, categoria, prezzo base / prezzo associati, tempo medio
+   - Pulsante "Richiedi" → dialog con note + "Paga ora" / "Paga dopo"
+   - "Paga ora" → `POST /api/pagamenti/servizio` (Manus lo crea)
+
+2. **Le Mie Richieste** — da `GET /api/bandi/richieste?impresa_id=X` (ESISTE)
+   - Lista con stato: RICHIESTA → IN_LAVORAZIONE → COMPLETATA
+   - Badge colorati per stato
+
+#### F5. Nuovo Sotto-tab "Formazione"
+
+**File:** `client/src/pages/AnagraficaPage.tsx` — aggiungere tab con id `formazione`
+
+**Struttura a 3 sezioni:**
+
+1. **I Miei Attestati** — stessi dati di Qualifiche, raggruppati per obbligatori/opzionali
+2. **Corsi Disponibili** — da `GET /api/formazione/corsi` (ESISTE)
+   - Card: nome, ente, data, durata, sede, posti disponibili, prezzo
+   - Pulsante "Iscriviti e Paga" → `POST /api/pagamenti/corso` (Manus lo crea)
+3. **Le Mie Iscrizioni** — da `GET /api/formazione/iscrizioni?impresa_id=X` (ESISTE)
+   - Stato: ISCRITTO → FREQUENTANTE → COMPLETATO → ATTESTATO_RILASCIATO
+
+#### F6. Componente Riutilizzabile `PagaConWallet`
+
+Dialog modale per tutti i pagamenti da wallet generico:
+- Mostra: importo, descrizione, saldo wallet attuale
+- Se saldo sufficiente → pulsante "Conferma Pagamento"
+- Se saldo insufficiente → messaggio "Saldo insufficiente" + link a WalletImpresaPage per ricaricare
+- Dopo pagamento → mostra conferma con numero transazione
+
+#### F7. Configurazione Pagina Associazione (lato Associazione)
+
+**File:** `client/src/components/AnagraficaAssociazionePanel.tsx`
+
+Aggiungere tab "Pagina Pubblica" dove l'associazione configura:
+- Titolo, sottotitolo, descrizione breve e completa
+- Logo e immagine copertina (upload)
+- Colore primario
+- Lista vantaggi
+- Contatti e orari
+- Servizi in evidenza (seleziona da catalogo)
+- Preview della pagina
+
+Endpoint: `GET/PUT /api/associazioni/:id/pagina` (Manus li crea)
+
+### BACKEND — Specifiche per Manus (in corso)
+
+#### B1. Nuove Tabelle Database
+
+**`adempimenti_tipo_impresa`** — Configurazione adempimenti obbligatori per tipo impresa:
+
+```sql
+CREATE TABLE IF NOT EXISTS adempimenti_tipo_impresa (
+    id SERIAL PRIMARY KEY,
+    tipo_impresa VARCHAR(50) NOT NULL,
+    tipo_adempimento VARCHAR(50) NOT NULL,
+    obbligatorio BOOLEAN DEFAULT true,
+    descrizione TEXT,
+    normativa_riferimento VARCHAR(255),
+    frequenza_rinnovo_mesi INTEGER,
+    gravita VARCHAR(20) DEFAULT 'MEDIA',
+    azione_richiesta TEXT,
+    comune_id INTEGER REFERENCES comuni(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(tipo_impresa, tipo_adempimento, comune_id)
+);
+```
+
+Valori tipo_impresa: `AMBULANTE_ALIMENTARE`, `AMBULANTE_NON_ALIMENTARE`, `SEDE_FISSA_ALIMENTARE`, `SEDE_FISSA_NON_ALIMENTARE`.
+
+| Tipo Impresa | Adempimenti Obbligatori |
+|---|---|
+| Ambulante Alimentare | DURC, SCIA, HACCP, Autorizzazione Sanitaria, Iscrizione Albo, Assicurazione RC |
+| Ambulante Non Alimentare | DURC, SCIA, Iscrizione Albo, Assicurazione RC |
+| Sede Fissa Alimentare | DURC, SCIA, HACCP, Autorizzazione Sanitaria, Certificato Prevenzione Incendi |
+| Sede Fissa Non Alimentare | DURC, SCIA, Certificato Prevenzione Incendi |
+| Tutti | Visura Camerale, Partita IVA attiva |
+
+**`pagine_associazione`** — Pagina informativa/pubblicitaria:
+
+```sql
+CREATE TABLE IF NOT EXISTS pagine_associazione (
+    id SERIAL PRIMARY KEY,
+    associazione_id INTEGER NOT NULL REFERENCES associazioni(id) ON DELETE CASCADE,
+    titolo VARCHAR(255),
+    sottotitolo VARCHAR(255),
+    descrizione_breve TEXT,
+    descrizione_completa TEXT,
+    logo_url TEXT,
+    immagine_copertina_url TEXT,
+    colore_primario VARCHAR(7) DEFAULT '#3b82f6',
+    vantaggi_associazione TEXT[],
+    contatti JSONB,
+    orari_apertura JSONB,
+    servizi_evidenza INTEGER[],
+    attiva BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(associazione_id)
+);
+```
+
+**ALTER `wallet_transactions`:**
+
+```sql
+ALTER TABLE wallet_transactions 
+ADD COLUMN IF NOT EXISTS riferimento_tipo VARCHAR(50),
+ADD COLUMN IF NOT EXISTS riferimento_id INTEGER;
+```
+
+#### B2. Nuovi Endpoint
+
+| Metodo | Endpoint | Descrizione | File |
+|---|---|---|---|
+| `GET` | `/api/adempimenti/impresa/:id` | Adempimenti obbligatori vs stato attuale | `adempimenti.js` (nuovo) |
+| `GET` | `/api/associazioni/pubbliche` | Lista associazioni con pagina attiva | `associazioni.js` |
+| `GET` | `/api/associazioni/:id/pagina` | Pagina informativa associazione | `associazioni.js` |
+| `PUT` | `/api/associazioni/:id/pagina` | Aggiorna pagina (dall'associazione) | `associazioni.js` |
+| `GET` | `/api/tesseramenti/impresa/:id` | I miei tesseramenti | `associazioni.js` |
+| `POST` | `/api/tesseramenti/richiedi` | Richiedi tesseramento + paga da wallet | `associazioni.js` |
+| `POST` | `/api/pagamenti/servizio` | Paga servizio da wallet generico | `pagamenti.js` (nuovo) |
+| `POST` | `/api/pagamenti/corso` | Paga iscrizione corso da wallet generico | `pagamenti.js` (nuovo) |
+
+#### B3. Flusso Pagamento Centralizzato
+
+```
+1. Frontend → POST /api/pagamenti/{tipo}
+   Body: { impresa_id, importo, riferimento_id, descrizione }
+
+2. Backend:
+   a. SELECT wallet GENERICO WHERE company_id = impresa_id
+   b. Verifica saldo >= importo
+   c. UPDATE wallets SET balance = balance - importo
+   d. INSERT wallet_transactions (con riferimento_tipo e riferimento_id)
+   e. Aggiorna record riferimento (tesseramento/servizio/corso)
+   f. INSERT notifica CONFERMA_PAGAMENTO
+   g. Return transazione completata
+```
+
+#### B4. Trigger
+
+- **SCIA → Regolarità:** Hook in `PUT /api/suap/pratiche/:id` — quando stato cambia, aggiorna `regolarita_imprese`
+- **Attestati → Qualifiche:** Hook in `PUT /api/formazione/iscrizioni/:id` — quando stato = COMPLETATO, crea/aggiorna qualificazione
+
+### Flussi Operativi
+
+**Flusso 1: Impresa vede anomalia e chiede aiuto**
+```
+Anagrafica → Qualifiche → Vede contatori allerte → Scheda allerta DURC SCADUTO
+→ "Segnala all'Associazione" → Dialog → Invia notifica → Associazione risponde
+```
+
+**Flusso 2: Impresa si associa e paga quota**
+```
+Anagrafica → La Mia Associazione → Lista associazioni → Vedi Dettagli
+→ "Associati" → Dialog conferma → Paga da wallet GENERICO → Tesseramento attivo
+```
+
+**Flusso 3: Impresa richiede e paga servizio**
+```
+Anagrafica → Servizi → Catalogo → "Richiedi" → Dialog + "Paga ora"
+→ Withdraw wallet GENERICO → Richiesta creata → Associazione lavora → Completata
+```
+
+**Flusso 4: Impresa si iscrive a corso e paga**
+```
+Anagrafica → Formazione → Corsi disponibili → "Iscriviti e Paga"
+→ Withdraw wallet GENERICO → Iscrizione → Corso → Attestato → Qualifiche aggiornate
+```
+
+### Piano Implementazione
+
+| Fase | Attività | Responsabile | Stima |
+|---|---|---|---|
+| 1 | DB: tabelle + ALTER + dati iniziali | Manus | 2h |
+| 1 | Backend: endpoint adempimenti | Manus | 2h |
+| 1 | Frontend: estensione Qualifiche + allerte | Claude | 4h |
+| 1 | Frontend: estensione Notifiche + nuovi tipi | Claude | 1h |
+| 2 | Backend: endpoint associazioni pubbliche, pagina, tesseramenti | Manus | 4h |
+| 2 | Backend: endpoint pagamenti (servizio, corso) | Manus | 4h |
+| 2 | Frontend: sotto-tab Associazione | Claude | 5h |
+| 2 | Frontend: sotto-tab Servizi + PagaConWallet | Claude | 6h |
+| 3 | Frontend: sotto-tab Formazione | Claude | 4h |
+| 3 | Frontend: config pagina associazione | Claude | 3h |
+| 3 | Backend: trigger SCIA + attestati | Manus | 3h |
+| 3 | Test end-to-end | Entrambi | 3h |
+
+**Totale stimato: ~46h** (Backend ~15h Manus, Frontend ~23h Claude, Test ~3h)
 
 ---
 
