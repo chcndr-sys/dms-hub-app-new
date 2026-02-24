@@ -64,12 +64,13 @@ export default function CivicReportsPanel() {
   const loadStats = async () => {
     // Dati civici: caricare sempre (anche per impersonificazione associazione)
     try {
-      const statsUrl = addComuneIdToUrl(comuneParam
+      // Usa comuneParam diretto - NON addComuneIdToUrl per evitare duplicazione comune_id
+      const statsUrl = comuneParam
         ? `${API_BASE_URL}/api/civic-reports/stats?${comuneParam}`
-        : `${API_BASE_URL}/api/civic-reports/stats`);
-      const reportsUrl = addComuneIdToUrl(comuneParam
+        : `${API_BASE_URL}/api/civic-reports/stats`;
+      const reportsUrl = comuneParam
         ? `${API_BASE_URL}/api/civic-reports?${comuneParam}&limit=200`
-        : `${API_BASE_URL}/api/civic-reports?limit=200`);
+        : `${API_BASE_URL}/api/civic-reports?limit=200`;
       const [statsRes, reportsRes] = await Promise.all([
         fetch(statsUrl),
         fetch(reportsUrl)
@@ -92,9 +93,10 @@ export default function CivicReportsPanel() {
   // Carica configurazione TCC
   const loadConfig = async () => {
     try {
-      const configUrl = addComuneIdToUrl(comuneId
+      // Usa comune_id diretto - NON addComuneIdToUrl per evitare duplicazione
+      const configUrl = comuneId
         ? `${API_BASE_URL}/api/civic-reports/config?comune_id=${comuneId}`
-        : `${API_BASE_URL}/api/civic-reports/config?comune_id=1`);
+        : `${API_BASE_URL}/api/civic-reports/config?comune_id=1`;
       const response = await fetch(configUrl);
       const data = await response.json();
       if (data.success) {

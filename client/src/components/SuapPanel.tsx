@@ -739,7 +739,7 @@ export default function SuapPanel({ mode = 'suap' }: SuapPanelProps) {
         {/* ================================================================== */}
         <TabsContent value="dashboard" className="space-y-6 mt-6">
           {/* Statistiche */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-cyan-400 text-sm mb-1">
