@@ -39,7 +39,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MIHUB_API_BASE_URL } from '@/config/api';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = MIHUB_API_BASE_URL;
 
@@ -274,7 +274,7 @@ export default function VetrinePage() {
     
     setIsSaving(true);
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/imprese/${selectedImpresa.id}/vetrina`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/imprese/${selectedImpresa.id}/vetrina`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -355,7 +355,7 @@ export default function VetrinePage() {
 
         // Invia al backend
         try {
-          const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/imprese/${selectedImpresa.id}/vetrina/upload`), {
+          const response = await authenticatedFetch(`${API_BASE_URL}/api/imprese/${selectedImpresa.id}/vetrina/upload`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -413,7 +413,7 @@ export default function VetrinePage() {
     if (!selectedImpresa) return;
 
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/imprese/${selectedImpresa.id}/vetrina/gallery/${index}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/imprese/${selectedImpresa.id}/vetrina/gallery/${index}`, {
         method: 'DELETE',
       });
 

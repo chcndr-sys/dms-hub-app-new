@@ -32,7 +32,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MIHUB_API_BASE_URL } from '@/config/api';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 
 // Tipi wallet
 interface WalletItem {
@@ -475,7 +475,7 @@ export default function WalletImpresaPage() {
       const description = `Pagamento Canone ${selectedScadenza.tipo === 'CANONE_ANNUO' ? 'Annuo' : selectedScadenza.tipo} - Rata ${selectedScadenza.rata_numero}/${selectedScadenza.rata_totale} - ${selectedScadenza.mercato_nome} - Posteggio ${selectedScadenza.posteggio}`;
 
       // Usa l'endpoint corretto /api/wallets/deposit (proxy Vercel in prod)
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/wallets/deposit`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/wallets/deposit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -514,7 +514,7 @@ export default function WalletImpresaPage() {
     try {
       const description = `Ricarica Wallet Generico - ${company?.ragione_sociale}`;
 
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/wallets/deposit`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/wallets/deposit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -18,7 +18,7 @@ import {
   SuapStats, SuapPratica, SuapEvento, SuapCheck 
 } from '@/api/suap';
 import SciaForm from '@/components/suap/SciaForm';
-import { addComuneIdToUrl, addAssociazioneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, addAssociazioneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 import ConcessioneForm from '@/components/suap/ConcessioneForm';
 import AutorizzazioneForm from '@/components/suap/AutorizzazioneForm';
 import DomandaSpuntaForm from '@/components/suap/DomandaSpuntaForm';
@@ -2146,7 +2146,7 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                       onClick={async () => {
                         try {
                           setLoading(true);
-                          const response = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/concessions/${selectedConcessione.id}/associa-posteggio`), {
+                          const response = await authenticatedFetch(`https://orchestratore.mio-hub.me/api/concessions/${selectedConcessione.id}/associa-posteggio`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' }
                           });
@@ -2475,7 +2475,7 @@ Documento generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date(
                             onClick={async () => {
                               if (!confirm(`Sei sicuro di voler eliminare la concessione ${conc.numero_protocollo || '#' + conc.id}?`)) return;
                               try {
-                                const response = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`), {
+                                const response = await authenticatedFetch(`https://orchestratore.mio-hub.me/api/concessions/${conc.id}`, {
                                   method: 'DELETE'
                                 });
                                 const data = await response.json();

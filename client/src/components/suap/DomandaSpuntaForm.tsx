@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileText, Send, Loader2, Wallet, AlertCircle, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // API URL
@@ -422,7 +422,7 @@ export default function DomandaSpuntaForm({ onCancel, onSubmit, initialData, dom
     setSubmitting(true);
     
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_URL}/api/domande-spunta`), {
+      const response = await authenticatedFetch(`${API_URL}/api/domande-spunta`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

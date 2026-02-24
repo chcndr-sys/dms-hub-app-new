@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/formatUtils';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://mihub.157-90-29-66.nip.io';
 
@@ -410,7 +410,7 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
 
   const handleSave = async (id: number) => {
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE}/api/graduatoria/aggiorna`), {
+      const response = await authenticatedFetch(`${API_BASE}/api/graduatoria/aggiorna`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...editValues })
@@ -498,7 +498,7 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
     if (!showStoricoPopup) return;
     
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE}/api/graduatoria/aggiorna-storico`), {
+      const response = await authenticatedFetch(`${API_BASE}/api/graduatoria/aggiorna-storico`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -727,7 +727,7 @@ export function PresenzeGraduatoriaPanel({ marketId, marketName, stalls = [], on
                       className="flex-1 bg-green-600 hover:bg-green-700"
                       onClick={async () => {
                         try {
-                          const response = await fetch(addComuneIdToUrl(`${API_BASE}/api/graduatoria/aggiorna-storico`), {
+                          const response = await authenticatedFetch(`${API_BASE}/api/graduatoria/aggiorna-storico`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({

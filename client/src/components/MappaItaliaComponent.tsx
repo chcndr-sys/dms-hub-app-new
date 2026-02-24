@@ -34,7 +34,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { MIHUB_API_BASE_URL } from '@/config/api';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = MIHUB_API_BASE_URL;
 
@@ -472,7 +472,7 @@ function AnagraficaTab({ market, onUpdate }: { market: Market; onUpdate: () => v
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/markets/${market.id}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/markets/${market.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -699,7 +699,7 @@ function CompanyDetailCard({
     if (!companyData?.id) return;
     setSaving(true);
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/imprese/${companyData.id}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/imprese/${companyData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -1038,7 +1038,7 @@ function CompanyInlineForm({ company, marketId, onClose, onSaved }: {
         phone: formData.telefono,
         email: formData.referente,
       };
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/imprese/${company.id}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/imprese/${company.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -1380,7 +1380,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
   const handleSave = async (stallId: number) => {
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/stalls/${stallId}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1410,7 +1410,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
   // Conferma assegnazione posteggio (da riservato a occupato)
   const handleConfirmAssignment = async (stallId: number) => {
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/stalls/${stallId}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

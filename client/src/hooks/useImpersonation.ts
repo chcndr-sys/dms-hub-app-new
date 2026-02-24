@@ -13,6 +13,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { getIdToken } from '@/lib/firebase';
 
 const STORAGE_KEY = 'miohub_impersonation';
 
@@ -286,6 +287,25 @@ export function endImpersonation(): void {
   url.searchParams.delete('user_email');
   url.searchParams.delete('role');
   window.history.replaceState({}, '', url.toString());
+}
+
+/**
+ * Fetch autenticata per operazioni di scrittura multi-tenant.
+ * Aggiunge automaticamente comune_id alla URL (come addComuneIdToUrl)
+ * e l'header Authorization: Bearer <token> per le operazioni POST/PUT/DELETE/PATCH.
+ * Se il token non è disponibile (utente non loggato), la fetch parte comunque senza header.
+ */
+export async function authenticatedFetch(url: string, options?: RequestInit): Promise<Response> {
+  const finalUrl = addComuneIdToUrl(url);
+
+  const token = await getIdToken();
+
+  const headers = new Headers(options?.headers);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  return fetch(finalUrl, { ...options, headers });
 }
 
 export default useImpersonation;

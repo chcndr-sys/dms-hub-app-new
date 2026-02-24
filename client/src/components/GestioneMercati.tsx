@@ -37,7 +37,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { MIHUB_API_BASE_URL } from '@/config/api';
-import { useImpersonation, addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { useImpersonation, addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 
 const API_BASE_URL = MIHUB_API_BASE_URL;
 
@@ -583,7 +583,7 @@ function AnagraficaTab({ market, onUpdate }: { market: Market; onUpdate: () => v
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/markets/${market.id}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/markets/${market.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -810,7 +810,7 @@ function CompanyDetailCard({
     if (!companyData?.id) return;
     setSaving(true);
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/imprese/${companyData.id}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/imprese/${companyData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -1149,7 +1149,7 @@ function CompanyInlineForm({ company, marketId, onClose, onSaved }: {
         phone: formData.telefono,
         email: formData.referente,
       };
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/imprese/${company.id}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/imprese/${company.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -1670,7 +1670,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
   const handleSave = async (stallId: number) => {
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/stalls/${stallId}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1706,7 +1706,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
         setSelectedStallCenter(null);
 
         try {
-          const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/test-mercato/assegna-posteggio-spunta`), {
+          const response = await authenticatedFetch(`${API_BASE_URL}/api/test-mercato/assegna-posteggio-spunta`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ market_id: marketId, stall_id: stallId }),
@@ -1770,7 +1770,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       setSelectedStallId(null);
       setSelectedStallCenter(null);
 
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/stalls/${stallId}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1783,7 +1783,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
         // Se abbiamo impresa e wallet, registra presenza con calcolo importo
         if (impresaId && walletId) {
           try {
-            const presenzaResponse = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/presenze/registra`), {
+            const presenzaResponse = await authenticatedFetch(`${API_BASE_URL}/api/presenze/registra`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -1840,7 +1840,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
     try {
       // 1. Aggiorna stato posteggio a occupato via API
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/stalls/${stallId}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'occupato' }),
@@ -1851,7 +1851,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
         // 2. Registra presenza (arrivo) se abbiamo impresa e wallet
         if (impresaId && walletId) {
           try {
-            const presenzaResponse = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/presenze/registra`), {
+            const presenzaResponse = await authenticatedFetch(`${API_BASE_URL}/api/presenze/registra`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -1900,7 +1900,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
     try {
       // 1. Aggiorna stato posteggio a libero via API
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/stalls/${stallId}`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/stalls/${stallId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'libero' }),
@@ -1910,7 +1910,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
       if (data.success) {
         // 2. Registra uscita (aggiorna presenza esistente)
         try {
-          const uscitaResponse = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/presenze/registra-uscita`), {
+          const uscitaResponse = await authenticatedFetch(`${API_BASE_URL}/api/presenze/registra-uscita`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -2097,7 +2097,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
 
                   // Chiama endpoint avvia-spunta in background
                   try {
-                    const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/test-mercato/avvia-spunta`), {
+                    const response = await authenticatedFetch(`${API_BASE_URL}/api/test-mercato/avvia-spunta`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ market_id: marketId }),
@@ -2240,7 +2240,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               if (!confirmed) return;
               
               try {
-                const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/test-mercato/inizia-mercato`), {
+                const response = await authenticatedFetch(`${API_BASE_URL}/api/test-mercato/inizia-mercato`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ market_id: marketId }),
@@ -2424,7 +2424,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               if (!confirmed) return;
               
               try {
-                const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/test-mercato/registra-rifiuti`), {
+                const response = await authenticatedFetch(`${API_BASE_URL}/api/test-mercato/registra-rifiuti`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ market_id: marketId }),
@@ -2462,7 +2462,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
               if (!confirmed) return;
               
               try {
-                const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/test-mercato/chiudi-mercato`), {
+                const response = await authenticatedFetch(`${API_BASE_URL}/api/test-mercato/chiudi-mercato`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ market_id: marketId }),
@@ -3086,7 +3086,7 @@ function PosteggiTab({ marketId, marketCode, marketCenter, stalls, setStalls, al
                     
                     try {
                       // Usa l'endpoint corretto /api/graduatoria/aggiorna-storico
-                      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/graduatoria/aggiorna-storico`), {
+                      const response = await authenticatedFetch(`${API_BASE_URL}/api/graduatoria/aggiorna-storico`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

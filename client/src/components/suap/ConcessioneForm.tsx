@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Printer, Search, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 
 // API URL
 const API_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me';
@@ -762,7 +762,7 @@ export default function ConcessioneForm({ onCancel, onSubmit, initialData, mode 
         dataToSave
       });
       
-      const response = await fetch(addComuneIdToUrl(url), {
+      const response = await authenticatedFetch(url, {
         method: isEditMode ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',

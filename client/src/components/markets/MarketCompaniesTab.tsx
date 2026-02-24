@@ -39,7 +39,7 @@ import {
 } from 'lucide-react';
 import { MarketAutorizzazioniTab } from './MarketAutorizzazioniTab';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 import { formatDate } from '@/lib/formatUtils';
 
 // ============================================================================
@@ -1246,7 +1246,7 @@ export function MarketCompaniesTab(props: MarketCompaniesTabProps) {
                         <button
                           onClick={async () => {
                             try {
-                              const response = await fetch(addComuneIdToUrl(`https://orchestratore.mio-hub.me/api/concessions/${selectedConcessionDetail.id}/associa-posteggio`), {
+                              const response = await authenticatedFetch(`https://orchestratore.mio-hub.me/api/concessions/${selectedConcessionDetail.id}/associa-posteggio`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' }
                               });
