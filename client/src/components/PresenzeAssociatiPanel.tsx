@@ -29,7 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { getImpersonationParams, addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { getImpersonationParams, addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
@@ -288,7 +288,7 @@ export default function PresenzeAssociatiPanel() {
     if (!associazioneId || !schedaData) return;
     setSchedaSaving(true);
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${API_BASE_URL}/api/associazioni/${associazioneId}/tesseramenti/${schedaData.tesseramento.id}`,
         {
           method: 'PUT',
@@ -352,7 +352,7 @@ export default function PresenzeAssociatiPanel() {
     }
     setSaving(true);
     try {
-      const res = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/associazioni/${associazioneId}/tesseramenti`), {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/associazioni/${associazioneId}/tesseramenti`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -383,7 +383,7 @@ export default function PresenzeAssociatiPanel() {
     if (!associazioneId) return;
     if (!confirm(`Revocare il tesseramento di ${impresaNome}?`)) return;
     try {
-      const res = await fetch(
+      const res = await authenticatedFetch(
         `${API_BASE_URL}/api/associazioni/${associazioneId}/tesseramenti/${tesseramentoId}`,
         {
           method: 'PUT',

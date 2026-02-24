@@ -16,7 +16,7 @@ import {
   CheckCircle, Clock, TrendingUp, Coins, Loader2 
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useImpersonation, addComuneIdToUrl } from '@/hooks/useImpersonation';
+import { useImpersonation, addComuneIdToUrl, authenticatedFetch } from '@/hooks/useImpersonation';
 import { useCivicReports } from '@/contexts/CivicReportsContext';
 import { MIHUB_API_BASE_URL } from '@/config/api';
 import { formatDate } from '@/lib/formatUtils';
@@ -113,7 +113,7 @@ export default function CivicReportsPanel() {
     
     setSavingConfig(true);
     try {
-      const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/civic-reports/config`), {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api/civic-reports/config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)

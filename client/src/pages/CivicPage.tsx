@@ -60,7 +60,7 @@ export default function CivicPage() {
     const loadConfig = async () => {
       const currentComuneId = comuneId ? parseInt(comuneId) : 1;
       try {
-        const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/civic-reports/config?comune_id=${currentComuneId}`));
+        const response = await fetch(addComuneIdToUrl(`${API_BASE_URL}/api/civic-reports/config`));
         const data = await response.json();
         if (data.success && data.data) {
           setTccReward(data.data.tcc_reward_default || 20);
