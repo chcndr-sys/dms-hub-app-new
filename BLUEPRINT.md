@@ -521,7 +521,56 @@ Richiesta HTTP → CORS → Rate Limiter (IPv6 safe) → validateImpersonation m
 | **TCC Legacy v1** | `transactions` | Vecchio sistema TCC (118 righe) | `user_id`, `shop_id`, `type` (earn/spend), `amount` |
 | **Fondo TCC Comunale** | `fund_transactions` | Movimenti fondo comunale | 4 righe |
 
-### Stato Allineamento (24/02/2026 ore 17:30)
-- **Backend**: GitHub = Hetzner → commit `708601f` (fix verbali orario reale)
-- **Frontend**: GitHub = Vercel → commit `5c6818a` (fix SUAP + segnalazioni)
-- **Branch Claude**: `claude/review-production-fixes-3sUvQ` → mergiato in master, allineato a `fd03f12`
+### v8.19.0 → v8.21.0 - authenticatedFetch Completo + Heatmap + Sanctions (24/02/2026 sera)
+
+#### authenticatedFetch Phase 1 (v8.19.0)
+- **14 file** convertiti da `addComuneIdToUrl` a `authenticatedFetch` per operazioni di scrittura
+- `authenticatedFetch` invia token Firebase reale nell'header `Authorization: Bearer <token>` per POST/PUT/DELETE
+- GET restano con `addComuneIdToUrl` (non richiedono auth)
+- Branch Claude: `claude/review-production-fixes-3sUvQ` → merge fast-forward in master
+
+#### authenticatedFetch Phase 2 (v8.20.0)
+- **31 file aggiuntivi** convertiti (~108 write operations)
+- Copertura totale: **45 file**, ~156 operazioni di scrittura
+- Tutti i componenti e pagine ora usano `authenticatedFetch` per POST/PUT/DELETE/PATCH
+- File esclusi (correttamente): utility/infrastruttura (`authClient.ts`, `logsClient.ts`, `trpcHttp.ts`, `firebase.ts`)
+
+#### Fix Qualificazioni (v8.19.0)
+- **Frontend DashboardPA.tsx**: dropdown Formazione allineato con tipi corretti del verificatore (HACCP, SAB, REC, CORSO_ALIMENTARE, ISO 9001, ISO 14001, ISO 22000, PRIMO_SOCCORSO, ANTINCENDIO)
+- Rimosso tipo `IGIENE_ALIMENTARE` che non era riconosciuto dal check `CHECK_ALIMENTARE_SUB`
+- **Backend imprese.js PUT**: logica auto-stato — se `data_scadenza > NOW()` forza `stato = 'ATTIVA'`, se `data_scadenza <= NOW()` forza `stato = 'SCADUTA'`
+- **DB Neon**: attestato MIO TEST ID=63 corretto da `IGIENE_ALIMENTARE` a `SAB`; 3 qualificazioni Alimentari Rossi (ID=5,15,16) stato da `SCADUTA` a `ATTIVA`
+
+#### Fix Heatmap Gaming (v8.21.0)
+- **GamingRewardsPanel.tsx**: rimossa mappa `COMUNI_COORDS` hardcoded (mancava Cervia ID=14)
+- Coordinate ora caricate dinamicamente da `GET /api/comuni` (colonne `lat`, `lng`)
+- Fallback su `DEFAULT_CENTER` (lat 42.5, lng 12.5) se comune non trovato
+- **DB Neon**: aggiunte colonne `lat` DECIMAL(10,6) e `lng` DECIMAL(10,6) alla tabella `comuni`
+- Popolate coordinate per tutti i comuni attivi (Grosseto, Bologna, Vignola, Modena, Carpi, Sassuolo, Casalecchio, Ravenna, Cervia)
+- Scalabile: nuovi comuni funzionano automaticamente con lat/lng nel DB
+
+#### Fix Sanctions/Verbali Filtro (v8.21.0)
+- **Backend sanctions.js GET**: filtro `comune_id` allineato con stats — usa `impresa→concessioni→markets.comune_id` invece di `verbale_data_json→intestazione→comune_id`
+- Contatore e lista ora mostrano gli stessi risultati (prima mismatch: 36 nel contatore, 1 nella lista per Cervia)
+- **DB Neon**: eliminate 20 sanctions NON_PAGATE con `comune_id` sbagliato nel JSON; corrette 15 sanctions PAGATE (comune_id da 1/8 a 14 per Cervia)
+
+#### Pulizia Log (v8.21.0)
+- Azzerata tabella `mio_agent_logs`: 434.580 log eliminati (di cui 20.970 errori storici)
+- Errori principali erano: vecchi path tRPC (system.health, logs.reportClientError, auth.checkRoles), endpoint rimossi, errori validazione
+
+### Tag Stabili
+
+| Tag | Commit | Data | Descrizione |
+|-----|--------|------|-------------|
+| `stable-v8.17.5-pre-claude-merge` | FE: `d23203a` / BE: `c4b88ec` | 24/02 04:14 | Punto di ripristino pre-merge Claude |
+| `stable-v8.18.0-security-hardened` | BE: `502d1ac` | 24/02 06:30 | Post middleware impersonazione + /api/me |
+| `stable-v8.18.2-pre-auth-merge` | FE: `bea327e` | 24/02 18:30 | Pre-merge authenticatedFetch |
+| `stable-v8.19.0-authenticatedFetch` | FE: `88c3f5d` | 24/02 19:00 | Phase 1 authenticatedFetch (14 file) |
+| `stable-v8.20.0-complete-authFetch` | FE: `6bb09d3` | 24/02 21:30 | Phase 2 authenticatedFetch completo (45 file) |
+| `stable-v8.21.0-heatmap-sanctions` | FE: `f5d94dd` / BE: `abc2053` | 24/02 22:30 | Heatmap dinamica + sanctions filtro allineato |
+
+### Stato Allineamento (24/02/2026 ore 23:00)
+- **Frontend**: GitHub = Vercel → commit `f5d94dd` (v8.21.0 heatmap + qualificazioni + authFetch completo)
+- **Backend**: GitHub = Hetzner → commit `abc2053` (v8.21.0 sanctions filtro + auto-stato qualificazioni)
+- **Branch Claude**: eliminato (mergiato in master)
+- **DB Neon**: colonne lat/lng su comuni, sanctions pulite, qualificazioni corrette, log azzerati
