@@ -1,7 +1,32 @@
 # 🏗️ MIO HUB - BLUEPRINT UNIFICATO DEL SISTEMA
 
-> **Versione:** 9.0.2 (Migrazione URL Backend Unico)
+> **Versione:** 9.1.0 (Business Associazioni)
 > **Data:** 25 Febbraio 2026
+> 
+> --- 
+> ### CHANGELOG v9.1.0 (25 Feb 2026)
+> **Implementazione completa del sistema "Business Associazioni"**
+> 
+> **Frontend (commit `d8d0287`):**
+> - **Merge del branch di Claude** (`claude/review-production-fixes-3sUvQ`)
+> - **4 nuovi pannelli** nella Dashboard PA per la gestione dell'associazione:
+>   - `SchedaPubblicaPanel.tsx`
+>   - `GestioneServiziAssociazionePanel.tsx`
+>   - `GestioneCorsiAssociazionePanel.tsx`
+>   - `WalletAssociazionePanel.tsx`
+> - **Aggiornamento `AnagraficaPage.tsx`** con il nuovo flusso "Associati e Paga" e le sezioni per servizi e formazione.
+> 
+> **Backend (commit `d4634ad`):**
+> - **16 nuovi endpoint** per il sistema associativo, implementati in `routes/associazioni-v9.js` per non toccare la logica esistente.
+> - **Nuovo endpoint `POST /api/tesseramenti/richiedi-e-paga`** in `routes/tesseramenti.js`.
+> - **Arricchimento `GET /api/associazioni/pubbliche`** con `quota_annuale` e `servizi_count`.
+> - **Fix chirurgici** su 7 query SQL per allineare i nomi delle colonne (`nome_impresa` → `denominazione`) e gestire i tipi di dato.
+> 
+> **Database (Neon):**
+> - **2 nuove tabelle create:** `wallet_associazione` e `transazioni_wallet_associazione`.
+> - **2 `ALTER TABLE`** per aggiungere le colonne `associazioni.quota_annuale` e `formazione_iscrizioni.attestato_rilasciato`.
+> 
+> **Stato:** **22/22 endpoint** del nuovo sistema testati e funzionanti in produzione.
 > **Autore:** Sistema documentato da Manus AI & Claude AI  
 > **Stato:** PRODUZIONE
 
