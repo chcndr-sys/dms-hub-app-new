@@ -45,6 +45,10 @@ import ComuniPanel from '@/components/ComuniPanel';
 import AssociazioniPanel from '@/components/AssociazioniPanel';
 import PresenzeAssociatiPanel from '@/components/PresenzeAssociatiPanel';
 import AnagraficaAssociazionePanel from '@/components/AnagraficaAssociazionePanel';
+import SchedaPubblicaPanel from '@/components/SchedaPubblicaPanel';
+import WalletAssociazionePanel from '@/components/WalletAssociazionePanel';
+import GestioneServiziAssociazionePanel from '@/components/GestioneServiziAssociazionePanel';
+import GestioneCorsiAssociazionePanel from '@/components/GestioneCorsiAssociazionePanel';
 import WalletPanel from '@/components/WalletPanel';
 import SecurityTab from '@/components/SecurityTab';
 import FraudMonitorPanel from '@/components/FraudMonitorPanel';
@@ -2787,6 +2791,10 @@ export default function DashboardPA() {
             {isAssociazioneImpersonation() ? (
               <>
                 <AnagraficaAssociazionePanel />
+                <SchedaPubblicaPanel />
+                <GestioneServiziAssociazionePanel />
+                <GestioneCorsiAssociazionePanel />
+                <WalletAssociazionePanel />
                 <PresenzeAssociatiPanel />
               </>
             ) : (

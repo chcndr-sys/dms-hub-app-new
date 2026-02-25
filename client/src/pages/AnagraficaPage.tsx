@@ -1506,6 +1506,64 @@ function AssociazioneSection({ impresaId }: { impresaId: number | null }) {
     load();
   }, [impresaId]);
 
+  const [schedaPubblica, setSchedaPubblica] = useState<any>(null);
+  const [loadingScheda, setLoadingScheda] = useState(false);
+
+  // Carica scheda pubblica quando si seleziona un'associazione
+  const viewSchedaPubblica = async (assoc: any) => {
+    setSelectedAssociazione(assoc);
+    setLoadingScheda(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/associazioni/${assoc.id}/scheda-pubblica`);
+      const data = await res.json();
+      if (data.success && data.data) {
+        setSchedaPubblica(data.data);
+      } else {
+        setSchedaPubblica(null);
+      }
+    } catch {
+      setSchedaPubblica(null);
+    } finally {
+      setLoadingScheda(false);
+    }
+  };
+
+  // Flusso "Associati e Paga" — apre PagaConWallet con quota
+  const handleAssociatiEPaga = (assoc: any) => {
+    const quota = parseFloat(assoc.quota_annuale || '50');
+    setPagaInfo({
+      importo: quota,
+      descrizione: `Quota Associativa ${new Date().getFullYear()} — ${assoc.nome}`,
+      tipo: 'quota_associativa',
+      riferimentoId: assoc.id,
+    });
+    setPagaOpen(true);
+  };
+
+  // Al successo del pagamento, crea tesseramento diretto
+  const onPagamentoSuccess = async () => {
+    if (!impresaId || !selectedAssociazione) return;
+    try {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/tesseramenti/richiedi-e-paga`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          impresa_id: impresaId,
+          associazione_id: selectedAssociazione.id,
+          pagamento_confermato: true,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTesseramento(data.data || { stato: 'ATTIVO', associazione_nome: selectedAssociazione.nome, quota_pagata: true });
+      }
+    } catch {
+      // Fallback: il pagamento è andato, mostra comunque come attivo
+      setTesseramento({ stato: 'ATTIVO', associazione_nome: selectedAssociazione?.nome, quota_pagata: true });
+    }
+  };
+
+  // Fallback: richiesta senza pagamento (flusso legacy)
   const handleRichiestaAssociazione = async (associazioneId: number) => {
     if (!impresaId) return;
     setRichiestaInCorso(true);
@@ -1617,12 +1675,71 @@ function AssociazioneSection({ impresaId }: { impresaId: number | null }) {
         </CardContent>
       </Card>
 
+      {/* Scheda pubblica dell'associazione selezionata */}
+      {selectedAssociazione && (
+        <Card className="bg-[#1a2332] border-emerald-500/30 py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <Landmark className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-[#e8fbff]">{selectedAssociazione.nome}</p>
+                  {selectedAssociazione.sigla && <p className="text-xs text-[#e8fbff]/50">{selectedAssociazione.sigla}</p>}
+                </div>
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => { setSelectedAssociazione(null); setSchedaPubblica(null); }}
+                className="text-[#e8fbff]/50 text-xs">Chiudi</Button>
+            </div>
+
+            {loadingScheda ? (
+              <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-emerald-400" /></div>
+            ) : schedaPubblica ? (
+              <div className="space-y-3">
+                {schedaPubblica.descrizione && (
+                  <p className="text-sm text-[#e8fbff]/70">{schedaPubblica.descrizione}</p>
+                )}
+                {schedaPubblica.benefici?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-[#e8fbff]/50 mb-1">Vantaggi per gli associati</p>
+                    <ul className="space-y-1">
+                      {schedaPubblica.benefici.map((b: string, i: number) => (
+                        <li key={i} className="text-xs text-[#e8fbff]/70 flex items-center gap-1">
+                          <span className="text-emerald-400">&#10003;</span> {b}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {schedaPubblica.contatti?.telefono && (
+                  <p className="text-xs text-[#e8fbff]/50">Tel: {schedaPubblica.contatti.telefono}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-[#e8fbff]/40 italic">Informazioni non ancora disponibili</p>
+            )}
+
+            <div className="flex items-center justify-between pt-2 border-t border-[#e8fbff]/10">
+              <div className="text-xs text-[#e8fbff]/50">
+                Quota: <span className="text-[#e8fbff] font-bold">&euro;{parseFloat(selectedAssociazione.quota_annuale || '50').toFixed(2)}/anno</span>
+              </div>
+              <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs"
+                onClick={() => handleAssociatiEPaga(selectedAssociazione)}>
+                <Wallet className="w-3 h-3 mr-1" /> Associati e Paga
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Lista associazioni */}
       {associazioni.length === 0 ? (
         <EmptyState text="Nessuna associazione disponibile al momento" />
       ) : (
         associazioni.map((assoc) => (
-          <Card key={assoc.id} className="bg-[#1a2332] border-[#14b8a6]/20 hover:border-[#14b8a6]/40 transition-all py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+          <Card key={assoc.id} className="bg-[#1a2332] border-[#14b8a6]/20 hover:border-[#14b8a6]/40 transition-all py-0 gap-0 rounded-none sm:rounded-xl border-x-0 sm:border-x cursor-pointer"
+            onClick={() => viewSchedaPubblica(assoc)}>
             <CardContent className="p-3 sm:p-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
@@ -1636,14 +1753,15 @@ function AssociazioneSection({ impresaId }: { impresaId: number | null }) {
                     {assoc.servizi_count && <span>{assoc.servizi_count} servizi</span>}
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <Button
-                      size="sm"
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs h-7"
+                    <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs h-7"
+                      onClick={(e) => { e.stopPropagation(); handleAssociatiEPaga(assoc); }}>
+                      <Wallet className="w-3 h-3 mr-1" /> Associati e Paga
+                    </Button>
+                    <Button size="sm" variant="outline" className="border-emerald-500/30 text-emerald-400 text-xs h-7"
                       disabled={richiestaInCorso}
-                      onClick={() => handleRichiestaAssociazione(assoc.id)}
-                    >
+                      onClick={(e) => { e.stopPropagation(); handleRichiestaAssociazione(assoc.id); }}>
                       {richiestaInCorso ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Heart className="w-3 h-3 mr-1" />}
-                      Associati
+                      Solo Richiesta
                     </Button>
                   </div>
                 </div>
@@ -1652,6 +1770,7 @@ function AssociazioneSection({ impresaId }: { impresaId: number | null }) {
           </Card>
         ))
       )}
+      <PagaConWallet open={pagaOpen} onClose={() => setPagaOpen(false)} importo={pagaInfo.importo} descrizione={pagaInfo.descrizione} tipo={pagaInfo.tipo} riferimentoId={pagaInfo.riferimentoId} impresaId={impresaId} onSuccess={onPagamentoSuccess} />
     </div>
   );
 }
