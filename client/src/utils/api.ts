@@ -2,7 +2,7 @@
 
 import { MIHUB_API_BASE_URL } from '@/config/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://8000-iot4ac202gehqh0qqxx5z-ce5d3831.manusvm.computer/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://orchestratore.mio-hub.me/api/v1';
 
 interface ApiResponse<T> {
   data?: T;

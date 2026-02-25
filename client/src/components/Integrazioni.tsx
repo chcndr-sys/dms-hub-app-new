@@ -153,7 +153,7 @@ function APIDashboard() {
   
   // Fetch dynamic endpoint count from backend Hetzner
   useEffect(() => {
-    fetch('https://api.mio-hub.me/api/dashboard/integrations/endpoint-count')
+    fetch('/api/dashboard/integrations/endpoint-count')
       .then(r => r.json())
       .then(data => {
         if (data.success) {
@@ -266,7 +266,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'dms-legacy',
-            base_url: 'https://api.mio-hub.me'
+            base_url: ''
           },
           {
             id: 'dms-legacy.markets',
@@ -277,7 +277,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'dms-legacy',
-            base_url: 'https://api.mio-hub.me'
+            base_url: ''
           },
           {
             id: 'dms-legacy.vendors',
@@ -288,7 +288,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'dms-legacy',
-            base_url: 'https://api.mio-hub.me'
+            base_url: ''
           },
           {
             id: 'dms-legacy.concessions',
@@ -299,7 +299,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'dms-legacy',
-            base_url: 'https://api.mio-hub.me'
+            base_url: ''
           },
           {
             id: 'dms-legacy.presences',
@@ -310,7 +310,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'dms-legacy',
-            base_url: 'https://api.mio-hub.me'
+            base_url: ''
           },
           {
             id: 'dms-legacy.market-sessions',
@@ -321,7 +321,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'dms-legacy',
-            base_url: 'https://api.mio-hub.me'
+            base_url: ''
           },
           {
             id: 'dms-legacy.sync',
@@ -332,7 +332,7 @@ function APIDashboard() {
             enabled: true,
             test: { enabled: false },
             service_id: 'dms-legacy',
-            base_url: 'https://api.mio-hub.me'
+            base_url: ''
           },
           {
             id: 'dms-legacy.cron-sync',
@@ -343,7 +343,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'dms-legacy',
-            base_url: 'https://api.mio-hub.me'
+            base_url: ''
           }
         ];
         dmsLegacyEndpoints.forEach(ep => {
@@ -369,7 +369,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'mercaweb',
-            base_url: 'https://api.mio-hub.me',
+            base_url: '',
             requiresApiKey: true
           },
           {
@@ -381,7 +381,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'mercaweb',
-            base_url: 'https://api.mio-hub.me',
+            base_url: '',
             requiresApiKey: true
           },
           {
@@ -393,7 +393,7 @@ function APIDashboard() {
             enabled: true,
             test: { enabled: false },
             service_id: 'mercaweb',
-            base_url: 'https://api.mio-hub.me',
+            base_url: '',
             requiresApiKey: true
           },
           {
@@ -405,7 +405,7 @@ function APIDashboard() {
             enabled: true,
             test: { enabled: false },
             service_id: 'mercaweb',
-            base_url: 'https://api.mio-hub.me',
+            base_url: '',
             requiresApiKey: true
           },
           {
@@ -417,7 +417,7 @@ function APIDashboard() {
             enabled: true,
             test: { enabled: false },
             service_id: 'mercaweb',
-            base_url: 'https://api.mio-hub.me',
+            base_url: '',
             requiresApiKey: true
           },
           {
@@ -429,7 +429,7 @@ function APIDashboard() {
             enabled: true,
             test: { enabled: false },
             service_id: 'mercaweb',
-            base_url: 'https://api.mio-hub.me',
+            base_url: '',
             requiresApiKey: true
           },
           {
@@ -441,7 +441,7 @@ function APIDashboard() {
             enabled: true,
             test: { enabled: false },
             service_id: 'mercaweb',
-            base_url: 'https://api.mio-hub.me',
+            base_url: '',
             requiresApiKey: true
           },
           {
@@ -453,7 +453,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'mercaweb',
-            base_url: 'https://api.mio-hub.me',
+            base_url: '',
             requiresApiKey: true
           },
           {
@@ -465,7 +465,7 @@ function APIDashboard() {
             enabled: true,
             test: true,
             service_id: 'mercaweb',
-            base_url: 'https://api.mio-hub.me',
+            base_url: '',
             requiresApiKey: true
           }
         ];
@@ -830,14 +830,14 @@ function APIDashboard() {
         // COLLABORATORI IMPRESA - chiamate REST dirette
         case '/api/collaboratori?impresa_id=:id':
           const collabImpresaId = parsedBody.impresa_id || 38;
-          const collabResponse = await fetch(`https://api.mio-hub.me/api/collaboratori?impresa_id=${collabImpresaId}`, {
+          const collabResponse = await fetch(`/api/collaboratori?impresa_id=${collabImpresaId}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
           });
           data = await collabResponse.json();
           break;
         case '/api/collaboratori':
-          const createCollabResponse = await authenticatedFetch('https://api.mio-hub.me/api/collaboratori', {
+          const createCollabResponse = await authenticatedFetch('/api/collaboratori', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsedBody),
@@ -846,13 +846,13 @@ function APIDashboard() {
           break;
         case '/api/collaboratori/:id':
           if (parsedBody._method === 'DELETE') {
-            const deleteCollabResponse = await authenticatedFetch(`https://api.mio-hub.me/api/collaboratori/${parsedBody.id || 1}`, {
+            const deleteCollabResponse = await authenticatedFetch(`/api/collaboratori/${parsedBody.id || 1}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
             });
             data = await deleteCollabResponse.json();
           } else {
-            const updateCollabResponse = await authenticatedFetch(`https://api.mio-hub.me/api/collaboratori/${parsedBody.id || 1}`, {
+            const updateCollabResponse = await authenticatedFetch(`/api/collaboratori/${parsedBody.id || 1}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(parsedBody),
@@ -861,7 +861,7 @@ function APIDashboard() {
           }
           break;
         case '/api/collaboratori/:id/toggle-presenze':
-          const toggleCollabResponse = await authenticatedFetch(`https://api.mio-hub.me/api/collaboratori/${parsedBody.id || 1}/toggle-presenze`, {
+          const toggleCollabResponse = await authenticatedFetch(`/api/collaboratori/${parsedBody.id || 1}/toggle-presenze`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
           });
@@ -959,7 +959,7 @@ function APIDashboard() {
           
         // SHOPPING ROUTE - chiamate REST dirette
         case '/api/routing/calculate':
-          const API_URL = import.meta.env.VITE_API_URL || 'https://api.mio-hub.me';
+          const API_URL = import.meta.env.VITE_API_URL || '';
           const routingResponse = await authenticatedFetch(`${API_URL}/api/routing/calculate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -983,7 +983,7 @@ function APIDashboard() {
         case '/api/integrations/dms-legacy/vendors':
         case '/api/integrations/dms-legacy/concessions':
         case '/api/integrations/dms-legacy/cron-sync': {
-          const dmsRes = await fetch(`https://api.mio-hub.me${endpointPath}`, {
+          const dmsRes = await fetch(`${endpointPath}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
           });
@@ -992,7 +992,7 @@ function APIDashboard() {
         }
         case '/api/integrations/dms-legacy/presences/:marketId': {
           const dmsMarketId = parsedBody.marketId || 1;
-          const dmsPresRes = await fetch(`https://api.mio-hub.me/api/integrations/dms-legacy/presences/${dmsMarketId}`, {
+          const dmsPresRes = await fetch(`/api/integrations/dms-legacy/presences/${dmsMarketId}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
           });
@@ -1001,7 +1001,7 @@ function APIDashboard() {
         }
         case '/api/integrations/dms-legacy/market-sessions/:marketId': {
           const dmsSessionMarketId = parsedBody.marketId || 1;
-          const dmsSessionRes = await fetch(`https://api.mio-hub.me/api/integrations/dms-legacy/market-sessions/${dmsSessionMarketId}`, {
+          const dmsSessionRes = await fetch(`/api/integrations/dms-legacy/market-sessions/${dmsSessionMarketId}`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
           });
@@ -1009,7 +1009,7 @@ function APIDashboard() {
           break;
         }
         case '/api/integrations/dms-legacy/sync': {
-          const dmsSyncRes = await authenticatedFetch('https://api.mio-hub.me/api/integrations/dms-legacy/sync', {
+          const dmsSyncRes = await authenticatedFetch('/api/integrations/dms-legacy/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsedBody),
@@ -1023,7 +1023,7 @@ function APIDashboard() {
         // ============================================
         case '/api/integrations/mercaweb/health':
         case '/api/integrations/mercaweb/status': {
-          const mwGetRes = await fetch(`https://api.mio-hub.me${endpointPath}`, {
+          const mwGetRes = await fetch(`${endpointPath}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -1035,7 +1035,7 @@ function APIDashboard() {
         }
         case '/api/integrations/mercaweb/export/presenze/:marketId': {
           const mwMarketId = parsedBody.marketId || 1;
-          const mwPresRes = await fetch(`https://api.mio-hub.me/api/integrations/mercaweb/export/presenze/${mwMarketId}`, {
+          const mwPresRes = await fetch(`/api/integrations/mercaweb/export/presenze/${mwMarketId}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -1047,7 +1047,7 @@ function APIDashboard() {
         }
         case '/api/integrations/mercaweb/export/mapping/:entity': {
           const mwEntity = parsedBody.entity || 'imprese';
-          const mwMapRes = await fetch(`https://api.mio-hub.me/api/integrations/mercaweb/export/mapping/${mwEntity}`, {
+          const mwMapRes = await fetch(`/api/integrations/mercaweb/export/mapping/${mwEntity}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -1062,7 +1062,7 @@ function APIDashboard() {
         case '/api/integrations/mercaweb/import/piazzole':
         case '/api/integrations/mercaweb/import/concessioni':
         case '/api/integrations/mercaweb/import/spuntisti': {
-          const mwImportRes = await authenticatedFetch(`https://api.mio-hub.me${endpointPath}`, {
+          const mwImportRes = await authenticatedFetch(`${endpointPath}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

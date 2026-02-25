@@ -38,5 +38,6 @@ export const TCC_API_BASE = import.meta.env.DEV
 /**
  * AI Chat API
  * Used for AI assistant and chat features.
+ * Usa il proxy Vercel in produzione, orchestratore in dev.
  */
-export const AI_API_BASE_URL = import.meta.env.VITE_API_URL || 'https://8000-iot4ac202gehqh0qqxx5z-ce5d3831.manusvm.computer/api/v1';
+export const AI_API_BASE_URL = import.meta.env.VITE_API_URL || `${ORCHESTRATORE_API_BASE_URL}/api/v1`;
