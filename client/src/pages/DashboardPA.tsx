@@ -13,7 +13,8 @@ import {
   Radio, CloudRain, Wind, UserCog, ClipboardCheck, Scale, Bell, BellRing,
   Navigation, Train, ParkingCircle, TrafficCone, FileBarChart, Plug, SettingsIcon, Euro, Newspaper, Rocket,
   XCircle, Lightbulb, MessageSquare, Brain, Calculator, ExternalLink, StopCircle,
-  Search, Filter, Plus, Landmark, BookOpen, Star, FileCheck, HandCoins, Mail, MailOpen, Home, Gamepad2
+  Search, Filter, Plus, Landmark, BookOpen, Star, FileCheck, HandCoins, Mail, MailOpen, Home, Gamepad2,
+  Heart, CreditCard, ClipboardList
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -619,7 +620,7 @@ export default function DashboardPA() {
   const [dashboardSubTab, setDashboardSubTab] = useState<'overview' | 'mercati'>('overview');
   const [sistemaSubTab, setSistemaSubTab] = useState<'logs' | 'debug'>('logs');
   const [walletSubTab, setWalletSubTab] = useState<'wallet' | 'pagopa'>('wallet');
-  const [docsSubTab, setDocsSubTab] = useState<string>('formazione');
+  const [docsSubTab, setDocsSubTab] = useState<string>(isAssociazioneImpersonation() ? 'anagrafica-assoc' : 'formazione');
 
   // Listener per navigazione dalla scheda associato alla pratica SCIA
   useEffect(() => {
@@ -2786,20 +2787,9 @@ export default function DashboardPA() {
             </Card>
           </TabsContent>
 
-          {/* TAB 6: TPAS / Associazioni */}
+          {/* TAB 6: TPAS / Associazioni (admin: gestione lista associazioni) */}
           <TabsContent value="tpas" className="space-y-6">
-            {isAssociazioneImpersonation() ? (
-              <>
-                <AnagraficaAssociazionePanel />
-                <SchedaPubblicaPanel />
-                <GestioneServiziAssociazionePanel />
-                <GestioneCorsiAssociazionePanel />
-                <WalletAssociazionePanel />
-                <PresenzeAssociatiPanel />
-              </>
-            ) : (
-              <AssociazioniPanel />
-            )}
+            <AssociazioniPanel />
           </TabsContent>
 
           {/* TAB 7: CARBON CREDITS */}
@@ -4640,7 +4630,13 @@ export default function DashboardPA() {
           <TabsContent value="docs" className="space-y-6">
             {/* Sotto-tab per Formazione e Bandi */}
             <Tabs value={docsSubTab} onValueChange={setDocsSubTab} className="w-full">
-              <TabsList className="bg-[#1a2332] border border-[#3b82f6]/20 mb-6">
+              <TabsList className="bg-[#1a2332] border border-[#3b82f6]/20 mb-6 flex-wrap">
+                {isAssociazioneImpersonation() && (
+                  <TabsTrigger value="anagrafica-assoc" className="data-[state=active]:bg-[#e11d48]/20 data-[state=active]:text-[#e11d48]">
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Anagrafica
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="formazione" className="data-[state=active]:bg-[#3b82f6]/20 data-[state=active]:text-[#3b82f6]">
                   <GraduationCap className="w-4 h-4 mr-2" />
                   Enti Formatori
@@ -4659,7 +4655,38 @@ export default function DashboardPA() {
                     Associati
                   </TabsTrigger>
                 )}
+                {isAssociazioneImpersonation() && (
+                  <TabsTrigger value="scheda-pubblica" className="data-[state=active]:bg-[#14b8a6]/20 data-[state=active]:text-[#14b8a6]">
+                    <Heart className="w-4 h-4 mr-2" />
+                    Scheda Pubblica
+                  </TabsTrigger>
+                )}
+                {isAssociazioneImpersonation() && (
+                  <TabsTrigger value="gestione-servizi" className="data-[state=active]:bg-[#f97316]/20 data-[state=active]:text-[#f97316]">
+                    <ClipboardList className="w-4 h-4 mr-2" />
+                    Servizi
+                  </TabsTrigger>
+                )}
+                {isAssociazioneImpersonation() && (
+                  <TabsTrigger value="gestione-corsi" className="data-[state=active]:bg-[#06b6d4]/20 data-[state=active]:text-[#06b6d4]">
+                    <GraduationCap className="w-4 h-4 mr-2" />
+                    Corsi
+                  </TabsTrigger>
+                )}
+                {isAssociazioneImpersonation() && (
+                  <TabsTrigger value="wallet-associazione" className="data-[state=active]:bg-[#22c55e]/20 data-[state=active]:text-[#22c55e]">
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Wallet
+                  </TabsTrigger>
+                )}
               </TabsList>
+
+              {/* SOTTO-TAB: ANAGRAFICA ASSOCIAZIONE (solo impersonazione) */}
+              {isAssociazioneImpersonation() && (
+                <TabsContent value="anagrafica-assoc" className="space-y-6">
+                  <AnagraficaAssociazionePanel />
+                </TabsContent>
+              )}
 
               {/* SOTTO-TAB: ENTI FORMATORI */}
               <TabsContent value="formazione" className="space-y-6">
@@ -6070,6 +6097,34 @@ export default function DashboardPA() {
               {isAssociazioneImpersonation() && (
                 <TabsContent value="associati" className="space-y-6">
                   <PresenzeAssociatiPanel />
+                </TabsContent>
+              )}
+
+              {/* SOTTO-TAB: SCHEDA PUBBLICA (visibile a imprese prima di associarsi) */}
+              {isAssociazioneImpersonation() && (
+                <TabsContent value="scheda-pubblica" className="space-y-6">
+                  <SchedaPubblicaPanel />
+                </TabsContent>
+              )}
+
+              {/* SOTTO-TAB: GESTIONE SERVIZI (catalogo + richieste) */}
+              {isAssociazioneImpersonation() && (
+                <TabsContent value="gestione-servizi" className="space-y-6">
+                  <GestioneServiziAssociazionePanel />
+                </TabsContent>
+              )}
+
+              {/* SOTTO-TAB: GESTIONE CORSI (catalogo + iscrizioni + attestati) */}
+              {isAssociazioneImpersonation() && (
+                <TabsContent value="gestione-corsi" className="space-y-6">
+                  <GestioneCorsiAssociazionePanel />
+                </TabsContent>
+              )}
+
+              {/* SOTTO-TAB: WALLET ASSOCIAZIONE (saldo, incassi, transazioni) */}
+              {isAssociazioneImpersonation() && (
+                <TabsContent value="wallet-associazione" className="space-y-6">
+                  <WalletAssociazionePanel />
                 </TabsContent>
               )}
             </Tabs>
